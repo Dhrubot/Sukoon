@@ -8,12 +8,22 @@ import {
   Location,
   CalculationMethod 
 } from '../types';
+import { createStorage } from './StorageAdapter';
 
 class StorageService {
-  private storage: MMKV;
+  // private storage: MMKV;
+  
+  // constructor() {
+  //   this.storage = new MMKV({
+  //     id: 'prayer-buddy-storage',
+  //     encryptionKey: 'prayer-buddy-encryption-key' // In production, generate secure key
+  //   });
+  // }
+
+  private storage;
   
   constructor() {
-    this.storage = new MMKV({
+    this.storage = createStorage({
       id: 'prayer-buddy-storage',
       encryptionKey: 'prayer-buddy-encryption-key' // In production, generate secure key
     });

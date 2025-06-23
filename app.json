@@ -38,8 +38,7 @@
     },
     "plugins": [
       "expo-notifications",
-      "expo-location",
-      "react-native-mmkv"
+      "expo-location"
     ],
     "extra": {
       "eas": {

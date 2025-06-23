@@ -21,7 +21,7 @@ import StorageService from '../../services/StorageService';
 import PrayerCard from '../../components/prayer/PrayerCard';
 import NextPrayerCard from '../../components/prayer/NextPrayerCard';
 import DailyVerse from '../../components/common/DailyVerse';
-import QuickStats from '../../components/common/QuickStats';
+import QuickStats from '../../components/stats/QuickStats';
 
 // Types
 import { PrayerTime } from '../../types';
