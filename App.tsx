@@ -3,15 +3,15 @@ import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import * as Location from 'expo-location';
-import { View, Text, ActivityIndicator, Modal, TextInput, Button, StyleSheet, TouchableOpacity, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, ActivityIndicator, Modal, TextInput, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 
 // Services
 import StorageService from './src/services/StorageService';
 import NotificationService from './src/services/NotificationService';
 import PrayerTimeService from './src/services/PrayerTimeService';
+import LocationService from './src/services/LocationService';
 
-// Screens (we'll create these next)
+// Screens
 import HomeScreen from './src/screens/Home/HomeScreen';
 import StatsScreen from './src/screens/Stats/StatsScreen';
 import SettingsScreen from './src/screens/Settings/SettingsScreen';
@@ -54,34 +54,37 @@ export default function App() {
       setUserSettings(settings);
 
       // Only request location if we don't already have it stored
-      let location = settings.location;
-      if (!location || !location.latitude || !location.longitude) {
+      let userLocation = settings.location;
+      if (!LocationService.hasSavedLocation()) {
         console.log('No saved location found, requesting new location...');
-        const newLocation = await requestLocation();
+        const newLocation = await LocationService.getCurrentLocation();
         
         if (newLocation) {
-          location = newLocation;
-          settings.location = location;
-          StorageService.updateUserSettings({ location });
-          setLocation(location);
+          userLocation = newLocation;
+          settings.location = userLocation;
+          StorageService.updateUserSettings({ location: userLocation });
+          setLocation(userLocation);
+        } else {
+          // Show location modal if automatic location detection failed
+          setShowLocationModal(true);
         }
       } else {
-        console.log('Using saved location:', location);
-        setLocation(location);
+        console.log('Using saved location:', userLocation);
+        setLocation(userLocation);
       }
 
       // Initialize notifications
       await NotificationService.initialize();
 
       // Only fetch prayer times if needed
-      if (location) {
+      if (userLocation) {
         // Check if we need to refresh prayer times (e.g., if it's a new day)
-        const shouldRefreshPrayerTimes = await shouldRefreshPrayers(location, settings.calculationMethod);
+        const shouldRefreshPrayerTimes = await shouldRefreshPrayers(userLocation, settings.calculationMethod);
         
         if (shouldRefreshPrayerTimes) {
           console.log('Refreshing prayer times...');
           await PrayerTimeService.getPrayerTimesList(
-            location,
+            userLocation,
             new Date(),
             settings.calculationMethod
           );
@@ -107,98 +110,58 @@ export default function App() {
       // Create a storage key for the prayer times refresh timestamp
       const refreshKey = `lastPrayerRefresh_${location.latitude.toFixed(4)}_${location.longitude.toFixed(4)}_${dateStr}_${method}`;
       
-      // Check if we've already refreshed prayers today
-      const lastRefreshedStr = StorageService.getValue(refreshKey);
+      // Check when we last refreshed prayer times
+      const lastRefresh = StorageService.getValue(refreshKey);
       
-      if (lastRefreshedStr) {
-        // We already refreshed prayers today, no need to refresh again
-        return false;
+      if (!lastRefresh) {
+        // No refresh timestamp, so we should refresh
+        // Save current time as last refresh
+        StorageService.setValue(refreshKey, Date.now().toString());
+        return true;
       }
       
-      // Store the refresh timestamp
-      StorageService.setValue(refreshKey, Date.now().toString());
-      return true;
-    } catch (error) {
-      console.error('Error checking prayer refresh status:', error);
-      // If there's an error, refresh to be safe
-      return true;
-    }
-  };
-
-  const getCoordinatesFromAddress = async (cityName: string, countryName: string): Promise<LocationType | null> => {
-    try {
-      // Use the Al Adhan API to get location data by city/country
-      // This endpoint returns prayer times, but also includes latitude/longitude data
-      const encodedCity = encodeURIComponent(cityName);
-      const encodedCountry = encodeURIComponent(countryName);
+      // Check if it's been more than 12 hours since last refresh
+      const lastRefreshTime = parseInt(lastRefresh, 10);
+      const twelveHoursMs = 12 * 60 * 60 * 1000;
       
-      const url = `https://api.aladhan.com/v1/timingsByCity?city=${encodedCity}&country=${encodedCountry}&method=2`;
-      
-      console.log(`Fetching location data for ${cityName}, ${countryName}`);
-      const response = await fetch(url);
-      const data = await response.json();
-      
-      if (data.code === 200 && data.data) {
-        // Extract the coordinates from the API response
-        const { latitude, longitude } = data.data.meta;
-        
-        return {
-          latitude: parseFloat(latitude),
-          longitude: parseFloat(longitude),
-          city: cityName || 'Unknown',
-          country: countryName || 'Unknown',
-          timezone: data.data.meta.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
-        };
-      } else {
-        console.error('Al Adhan API error:', data.data);
-        return null;
+      if (Date.now() - lastRefreshTime > twelveHoursMs) {
+        // More than 12 hours, refresh
+        StorageService.setValue(refreshKey, Date.now().toString());
+        return true;
       }
+      
+      return false;
     } catch (error) {
-      console.error('Error getting location from Al Adhan API:', error);
-      return null;
+      console.error('Error checking if prayer times should refresh:', error);
+      return true; // Refresh to be safe
     }
   };
 
   const handleManualLocation = async () => {
     setLocationInputError('');
     
-    // Validate required fields
-    if (!city) {
-      setLocationInputError('Please enter a city name');
-      return;
-    }
-    
-    if (!country) {
-      setLocationInputError('Please enter a country name');
-      return;
-    }
-
     setIsLoading(true);
     
     try {
-      // Use the Al Adhan API with city and country
-      const locationData = await getCoordinatesFromAddress(city, country);
+      let locationData: LocationType | null = null;
+      
+      if (city && country) {
+        // Use city and country
+        locationData = await LocationService.setLocationByAddress(city, country);
+      } else if (postalCode && country) {
+        // Use postal code and country
+        locationData = await LocationService.setLocationByPostalCode(postalCode, country);
+      } else {
+        setLocationInputError('Please enter either city and country, or postal code and country.');
+        setIsLoading(false);
+        return;
+      }
       
       if (locationData) {
         setShowLocationModal(false);
-        // Update settings with the new location
-        const settings = StorageService.getUserSettings() || StorageService.getDefaultSettings();
-        settings.location = locationData;
-        StorageService.setUserSettings(settings);
-        setUserSettings(settings);
         setLocation(locationData);
-        
-        // Force refresh prayer times when location is manually changed
-        await PrayerTimeService.clearCache(); // Clear the cached prayer times
-        
-        // Fetch prayer times with the new location
-        await PrayerTimeService.getPrayerTimesList(
-          locationData,
-          new Date(),
-          settings.calculationMethod
-        );
       } else {
-        setLocationInputError('Could not find location. Please check your city and country names.');
+        setLocationInputError('Could not find location. Please check your input and try again.');
       }
     } catch (error) {
       console.error('Error setting manual location:', error);
@@ -208,50 +171,11 @@ export default function App() {
     }
   };
 
-  const requestLocation = async (): Promise<LocationType | null> => {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        console.log('Location permission denied');
-        // Show modal for manual location input
-        setShowLocationModal(true);
-        return null;
-      }
-
-      const location = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      });
-
-      // Reverse geocode to get city/country
-      const geocode = await Location.reverseGeocodeAsync({
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-      });
-
-      const place = geocode[0];
-      
-      return {
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude,
-        city: place?.city || 'Unknown',
-        country: place?.country || 'Unknown',
-        timezone: place?.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
-      };
-    } catch (error) {
-      console.error('Error getting location:', error);
-      // Show modal for manual location input in case of error
-      setShowLocationModal(true);
-      return null;
-    }
-  };
-
-  if (isLoading && !showLocationModal) {
+  if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1B5E3F' }}>
-        <ActivityIndicator size="large" color="#FFFFFF" />
-        <Text style={{ color: '#FFFFFF', marginTop: 16, fontSize: 16 }}>
-          Preparing your prayer companion...
-        </Text>
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#1B5E3F" />
+        <Text style={{ marginTop: 20, fontSize: 16 }}>Loading Prayer Buddy...</Text>
       </View>
     );
   }
@@ -260,6 +184,8 @@ export default function App() {
     <SafeAreaProvider>
       <NavigationContainer>
         <StatusBar style="auto" />
+        
+        {/* Manual location input modal */}
         <Modal
           visible={showLocationModal}
           animationType="slide"
@@ -271,9 +197,9 @@ export default function App() {
             style={styles.modalContainer}
           >
             <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Enter Your Location</Text>
+              <Text style={styles.modalTitle}>Set Your Location</Text>
               <Text style={styles.modalSubtitle}>
-                Please provide your location details to calculate accurate prayer times
+                To provide accurate prayer times, we need your location.
               </Text>
               
               <View style={styles.inputContainer}>
@@ -297,6 +223,8 @@ export default function App() {
                   placeholderTextColor="#999"
                 />
               </View>
+              
+              <Text style={styles.modalSubtitle}>OR</Text>
               
               <View style={styles.inputContainer}>
                 <Text style={styles.label}>Postal/Zip Code</Text>
@@ -323,7 +251,7 @@ export default function App() {
               </View>
               
               <Text style={styles.noteText}>
-                Note: Enter either a city or postal code. Country is optional but recommended for accuracy.
+                Note: Enter either a city or postal code. Country is required for better accuracy.
               </Text>
             </View>
           </KeyboardAvoidingView>

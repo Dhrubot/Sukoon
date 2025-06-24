@@ -57,11 +57,11 @@ class StorageService {
       calculationMethod: 'MWL',
       asrJuristic: 'Standard',
       adjustments: {
-        fajr: 0,
-        dhuhr: 0,
-        asr: 0,
-        maghrib: 0,
-        isha: 0
+        Fajr: 0,
+        Dhuhr: 0,
+        Asr: 0,
+        Maghrib: 0,
+        Isha: 0
       },
       notifications: {
         enabled: true,
