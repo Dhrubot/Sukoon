@@ -162,8 +162,10 @@ class NotificationService {
             categoryIdentifier: 'prayer-reminder',
           },
           trigger: {
-            date: preNotificationTime,
-          },
+            type: 'timeInterval',
+            seconds: Math.max((preNotificationTime.getTime() - Date.now()) / 1000, 1),
+            repeats: false,
+          } as Notifications.NotificationTriggerInput,
           identifier: `pre-${prayer.name}-${prayer.time.toISOString()}`,
         });
       }
@@ -178,12 +180,14 @@ class NotificationService {
           prayer: prayer.name, 
           type: 'prayer-time' 
         },
-        sound: notifications.soundEnabled ? 'default' : null,
+        sound: notifications.soundEnabled ? 'default' : undefined,
         priority: 'high',
       },
       trigger: {
-        date: prayer.time,
-      },
+        type: 'timeInterval',
+        seconds: Math.max((prayer.time.getTime() - Date.now()) / 1000,1),
+        repeats: false,
+      } as Notifications.NotificationTriggerInput,
       identifier: `${prayer.name}-${prayer.time.toISOString()}`,
     });
     
@@ -200,8 +204,10 @@ class NotificationService {
         },
       },
       trigger: {
-        date: postCheckTime,
-      },
+        type: 'timeInterval',
+        seconds: Math.max((postCheckTime.getTime() - Date.now()) / 1000,1),
+        repeats: false,
+      } as Notifications.NotificationTriggerInput,
       identifier: `check-${prayer.name}-${prayer.time.toISOString()}`,
     });
   }
@@ -222,8 +228,9 @@ class NotificationService {
         priority: 'high',
       },
       trigger: {
+        type: 'calendar',
         date: snoozeTime,
-      },
+      }as Notifications.NotificationTriggerInput,
       identifier: `snooze-${prayerName}-${snoozeTime.toISOString()}`,
     });
   }
@@ -247,8 +254,10 @@ class NotificationService {
         data: { type: 'test' },
       },
       trigger: {
-        seconds: 2,
-      },
+        type: 'timeInterval',
+        seconds: Math.max(2, Date.now() - Date.now()),
+        repeats: false,
+      } as Notifications.NotificationTriggerInput,
     });
   }
 
@@ -264,10 +273,10 @@ class NotificationService {
   // Clean up
   cleanup() {
     if (this.notificationListener) {
-      Notifications.removeNotificationSubscription(this.notificationListener);
+      this.notificationListener.remove();
     }
     if (this.responseListener) {
-      Notifications.removeNotificationSubscription(this.responseListener);
+      this.responseListener.remove();
     }
   }
 }
