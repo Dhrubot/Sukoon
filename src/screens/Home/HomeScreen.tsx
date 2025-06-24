@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
+  ColorValue,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -115,7 +116,7 @@ const HomeScreen = ({ navigation }: any) => {
     navigation.navigate('MindfulnessFlow', { prayer: prayerTime });
   };
 
-  const getBackgroundGradient = (): string[] => {
+  const getBackgroundGradient = (): readonly [ColorValue, ColorValue]  => {
     const hour = currentTime.getHours();
     
     if (hour >= 4 && hour < 6) {
