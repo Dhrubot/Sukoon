@@ -11,6 +11,8 @@ Notifications.setNotificationHandler({
     shouldShowAlert: true,
     shouldPlaySound: true,
     shouldSetBadge: true,
+    shouldShowBanner: true,
+    shouldShowList: true,
   }),
 });
 
@@ -86,7 +88,15 @@ class NotificationService {
           console.log('Prepare for prayer:', prayer);
         } else if (action === 'snooze') {
           // Snooze for 10 minutes
-          this.snoozePrayerNotification(prayer, 10);
+          // Add type guard to ensure prayer is a valid PrayerName
+          const isValidPrayer = (p: unknown): p is PrayerName => 
+            typeof p === 'string' && ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'].includes(p);
+          
+          if (isValidPrayer(prayer)) {
+            this.snoozePrayerNotification(prayer, 10);
+          } else {
+            console.error('Invalid prayer name received in notification:', prayer);
+          }
         }
       }
     );
