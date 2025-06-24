@@ -1,5 +1,5 @@
 // Prayer related types
-export type PrayerName = 'fajr' | 'dhuhr' | 'asr' | 'maghrib' | 'isha';
+export type PrayerName = 'Fajr' | 'Dhuhr' | 'Asr' | 'Maghrib' | 'Isha';
 
 export interface PrayerTime {
   name: PrayerName;
@@ -9,13 +9,13 @@ export interface PrayerTime {
 }
 
 export interface PrayerTimes {
-  fajr: string;
-  sunrise: string;
-  dhuhr: string;
-  asr: string;
-  maghrib: string;
-  isha: string;
-  midnight: string;
+  Fajr: string;
+  Sunrise: string;
+  Dhuhr: string;
+  Asr: string;
+  Maghrib: string;
+  Isha: string;
+  Midnight: string;
 }
 
 export interface PrayerRecord {
@@ -57,11 +57,11 @@ export interface UserSettings {
   calculationMethod: CalculationMethod;
   asrJuristic: 'Standard' | 'Hanafi';
   adjustments: {
-    fajr: number;
-    dhuhr: number;
-    asr: number;
-    maghrib: number;
-    isha: number;
+    Fajr: number;
+    Dhuhr: number;
+    Asr: number;
+    Maghrib: number;
+    Isha: number;
   };
   notifications: {
     enabled: boolean;
