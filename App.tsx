@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { createStackNavigator } from '@react-navigation/stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { View, Text, ActivityIndicator, Modal, TextInput, StyleSheet, TouchableOpacity, KeyboardAvoidingView, Platform } from 'react-native';
 
@@ -15,6 +16,7 @@ import LocationService from './src/services/LocationService';
 import HomeScreen from './src/screens/Home/HomeScreen';
 import StatsScreen from './src/screens/Stats/StatsScreen';
 import SettingsScreen from './src/screens/Settings/SettingsScreen';
+import MindfulnessFlow from './src/screens/Mindfulness/MindfulnessFlow';
 
 // Store
 import { useStore } from './src/store/useStore';
@@ -23,6 +25,7 @@ import { useStore } from './src/store/useStore';
 import { Location as LocationType } from './src/types';
 
 const Tab = createBottomTabNavigator();
+const Stack = createStackNavigator();
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -175,7 +178,7 @@ export default function App() {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
         <ActivityIndicator size="large" color="#1B5E3F" />
-        <Text style={{ marginTop: 20, fontSize: 16 }}>Loading Prayer Buddy...</Text>
+        <Text style={{ marginTop: 20, fontSize: 16 }}>Preparing your prayer companion...</Text>
       </View>
     );
   }
@@ -256,55 +259,63 @@ export default function App() {
             </View>
           </KeyboardAvoidingView>
         </Modal>
-        
-        <Tab.Navigator
-          screenOptions={{
-            tabBarActiveTintColor: '#1B5E3F',
-            tabBarInactiveTintColor: '#757575',
-            headerShown: false,
-            tabBarStyle: {
-              borderTopWidth: 1,
-              borderTopColor: '#E0E0E0',
-              paddingBottom: 5,
-              paddingTop: 5,
-              height: 60,
-            },
-          }}
-        >
-          <Tab.Screen
-            name="Home"
-            component={HomeScreen}
-            options={{
-              tabBarLabel: 'Prayer Times',
-              tabBarIcon: ({ color, size }) => (
-                <Text style={{ fontSize: size, color }}>🕌</Text>
-              ),
-            }}
-          />
-          <Tab.Screen
-            name="Stats"
-            component={StatsScreen}
-            options={{
-              tabBarLabel: 'Progress',
-              tabBarIcon: ({ color, size }) => (
-                <Text style={{ fontSize: size, color }}>📊</Text>
-              ),
-            }}
-          />
-          <Tab.Screen
-            name="Settings"
-            component={SettingsScreen}
-            options={{
-              tabBarLabel: 'Settings',
-              tabBarIcon: ({ color, size }) => (
-                <Text style={{ fontSize: size, color }}>⚙️</Text>
-              ),
-            }}
-          />
-        </Tab.Navigator>
+        <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Screen name="MainTabs" component={MainTabs} />
+          <Stack.Screen name="MindfulnessFlow" component={MindfulnessFlow} options={{ presentation: 'modal' }}/>
+        </Stack.Navigator>
       </NavigationContainer>
     </SafeAreaProvider>
   );
+}
+
+const MainTabs = () => {
+  return (
+    <Tab.Navigator
+    screenOptions={{
+      tabBarActiveTintColor: '#1B5E3F',
+      tabBarInactiveTintColor: '#757575',
+      headerShown: false,
+      tabBarStyle: {
+        borderTopWidth: 1,
+        borderTopColor: '#E0E0E0',
+        paddingBottom: 5,
+        paddingTop: 5,
+        height: 60,
+      },
+    }}
+  >
+    <Tab.Screen
+      name="Home"
+      component={HomeScreen}
+      options={{
+        tabBarLabel: 'Prayer Times',
+        tabBarIcon: ({ color, size }) => (
+          <Text style={{ fontSize: size, color }}>🕌</Text>
+        ),
+      }}
+    />
+    <Tab.Screen
+      name="Stats"
+      component={StatsScreen}
+      options={{
+        tabBarLabel: 'Progress',
+        tabBarIcon: ({ color, size }) => (
+          <Text style={{ fontSize: size, color }}>📊</Text>
+        ),
+      }}
+    />
+    <Tab.Screen
+      name="Settings"
+      component={SettingsScreen}
+      options={{
+        tabBarLabel: 'Settings',
+        tabBarIcon: ({ color, size }) => (
+          <Text style={{ fontSize: size, color }}>⚙️</Text>
+        ),
+      }}
+    />
+  </Tab.Navigator>
+  )
 }
 
 const styles = StyleSheet.create({
