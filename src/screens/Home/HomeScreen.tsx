@@ -90,7 +90,7 @@ const HomeScreen = ({ navigation }: any) => {
 
   const updateGreeting = () => {
     const hour = new Date().getHours();
-    const name = userSettings?.name || '';
+    const name = userSettings?.name || 'Friend';
     
     if (hour < 5) {
       setGreeting(`Night prayers, ${name} 🌙`);

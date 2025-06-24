@@ -244,6 +244,17 @@ class StorageService {
     return false;
   }
 
+  // Get generic value
+  getValue(key: string): string | null {
+    const value = this.storage.getString(key);
+    return value === undefined ? null : value;
+  }
+
+  // Set generic value
+  setValue(key: string, value: string): void {
+    this.storage.set(key, value);
+  }
+
   // Clear all data
   clearAllData(): void {
     this.storage.clearAll();

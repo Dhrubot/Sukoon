@@ -24,6 +24,7 @@ const CALCULATION_METHOD_MAP: Record<CalculationMethod, number> = {
 export class PrayerTimeService {
   private static instance: PrayerTimeService;
   private cachedTimes: Map<string, PrayerTimes> = new Map();
+  private cachedLocations: Map<string, Coordinates> = new Map();
   
   static getInstance(): PrayerTimeService {
     if (!PrayerTimeService.instance) {
@@ -237,6 +238,34 @@ export class PrayerTimeService {
    */
   clearCache(): void {
     this.cachedTimes.clear();
+  }
+
+  /**
+   * Check if we already have cached prayer times for a specific date and location
+   */
+  hasCachedPrayerTimes(
+    coordinates: Coordinates,
+    date: Date,
+    method: CalculationMethod = 'MWL'
+  ): boolean {
+    const dateStr = format(date, 'dd-MM-yyyy');
+    const cacheKey = `${coordinates.latitude}-${coordinates.longitude}-${dateStr}-${method}`;
+    return this.cachedTimes.has(cacheKey);
+  }
+
+  /**
+   * Cache coordinates for a city/country combination to avoid repeated geocoding
+   */
+  cacheLocationCoordinates(cityCountry: string, coordinates: Coordinates): void {
+    this.cachedLocations.set(cityCountry.toLowerCase(), coordinates);
+  }
+
+  /**
+   * Check if we have cached coordinates for a city/country combination
+   */
+  getCachedLocationCoordinates(cityCountry: string): Coordinates | null {
+    const coords = this.cachedLocations.get(cityCountry.toLowerCase());
+    return coords || null;
   }
 }
 
