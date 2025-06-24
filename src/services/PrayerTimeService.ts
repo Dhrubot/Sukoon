@@ -152,7 +152,13 @@ export class PrayerTimeService {
   /**
    * Parse time string to Date object
    */
-  private parseTimeToDate(timeStr: string, date: Date): Date {
+  private parseTimeToDate(timeStr: string | undefined, date: Date): Date {
+    // Handle undefined or invalid time strings
+    if (!timeStr) {
+      console.warn('Received undefined time string in parseTimeToDate');
+      return new Date(date); // Return the date with default time (midnight)
+    }
+    
     const [hours, minutes] = timeStr.split(':').map(Number);
     const result = new Date(date);
     result.setHours(hours, minutes, 0, 0);
