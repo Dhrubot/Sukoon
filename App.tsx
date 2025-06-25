@@ -17,6 +17,7 @@ import HomeScreen from './src/screens/Home/HomeScreen';
 import StatsScreen from './src/screens/Stats/StatsScreen';
 import SettingsScreen from './src/screens/Settings/SettingsScreen';
 import MindfulnessFlow from './src/screens/Mindfulness/MindfulnessFlow';
+import OnboardingScreen from './src/screens/Onboarding/OnboardingScreen';
 
 // Store
 import { useStore } from './src/store/useStore';
@@ -180,6 +181,12 @@ export default function App() {
         <ActivityIndicator size="large" color="#1B5E3F" />
         <Text style={{ marginTop: 20, fontSize: 16 }}>Preparing your prayer companion...</Text>
       </View>
+    );
+  }
+
+  if (isFirstLaunch) {
+    return (
+      <OnboardingScreen onComplete={() => setIsFirstLaunch(false)} />
     );
   }
 

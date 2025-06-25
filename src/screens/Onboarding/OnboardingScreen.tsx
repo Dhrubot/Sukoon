@@ -1,0 +1,341 @@
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
+import * as Location from 'expo-location';
+import * as Notifications from 'expo-notifications';
+
+import StorageService from '../../services/StorageService';
+import { useStore } from '../../store/useStore';
+import { CALCULATION_METHODS } from '../../constants';
+
+interface OnboardingScreenProps {
+  onComplete: () => void;
+}
+
+type OnboardingStep = 'welcome' | 'name' | 'location' | 'notifications' | 'method';
+
+const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
+  const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome');
+  const [name, setName] = useState('');
+  const [selectedMethod, setSelectedMethod] = useState('MWL');
+  
+  const { setUserSettings } = useStore();
+
+  const handleNext = () => {
+    switch (currentStep) {
+      case 'welcome':
+        setCurrentStep('name');
+        break;
+      case 'name':
+        setCurrentStep('location');
+        break;
+      case 'location':
+        setCurrentStep('notifications');
+        break;
+      case 'notifications':
+        setCurrentStep('method');
+        break;
+      case 'method':
+        completeOnboarding();
+        break;
+    }
+  };
+
+  const requestLocationPermission = async () => {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status === 'granted') {
+      handleNext();
+    }
+  };
+
+  const requestNotificationPermission = async () => {
+    const { status } = await Notifications.requestPermissionsAsync();
+    handleNext(); // Continue even if denied
+  };
+
+  const completeOnboarding = async () => {
+    const settings = StorageService.getDefaultSettings();
+    settings.name = name;
+    settings.calculationMethod = selectedMethod as any;
+    
+    StorageService.setUserSettings(settings);
+    setUserSettings(settings);
+    
+    onComplete();
+  };
+
+  const renderStep = () => {
+    switch (currentStep) {
+      case 'welcome':
+        return (
+          <View style={styles.stepContainer}>
+            <Text style={styles.emoji}>🕌</Text>
+            <Text style={styles.title}>Welcome to PrayerBuddy</Text>
+            <Text style={styles.subtitle}>
+              Your companion for mindful prayer and spiritual growth
+            </Text>
+            <Text style={styles.description}>
+              Let's set up your prayer times and help you build a consistent prayer habit
+            </Text>
+            <TouchableOpacity style={styles.button} onPress={handleNext}>
+              <Text style={styles.buttonText}>Get Started</Text>
+            </TouchableOpacity>
+          </View>
+        );
+
+      case 'name':
+        return (
+          <View style={styles.stepContainer}>
+            <Text style={styles.emoji}>👋</Text>
+            <Text style={styles.title}>Assalamu Alaikum!</Text>
+            <Text style={styles.subtitle}>What should we call you?</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Your name"
+              placeholderTextColor="rgba(255, 255, 255, 0.5)"
+              value={name}
+              onChangeText={setName}
+              autoFocus
+              returnKeyType="done"
+              onSubmitEditing={handleNext}
+            />
+            <TouchableOpacity 
+              style={[styles.button, !name && styles.buttonDisabled]} 
+              onPress={handleNext}
+              disabled={!name}
+            >
+              <Text style={styles.buttonText}>Continue</Text>
+            </TouchableOpacity>
+          </View>
+        );
+
+      case 'location':
+        return (
+          <View style={styles.stepContainer}>
+            <Text style={styles.emoji}>📍</Text>
+            <Text style={styles.title}>Prayer Times</Text>
+            <Text style={styles.subtitle}>
+              We need your location to calculate accurate prayer times
+            </Text>
+            <Text style={styles.description}>
+              Your location data stays on your device and is never shared
+            </Text>
+            <TouchableOpacity style={styles.button} onPress={requestLocationPermission}>
+              <Text style={styles.buttonText}>Allow Location Access</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleNext}>
+              <Text style={styles.skipText}>Skip for now</Text>
+            </TouchableOpacity>
+          </View>
+        );
+
+      case 'notifications':
+        return (
+          <View style={styles.stepContainer}>
+            <Text style={styles.emoji}>🔔</Text>
+            <Text style={styles.title}>Prayer Reminders</Text>
+            <Text style={styles.subtitle}>
+              Get gentle reminders for each prayer time
+            </Text>
+            <Text style={styles.description}>
+              We'll notify you 10 minutes before each prayer so you can prepare mindfully
+            </Text>
+            <TouchableOpacity style={styles.button} onPress={requestNotificationPermission}>
+              <Text style={styles.buttonText}>Enable Notifications</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleNext}>
+              <Text style={styles.skipText}>Skip for now</Text>
+            </TouchableOpacity>
+          </View>
+        );
+
+      case 'method':
+        return (
+          <ScrollView contentContainerStyle={styles.stepContainer}>
+            <Text style={styles.emoji}>🕌</Text>
+            <Text style={styles.title}>Calculation Method</Text>
+            <Text style={styles.subtitle}>
+              Choose your preferred prayer time calculation method
+            </Text>
+            <View style={styles.methodList}>
+              {CALCULATION_METHODS.map((method) => (
+                <TouchableOpacity
+                  key={method.value}
+                  style={[
+                    styles.methodOption,
+                    selectedMethod === method.value && styles.methodOptionSelected,
+                  ]}
+                  onPress={() => setSelectedMethod(method.value)}
+                >
+                  <Text style={[
+                    styles.methodText,
+                    selectedMethod === method.value && styles.methodTextSelected,
+                  ]}>
+                    {method.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+            <TouchableOpacity style={styles.button} onPress={handleNext}>
+              <Text style={styles.buttonText}>Complete Setup</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        );
+    }
+  };
+
+  const getProgress = () => {
+    const steps = ['welcome', 'name', 'location', 'notifications', 'method'];
+    return (steps.indexOf(currentStep) + 1) / steps.length;
+  };
+
+  return (
+    <LinearGradient colors={['#1B5E3F', '#14432B']} style={styles.container}>
+      <SafeAreaView style={styles.safeArea}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardAvoid}
+        >
+          {/* Progress bar */}
+          <View style={styles.progressContainer}>
+            <View style={styles.progressBar}>
+              <View 
+                style={[styles.progressFill, { width: `${getProgress() * 100}%` }]} 
+              />
+            </View>
+          </View>
+
+          {renderStep()}
+        </KeyboardAvoidingView>
+      </SafeAreaView>
+    </LinearGradient>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+  },
+  safeArea: {
+    flex: 1,
+  },
+  keyboardAvoid: {
+    flex: 1,
+  },
+  progressContainer: {
+    paddingHorizontal: 40,
+    paddingTop: 20,
+  },
+  progressBar: {
+    height: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 2,
+  },
+  stepContainer: {
+    flex: 1,
+    paddingHorizontal: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emoji: {
+    fontSize: 80,
+    marginBottom: 32,
+  },
+  title: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  subtitle: {
+    fontSize: 18,
+    color: 'rgba(255, 255, 255, 0.9)',
+    textAlign: 'center',
+    marginBottom: 16,
+    lineHeight: 26,
+  },
+  description: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.7)',
+    textAlign: 'center',
+    marginBottom: 40,
+    lineHeight: 24,
+  },
+  input: {
+    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    fontSize: 18,
+    color: '#FFFFFF',
+    width: '100%',
+    marginBottom: 32,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  button: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 48,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  buttonDisabled: {
+    opacity: 0.5,
+  },
+  buttonText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  skipText: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.6)',
+    marginTop: 20,
+  },
+  methodList: {
+    width: '100%',
+    marginBottom: 32,
+  },
+  methodOption: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
+    paddingVertical: 16,
+    paddingHorizontal: 20,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  methodOptionSelected: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: '#FFFFFF',
+  },
+  methodText: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.8)',
+  },
+  methodTextSelected: {
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+});
+
+export default OnboardingScreen;
