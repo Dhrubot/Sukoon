@@ -132,6 +132,14 @@ const HomeScreen = ({ navigation }: any) => {
     }
   };
 
+  const getNextMilestone = (current: number): number => {
+    if (current < 3) return 3;
+    if (current < 7) return 7;
+    if (current < 30) return 30;
+    if (current < 100) return 100;
+    return 365;
+  };
+
   const completedToday = todayPrayerRecords.filter(r => r.status === 'prayed').length;
 
   return (
@@ -173,7 +181,7 @@ const HomeScreen = ({ navigation }: any) => {
           <QuickStats
             prayersToday={completedToday}
             streak={currentStreak}
-            nextMilestone={currentStreak > 0 ? Math.ceil(currentStreak / 7) * 7 : 7}
+            nextMilestone={getNextMilestone(currentStreak)}
           />
 
           {/* Today's Prayers */}

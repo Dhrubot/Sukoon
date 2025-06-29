@@ -1,18 +1,18 @@
-import { MMKV } from 'react-native-mmkv';
-import { 
-  UserSettings, 
-  PrayerRecord, 
+import { MMKV } from "react-native-mmkv";
+import {
+  UserSettings,
+  PrayerRecord,
   MindfulnessSession,
   DailyStats,
   Achievement,
   Location,
-  CalculationMethod 
-} from '../types';
-import { createStorage } from './StorageAdapter';
+  CalculationMethod,
+} from "../types";
+import { createStorage } from "./StorageAdapter";
 
 class StorageService {
   // private storage: MMKV;
-  
+
   // constructor() {
   //   this.storage = new MMKV({
   //     id: 'prayer-buddy-storage',
@@ -21,22 +21,22 @@ class StorageService {
   // }
 
   private storage;
-  
+
   constructor() {
     this.storage = createStorage({
-      id: 'prayer-buddy-storage',
-      encryptionKey: 'prayer-buddy-encryption-key' // In production, generate secure key
+      id: "prayer-buddy-storage",
+      encryptionKey: "prayer-buddy-encryption-key", // In production, generate secure key
     });
   }
 
   // User Settings
   getUserSettings(): UserSettings | null {
-    const data = this.storage.getString('user_settings');
+    const data = this.storage.getString("user_settings");
     return data ? JSON.parse(data) : null;
   }
 
   setUserSettings(settings: UserSettings): void {
-    this.storage.set('user_settings', JSON.stringify(settings));
+    this.storage.set("user_settings", JSON.stringify(settings));
   }
 
   updateUserSettings(updates: Partial<UserSettings>): void {
@@ -51,26 +51,27 @@ class StorageService {
       location: {
         latitude: 0,
         longitude: 0,
-        city: 'Unknown',
-        country: 'Unknown'
+        city: "Unknown",
+        country: "Unknown",
       },
-      calculationMethod: 'MWL',
-      asrJuristic: 'Standard',
+      calculationMethod: "MWL",
+      asrJuristic: "Standard",
       adjustments: {
         Fajr: 0,
         Dhuhr: 0,
         Asr: 0,
         Maghrib: 0,
-        Isha: 0
+        Isha: 0,
       },
       notifications: {
         enabled: true,
         soundEnabled: true,
         vibrationEnabled: true,
         beforePrayer: 10,
-        reminderText: 'Time for {prayer} prayer 🕌'
+        reminderText: "Time for {prayer} prayer 🕌",
+        postPrayerCheck: false,
       },
-      theme: 'auto'
+      theme: "auto",
     };
   }
 
@@ -78,7 +79,7 @@ class StorageService {
   savePrayerRecord(record: PrayerRecord): void {
     const key = `prayer_${record.date}_${record.prayer}`;
     this.storage.set(key, JSON.stringify(record));
-    
+
     // Update daily stats
     this.updateDailyStats(record.date);
   }
@@ -90,14 +91,14 @@ class StorageService {
   }
 
   getDayPrayerRecords(date: string): PrayerRecord[] {
-    const prayers = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'];
+    const prayers = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
     const records: PrayerRecord[] = [];
-    
-    prayers.forEach(prayer => {
+
+    prayers.forEach((prayer) => {
       const record = this.getPrayerRecord(date, prayer);
       if (record) records.push(record);
     });
-    
+
     return records;
   }
 
@@ -105,9 +106,9 @@ class StorageService {
   saveMindfulnessSession(session: MindfulnessSession): void {
     const key = `mindfulness_${session.id}`;
     this.storage.set(key, JSON.stringify(session));
-    
+
     // Link to prayer record
-    const date = new Date(session.startedAt).toISOString().split('T')[0];
+    const date = new Date(session.startedAt).toISOString().split("T")[0];
     const prayerRecord = this.getPrayerRecord(date, session.prayerName);
     if (prayerRecord) {
       prayerRecord.mindfulnessCompleted = true;
@@ -132,113 +133,293 @@ class StorageService {
 
   updateDailyStats(date: string): void {
     const records = this.getDayPrayerRecords(date);
-    const prayedCount = records.filter(r => r.status === 'prayed').length;
-    const mindfulnessCount = records.filter(r => r.mindfulnessCompleted).length;
-    const focusScores = records.filter(r => r.focusScore).map(r => r.focusScore!);
-    
+    const prayedCount = records.filter((r) => r.status === "prayed").length;
+    const mindfulnessCount = records.filter(
+      (r) => r.mindfulnessCompleted
+    ).length;
+    const focusScores = records
+      .filter((r) => r.focusScore)
+      .map((r) => r.focusScore!);
+
     const stats: DailyStats = {
       date,
       prayersCompleted: prayedCount,
       totalPrayers: 5,
       mindfulnessSessions: mindfulnessCount,
-      averageFocusScore: focusScores.length > 0 
-        ? focusScores.reduce((a, b) => a + b, 0) / focusScores.length 
-        : 0
+      averageFocusScore:
+        focusScores.length > 0
+          ? focusScores.reduce((a, b) => a + b, 0) / focusScores.length
+          : 0,
     };
-    
+
     this.storage.set(`daily_stats_${date}`, JSON.stringify(stats));
   }
 
   // Streaks
   getCurrentStreak(): number {
-    return this.storage.getNumber('current_streak') || 0;
+    return this.storage.getNumber("current_streak") || 0;
   }
 
   updateStreak(): void {
-    const today = new Date().toISOString().split('T')[0];
-    const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0];
-    
+    const today = new Date().toISOString().split("T")[0];
+    const yesterday = new Date(Date.now() - 86400000)
+      .toISOString()
+      .split("T")[0];
+
     const todayStats = this.getDailyStats(today);
     const yesterdayStats = this.getDailyStats(yesterday);
-    
+
     if (todayStats && todayStats.prayersCompleted === 5) {
       if (yesterdayStats && yesterdayStats.prayersCompleted === 5) {
         // Continue streak
         const current = this.getCurrentStreak();
-        this.storage.set('current_streak', current + 1);
+        this.storage.set("current_streak", current + 1);
       } else {
         // Start new streak
-        this.storage.set('current_streak', 1);
+        this.storage.set("current_streak", 1);
       }
     } else if (yesterdayStats && yesterdayStats.prayersCompleted < 5) {
       // Break streak
-      this.storage.set('current_streak', 0);
+      this.storage.set("current_streak", 0);
     }
-    
+
     // Update longest streak
     const current = this.getCurrentStreak();
-    const longest = this.storage.getNumber('longest_streak') || 0;
+    const longest = this.storage.getNumber("longest_streak") || 0;
     if (current > longest) {
-      this.storage.set('longest_streak', current);
+      this.storage.set("longest_streak", current);
     }
+  }
+
+  // Get longest streak ever recorded
+  getLongestStreak(): number {
+    return this.storage.getNumber("longest_streak") || 0;
+  }
+
+  // Get prayer records for a date range
+  getPrayerRecordsInRange(startDate: Date, endDate: Date): PrayerRecord[] {
+    const records: PrayerRecord[] = [];
+    const currentDate = new Date(startDate);
+
+    while (currentDate <= endDate) {
+      const dateStr = currentDate.toISOString().split("T")[0];
+      const dayRecords = this.getDayPrayerRecords(dateStr);
+      records.push(...dayRecords);
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return records;
+  }
+
+  // Get statistics for a date range
+  getStatsInRange(
+    startDate: Date,
+    endDate: Date
+  ): {
+    totalPossiblePrayers: number;
+    completedPrayers: number;
+    mindfulnessSessions: number;
+    averageFocusScore: number;
+    prayerBreakdown: Record<string, number>;
+  } {
+    const records = this.getPrayerRecordsInRange(startDate, endDate);
+    const dayCount =
+      Math.ceil(
+        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24)
+      ) + 1;
+
+    const stats = {
+      totalPossiblePrayers: dayCount * 5,
+      completedPrayers: 0,
+      mindfulnessSessions: 0,
+      averageFocusScore: 0,
+      prayerBreakdown: {
+        fajr: 0,
+        dhuhr: 0,
+        asr: 0,
+        maghrib: 0,
+        isha: 0,
+      },
+    };
+
+    const focusScores: number[] = [];
+
+    records.forEach((record) => {
+      if (record.status === "prayed") {
+        stats.completedPrayers++;
+        stats.prayerBreakdown[
+          record.prayer.toLowerCase() as keyof typeof stats.prayerBreakdown
+        ]++;
+
+        if (record.mindfulnessCompleted) {
+          stats.mindfulnessSessions++;
+        }
+
+        if (record.focusScore) {
+          focusScores.push(record.focusScore);
+        }
+      }
+    });
+
+    if (focusScores.length > 0) {
+      stats.averageFocusScore =
+        focusScores.reduce((a, b) => a + b, 0) / focusScores.length;
+    }
+
+    return stats;
+  }
+
+  // Export prayer data as JSON
+  exportPrayerData(): string {
+    const exportData = {
+      exportDate: new Date().toISOString(),
+      userSettings: this.getUserSettings(),
+      currentStreak: this.getCurrentStreak(),
+      longestStreak: this.getLongestStreak(),
+      achievements: this.getAchievements(),
+      prayers: [] as any[],
+      dailyStats: [] as any[],
+    };
+
+    // Get all prayer records (last 90 days)
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 90);
+
+    const currentDate = new Date(startDate);
+    while (currentDate <= endDate) {
+      const dateStr = currentDate.toISOString().split("T")[0];
+
+      // Get prayer records
+      const dayRecords = this.getDayPrayerRecords(dateStr);
+      if (dayRecords.length > 0) {
+        exportData.prayers.push({
+          date: dateStr,
+          records: dayRecords,
+        });
+      }
+
+      // Get daily stats
+      const dayStats = this.getDailyStats(dateStr);
+      if (dayStats) {
+        exportData.dailyStats.push(dayStats);
+      }
+
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return JSON.stringify(exportData, null, 2);
+  }
+
+  // Calculate prayer consistency percentage for a period
+  getConsistencyPercentage(days: number): number {
+    const endDate = new Date();
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days + 1);
+
+    const stats = this.getStatsInRange(startDate, endDate);
+    return stats.totalPossiblePrayers > 0
+      ? (stats.completedPrayers / stats.totalPossiblePrayers) * 100
+      : 0;
+  }
+
+  // Get prayer completion by time of day
+  getPrayerCompletionByTime(): Record<string, number> {
+    const last30Days = new Date();
+    last30Days.setDate(last30Days.getDate() - 30);
+
+    const records = this.getPrayerRecordsInRange(last30Days, new Date());
+    const completionRates = {
+      fajr: { completed: 0, total: 0 },
+      dhuhr: { completed: 0, total: 0 },
+      asr: { completed: 0, total: 0 },
+      maghrib: { completed: 0, total: 0 },
+      isha: { completed: 0, total: 0 },
+    };
+
+    // Count occurrences
+    const daysChecked = new Set<string>();
+    records.forEach((record) => {
+      const dateStr = record.date;
+      daysChecked.add(dateStr);
+
+      if (record.status === "prayed") {
+        completionRates[record.prayer.toLowerCase() as keyof typeof completionRates].completed++;
+      }
+    });
+
+    // Calculate total possible for each prayer
+    const totalDays = daysChecked.size;
+    Object.keys(completionRates).forEach((prayer) => {
+      completionRates[prayer as keyof typeof completionRates].total = totalDays;
+    });
+
+    // Return percentages
+    const percentages: Record<string, number> = {};
+    Object.entries(completionRates).forEach(([prayer, stats]) => {
+      percentages[prayer] =
+        stats.total > 0 ? Math.round((stats.completed / stats.total) * 100) : 0;
+    });
+
+    return percentages;
   }
 
   // Achievements
   getAchievements(): Achievement[] {
-    const data = this.storage.getString('achievements');
+    const data = this.storage.getString("achievements");
     return data ? JSON.parse(data) : this.getDefaultAchievements();
   }
 
   unlockAchievement(achievementId: string): void {
     const achievements = this.getAchievements();
-    const achievement = achievements.find(a => a.id === achievementId);
-    
+    const achievement = achievements.find((a) => a.id === achievementId);
+
     if (achievement && !achievement.unlockedAt) {
       achievement.unlockedAt = new Date();
-      this.storage.set('achievements', JSON.stringify(achievements));
+      this.storage.set("achievements", JSON.stringify(achievements));
     }
   }
 
   private getDefaultAchievements(): Achievement[] {
     return [
       {
-        id: 'first_prayer',
-        name: 'First Step',
-        description: 'Complete your first prayer',
-        icon: '🌟'
+        id: "first_prayer",
+        name: "First Step",
+        description: "Complete your first prayer",
+        icon: "🌟",
       },
       {
-        id: 'perfect_day',
-        name: 'Perfect Day',
-        description: 'Complete all 5 prayers in one day',
-        icon: '✨'
+        id: "perfect_day",
+        name: "Perfect Day",
+        description: "Complete all 5 prayers in one day",
+        icon: "✨",
       },
       {
-        id: 'week_streak',
-        name: 'Consistent Week',
-        description: 'Maintain a 7-day streak',
-        icon: '🔥'
+        id: "week_streak",
+        name: "Consistent Week",
+        description: "Maintain a 7-day streak",
+        icon: "🔥",
       },
       {
-        id: 'mindful_10',
-        name: 'Mindful Worshipper',
-        description: 'Complete 10 mindfulness sessions',
-        icon: '🧘'
+        id: "mindful_10",
+        name: "Mindful Worshipper",
+        description: "Complete 10 mindfulness sessions",
+        icon: "🧘",
       },
       {
-        id: 'reflection_master',
-        name: 'Reflection Master',
-        description: 'Add reflections to 20 prayers',
-        icon: '📝'
-      }
+        id: "reflection_master",
+        name: "Reflection Master",
+        description: "Add reflections to 20 prayers",
+        icon: "📝",
+      },
     ];
   }
 
   // First Launch
   isFirstLaunch(): boolean {
-    const launched = this.storage.getBoolean('has_launched');
+    const launched = this.storage.getBoolean("has_launched");
     if (!launched) {
-      this.storage.set('has_launched', true);
+      this.storage.set("has_launched", true);
       return true;
     }
     return false;
