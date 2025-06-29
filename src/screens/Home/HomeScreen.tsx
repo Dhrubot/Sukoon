@@ -23,11 +23,13 @@ import PrayerCard from "../../components/prayer/PrayerCard";
 import NextPrayerCard from "../../components/prayer/NextPrayerCard";
 import DailyVerse from "../../components/common/DailyVerse";
 import QuickStats from "../../components/stats/QuickStats";
+import DigitalWellnessCard from "../../components/digitalWellness/DigitalWellnessCard";
 
 // Types
 import { Achievement, PrayerTime } from "../../types";
 import AchievementService from "../../services/AchievementService";
 import AchievementCelebration from "../../components/achievements/AchievementCelebration";
+import UsageStatsService from "../../services/UsageStatsService";
 
 const { width } = Dimensions.get("window");
 
@@ -49,6 +51,7 @@ const HomeScreen = ({ navigation }: any) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [greeting, setGreeting] = useState("");
   const { celebratingAchievement, setCelebratingAchievement } = useStore();
+  const [screenTime, setScreenTime] = useState(0);
 
   useEffect(() => {
     loadPrayerTimes();
@@ -64,6 +67,19 @@ const HomeScreen = ({ navigation }: any) => {
 
     return () => clearInterval(timer);
   }, [location, userSettings?.calculationMethod]);
+
+  useEffect(() => {
+    const loadScreenTime = async () => {
+      try {
+        const data = await UsageStatsService.getTodayScreenTime();
+        setScreenTime(data?.totalScreenTime || 0);
+      } catch (error) {
+        console.error("Error loading screen time:", error);
+      }
+    };
+
+    loadScreenTime();
+  }, []);
 
   const loadPrayerTimes = async () => {
     if (!location) return;
@@ -193,6 +209,10 @@ const HomeScreen = ({ navigation }: any) => {
             streak={currentStreak}
             nextMilestone={getNextMilestone(currentStreak)}
           />
+          {/* Digital Wellness Card */}
+          <View style={styles.section}>
+            <DigitalWellnessCard screenTime={screenTime} />
+          </View>
 
           {/* Celebration */}
           {celebratingAchievement && (

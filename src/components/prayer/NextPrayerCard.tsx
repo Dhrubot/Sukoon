@@ -53,8 +53,8 @@ const NextPrayerCard: React.FC<NextPrayerCardProps> = ({ prayer, onPrepare }) =>
     return () => clearInterval(timer);
   }, [prayer]);
 
-  const getPrayerGradient = (name: string): string[] => {
-    const gradients: Record<string, string[]> = {
+  const getPrayerGradient = (name: string): [string, string] => {
+    const gradients: Record<string, [string, string]> = {
       fajr: ['#1a237e', '#3949ab'],
       dhuhr: ['#f57c00', '#ffb74d'],
       asr: ['#ff6f00', '#ffca28'],

@@ -143,3 +143,75 @@ export interface AladhanResponse {
     };
   };
 }
+
+export interface ScreenTimeData {
+  totalScreenTime: number; // minutes
+  unlockCount: number;
+  firstUnlock: Date | null;
+  lastUsed: Date | null;
+}
+
+export interface AppUsageData {
+  packageName: string;
+  appName: string;
+  timeSpent: number; // minutes
+  category: 'social' | 'productivity' | 'entertainment' | 'other';
+  icon?: string;
+}
+
+export interface UsageStats {
+  totalScreenTime: number; // minutes
+  unlockCount: number;
+  appUsage: AppUsageData[];
+  socialMediaTime: number; // minutes
+  productiveTime: number; // minutes
+}
+
+export interface DigitalWellnessInsight {
+  id: string;
+  type: 'warning' | 'achievement' | 'tip';
+  title: string;
+  description: string;
+  icon: string;
+  actionable?: {
+    label: string;
+    action: () => void;
+  };
+}
+
+export interface PrePrayerUsage {
+  prayer: PrayerName;
+  screenTime: number; // minutes in 30 min before prayer
+  unlockCount: number;
+  topApp?: string;
+  focusScore: number; // 0-100 based on usage
+}
+
+export interface DigitalWellnessGoal {
+  id: string;
+  type: 'daily_limit' | 'app_limit' | 'unlock_limit' | 'prayer_focus';
+  target: number;
+  current: number;
+  unit: 'minutes' | 'times' | 'score';
+  period: 'daily' | 'weekly';
+  createdAt: Date;
+}
+
+// Update DailyStats to include digital wellness
+export interface DailyStats {
+  date: string;
+  prayersCompleted: number;
+  totalPrayers: number;
+  mindfulnessSessions: number;
+  averageFocusScore: number;
+  // Add digital wellness stats
+  screenTimeMinutes?: number;
+  unlockCount?: number;
+  socialMediaMinutes?: number;
+  prePrayerDistractions?: {
+    [key in PrayerName]?: {
+      screenTime: number;
+      unlocks: number;
+    };
+  };
+}

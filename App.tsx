@@ -38,6 +38,7 @@ import { useStore } from "./src/store/useStore";
 // Types
 import { Location as LocationType, PrayerName } from "./src/types";
 import AchievementsScreen from "./src/screens/Achievements/AchievementsScreen";
+import DigitalWellnessScreen from "./src/screens/DigitalWellness/DigitalWellnessScreen";
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
@@ -395,6 +396,16 @@ const MainTabs = () => {
           tabBarIcon: ({ color, size }) => (
             <Text style={{ fontSize: size }}>🏆</Text>
           ),
+        }}
+      />
+      <Tab.Screen
+        name="DigitalWellness"
+        component={DigitalWellnessScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Text style={{ fontSize: size }}>📱</Text>
+          ),
+          tabBarLabel: "Digital",
         }}
       />
       <Tab.Screen
