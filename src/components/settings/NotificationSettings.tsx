@@ -1,0 +1,358 @@
+import React, { useState, useEffect } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Switch,
+  TouchableOpacity,
+  ScrollView,
+  Alert,
+  Platform,
+} from 'react-native';
+import Slider from '@react-native-community/slider';
+import * as Haptics from 'expo-haptics';
+import { useStore } from '../../store/useStore';
+import NotificationService from '../../services/NotificationService';
+import StorageService from '../../services/StorageService';
+
+const NotificationSettings: React.FC = () => {
+  const { userSettings, setUserSettings } = useStore();
+  const [localSettings, setLocalSettings] = useState(userSettings?.notifications || {
+    enabled: true,
+    soundEnabled: true,
+    beforePrayer: 10,
+    vibrationEnabled: true,
+    postPrayerCheck: true,
+    reminderText: "Time for {prayer} prayer 🕌",
+  });
+  const [isUpdating, setIsUpdating] = useState(false);
+
+  const reminderOptions = [0, 5, 10, 15, 20, 30];
+
+  useEffect(() => {
+    if (userSettings?.notifications) {
+      setLocalSettings(userSettings.notifications);
+    }
+  }, [userSettings]);
+
+  const handleToggleNotifications = async (value: boolean) => {
+    setLocalSettings({ ...localSettings, enabled: value });
+    
+    if (value) {
+      // Check permissions
+      const hasPermission = await NotificationService.initialize();
+      if (!hasPermission) {
+        Alert.alert(
+          'Permission Required',
+          'Please enable notifications in your device settings to receive prayer reminders.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => {
+              if (Platform.OS === 'ios') {
+                // @ts-ignore
+                Linking.openURL('app-settings:');
+              } else {
+                // @ts-ignore
+                Linking.openSettings();
+              }
+            }},
+          ]
+        );
+        setLocalSettings({ ...localSettings, enabled: false });
+        return;
+      }
+    }
+
+    await updateSettings({ enabled: value });
+  };
+
+  const updateSettings = async (updates: Partial<typeof localSettings>) => {
+    setIsUpdating(true);
+    const newSettings = { ...localSettings, ...updates };
+    setLocalSettings(newSettings);
+
+    try {
+      await NotificationService.updateNotificationSettings(newSettings);
+      
+      if (userSettings) {
+        const updated = {
+          ...userSettings,
+          notifications: newSettings,
+        };
+        StorageService.setUserSettings(updated);
+        setUserSettings(updated);
+      }
+
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error) {
+      console.error('Failed to update notification settings:', error);
+      Alert.alert('Error', 'Failed to update notification settings');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const testNotification = async () => {
+    await NotificationService.sendTestNotification();
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+  };
+
+  const showScheduledNotifications = async () => {
+    const scheduled = await NotificationService.getScheduledNotifications();
+    Alert.alert(
+      'Scheduled Notifications',
+      `You have ${scheduled.length} prayer notifications scheduled for the next 48 hours.`,
+      [{ text: 'OK' }]
+    );
+  };
+
+  return (
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* Main Toggle */}
+      <View style={styles.section}>
+        <View style={styles.settingRow}>
+          <View style={styles.settingInfo}>
+            <Text style={styles.settingLabel}>Prayer Notifications</Text>
+            <Text style={styles.settingDescription}>
+              Receive reminders for all five daily prayers
+            </Text>
+          </View>
+          <Switch
+            value={localSettings.enabled}
+            onValueChange={handleToggleNotifications}
+            trackColor={{ false: '#E0E0E0', true: '#81C784' }}
+            thumbColor={localSettings.enabled ? '#4CAF50' : '#f4f3f4'}
+            disabled={isUpdating}
+          />
+        </View>
+      </View>
+
+      {localSettings.enabled && (
+        <>
+          {/* Pre-Prayer Reminder */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Pre-Prayer Reminder</Text>
+            <Text style={styles.settingDescription}>
+              Get notified before prayer time to prepare
+            </Text>
+            
+            <View style={styles.reminderOptions}>
+              {reminderOptions.map((minutes) => (
+                <TouchableOpacity
+                  key={minutes}
+                  style={[
+                    styles.reminderOption,
+                    localSettings.beforePrayer === minutes && styles.reminderOptionActive,
+                  ]}
+                  onPress={() => updateSettings({ beforePrayer: minutes })}
+                >
+                  <Text
+                    style={[
+                      styles.reminderOptionText,
+                      localSettings.beforePrayer === minutes && styles.reminderOptionTextActive,
+                    ]}
+                  >
+                    {minutes === 0 ? 'Off' : `${minutes} min`}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Sound Settings */}
+          <View style={styles.section}>
+            <View style={styles.settingRow}>
+              <View style={styles.settingInfo}>
+                <Text style={styles.settingLabel}>Notification Sound</Text>
+                <Text style={styles.settingDescription}>
+                  Play sound with notifications
+                </Text>
+              </View>
+              <Switch
+                value={localSettings.soundEnabled}
+                onValueChange={(value) => updateSettings({ soundEnabled: value })}
+                trackColor={{ false: '#E0E0E0', true: '#81C784' }}
+                thumbColor={localSettings.soundEnabled ? '#4CAF50' : '#f4f3f4'}
+              />
+            </View>
+          </View>
+
+          {/* Vibration Settings */}
+          <View style={styles.section}>
+            <View style={styles.settingRow}>
+              <View style={styles.settingInfo}>
+                <Text style={styles.settingLabel}>Vibration</Text>
+                <Text style={styles.settingDescription}>
+                  Vibrate with notifications
+                </Text>
+              </View>
+              <Switch
+                value={localSettings.vibrationEnabled}
+                onValueChange={(value) => updateSettings({ vibrationEnabled: value })}
+                trackColor={{ false: '#E0E0E0', true: '#81C784' }}
+                thumbColor={localSettings.vibrationEnabled ? '#4CAF50' : '#f4f3f4'}
+              />
+            </View>
+          </View>
+
+          {/* Post-Prayer Check */}
+          <View style={styles.section}>
+            <View style={styles.settingRow}>
+              <View style={styles.settingInfo}>
+                <Text style={styles.settingLabel}>Post-Prayer Check</Text>
+                <Text style={styles.settingDescription}>
+                  Remind me to mark prayers 15 min after prayer time
+                </Text>
+              </View>
+              <Switch
+                value={localSettings.postPrayerCheck}
+                onValueChange={(value) => updateSettings({ postPrayerCheck: value })}
+                trackColor={{ false: '#E0E0E0', true: '#81C784' }}
+                thumbColor={localSettings.postPrayerCheck ? '#4CAF50' : '#f4f3f4'}
+              />
+            </View>
+          </View>
+
+          {/* Test & Debug */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Test Notifications</Text>
+            
+            <TouchableOpacity style={styles.button} onPress={testNotification}>
+              <Text style={styles.buttonText}>Send Test Notification</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              style={[styles.button, styles.secondaryButton]} 
+              onPress={showScheduledNotifications}
+            >
+              <Text style={[styles.buttonText, styles.secondaryButtonText]}>
+                View Scheduled Notifications
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Tips */}
+          <View style={styles.tipsSection}>
+            <Text style={styles.tipsTitle}>💡 Tips</Text>
+            <Text style={styles.tipText}>
+              • Notifications work best when the app has been opened recently
+            </Text>
+            <Text style={styles.tipText}>
+              • On some devices, you may need to disable battery optimization
+            </Text>
+            <Text style={styles.tipText}>
+              • Prayer times update automatically based on your location
+            </Text>
+          </View>
+        </>
+      )}
+    </ScrollView>
+  );
+};
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FAFAFA',
+  },
+  section: {
+    backgroundColor: '#FFFFFF',
+    marginBottom: 16,
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1B5E3F',
+    marginBottom: 12,
+  },
+  settingRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  settingInfo: {
+    flex: 1,
+    marginRight: 16,
+  },
+  settingLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#212121',
+    marginBottom: 4,
+  },
+  settingDescription: {
+    fontSize: 14,
+    color: '#757575',
+    lineHeight: 20,
+  },
+  reminderOptions: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+    marginTop: 16,
+  },
+  reminderOption: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 20,
+    backgroundColor: '#F5F5F5',
+    borderWidth: 1,
+    borderColor: '#E0E0E0',
+  },
+  reminderOptionActive: {
+    backgroundColor: '#E8F5E9',
+    borderColor: '#4CAF50',
+  },
+  reminderOptionText: {
+    fontSize: 14,
+    color: '#757575',
+  },
+  reminderOptionTextActive: {
+    color: '#1B5E3F',
+    fontWeight: '600',
+  },
+  button: {
+    backgroundColor: '#1B5E3F',
+    borderRadius: 8,
+    paddingVertical: 14,
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  secondaryButton: {
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: '#1B5E3F',
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
+  },
+  secondaryButtonText: {
+    color: '#1B5E3F',
+  },
+  tipsSection: {
+    backgroundColor: '#E8F5E9',
+    padding: 20,
+    marginBottom: 32,
+    borderRadius: 12,
+    marginHorizontal: 16,
+  },
+  tipsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1B5E3F',
+    marginBottom: 12,
+  },
+  tipText: {
+    fontSize: 14,
+    color: '#2E7D32',
+    lineHeight: 22,
+    marginBottom: 8,
+  },
+});
+
+export default NotificationSettings;
