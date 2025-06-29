@@ -43,6 +43,8 @@ interface AppState {
   // Achievements
   achievements: Achievement[];
   setAchievements: (achievements: Achievement[]) => void;
+  celebratingAchievement: Achievement | null;
+  setCelebratingAchievement: (achievement: Achievement | null) => void;
   
   // UI State
   isRefreshing: boolean;
@@ -97,6 +99,8 @@ export const useStore = create<AppState>((set) => ({
   // Achievements
   achievements: [],
   setAchievements: (achievements) => set({ achievements }),
+  celebratingAchievement: null,
+  setCelebratingAchievement: (achievement) => set({ celebratingAchievement: achievement }),
   
   // UI State
   isRefreshing: false,

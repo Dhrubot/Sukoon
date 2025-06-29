@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,26 +8,28 @@ import {
   StyleSheet,
   Dimensions,
   ColorValue,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import { format } from 'date-fns';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
+import { format } from "date-fns";
 
 // Store and Services
-import { useStore } from '../../store/useStore';
-import PrayerTimeService from '../../services/PrayerTimeService';
-import StorageService from '../../services/StorageService';
+import { useStore } from "../../store/useStore";
+import PrayerTimeService from "../../services/PrayerTimeService";
+import StorageService from "../../services/StorageService";
 
 // Components (we'll create these next)
-import PrayerCard from '../../components/prayer/PrayerCard';
-import NextPrayerCard from '../../components/prayer/NextPrayerCard';
-import DailyVerse from '../../components/common/DailyVerse';
-import QuickStats from '../../components/stats/QuickStats';
+import PrayerCard from "../../components/prayer/PrayerCard";
+import NextPrayerCard from "../../components/prayer/NextPrayerCard";
+import DailyVerse from "../../components/common/DailyVerse";
+import QuickStats from "../../components/stats/QuickStats";
 
 // Types
-import { PrayerTime } from '../../types';
+import { Achievement, PrayerTime } from "../../types";
+import AchievementService from "../../services/AchievementService";
+import AchievementCelebration from "../../components/achievements/AchievementCelebration";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 const HomeScreen = ({ navigation }: any) => {
   const {
@@ -45,12 +47,13 @@ const HomeScreen = ({ navigation }: any) => {
   } = useStore();
 
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [greeting, setGreeting] = useState('');
+  const [greeting, setGreeting] = useState("");
+  const { celebratingAchievement, setCelebratingAchievement } = useStore();
 
   useEffect(() => {
     loadPrayerTimes();
     loadTodayRecords();
-    
+
     // Update time every minute
     const timer = setInterval(() => {
       setCurrentTime(new Date());
@@ -69,29 +72,29 @@ const HomeScreen = ({ navigation }: any) => {
       const times = await PrayerTimeService.getPrayerTimesList(
         location,
         new Date(),
-        userSettings?.calculationMethod || 'MWL',
+        userSettings?.calculationMethod || "MWL",
         userSettings?.adjustments
       );
-      
+
       setTodayPrayerTimes(times);
-      
-      const next = times.find(t => t.isNext);
+
+      const next = times.find((t) => t.isNext);
       setNextPrayer(next || null);
     } catch (error) {
-      console.error('Error loading prayer times:', error);
+      console.error("Error loading prayer times:", error);
     }
   };
 
   const loadTodayRecords = () => {
-    const today = format(new Date(), 'yyyy-MM-dd');
+    const today = format(new Date(), "yyyy-MM-dd");
     const records = StorageService.getDayPrayerRecords(today);
     setTodayPrayerRecords(records);
   };
 
   const updateGreeting = () => {
     const hour = new Date().getHours();
-    const name = userSettings?.name || 'Friend';
-    
+    const name = userSettings?.name || "Friend";
+
     if (hour < 5) {
       setGreeting(`Night prayers, ${name} 🌙`);
     } else if (hour < 12) {
@@ -112,23 +115,28 @@ const HomeScreen = ({ navigation }: any) => {
     setIsRefreshing(false);
   }, []);
 
-  const handlePrayerComplete = (prayerTime: PrayerTime) => {
-    navigation.navigate('MindfulnessFlow', { prayer: prayerTime });
+  const handlePrayerComplete = async (prayerTime: PrayerTime) => {
+    navigation.navigate("MindfulnessFlow", { prayer: prayerTime });
+    const unlocked = await AchievementService.checkAchievements();
+    if (unlocked.length > 0) {
+      // Show celebration for first unlocked achievement
+      setCelebratingAchievement(unlocked[0]);
+    }
   };
 
-  const getBackgroundGradient = (): readonly [ColorValue, ColorValue]  => {
+  const getBackgroundGradient = (): readonly [ColorValue, ColorValue] => {
     const hour = currentTime.getHours();
-    
+
     if (hour >= 4 && hour < 6) {
-      return ['#1a237e', '#3949ab']; // Fajr
+      return ["#1a237e", "#3949ab"]; // Fajr
     } else if (hour >= 11 && hour < 15) {
-      return ['#fff59d', '#ffeb3b']; // Dhuhr
+      return ["#fff59d", "#ffeb3b"]; // Dhuhr
     } else if (hour >= 15 && hour < 18) {
-      return ['#ffcc80', '#ff9800']; // Asr
+      return ["#ffcc80", "#ff9800"]; // Asr
     } else if (hour >= 18 && hour < 20) {
-      return ['#e91e63', '#880e4f']; // Maghrib
+      return ["#e91e63", "#880e4f"]; // Maghrib
     } else {
-      return ['#1a237e', '#000051']; // Isha/Night
+      return ["#1a237e", "#000051"]; // Isha/Night
     }
   };
 
@@ -140,7 +148,9 @@ const HomeScreen = ({ navigation }: any) => {
     return 365;
   };
 
-  const completedToday = todayPrayerRecords.filter(r => r.status === 'prayed').length;
+  const completedToday = todayPrayerRecords.filter(
+    (r) => r.status === "prayed"
+  ).length;
 
   return (
     <LinearGradient colors={getBackgroundGradient()} style={styles.container}>
@@ -160,7 +170,7 @@ const HomeScreen = ({ navigation }: any) => {
           <View style={styles.header}>
             <Text style={styles.greeting}>{greeting}</Text>
             <Text style={styles.date}>
-              {format(currentTime, 'EEEE, dd MMMM yyyy')}
+              {format(currentTime, "EEEE, dd MMMM yyyy")}
             </Text>
             {location && (
               <Text style={styles.location}>
@@ -184,11 +194,22 @@ const HomeScreen = ({ navigation }: any) => {
             nextMilestone={getNextMilestone(currentStreak)}
           />
 
+          {/* Celebration */}
+          {celebratingAchievement && (
+            <AchievementCelebration
+              achievement={celebratingAchievement}
+              isVisible={!!celebratingAchievement}
+              onClose={() => setCelebratingAchievement(null)}
+            />
+          )}
+
           {/* Today's Prayers */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Today's Prayers</Text>
             {todayPrayerTimes.map((prayer) => {
-              const record = todayPrayerRecords.find(r => r.prayer === prayer.name);
+              const record = todayPrayerRecords.find(
+                (r) => r.prayer === prayer.name
+              );
               return (
                 <PrayerCard
                   key={prayer.name}
@@ -229,19 +250,19 @@ const styles = StyleSheet.create({
   },
   greeting: {
     fontSize: 28,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontWeight: "700",
+    color: "#FFFFFF",
     marginBottom: 8,
   },
   date: {
     fontSize: 16,
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     opacity: 0.9,
     marginBottom: 4,
   },
   location: {
     fontSize: 14,
-    color: '#FFFFFF',
+    color: "#FFFFFF",
     opacity: 0.8,
   },
   section: {
@@ -250,8 +271,8 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
     marginBottom: 16,
   },
 });

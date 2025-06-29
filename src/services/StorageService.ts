@@ -9,6 +9,7 @@ import {
   CalculationMethod,
 } from "../types";
 import { createStorage } from "./StorageAdapter";
+import { PRAYER_NAMES as PrayerName } from "../constants";
 
 class StorageService {
   // private storage: MMKV;
@@ -377,6 +378,157 @@ class StorageService {
     if (achievement && !achievement.unlockedAt) {
       achievement.unlockedAt = new Date();
       this.storage.set("achievements", JSON.stringify(achievements));
+    }
+  }
+
+    // Update achievement progress
+    updateAchievementProgress(achievementId: string, progress: number): void {
+      const achievements = this.getAchievements();
+      const achievement = achievements.find(a => a.id === achievementId);
+      
+      if (achievement) {
+        achievement.progress = progress;
+        this.storage.set('achievements', JSON.stringify(achievements));
+      }
+    }
+
+    // Get total prayers count
+  getTotalPrayersCount(): number {
+    return this.storage.getNumber('total_prayers_count') || 0;
+  }
+
+  // Increment total prayers count
+  incrementTotalPrayersCount(): void {
+    const current = this.getTotalPrayersCount();
+    this.storage.set('total_prayers_count', current + 1);
+  }
+
+  // Get total mindfulness sessions
+  getTotalMindfulnessCount(): number {
+    return this.storage.getNumber('total_mindfulness_count') || 0;
+  }
+
+  // Increment mindfulness count
+  incrementMindfulnessCount(): void {
+    const current = this.getTotalMindfulnessCount();
+    this.storage.set('total_mindfulness_count', current + 1);
+  }
+
+  // Get total reflections count
+  getTotalReflectionsCount(): number {
+    return this.storage.getNumber('total_reflections_count') || 0;
+  }
+
+  // Increment reflections count
+  incrementReflectionsCount(): void {
+    const current = this.getTotalReflectionsCount();
+    this.storage.set('total_reflections_count', current + 1);
+  }
+
+  // Get high focus count (90%+)
+  getHighFocusCount(): number {
+    return this.storage.getNumber('high_focus_count') || 0;
+  }
+
+  // Increment high focus count
+  incrementHighFocusCount(): void {
+    const current = this.getHighFocusCount();
+    this.storage.set('high_focus_count', current + 1);
+  }
+
+  // Get consecutive Fajr count
+  getConsecutiveFajrCount(): number {
+    return this.storage.getNumber('consecutive_fajr_count') || 0;
+  }
+
+  // Update consecutive Fajr count
+  updateConsecutiveFajrCount(count: number): void {
+    this.storage.set('consecutive_fajr_count', count);
+  }
+
+  // Get consecutive Isha count
+  getConsecutiveIshaCount(): number {
+    return this.storage.getNumber('consecutive_isha_count') || 0;
+  }
+
+  // Update consecutive Isha count
+  updateConsecutiveIshaCount(count: number): void {
+    this.storage.set('consecutive_isha_count', count);
+  }
+
+  // Save prayer record with achievement tracking
+  savePrayerRecordWithTracking(record: PrayerRecord): void {
+    // Save the record
+    this.savePrayerRecord(record);
+    
+    // Update counters for achievements
+    if (record.status === 'prayed') {
+      this.incrementTotalPrayersCount();
+      
+      if (record.mindfulnessCompleted) {
+        this.incrementMindfulnessCount();
+      }
+      
+      if (record.reflectionAdded) {
+        this.incrementReflectionsCount();
+      }
+      
+      if (record.focusScore && record.focusScore >= 90) {
+        this.incrementHighFocusCount();
+      }
+    }
+    
+    // Update daily stats
+    this.updateDailyStats(record.date);
+    
+    // Update streaks
+    this.updateStreak();
+    
+    // Update consecutive prayer counts
+    this.updateConsecutivePrayerCounts(record);
+  }
+
+  private updateConsecutivePrayerCounts(record: PrayerRecord): void {
+    if (record.status === 'prayed') {
+      if (record.prayer === PrayerName.fajr) {
+        // Check if yesterday's Fajr was also prayed
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        const yesterdayRecords = this.getDayPrayerRecords(yesterdayStr);
+        const yesterdayFajr = yesterdayRecords.find(r => r.prayer === PrayerName.fajr);
+        
+        if (yesterdayFajr && yesterdayFajr.status === 'prayed') {
+          const current = this.getConsecutiveFajrCount();
+          this.updateConsecutiveFajrCount(current + 1);
+        } else {
+          this.updateConsecutiveFajrCount(1);
+        }
+      }
+      
+      if (record.prayer === PrayerName.isha) {
+        // Similar logic for Isha
+        const yesterday = new Date();
+        yesterday.setDate(yesterday.getDate() - 1);
+        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        const yesterdayRecords = this.getDayPrayerRecords(yesterdayStr);
+        const yesterdayIsha = yesterdayRecords.find(r => r.prayer === PrayerName.isha);
+        
+        if (yesterdayIsha && yesterdayIsha.status === 'prayed') {
+          const current = this.getConsecutiveIshaCount();
+          this.updateConsecutiveIshaCount(current + 1);
+        } else {
+          this.updateConsecutiveIshaCount(1);
+        }
+      }
+    } else {
+      // Reset consecutive counts if missed
+      if (record.prayer === PrayerName.fajr) {
+        this.updateConsecutiveFajrCount(0);
+      }
+      if (record.prayer === PrayerName.isha) {
+        this.updateConsecutiveIshaCount(0);
+      }
     }
   }
 

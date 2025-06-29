@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from "react";
 import {
   View,
   Text,
@@ -10,41 +10,42 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import * as Haptics from 'expo-haptics';
+} from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+import { LinearGradient } from "expo-linear-gradient";
+import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
+import * as Haptics from "expo-haptics";
 
 // Components
-import BreathingCircle from '../../components/mindfulness/BreathingCircle';
-import MoodSelector from '../../components/mindfulness/MoodSelector';
-import ReflectionPrompts from '../../components/mindfulness/ReflectionPrompts';
+import BreathingCircle from "../../components/mindfulness/BreathingCircle";
+import MoodSelector from "../../components/mindfulness/MoodSelector";
+import ReflectionPrompts from "../../components/mindfulness/ReflectionPrompts";
 
 // Store and Services
-import { useStore } from '../../store/useStore';
-import StorageService from '../../services/StorageService';
-import PrayerTimeService from '../../services/PrayerTimeService';
+import { useStore } from "../../store/useStore";
+import StorageService from "../../services/StorageService";
+import PrayerTimeService from "../../services/PrayerTimeService";
 
 // Types
-import { PrayerTime, MindfulnessSession, PrayerRecord } from '../../types';
-import { RootStackParamList } from '../../types/navigation';
+import { PrayerTime, MindfulnessSession, PrayerRecord } from "../../types";
+import { RootStackParamList } from "../../types/navigation";
+import AchievementService from "../../services/AchievementService";
 
-const { width, height } = Dimensions.get('window');
+const { width, height } = Dimensions.get("window");
 
-type FlowStep = 'breathing' | 'reflection' | 'complete';
+type FlowStep = "breathing" | "reflection" | "complete";
 
 const MindfulnessFlow: React.FC = () => {
   const navigation = useNavigation();
-  const route = useRoute<RouteProp<RootStackParamList, 'MindfulnessFlow'>>();
+  const route = useRoute<RouteProp<RootStackParamList, "MindfulnessFlow">>();
   const prayer = route.params.prayer;
 
-  const { setCurrentMindfulnessSession, addPrayerRecord } = useStore();
+  const { setCurrentMindfulnessSession, addPrayerRecord, setCelebratingAchievement } = useStore();
 
   // Flow state
-  const [currentStep, setCurrentStep] = useState<FlowStep>('breathing');
+  const [currentStep, setCurrentStep] = useState<FlowStep>("breathing");
   const [breathCount, setBreathCount] = useState(1);
-  const [reflectionText, setReflectionText] = useState('');
+  const [reflectionText, setReflectionText] = useState("");
   const [selectedMood, setSelectedMood] = useState<number>(0);
   const [sessionStartTime] = useState(new Date());
   const [isBreathingActive, setIsBreathingActive] = useState(true);
@@ -56,13 +57,13 @@ const MindfulnessFlow: React.FC = () => {
 
   const getPrayerGradient = (): [string, string] => {
     const gradients: Record<string, [string, string]> = {
-      fajr: ['#1a237e', '#3949ab'],
-      dhuhr: ['#fff59d', '#ffeb3b'],
-      asr: ['#ffcc80', '#ff9800'],
-      maghrib: ['#e91e63', '#880e4f'],
-      isha: ['#1a237e', '#000051'],
+      fajr: ["#1a237e", "#3949ab"],
+      dhuhr: ["#fff59d", "#ffeb3b"],
+      asr: ["#ffcc80", "#ff9800"],
+      maghrib: ["#e91e63", "#880e4f"],
+      isha: ["#1a237e", "#000051"],
     };
-    return gradients[prayer.name] || ['#1B5E3F', '#0d4f35'];
+    return gradients[prayer.name] || ["#1B5E3F", "#0d4f35"];
   };
 
   const handleBreathComplete = () => {
@@ -87,7 +88,7 @@ const MindfulnessFlow: React.FC = () => {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      setCurrentStep('reflection');
+      setCurrentStep("reflection");
       slideAnim.setValue(50);
       Animated.parallel([
         Animated.timing(fadeAnim, {
@@ -106,18 +107,21 @@ const MindfulnessFlow: React.FC = () => {
 
   const skipBreathing = () => {
     Alert.alert(
-      'Skip Breathing Exercise?',
-      'The breathing exercise helps you focus better during prayer.',
+      "Skip Breathing Exercise?",
+      "The breathing exercise helps you focus better during prayer.",
       [
-        { text: 'Continue Breathing', style: 'cancel' },
-        { text: 'Skip', onPress: moveToReflection },
+        { text: "Continue Breathing", style: "cancel" },
+        { text: "Skip", onPress: moveToReflection },
       ]
     );
   };
 
   const completeMindfulness = async () => {
     if (selectedMood === 0) {
-      Alert.alert('Please select your mood', 'How was your focus during prayer?');
+      Alert.alert(
+        "Please select your mood",
+        "How was your focus during prayer?"
+      );
       return;
     }
 
@@ -126,7 +130,9 @@ const MindfulnessFlow: React.FC = () => {
       prayerName: prayer.name,
       startedAt: sessionStartTime,
       completedAt: new Date(),
-      duration: Math.floor((new Date().getTime() - sessionStartTime.getTime()) / 1000),
+      duration: Math.floor(
+        (new Date().getTime() - sessionStartTime.getTime()) / 1000
+      ),
       breathingCompleted: breathCount >= 3,
       reflectionCompleted: reflectionText.length > 0 || selectedMood > 0,
       reflection: {
@@ -142,9 +148,9 @@ const MindfulnessFlow: React.FC = () => {
     // Create prayer record
     const prayerRecord: PrayerRecord = {
       id: `prayer_${Date.now()}`,
-      date: new Date().toISOString().split('T')[0],
+      date: new Date().toISOString().split("T")[0],
       prayer: prayer.name,
-      status: 'prayed',
+      status: "prayed",
       prayedAt: new Date(),
       mindfulnessCompleted: true,
       reflectionAdded: reflectionText.length > 0,
@@ -152,8 +158,15 @@ const MindfulnessFlow: React.FC = () => {
     };
 
     // Save prayer record
-    StorageService.savePrayerRecord(prayerRecord);
+    StorageService.savePrayerRecordWithTracking(prayerRecord);
     addPrayerRecord(prayerRecord);
+
+    // Check for unlocked achievements
+    const unlockedAchievements = await AchievementService.checkAchievements();
+    if (unlockedAchievements.length > 0) {
+      // Show celebration for first unlocked achievement
+      setCelebratingAchievement(unlockedAchievements[0]);
+    }
 
     // Animate to complete screen
     Animated.parallel([
@@ -163,7 +176,7 @@ const MindfulnessFlow: React.FC = () => {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      setCurrentStep('complete');
+      setCurrentStep("complete");
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
@@ -179,7 +192,7 @@ const MindfulnessFlow: React.FC = () => {
       ]).start(() => {
         // Haptic success
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-        
+
         // Navigate back after delay
         setTimeout(() => {
           navigation.goBack();
@@ -227,13 +240,13 @@ const MindfulnessFlow: React.FC = () => {
         },
       ]}
     >
-      <ScrollView 
+      <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
         <Text style={styles.stepTitle}>Reflect & Set Intention</Text>
-        
+
         <ReflectionPrompts
           prayerName={prayer.name}
           reflectionText={reflectionText}
@@ -276,8 +289,9 @@ const MindfulnessFlow: React.FC = () => {
       <Text style={styles.completeEmoji}>✨</Text>
       <Text style={styles.completeTitle}>Ma sha Allah!</Text>
       <Text style={styles.completeText}>
-        You've prepared mindfully for {PrayerTimeService.getPrayerDisplayName(prayer.name)} prayer.
-        {'\n\n'}
+        You've prepared mindfully for{" "}
+        {PrayerTimeService.getPrayerDisplayName(prayer.name)} prayer.
+        {"\n\n"}
         May your prayer be accepted and bring you peace.
       </Text>
     </Animated.View>
@@ -287,7 +301,7 @@ const MindfulnessFlow: React.FC = () => {
     <LinearGradient colors={getPrayerGradient()} style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.keyboardAvoid}
         >
           {/* Header */}
@@ -295,7 +309,7 @@ const MindfulnessFlow: React.FC = () => {
             <Text style={styles.prayerName}>
               {PrayerTimeService.getPrayerDisplayName(prayer.name)} Prayer
             </Text>
-            {currentStep !== 'complete' && (
+            {currentStep !== "complete" && (
               <TouchableOpacity
                 onPress={() => navigation.goBack()}
                 style={styles.closeButton}
@@ -311,22 +325,22 @@ const MindfulnessFlow: React.FC = () => {
             <View
               style={[
                 styles.progressDot,
-                currentStep !== 'breathing' && styles.progressDotActive,
+                currentStep !== "breathing" && styles.progressDotActive,
               ]}
             />
             <View
               style={[
                 styles.progressDot,
-                currentStep === 'complete' && styles.progressDotActive,
+                currentStep === "complete" && styles.progressDotActive,
               ]}
             />
           </View>
 
           {/* Content */}
           <View style={styles.content}>
-            {currentStep === 'breathing' && renderBreathingStep()}
-            {currentStep === 'reflection' && renderReflectionStep()}
-            {currentStep === 'complete' && renderCompleteStep()}
+            {currentStep === "breathing" && renderBreathingStep()}
+            {currentStep === "reflection" && renderReflectionStep()}
+            {currentStep === "complete" && renderCompleteStep()}
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
@@ -345,32 +359,32 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     paddingHorizontal: 20,
     paddingTop: 20,
   },
   prayerName: {
     fontSize: 24,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontWeight: "700",
+    color: "#FFFFFF",
   },
   closeButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   closeText: {
     fontSize: 20,
-    color: '#FFFFFF',
+    color: "#FFFFFF",
   },
   progressContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
+    flexDirection: "row",
+    justifyContent: "center",
     gap: 12,
     marginTop: 24,
   },
@@ -378,10 +392,10 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    backgroundColor: "rgba(255, 255, 255, 0.3)",
   },
   progressDotActive: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: "#FFFFFF",
     width: 24,
   },
   content: {
@@ -397,44 +411,44 @@ const styles = StyleSheet.create({
   },
   stepTitle: {
     fontSize: 28,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    textAlign: 'center',
+    fontWeight: "700",
+    color: "#FFFFFF",
+    textAlign: "center",
     marginBottom: 12,
   },
   instruction: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.9)',
-    textAlign: 'center',
+    color: "rgba(255, 255, 255, 0.9)",
+    textAlign: "center",
     marginBottom: 40,
     lineHeight: 22,
   },
   breathingContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     marginBottom: 40,
   },
   skipButton: {
     paddingVertical: 16,
     paddingHorizontal: 24,
-    alignSelf: 'center',
+    alignSelf: "center",
   },
   skipText: {
     fontSize: 16,
-    color: 'rgba(255, 255, 255, 0.7)',
+    color: "rgba(255, 255, 255, 0.7)",
   },
   moodSection: {
     marginTop: 32,
     marginBottom: 32,
   },
   completeButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
     borderRadius: 16,
     paddingVertical: 18,
-    alignItems: 'center',
+    alignItems: "center",
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
+    borderColor: "rgba(255, 255, 255, 0.4)",
     marginTop: 20,
   },
   completeButtonDisabled: {
@@ -442,13 +456,13 @@ const styles = StyleSheet.create({
   },
   completeButtonText: {
     fontSize: 18,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontWeight: "600",
+    color: "#FFFFFF",
   },
   completeContainer: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
     paddingHorizontal: 40,
   },
   completeEmoji: {
@@ -457,14 +471,14 @@ const styles = StyleSheet.create({
   },
   completeTitle: {
     fontSize: 36,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontWeight: "700",
+    color: "#FFFFFF",
     marginBottom: 16,
   },
   completeText: {
     fontSize: 18,
-    color: 'rgba(255, 255, 255, 0.9)',
-    textAlign: 'center',
+    color: "rgba(255, 255, 255, 0.9)",
+    textAlign: "center",
     lineHeight: 26,
   },
 });

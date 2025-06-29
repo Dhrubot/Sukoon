@@ -108,6 +108,7 @@ export interface Achievement {
   unlockedAt?: Date;
   progress?: number; // For progressive achievements
   target?: number;
+  tier?: string;
 }
 
 // API Response types
