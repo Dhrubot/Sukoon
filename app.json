@@ -33,10 +33,12 @@
         "ACCESS_COARSE_LOCATION",
         "VIBRATE",
         "RECEIVE_BOOT_COMPLETED",
-        "WAKE_LOCK"
+        "WAKE_LOCK",
+        "android.permission.PACKAGE_USAGE_STATS"
       ]
     },
     "plugins": [
+      "./plugins/withUsageStats.js",
       "expo-notifications",
       "expo-location"
     ],
