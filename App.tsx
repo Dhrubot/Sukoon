@@ -1,6 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, createRef } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { NavigationContainer } from '@react-navigation/native';
+import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -23,10 +23,13 @@ import OnboardingScreen from './src/screens/Onboarding/OnboardingScreen';
 import { useStore } from './src/store/useStore';
 
 // Types
-import { Location as LocationType } from './src/types';
+import { Location as LocationType, PrayerName } from './src/types';
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
+
+// Create navigation reference
+export const navigationRef = createRef<NavigationContainerRef<any>>();
 
 export default function App() {
   const [isLoading, setIsLoading] = useState(true);
@@ -41,6 +44,36 @@ export default function App() {
 
   useEffect(() => {
     initializeApp();
+  }, []);
+
+  // Register navigation handler for notifications
+  useEffect(() => {
+    const handleNotificationNavigation = (prayer: PrayerName, action: string) => {
+      console.log(`Handling notification action: ${action} for prayer: ${prayer}`);
+      
+      if (navigationRef.current?.isReady()) {
+        switch (action) {
+          case 'complete':
+            // Navigate to home and mark prayer complete
+            navigationRef.current.navigate('MainTabs', {
+              screen: 'Home',
+              params: { markPrayerComplete: prayer }
+            });
+            break;
+          case 'prepare':
+            // Navigate to mindfulness flow
+            navigationRef.current.navigate('MindfulnessFlow', { prayer: prayer });
+            break;
+          default:
+            // Just navigate to the main app
+            navigationRef.current.navigate('MainTabs');
+            break;
+        }
+      }
+    };
+    
+    // Register the handler with NotificationService
+    NotificationService.registerNavigationHandler(handleNotificationNavigation);
   }, []);
 
   const initializeApp = async () => {
@@ -192,7 +225,7 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
+      <NavigationContainer ref={navigationRef}>
         <StatusBar style="auto" />
         
         {/* Manual location input modal */}

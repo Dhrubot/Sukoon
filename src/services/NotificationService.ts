@@ -38,6 +38,13 @@ class NotificationService {
   private notificationListener: Notifications.Subscription | null = null;
   private responseListener: Notifications.Subscription | null = null;
   private notificationCache = new Map<string, string>();
+  private navigationHandler: ((prayer: PrayerName, action: string) => void) | null = null;
+
+  // Register a handler function that will be called when navigation is needed
+  registerNavigationHandler(handler: (prayer: PrayerName, action: string) => void) {
+    this.navigationHandler = handler;
+    console.log('Navigation handler registered');
+  }
 
   async initialize(): Promise<boolean> {
     try {
@@ -180,19 +187,27 @@ class NotificationService {
             
           case 'complete':
             if (data?.prayer) {
-              // This would trigger navigation to mark prayer complete
-              // We'll handle this in the main app
+              // Call navigation handler if registered
+              if (this.navigationHandler) {
+                this.navigationHandler(data.prayer as PrayerName, 'complete');
+              }
               console.log('Mark prayer complete:', data.prayer);
             }
             break;
             
           case 'prepare':
             // Navigate to mindfulness flow
+            if (data?.prayer && this.navigationHandler) {
+              this.navigationHandler(data.prayer as PrayerName, 'prepare');
+            }
             console.log('Open mindfulness flow for:', data?.prayer);
             break;
             
           default:
             // Default tap action - open app
+            if (data?.prayer && this.navigationHandler) {
+              this.navigationHandler(data.prayer as PrayerName, 'default');
+            }
             console.log('Notification tapped');
         }
       }
