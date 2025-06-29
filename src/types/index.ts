@@ -70,6 +70,7 @@ export interface UserSettings {
     vibrationEnabled: boolean;
     beforePrayer: number; // minutes
     reminderText: string;
+    postPrayerCheck: boolean;
   };
   theme: 'light' | 'dark' | 'auto';
 }
