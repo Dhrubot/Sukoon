@@ -27,6 +27,7 @@ export interface PrayerRecord {
   mindfulnessCompleted?: boolean;
   reflectionAdded?: boolean;
   focusScore?: number; // 0-100
+  mindfulnessScore?: number; // 0-100
 }
 
 // Location types
