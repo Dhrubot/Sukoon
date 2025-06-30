@@ -36,6 +36,21 @@ class WebStorage {
     this.storage.removeItem(this.storagePrefix + key);
   }
 
+  getAllKeys(): string[] {
+    const keys: string[] = [];
+    
+    // Iterate through all localStorage items
+    for (let i = 0; i < this.storage.length; i++) {
+      const fullKey = this.storage.key(i);
+      if (fullKey && fullKey.startsWith(this.storagePrefix)) {
+        // Remove the prefix to return just the key part
+        keys.push(fullKey.slice(this.storagePrefix.length));
+      }
+    }
+    
+    return keys;
+  }
+
   clearAll(): void {
     // Only clear items with our prefix
     const keysToRemove: string[] = [];

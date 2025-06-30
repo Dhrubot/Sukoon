@@ -11,6 +11,7 @@ import {
   PremiumFeatures,
   TemporaryPremium,
   Donation,
+  OnboardingProgress,
 } from "../types";
 import { createStorage } from "./StorageAdapter";
 import { PRAYER_NAMES as PrayerName } from "../constants";
@@ -542,6 +543,20 @@ class StorageService {
     }
   }
 
+  // User ID management
+  setUserId(userId: string): void {
+    this.storage.set("user_id", userId);
+  }
+
+  getUserId(): string | null {
+    const userId = this.storage.getString("user_id");
+    return userId || null;
+  }
+
+  clearUserId(): void {
+    this.storage.delete("user_id");
+  }
+
   // Subscription management
   saveSubscription(subscription: SubscriptionPlan): void {
     this.storage.set("subscription", JSON.stringify(subscription));
@@ -710,6 +725,43 @@ class StorageService {
 
   clearFamilyData(): void {
     this.storage.delete("family_data");
+  }
+
+  // Onboarding progress
+  setOnboardingProgress(progress: OnboardingProgress): void {
+    this.storage.set("onboarding_progress", JSON.stringify(progress));
+  }
+
+  getOnboardingProgress(): OnboardingProgress | null {
+    const data = this.storage.getString("onboarding_progress");
+    return data ? JSON.parse(data) : null;
+  }
+  // Data migration status
+  isDataMigrated(): boolean {
+    return this.storage.getBoolean('data_migrated') || false;
+  }
+
+  setDataMigrated(migrated: boolean = true): void {
+    this.storage.set('data_migrated', migrated);
+  }
+
+  // Get all prayer records
+  getAllPrayerRecords(): PrayerRecord[] {
+    const allRecords: PrayerRecord[] = [];
+    const keys = this.storage.getAllKeys();
+    
+    // Filter keys that match prayer record pattern
+    const recordKeys = keys.filter(key => key.startsWith('prayer_'));
+    
+    // Get all prayer records
+    recordKeys.forEach(key => {
+      const data = this.storage.getString(key);
+      if (data) {
+        allRecords.push(JSON.parse(data));
+      }
+    });
+    
+    return allRecords;
   }
 
   // Clear all data

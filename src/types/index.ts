@@ -347,3 +347,49 @@ export interface StorageServiceMonetization {
   setLastAdWatchTime(time: Date): void;
   getLastAdWatchTime(): Date | null;
 }
+
+// Authentication Types
+export interface UserProfile {
+  id: string;
+  email?: string;
+  name?: string;
+  photoURL?: string;
+  isAnonymous: boolean;
+  createdAt: Date;
+  lastSeen?: Date;
+  settings: UserSettings;
+  preferences?: {
+    notifications: boolean;
+    shareAnalytics: boolean;
+    language: string;
+  };
+  subscription?: SubscriptionPlan;
+  familyGroupId?: string;
+}
+
+export interface AuthState {
+  isAuthenticated: boolean;
+  isAnonymous: boolean;
+  user: UserProfile | null;
+}
+
+export interface OnboardingProgress {
+  welcomeCompleted: boolean;
+  locationPermissionGranted: boolean;
+  notificationPermissionGranted: boolean;
+  calculationMethodSelected: boolean;
+  accountCreated: boolean;
+  tutorialCompleted: boolean;
+}
+
+// Update StorageService methods for auth
+export interface StorageServiceAuth {
+  setUserId(userId: string): void;
+  getUserId(): string | null;
+  clearUserId(): void;
+  setDataMigrated(migrated: boolean): void;
+  isDataMigrated(): boolean;
+  getAllPrayerRecords(): PrayerRecord[];
+  setOnboardingProgress(progress: OnboardingProgress): void;
+  getOnboardingProgress(): OnboardingProgress | null;
+}
