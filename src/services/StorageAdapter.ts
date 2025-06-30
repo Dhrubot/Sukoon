@@ -1,5 +1,6 @@
 import { Platform } from 'react-native';
 import { MMKV } from 'react-native-mmkv';
+import { AsyncStorageFallback } from './AsyncStorageFallback';
 
 // Web storage implementation that mimics MMKV API
 class WebStorage {
@@ -50,10 +51,17 @@ class WebStorage {
 }
 
 // Factory function that returns appropriate storage implementation based on platform
-export function createStorage(options: { id: string; encryptionKey?: string }): MMKV | WebStorage {
+export function createStorage(options: { id: string; encryptionKey?: string }): MMKV | WebStorage | AsyncStorageFallback {
   if (Platform.OS === 'web') {
+    console.log('Using WebStorage for storage');
     return new WebStorage(options);
   } else {
-    return new MMKV(options);
+    try {
+      console.log('Attempting to use MMKV for storage');
+      return new MMKV(options);
+    } catch (error) {
+      console.warn('MMKV initialization failed, falling back to AsyncStorage:', error);
+      return new AsyncStorageFallback(options);
+    }
   }
 }
