@@ -7,6 +7,10 @@ import {
   Achievement,
   Location,
   CalculationMethod,
+  SubscriptionPlan,
+  PremiumFeatures,
+  TemporaryPremium,
+  Donation,
 } from "../types";
 import { createStorage } from "./StorageAdapter";
 import { PRAYER_NAMES as PrayerName } from "../constants";
@@ -345,7 +349,9 @@ class StorageService {
       daysChecked.add(dateStr);
 
       if (record.status === "prayed") {
-        completionRates[record.prayer.toLowerCase() as keyof typeof completionRates].completed++;
+        completionRates[
+          record.prayer.toLowerCase() as keyof typeof completionRates
+        ].completed++;
       }
     });
 
@@ -381,140 +387,144 @@ class StorageService {
     }
   }
 
-    // Update achievement progress
-    updateAchievementProgress(achievementId: string, progress: number): void {
-      const achievements = this.getAchievements();
-      const achievement = achievements.find(a => a.id === achievementId);
-      
-      if (achievement) {
-        achievement.progress = progress;
-        this.storage.set('achievements', JSON.stringify(achievements));
-      }
-    }
+  // Update achievement progress
+  updateAchievementProgress(achievementId: string, progress: number): void {
+    const achievements = this.getAchievements();
+    const achievement = achievements.find((a) => a.id === achievementId);
 
-    // Get total prayers count
+    if (achievement) {
+      achievement.progress = progress;
+      this.storage.set("achievements", JSON.stringify(achievements));
+    }
+  }
+
+  // Get total prayers count
   getTotalPrayersCount(): number {
-    return this.storage.getNumber('total_prayers_count') || 0;
+    return this.storage.getNumber("total_prayers_count") || 0;
   }
 
   // Increment total prayers count
   incrementTotalPrayersCount(): void {
     const current = this.getTotalPrayersCount();
-    this.storage.set('total_prayers_count', current + 1);
+    this.storage.set("total_prayers_count", current + 1);
   }
 
   // Get total mindfulness sessions
   getTotalMindfulnessCount(): number {
-    return this.storage.getNumber('total_mindfulness_count') || 0;
+    return this.storage.getNumber("total_mindfulness_count") || 0;
   }
 
   // Increment mindfulness count
   incrementMindfulnessCount(): void {
     const current = this.getTotalMindfulnessCount();
-    this.storage.set('total_mindfulness_count', current + 1);
+    this.storage.set("total_mindfulness_count", current + 1);
   }
 
   // Get total reflections count
   getTotalReflectionsCount(): number {
-    return this.storage.getNumber('total_reflections_count') || 0;
+    return this.storage.getNumber("total_reflections_count") || 0;
   }
 
   // Increment reflections count
   incrementReflectionsCount(): void {
     const current = this.getTotalReflectionsCount();
-    this.storage.set('total_reflections_count', current + 1);
+    this.storage.set("total_reflections_count", current + 1);
   }
 
   // Get high focus count (90%+)
   getHighFocusCount(): number {
-    return this.storage.getNumber('high_focus_count') || 0;
+    return this.storage.getNumber("high_focus_count") || 0;
   }
 
   // Increment high focus count
   incrementHighFocusCount(): void {
     const current = this.getHighFocusCount();
-    this.storage.set('high_focus_count', current + 1);
+    this.storage.set("high_focus_count", current + 1);
   }
 
   // Get consecutive Fajr count
   getConsecutiveFajrCount(): number {
-    return this.storage.getNumber('consecutive_fajr_count') || 0;
+    return this.storage.getNumber("consecutive_fajr_count") || 0;
   }
 
   // Update consecutive Fajr count
   updateConsecutiveFajrCount(count: number): void {
-    this.storage.set('consecutive_fajr_count', count);
+    this.storage.set("consecutive_fajr_count", count);
   }
 
   // Get consecutive Isha count
   getConsecutiveIshaCount(): number {
-    return this.storage.getNumber('consecutive_isha_count') || 0;
+    return this.storage.getNumber("consecutive_isha_count") || 0;
   }
 
   // Update consecutive Isha count
   updateConsecutiveIshaCount(count: number): void {
-    this.storage.set('consecutive_isha_count', count);
+    this.storage.set("consecutive_isha_count", count);
   }
 
   // Save prayer record with achievement tracking
   savePrayerRecordWithTracking(record: PrayerRecord): void {
     // Save the record
     this.savePrayerRecord(record);
-    
+
     // Update counters for achievements
-    if (record.status === 'prayed') {
+    if (record.status === "prayed") {
       this.incrementTotalPrayersCount();
-      
+
       if (record.mindfulnessCompleted) {
         this.incrementMindfulnessCount();
       }
-      
+
       if (record.reflectionAdded) {
         this.incrementReflectionsCount();
       }
-      
+
       if (record.focusScore && record.focusScore >= 90) {
         this.incrementHighFocusCount();
       }
     }
-    
+
     // Update daily stats
     this.updateDailyStats(record.date);
-    
+
     // Update streaks
     this.updateStreak();
-    
+
     // Update consecutive prayer counts
     this.updateConsecutivePrayerCounts(record);
   }
 
   private updateConsecutivePrayerCounts(record: PrayerRecord): void {
-    if (record.status === 'prayed') {
+    if (record.status === "prayed") {
       if (record.prayer === PrayerName.fajr) {
         // Check if yesterday's Fajr was also prayed
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        const yesterdayStr = yesterday.toISOString().split("T")[0];
         const yesterdayRecords = this.getDayPrayerRecords(yesterdayStr);
-        const yesterdayFajr = yesterdayRecords.find(r => r.prayer === PrayerName.fajr);
-        
-        if (yesterdayFajr && yesterdayFajr.status === 'prayed') {
+        const yesterdayFajr = yesterdayRecords.find(
+          (r) => r.prayer === PrayerName.fajr
+        );
+
+        if (yesterdayFajr && yesterdayFajr.status === "prayed") {
           const current = this.getConsecutiveFajrCount();
           this.updateConsecutiveFajrCount(current + 1);
         } else {
           this.updateConsecutiveFajrCount(1);
         }
       }
-      
+
       if (record.prayer === PrayerName.isha) {
         // Similar logic for Isha
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split('T')[0];
+        const yesterdayStr = yesterday.toISOString().split("T")[0];
         const yesterdayRecords = this.getDayPrayerRecords(yesterdayStr);
-        const yesterdayIsha = yesterdayRecords.find(r => r.prayer === PrayerName.isha);
-        
-        if (yesterdayIsha && yesterdayIsha.status === 'prayed') {
+        const yesterdayIsha = yesterdayRecords.find(
+          (r) => r.prayer === PrayerName.isha
+        );
+
+        if (yesterdayIsha && yesterdayIsha.status === "prayed") {
           const current = this.getConsecutiveIshaCount();
           this.updateConsecutiveIshaCount(current + 1);
         } else {
@@ -530,6 +540,40 @@ class StorageService {
         this.updateConsecutiveIshaCount(0);
       }
     }
+  }
+
+  // Subscription management
+  saveSubscription(subscription: SubscriptionPlan): void {
+    this.storage.set("subscription", JSON.stringify(subscription));
+  }
+
+  getSubscription(): SubscriptionPlan | null {
+    const data = this.storage.getString("subscription");
+    return data ? JSON.parse(data) : null;
+  }
+
+  // Premium features
+  async isPremiumActive(): Promise<boolean> {
+    const subscription = this.getSubscription();
+    const tempPremium = this.getTemporaryPremium();
+
+    // Check subscription
+    if (subscription?.isActive) {
+      if (subscription.type === "lifetime") return true;
+      if (
+        subscription.expiryDate &&
+        new Date(subscription.expiryDate) > new Date()
+      ) {
+        return true;
+      }
+    }
+
+    // Check temporary premium
+    if (tempPremium && new Date(tempPremium.expiresAt) > new Date()) {
+      return true;
+    }
+
+    return false;
   }
 
   private getDefaultAchievements(): Achievement[] {
@@ -586,6 +630,72 @@ class StorageService {
   // Set generic value
   setValue(key: string, value: string): void {
     this.storage.set(key, value);
+  }
+
+  getPremiumFeatures(): PremiumFeatures {
+    const data = this.storage.getString("premium_features");
+    if (data) {
+      return JSON.parse(data);
+    }
+    // Default premium features (all disabled)
+    return {
+      removeAds: false,
+      themes: false,
+      advancedAnalytics: false,
+      familySharing: false,
+      customNotificationSounds: false,
+      cloudBackup: false,
+      exportData: false,
+      prayerReminders: false,
+      widgetSupport: false,
+      appleWatchSync: false,
+      qiblaCompass: false,
+      duaLibrary: false,
+      audioRecitations: false,
+      unlimitedHistory: false,
+    };
+  }
+
+  // Premium features management
+  setPremiumFeatures(features: PremiumFeatures): void {
+    this.storage.set("premium_features", JSON.stringify(features));
+  }
+
+  // Temporary premium access
+  setTemporaryPremium(temp: TemporaryPremium): void {
+    this.storage.set("temporary_premium", JSON.stringify(temp));
+  }
+
+  getTemporaryPremium(): TemporaryPremium | null {
+    const data = this.storage.getString("temporary_premium");
+    return data ? JSON.parse(data) : null;
+  }
+
+  // Clear subscription data
+  clearSubscription(): void {
+    this.storage.delete("subscription");
+  }
+
+  // Donation tracking
+  saveDonation(donation: Donation): void {
+    const history = this.getDonationHistory();
+    history.push(donation);
+    this.storage.set("donation_history", JSON.stringify(history));
+  }
+
+  getDonationHistory(): Donation[] {
+    const data = this.storage.getString("donation_history");
+    return data ? JSON.parse(data) : [];
+  }
+
+  // Ad tracking
+  setLastAdWatchTime(time: Date): void {
+    this.storage.set("last_ad_watch", time.toISOString());
+  }
+
+  getLastAdWatchTime(): Date | null {
+    const timestamp = this.storage.getString("last_ad_watch");
+    return timestamp ? new Date(timestamp) : null;
   }
 
   // Clear all data
