@@ -25,12 +25,39 @@ import NotificationService from "./src/services/NotificationService";
 import PrayerTimeService from "./src/services/PrayerTimeService";
 import LocationService from "./src/services/LocationService";
 
+// Import SubscriptionService
+const SubscriptionService = Platform.select({
+  web: () => require("./src/services/SubscriptionService.web").default,
+  default: () => require("./src/services/SubscriptionService").default,
+})();
+
+// Import AdService based on platform
+const AdService = Platform.select({
+  web: () => require("./src/services/AdService.web").default,
+  default: () => require("./src/services/AdService").default,
+})();
+
+// Import DonationService based on platform
+const DonationService = Platform.select({
+  web: () => require("./src/services/DonationService.web").default,
+  default: () => require("./src/services/DonationService").default,
+})();
+
+// Import FamilySharingService based on platform
+const FamilySharingService = Platform.select({
+  web: () => require("./src/services/FamilySharingService.web").default,
+  default: () => require("./src/services/FamilySharingService").default,
+})();
+
 // Screens
 import HomeScreen from "./src/screens/Home/HomeScreen";
 import StatsScreen from "./src/screens/Stats/StatsScreen";
 import SettingsScreen from "./src/screens/Settings/SettingsScreen";
 import MindfulnessFlow from "./src/screens/Mindfulness/MindfulnessFlow";
 import OnboardingScreen from "./src/screens/Onboarding/OnboardingScreen";
+import SupportScreen from "./src/screens/Support/SupportScreen";
+// import ProfileScreen from './src/screens/Profile/ProfileScreen';
+// import FamilyScreen from './src/screens/Family/FamilyScreen';
 
 // Store
 import { useStore } from "./src/store/useStore";
@@ -96,6 +123,41 @@ export default function App() {
 
     // Register the handler with NotificationService
     NotificationService.registerNavigationHandler(handleNotificationNavigation);
+  }, []);
+
+  useEffect(() => {
+    const initializeMonetization = async () => {
+      console.log("Initializing services...");
+      try {
+        // Initialize subscription service
+        await SubscriptionService.initialize();
+        console.log("SubscriptionService initialized");
+
+        // Initialize ad service
+        await AdService.initialize();
+        console.log("AdService initialized");
+
+        // Initialize donation service
+        await DonationService.initialize();
+        console.log("DonationService initialized");
+
+        // Initialize family sharing service
+        await FamilySharingService.initialize();
+        console.log("FamilySharingService initialized");
+      } catch (error) {
+        console.error("Error initializing services:", error);
+      }
+    };
+
+    initializeMonetization();
+
+    return () => {
+      console.log("Cleaning up services...");
+      SubscriptionService.cleanup();
+      AdService.cleanup();
+      DonationService.cleanup();
+      FamilySharingService.cleanup();
+    };
   }, []);
 
   const initializeApp = async () => {
@@ -406,6 +468,16 @@ const MainTabs = () => {
             <Text style={{ fontSize: size }}>📱</Text>
           ),
           tabBarLabel: "Digital",
+        }}
+      />
+      <Tab.Screen
+        name="Support"
+        component={SupportScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <Text style={{ fontSize: size, color }}>💚</Text>
+          ),
+          tabBarLabel: "Support",
         }}
       />
       <Tab.Screen

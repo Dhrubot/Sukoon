@@ -698,6 +698,20 @@ class StorageService {
     return timestamp ? new Date(timestamp) : null;
   }
 
+  // Family sharing data
+  getFamilyData(): any | null {
+    const data = this.storage.getString("family_data");
+    return data ? JSON.parse(data) : null;
+  }
+
+  saveFamilyData(familyData: any): void {
+    this.storage.set("family_data", JSON.stringify(familyData));
+  }
+
+  clearFamilyData(): void {
+    this.storage.delete("family_data");
+  }
+
   // Clear all data
   clearAllData(): void {
     this.storage.clearAll();
