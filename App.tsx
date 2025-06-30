@@ -18,6 +18,7 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
+import * as SplashScreen from 'expo-splash-screen';
 
 // Services
 import StorageService from "./src/services/StorageService";
@@ -66,6 +67,9 @@ import { useStore } from "./src/store/useStore";
 import { Location as LocationType, PrayerName } from "./src/types";
 import AchievementsScreen from "./src/screens/Achievements/AchievementsScreen";
 import DigitalWellnessScreen from "./src/screens/DigitalWellness/DigitalWellnessScreen";
+
+// Keep the splash screen visible
+SplashScreen.preventAutoHideAsync();
 
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
