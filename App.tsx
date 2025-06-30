@@ -225,6 +225,9 @@ export default function App() {
     } catch (error) {
       console.error("Error initializing app:", error);
       setIsLoading(false);
+    } finally {
+      // Hide the splash screen
+      await SplashScreen.hideAsync();
     }
   };
 
