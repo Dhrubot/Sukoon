@@ -7,7 +7,7 @@
     <key>CFBundleDevelopmentRegion</key>
     <string>$(DEVELOPMENT_LANGUAGE)</string>
     <key>CFBundleDisplayName</key>
-    <string>PrayerBuddy</string>
+    <string>Sukoon</string>
     <key>CFBundleExecutable</key>
     <string>$(EXECUTABLE_NAME)</string>
     <key>CFBundleIdentifier</key>
@@ -27,7 +27,7 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>com.talukders.prayerbuddy</string>
+          <string>com.talukders.sukoon</string>
         </array>
       </dict>
     </array>
@@ -49,9 +49,9 @@
     <key>NSLocationAlwaysUsageDescription</key>
     <string>Allow $(PRODUCT_NAME) to access your location</string>
     <key>NSLocationWhenInUseUsageDescription</key>
-    <string>PrayerBuddy needs your location to calculate accurate prayer times for your area.</string>
+    <string>Sukoon needs your location to calculate accurate prayer times for your area.</string>
     <key>NSUserNotificationsUsageDescription</key>
-    <string>PrayerBuddy needs notification permission to remind you of prayer times.</string>
+    <string>Sukoon needs notification permission to remind you of prayer times.</string>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>
     <key>UIRequiredDeviceCapabilities</key>

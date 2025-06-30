@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.talukders.prayerbuddy'
+    namespace 'com.talukders.sukoon'
     defaultConfig {
-        applicationId 'com.talukders.prayerbuddy'
+        applicationId 'com.talukders.sukoon'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

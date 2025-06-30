@@ -1,4 +1,4 @@
-package com.talukders.prayerbuddy
+package com.talukders.sukoon
 
 import android.os.Build
 import android.os.Bundle

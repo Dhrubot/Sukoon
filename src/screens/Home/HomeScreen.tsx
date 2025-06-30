@@ -132,7 +132,13 @@ const HomeScreen = ({ navigation }: any) => {
   }, []);
 
   const handlePrayerComplete = async (prayerTime: PrayerTime) => {
-    navigation.navigate("MindfulnessFlow", { prayer: prayerTime });
+    // Create a serializable version of prayerTime by converting Date to ISO string
+    const serializablePrayer = {
+      ...prayerTime,
+      time: prayerTime.time.toISOString(),  // Convert Date to string
+    };
+    
+    navigation.navigate("MindfulnessFlow", { prayer: serializablePrayer });
     const unlocked = await AchievementService.checkAchievements();
     if (unlocked.length > 0) {
       // Show celebration for first unlocked achievement

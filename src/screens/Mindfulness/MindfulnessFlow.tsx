@@ -38,7 +38,13 @@ type FlowStep = "breathing" | "reflection" | "complete";
 const MindfulnessFlow: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute<RouteProp<RootStackParamList, "MindfulnessFlow">>();
-  const prayer = route.params.prayer;
+  
+  // Parse the serialized prayer object and convert the ISO string back to a Date
+  const serializedPrayer = route.params.prayer;
+  const prayer = {
+    ...serializedPrayer,
+    time: new Date(serializedPrayer.time) // Convert ISO string back to Date object
+  };
 
   const { setCurrentMindfulnessSession, addPrayerRecord, setCelebratingAchievement } = useStore();
 

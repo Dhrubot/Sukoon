@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-               BuildableName = "PrayerBuddy.app"
-               BlueprintName = "PrayerBuddy"
-               ReferencedContainer = "container:PrayerBuddy.xcodeproj">
+               BuildableName = "Sukoon.app"
+               BlueprintName = "Sukoon"
+               ReferencedContainer = "container:Sukoon.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "00E356ED1AD99517003FC87E"
-               BuildableName = "PrayerBuddyTests.xctest"
-               BlueprintName = "PrayerBuddyTests"
-               ReferencedContainer = "container:PrayerBuddy.xcodeproj">
+               BuildableName = "SukoonTests.xctest"
+               BlueprintName = "SukoonTests"
+               ReferencedContainer = "container:Sukoon.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -55,9 +55,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "PrayerBuddy.app"
-            BlueprintName = "PrayerBuddy"
-            ReferencedContainer = "container:PrayerBuddy.xcodeproj">
+            BuildableName = "Sukoon.app"
+            BlueprintName = "Sukoon"
+            ReferencedContainer = "container:Sukoon.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -72,9 +72,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "PrayerBuddy.app"
-            BlueprintName = "PrayerBuddy"
-            ReferencedContainer = "container:PrayerBuddy.xcodeproj">
+            BuildableName = "Sukoon.app"
+            BlueprintName = "Sukoon"
+            ReferencedContainer = "container:Sukoon.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
