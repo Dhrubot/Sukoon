@@ -18,31 +18,31 @@ interface ReflectionPromptsProps {
 }
 
 const reflectionPrompts = {
-  fajr: [
+  Fajr: [
     "What are you grateful for as you start this new day?",
     "What intentions do you set for today?",
     "How did waking up for Fajr make you feel?",
     "What blessing would you like to focus on today?",
   ],
-  dhuhr: [
+  Dhuhr: [
     "How has your morning been? What are you thankful for?",
     "What can you improve in the second half of your day?",
     "How can you serve Allah better this afternoon?",
     "What moment from this morning brought you peace?",
   ],
-  asr: [
+  Asr: [
     "As the day progresses, what are you reflecting on?",
     "How have you remembered Allah throughout your day?",
     "What challenge did you overcome with Allah's help?",
     "What act of kindness can you do before Maghrib?",
   ],
-  maghrib: [
+  Maghrib: [
     "What are you most grateful for from today?",
     "How did Allah's mercy manifest in your day?",
     "What would you like to improve tomorrow?",
     "Which moment today brought you closest to Allah?",
   ],
-  isha: [
+  Isha: [
     "As you end your day, what fills your heart?",
     "What did you learn today that brought you closer to Allah?",
     "How can you make tomorrow better than today?",

@@ -112,14 +112,15 @@ const MindfulnessFlow: React.FC = () => {
   };
 
   const skipBreathing = () => {
-    Alert.alert(
-      "Skip Breathing Exercise?",
-      "The breathing exercise helps you focus better during prayer.",
-      [
-        { text: "Continue Breathing", style: "cancel" },
-        { text: "Skip", onPress: moveToReflection },
-      ]
-    );
+    // Alert.alert(
+    //   "Skip Breathing Exercise?",
+    //   "The breathing exercise helps you focus better during prayer.",
+    //   [
+    //     { text: "Continue Breathing", style: "cancel" },
+    //     { text: "Skip", onPress: moveToReflection },
+    //   ]
+    // );
+    moveToReflection();
   };
 
   const completeMindfulness = async () => {
