@@ -54,6 +54,7 @@ export default {
         "./plugins/withUsageStats.js",
         "./plugins/withModularHeaders.js",
         "./plugins/withAndroidIapFlavor.js",
+        "./plugins/withNodePath.js",
         "expo-notifications",
         "expo-location",
         [
