@@ -22,11 +22,11 @@ export default {
           NSUserNotificationsUsageDescription:
             "Sukoon needs notification permission to remind you of prayer times.",
         },
-        // config: {
-        //   googleMobileAds: {
-        //     app_id: "ca-app-pub-3940256099942544~3347511713",
-        //   },
-        // },
+        config: {
+          googleMobileAds: {
+            app_id: "ca-app-pub-5474984690525462~1671116769",
+          },
+        },
         jsEngine: "hermes"
       },
       android: {
@@ -44,11 +44,11 @@ export default {
           "WAKE_LOCK",
           "android.permission.PACKAGE_USAGE_STATS",
         ],
-        // config: {
-        //   googleMobileAds: {
-        //     app_id: "ca-app-pub-3940256099942544~3347511713",
-        //   },
-        // }
+        config: {
+          googleMobileAds: {
+            app_id: "ca-app-pub-5474984690525462~6816196886",
+          },
+        }
       },
       plugins: [
         "./plugins/withUsageStats.js",
@@ -57,13 +57,13 @@ export default {
         "./plugins/withNodePath.js",
         "expo-notifications",
         "expo-location",
-        // [
-        //   "react-native-google-mobile-ads",
-        //   {
-        //     android_app_id: "ca-app-pub-3940256099942544~3347511713",
-        //     ios_app_id: "ca-app-pub-3940256099942544~3347511713"
-        //   },
-        // ],
+        [
+          "react-native-google-mobile-ads",
+          {
+            android_app_id: "ca-app-pub-5474984690525462~6816196886",
+            ios_app_id: "ca-app-pub-5474984690525462~1671116769"
+          },
+        ],
       ],
       extra: {
         eas: {
