@@ -2,8 +2,8 @@
 import React from 'react';
 import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { TabParamList } from '../types/navigation';
 
-// Screen imports
 import HomeScreen from '../screens/Home/HomeScreen';
 import StatsScreen from '../screens/Stats/StatsScreen';
 import SettingsScreen from '../screens/Settings/SettingsScreen';
@@ -11,9 +11,13 @@ import AchievementsScreen from '../screens/Achievements/AchievementsScreen';
 import DigitalWellnessScreen from '../screens/DigitalWellness/DigitalWellnessScreen';
 import SupportScreen from '../screens/Support/SupportScreen';
 
-const Tab = createBottomTabNavigator();
+const Tab = createBottomTabNavigator<TabParamList>();
 
-const tabScreens = [
+const tabScreens: {
+  name: keyof TabParamList;
+  component: React.ComponentType<any>;
+  options: any;
+}[] = [
   {
     name: 'Home',
     component: HomeScreen,

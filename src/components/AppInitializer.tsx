@@ -1,10 +1,10 @@
-// src/components/AppInitializer.tsx
 import React from 'react';
 import { useAppInitialization } from '../hooks/useAppInitialization';
 import OnboardingScreen from '../screens/Onboarding/OnboardingScreen';
 import { LoadingScreen } from './LoadingScreen';
 import { LocationModal } from './LocationModal';
 import { AppNavigator } from '../navigation/AppNavigator';
+import { ServiceProvider } from '../providers/ServiceProvider';
 
 export const AppInitializer: React.FC = () => {
   const {
@@ -25,6 +25,7 @@ export const AppInitializer: React.FC = () => {
     return (
       <LoadingScreen 
         message={`Initialization failed: ${error}\n\nTap to retry`} 
+        onPress={retryInitialization}
       />
     );
   }
@@ -34,12 +35,12 @@ export const AppInitializer: React.FC = () => {
   }
 
   return (
-    <>
+    <ServiceProvider>
       <AppNavigator />
       <LocationModal 
         visible={showLocationModal} 
         onClose={closeLocationModal} 
       />
-    </>
+    </ServiceProvider>
   );
 };

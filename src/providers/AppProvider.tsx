@@ -2,7 +2,7 @@
 import React from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatusBar } from 'expo-status-bar';
-import { ServicesProvider } from './ServicesProvider';
+import { ServicesProvider } from './ServiceProvider';
 
 interface AppProviderProps {
   children: React.ReactNode;

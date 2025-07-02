@@ -1,9 +1,12 @@
-// src/hooks/useAppInitialization.ts
 import { useState, useEffect } from 'react';
 import * as SplashScreen from 'expo-splash-screen';
 import StorageService from '../services/StorageService';
 import NotificationService from '../services/NotificationService';
+import PrayerTimeService from '../services/PrayerTimeService';
+import LocationService from '../services/LocationService';
 import { useStore } from '../store/useStore';
+import { Location as LocationType } from '../types';
+import { usePrayerTimeRefresh } from './usePrayerTimeRefresh';
 
 interface AppInitializationState {
   isLoading: boolean;
@@ -21,6 +24,7 @@ export const useAppInitialization = () => {
   });
 
   const { setUserSettings, setLocation } = useStore();
+  const { shouldRefreshPrayerTimes } = usePrayerTimeRefresh();
 
   useEffect(() => {
     initializeApp();
@@ -37,6 +41,7 @@ export const useAppInitialization = () => {
       let settings = StorageService.getUserSettings();
       if (!settings) {
         settings = StorageService.getDefaultSettings();
+        StorageService.setUserSettings(settings);
       }
 
       setUserSettings(settings);
@@ -44,6 +49,29 @@ export const useAppInitialization = () => {
 
       // Initialize notifications
       await NotificationService.initialize();
+
+      // Check if prayer times need refreshing
+      if (settings.location.latitude && settings.location.longitude) {
+        const needsRefresh = await shouldRefreshPrayerTimes(
+          settings.location,
+          settings.calculationMethod
+        );
+
+        if (needsRefresh) {
+          console.log('Refreshing prayer times...');
+          try {
+            await PrayerTimeService.fetchPrayerTimes(
+              settings.location,
+              new Date(),
+              settings.calculationMethod,
+              settings.asrJuristic
+            );
+          } catch (error) {
+            console.error('Failed to refresh prayer times:', error);
+            // Continue anyway, use cached times
+          }
+        }
+      }
 
       // If no location is set, show location modal
       const needsLocation = !settings.location.latitude || !settings.location.longitude;
