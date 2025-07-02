@@ -22,6 +22,11 @@ export default {
           NSUserNotificationsUsageDescription:
             "Sukoon needs notification permission to remind you of prayer times.",
         },
+        config: {
+          googleMobileAds: {
+            app_id: "ca-app-pub-3940256099942544~3347511713",
+          },
+        },
         jsEngine: "hermes"
       },
       android: {
@@ -39,6 +44,11 @@ export default {
           "WAKE_LOCK",
           "android.permission.PACKAGE_USAGE_STATS",
         ],
+        config: {
+          googleMobileAds: {
+            app_id: "ca-app-pub-3940256099942544~3347511713",
+          },
+        }
       },
       plugins: [
         "./plugins/withUsageStats.js",
