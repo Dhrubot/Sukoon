@@ -60,8 +60,8 @@ export default {
         [
           "react-native-google-mobile-ads",
           {
-            android_app_id: "ca-app-pub-5474984690525462~6816196886",
-            ios_app_id: "ca-app-pub-5474984690525462~1671116769"
+            androidAppId: "ca-app-pub-5474984690525462~6816196886",
+            iosAppId: "ca-app-pub-5474984690525462~1671116769"
           },
         ],
       ],
@@ -70,14 +70,14 @@ export default {
           projectId: "talukders-sukoon-id",
         },
         "react-native-google-mobile-ads": {
-          android_app_id: "ca-app-pub-5474984690525462~6816196886",
-          ios_app_id: "ca-app-pub-5474984690525462~1671116769"
+          androidAppId: "ca-app-pub-5474984690525462~6816196886",
+          iosAppId: "ca-app-pub-5474984690525462~1671116769"
         }
       },
     },
     "react-native-google-mobile-ads": {
-      android_app_id: "ca-app-pub-5474984690525462~6816196886",
-      ios_app_id: "ca-app-pub-5474984690525462~1671116769"
+      androidAppId: "ca-app-pub-5474984690525462~6816196886",
+      iosAppId: "ca-app-pub-5474984690525462~1671116769"
     }
   };
   
