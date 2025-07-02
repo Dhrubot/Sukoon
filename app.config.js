@@ -52,6 +52,7 @@ export default {
       },
       plugins: [
         "./plugins/withUsageStats.js",
+        "./plugins/withModularHeaders.js",
         "expo-notifications",
         "expo-location",
         [
