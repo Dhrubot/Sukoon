@@ -1,10 +1,8 @@
-const { withGradleProperties, withSettingsGradle } = require('@expo/config-plugins');
+const { withGradleProperties } = require('@expo/config-plugins');
 const { execSync } = require('child_process');
-const path = require('path');
 
 const withNodePath = (config) => {
-  // First, set gradle.properties
-  config = withGradleProperties(config, (config) => {
+  return withGradleProperties(config, (config) => {
     // Get the Node.js path
     let nodePath;
     try {
@@ -58,34 +56,6 @@ const withNodePath = (config) => {
     
     return config;
   });
-
-  // Also modify settings.gradle to help with Node detection
-  config = withSettingsGradle(config, (config) => {
-    let content = config.modResults.contents;
-    
-    // Add environment setup for Node.js at the beginning
-    const nodeSetup = `
-// Set up Node.js environment for NVM compatibility
-if (System.getenv('NVM_DIR')) {
-    def nvmDir = System.getenv('NVM_DIR')
-    def nodeVersion = 'v22.11.0' // Your Node version
-    def nodePath = "\${nvmDir}/versions/node/\${nodeVersion}/bin"
-    
-    // Add to PATH for subprocesses
-    def currentPath = System.getenv('PATH') ?: ''
-    def newPath = "\${nodePath}:\${currentPath}"
-    System.setProperty('PATH', newPath)
-}
-`;
-    
-    if (!content.includes('NVM_DIR')) {
-      config.modResults.contents = nodeSetup + content;
-    }
-    
-    return config;
-  });
-
-  return config;
 };
 
 module.exports = withNodePath;

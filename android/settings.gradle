@@ -1,3 +1,15 @@
+
+// Set up Node.js environment for NVM compatibility
+if (System.getenv('NVM_DIR')) {
+    def nvmDir = System.getenv('NVM_DIR')
+    def nodeVersion = 'v22.11.0' // Your Node version
+    def nodePath = "${nvmDir}/versions/node/${nodeVersion}/bin"
+    
+    // Add to PATH for subprocesses
+    def currentPath = System.getenv('PATH') ?: ''
+    def newPath = "${nodePath}:${currentPath}"
+    System.setProperty('PATH', newPath)
+}
 pluginManagement {
   def reactNativeGradlePlugin = new File(
     providers.exec {
