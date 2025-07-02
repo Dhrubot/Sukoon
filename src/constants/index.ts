@@ -22,15 +22,7 @@ export const PRAYER_NAMES = {
     isha: ['#512da8', '#7e57c2'],
   } as const;
   
-  export const CALCULATION_METHODS = [
-    { value: 'MWL', label: 'Muslim World League' },
-    { value: 'ISNA', label: 'Islamic Society of North America' },
-    { value: 'Egypt', label: 'Egyptian General Authority' },
-    { value: 'Makkah', label: 'Umm al-Qura, Makkah' },
-    { value: 'Karachi', label: 'University of Islamic Sciences' },
-    { value: 'Tehran', label: 'Institute of Geophysics, Tehran' },
-    { value: 'Jafari', label: 'Shia Ithna Ashari' },
-  ] as const;
+  // CALCULATION_METHODS moved to types/index.ts
   
   export const JURISTIC_METHODS = [
     { value: 'Standard', label: 'Standard (Shafi, Maliki, Hanbali)' },

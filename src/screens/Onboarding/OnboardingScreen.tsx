@@ -16,7 +16,7 @@ import * as Notifications from 'expo-notifications';
 
 import StorageService from '../../services/StorageService';
 import { useStore } from '../../store/useStore';
-import { CALCULATION_METHODS } from '../../constants';
+import { CalculationMethod, CALCULATION_METHODS } from '../../types';
 
 interface OnboardingScreenProps {
   onComplete: () => void;
@@ -27,7 +27,7 @@ type OnboardingStep = 'welcome' | 'name' | 'location' | 'notifications' | 'metho
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome');
   const [name, setName] = useState('');
-  const [selectedMethod, setSelectedMethod] = useState('MWL');
+  const [selectedMethod, setSelectedMethod] = useState<CalculationMethod>('MWL');
   
   const { setUserSettings } = useStore();
 
@@ -66,7 +66,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   const completeOnboarding = async () => {
     const settings = StorageService.getDefaultSettings();
     settings.name = name;
-    settings.calculationMethod = selectedMethod as any;
+    settings.calculationMethod = selectedMethod;
     
     StorageService.setUserSettings(settings);
     setUserSettings(settings);

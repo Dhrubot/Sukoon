@@ -1,5 +1,5 @@
 // Prayer related types
-export type PrayerName = 'Fajr' | 'Dhuhr' | 'Asr' | 'Maghrib' | 'Isha';
+export type PrayerName = "Fajr" | "Dhuhr" | "Asr" | "Maghrib" | "Isha";
 
 export interface PrayerTime {
   name: PrayerName;
@@ -22,7 +22,7 @@ export interface PrayerRecord {
   id: string;
   date: string; // YYYY-MM-DD
   prayer: PrayerName;
-  status: 'prayed' | 'missed' | 'delayed';
+  status: "prayed" | "missed" | "delayed";
   prayedAt?: Date;
   mindfulnessCompleted?: boolean;
   reflectionAdded?: boolean;
@@ -43,20 +43,35 @@ export interface Location extends Coordinates {
 }
 
 // Settings types
-export type CalculationMethod = 
-  | 'MWL' // Muslim World League
-  | 'ISNA' // Islamic Society of North America
-  | 'Egypt' // Egyptian General Authority of Survey
-  | 'Makkah' // Umm al-Qura, Makkah
-  | 'Karachi' // University of Islamic Sciences, Karachi
-  | 'Tehran' // Institute of Geophysics, University of Tehran
-  | 'Jafari'; // Shia Ithna Ashari
+export type CalculationMethod =
+  | "MWL" // Muslim World League
+  | "ISNA" // Islamic Society of North America
+  | "Egypt" // Egyptian General Authority of Survey
+  | "Makkah" // Umm al-Qura, Makkah
+  | "Karachi" // University of Islamic Sciences, Karachi
+  | "Tehran" // Institute of Geophysics, University of Tehran
+  | "Jafari"; // Shia Ithna Ashari
+
+export interface CalculationMethodType {
+  value: CalculationMethod;
+  label: string;
+}
+
+export const CALCULATION_METHODS: CalculationMethodType[] = [
+  { value: "MWL", label: "Muslim World League" },
+  { value: "ISNA", label: "Islamic Society of North America" },
+  { value: "Egypt", label: "Egyptian General Authority" },
+  { value: "Makkah", label: "Umm al-Qura, Makkah" },
+  { value: "Karachi", label: "University of Islamic Sciences, Karachi" },
+  { value: "Tehran", label: "Institute of Geophysics, Tehran" },
+  { value: "Jafari", label: "Shia Ithna Ashari" },
+];
 
 export interface UserSettings {
   name?: string;
   location: Location;
   calculationMethod: CalculationMethod;
-  asrJuristic: 'Standard' | 'Hanafi';
+  asrJuristic: "Standard" | "Hanafi";
   adjustments: {
     Fajr: number;
     Dhuhr: number;
@@ -72,7 +87,7 @@ export interface UserSettings {
     reminderText: string;
     postPrayerCheck: boolean;
   };
-  theme: 'light' | 'dark' | 'auto';
+  theme: "light" | "dark" | "auto";
 }
 
 // Mindfulness types
@@ -155,7 +170,7 @@ export interface AppUsageData {
   packageName: string;
   appName: string;
   timeSpent: number; // minutes
-  category: 'social' | 'productivity' | 'entertainment' | 'other';
+  category: "social" | "productivity" | "entertainment" | "other";
   icon?: string;
 }
 
@@ -169,7 +184,7 @@ export interface UsageStats {
 
 export interface DigitalWellnessInsight {
   id: string;
-  type: 'warning' | 'achievement' | 'tip';
+  type: "warning" | "achievement" | "tip";
   title: string;
   description: string;
   icon: string;
@@ -189,11 +204,11 @@ export interface PrePrayerUsage {
 
 export interface DigitalWellnessGoal {
   id: string;
-  type: 'daily_limit' | 'app_limit' | 'unlock_limit' | 'prayer_focus';
+  type: "daily_limit" | "app_limit" | "unlock_limit" | "prayer_focus";
   target: number;
   current: number;
-  unit: 'minutes' | 'times' | 'score';
-  period: 'daily' | 'weekly';
+  unit: "minutes" | "times" | "score";
+  period: "daily" | "weekly";
   createdAt: Date;
 }
 
@@ -219,7 +234,7 @@ export interface DailyStats {
 // Subscription Types
 export interface SubscriptionPlan {
   id: string;
-  type: 'monthly' | 'yearly' | 'lifetime';
+  type: "monthly" | "yearly" | "lifetime";
   startDate: Date;
   expiryDate: Date | null; // null for lifetime
   isActive: boolean;
@@ -251,7 +266,7 @@ export interface Donation {
   currency: string;
   date: Date;
   productId?: string;
-  status: 'pending' | 'completed' | 'failed';
+  status: "pending" | "completed" | "failed";
   message?: string; // Optional message from donor
 }
 
@@ -259,14 +274,14 @@ export interface Donation {
 export interface TemporaryPremium {
   grantedAt: Date;
   expiresAt: Date;
-  source: 'ad_reward' | 'promotion' | 'trial';
+  source: "ad_reward" | "promotion" | "trial";
 }
 
 // Family Sharing Types
 export interface FamilyMember {
   id: string;
   name: string;
-  role: 'parent' | 'child';
+  role: "parent" | "child";
   joinedAt: Date;
   avatar: string;
   lastSeen?: Date;
@@ -292,7 +307,7 @@ export interface FamilyPrayerStatus {
   date: string; // YYYY-MM-DD
   prayers: {
     [key in PrayerName]?: {
-      status: 'prayed' | 'missed';
+      status: "prayed" | "missed";
       time: Date;
       location?: {
         lat: number;
@@ -306,7 +321,7 @@ export interface FamilyChallenge {
   id: string;
   title: string;
   description: string;
-  type: 'prayer_streak' | 'perfect_days' | 'mindfulness' | 'quran_reading';
+  type: "prayer_streak" | "perfect_days" | "mindfulness" | "quran_reading";
   target: number;
   startDate: Date;
   endDate: Date;
@@ -329,20 +344,20 @@ export interface StorageServiceMonetization {
   saveSubscription(subscription: SubscriptionPlan): void;
   getSubscription(): SubscriptionPlan | null;
   clearSubscription(): void;
-  
+
   // Premium Features
   setPremiumFeatures(features: PremiumFeatures): void;
   getPremiumFeatures(): PremiumFeatures;
   isPremiumActive(): Promise<boolean>;
-  
+
   // Temporary Premium
   setTemporaryPremium(temp: TemporaryPremium): void;
   getTemporaryPremium(): TemporaryPremium | null;
-  
+
   // Donations
   saveDonation(donation: Donation): void;
   getDonationHistory(): Donation[];
-  
+
   // Ad Tracking
   setLastAdWatchTime(time: Date): void;
   getLastAdWatchTime(): Date | null;
