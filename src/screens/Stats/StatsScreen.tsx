@@ -1,3 +1,4 @@
+// src/screens/Stats/StatsScreen.tsx
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -18,12 +19,25 @@ import { useStore } from '../../store/useStore';
 import StorageService from '../../services/StorageService';
 import { PrayerRecord, DailyStats } from '../../types';
 
+// NEW: Use our centralized prayer times hook
+import { usePrayerTimes } from '../../providers/PrayerTimesProvider';
+
 const { width } = Dimensions.get('window');
 
 type TimeRange = 'week' | 'month' | 'all';
 
 const StatsScreen: React.FC = () => {
+  // 🎯 NEW: Use centralized prayer times hook
+  const { 
+    todayPrayerTimes, 
+    hasValidLocation, 
+    isLoading: prayerTimesLoading,
+    error: prayerTimesError 
+  } = usePrayerTimes();
+
+  // Keep existing store state for other features
   const { currentStreak, todayPrayerRecords } = useStore();
+  
   const [timeRange, setTimeRange] = useState<TimeRange>('week');
   const [isLoading, setIsLoading] = useState(true);
   const [stats, setStats] = useState({
@@ -40,8 +54,11 @@ const StatsScreen: React.FC = () => {
   const [focusTrend, setFocusTrend] = useState<number[]>([]);
 
   useEffect(() => {
-    loadStatistics();
-  }, [timeRange]);
+    // Only load statistics if we have valid location and prayer times
+    if (hasValidLocation && todayPrayerTimes.length > 0) {
+      loadStatistics();
+    }
+  }, [timeRange, hasValidLocation, todayPrayerTimes]);
 
   const loadStatistics = async () => {
     setIsLoading(true);
@@ -198,12 +215,59 @@ const StatsScreen: React.FC = () => {
     },
   };
 
+  // 🎯 NEW: Handle invalid location state
+  if (!hasValidLocation) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.emptyStateContainer}>
+          <Text style={styles.emptyStateIcon}>📍</Text>
+          <Text style={styles.emptyStateTitle}>Location Required</Text>
+          <Text style={styles.emptyStateText}>
+            Please set your location to view prayer statistics
+          </Text>
+          <Text style={styles.emptyStateSubtext}>
+            Go to Settings to configure your location
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // 🎯 NEW: Handle prayer times loading state
+  if (prayerTimesLoading || (todayPrayerTimes.length === 0 && !prayerTimesError)) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#1B5E3F" />
+          <Text style={styles.loadingText}>Loading prayer times...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // 🎯 NEW: Handle prayer times error state
+  if (prayerTimesError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.emptyStateContainer}>
+          <Text style={styles.emptyStateIcon}>⚠️</Text>
+          <Text style={styles.emptyStateTitle}>Unable to Load Prayer Times</Text>
+          <Text style={styles.emptyStateText}>{prayerTimesError}</Text>
+          <Text style={styles.emptyStateSubtext}>
+            Statistics require prayer times to be available
+          </Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // 🎯 ENHANCED: Show loading state for statistics calculation
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#1B5E3F" />
-          <Text style={styles.loadingText}>Loading your statistics...</Text>
+          <Text style={styles.loadingText}>Calculating your statistics...</Text>
         </View>
       </SafeAreaView>
     );
@@ -232,74 +296,77 @@ const StatsScreen: React.FC = () => {
                     timeRange === range && styles.timeRangeTextActive,
                   ]}
                 >
-                  {range === 'all' ? '90 Days' : range.charAt(0).toUpperCase() + range.slice(1)}
+                  {range === 'all' ? 'Last 90 Days' : range.charAt(0).toUpperCase() + range.slice(1)}
                 </Text>
               </TouchableOpacity>
             ))}
           </View>
         </View>
 
-        {/* Key Metrics */}
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.metricsContainer}
-        >
-          <LinearGradient
-            colors={['#1B5E3F', '#2E7D32']}
-            style={styles.metricCard}
-          >
-            <Text style={styles.metricValue}>{currentStreak}</Text>
-            <Text style={styles.metricLabel}>Current Streak</Text>
-            <Text style={styles.metricSubtext}>days</Text>
-          </LinearGradient>
+        {/* Key Statistics */}
+        <View style={styles.statsGrid}>
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{stats.completedPrayers}</Text>
+            <Text style={styles.statLabel}>Prayers Completed</Text>
+            <Text style={styles.statSubtext}>out of {stats.totalPrayers}</Text>
+          </View>
+          
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{stats.averageDailyCompletion.toFixed(1)}%</Text>
+            <Text style={styles.statLabel}>Completion Rate</Text>
+            <Text style={styles.statSubtext}>daily average</Text>
+          </View>
+          
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{currentStreak}</Text>
+            <Text style={styles.statLabel}>Current Streak</Text>
+            <Text style={styles.statSubtext}>days in a row</Text>
+          </View>
+          
+          <View style={styles.statCard}>
+            <Text style={styles.statValue}>{stats.averageFocusScore.toFixed(0)}</Text>
+            <Text style={styles.statLabel}>Focus Score</Text>
+            <Text style={styles.statSubtext}>average rating</Text>
+          </View>
+        </View>
 
-          <LinearGradient
-            colors={['#1976D2', '#2196F3']}
-            style={styles.metricCard}
-          >
-            <Text style={styles.metricValue}>
-              {stats.averageDailyCompletion.toFixed(0)}%
-            </Text>
-            <Text style={styles.metricLabel}>Completion Rate</Text>
-            <Text style={styles.metricSubtext}>
-              {stats.completedPrayers}/{stats.totalPrayers} prayers
-            </Text>
-          </LinearGradient>
+        {/* Today's Progress */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Today's Progress</Text>
+          <View style={styles.todayProgressContainer}>
+            {todayPrayerTimes.map((prayer) => {
+              const record = todayPrayerRecords.find(r => r.prayer === prayer.name);
+              const isCompleted = record?.status === 'prayed';
+              const isMindful = record?.mindfulnessCompleted;
+              
+              return (
+                <View key={prayer.name} style={styles.todayPrayerItem}>
+                  <Text style={styles.prayerEmoji}>
+                    {isCompleted ? (isMindful ? '🤲' : '✅') : '⭕'}
+                  </Text>
+                  <Text style={[
+                    styles.prayerName,
+                    isCompleted && styles.completedPrayerName
+                  ]}>
+                    {prayer.name}
+                  </Text>
+                  <Text style={styles.prayerTime}>
+                    {format(prayer.time, 'HH:mm')}
+                  </Text>
+                </View>
+              );
+            })}
+          </View>
+        </View>
 
-          <LinearGradient
-            colors={['#7B1FA2', '#9C27B0']}
-            style={styles.metricCard}
-          >
-            <Text style={styles.metricValue}>
-              {stats.averageFocusScore.toFixed(0)}%
-            </Text>
-            <Text style={styles.metricLabel}>Avg Focus</Text>
-            <Text style={styles.metricSubtext}>khushoo score</Text>
-          </LinearGradient>
-
-          <LinearGradient
-            colors={['#F57C00', '#FF9800']}
-            style={styles.metricCard}
-          >
-            <Text style={styles.metricValue}>
-              {stats.mindfulnessRate.toFixed(0)}%
-            </Text>
-            <Text style={styles.metricLabel}>Mindfulness</Text>
-            <Text style={styles.metricSubtext}>with preparation</Text>
-          </LinearGradient>
-        </ScrollView>
-
-        {/* Weekly Prayer Chart */}
-        {timeRange === 'week' && (
-          <View style={styles.chartSection}>
-            <Text style={styles.chartTitle}>This Week's Prayers</Text>
+        {/* Weekly Progress Chart */}
+        {timeRange === 'week' && weeklyData.some(d => d > 0) && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>This Week</Text>
             <BarChart
               data={{
                 labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-                datasets: [{
-                  data: weeklyData,
-                }],
+                datasets: [{ data: weeklyData }],
               }}
               width={width - 40}
               height={220}
@@ -307,117 +374,86 @@ const StatsScreen: React.FC = () => {
               yAxisSuffix=""
               chartConfig={chartConfig}
               style={styles.chart}
-              fromZero
-              showBarTops
-              showValuesOnTopOfBars
             />
           </View>
         )}
 
-        {/* Monthly Trend */}
-        {timeRange === 'month' && monthlyData.length > 0 && (
-          <View style={styles.chartSection}>
-            <Text style={styles.chartTitle}>Monthly Trend</Text>
+        {/* Focus Trend */}
+        {focusTrend.some(score => score > 0) && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Focus Trend (Last 7 Days)</Text>
             <LineChart
               data={{
-                labels: monthlyData.slice(-7).map(d => d.date),
-                datasets: [{
-                  data: monthlyData.slice(-7).map(d => d.count),
-                }],
+                labels: Array.from({ length: 7 }, (_, i) => 
+                  format(subDays(new Date(), 6 - i), 'dd')
+                ),
+                datasets: [{ data: focusTrend }],
               }}
               width={width - 40}
               height={220}
+              yAxisLabel=""
+              yAxisSuffix=""
               chartConfig={chartConfig}
               style={styles.chart}
-              bezier
             />
           </View>
         )}
 
         {/* Prayer Breakdown */}
         {prayerBreakdown.length > 0 && (
-          <View style={styles.chartSection}>
-            <Text style={styles.chartTitle}>Prayer Breakdown</Text>
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Prayer Breakdown</Text>
             <PieChart
-              data={prayerBreakdown}
+              data={prayerBreakdown.map((item, index) => ({
+                name: item.name,
+                population: item.count,
+                color: item.color,
+                legendFontColor: '#333',
+                legendFontSize: 14,
+              }))}
               width={width - 40}
-              height={200}
+              height={220}
               chartConfig={chartConfig}
-              accessor="count"
+              accessor="population"
               backgroundColor="transparent"
               paddingLeft="15"
-              absolute
+              style={styles.chart}
             />
           </View>
         )}
 
-        {/* Focus Trend */}
-        <View style={styles.chartSection}>
-          <Text style={styles.chartTitle}>Focus Trend (Last 7 Days)</Text>
-          <LineChart
-            data={{
-              labels: ['6d', '5d', '4d', '3d', '2d', '1d', 'Today'],
-              datasets: [{
-                data: focusTrend.length > 0 ? focusTrend : [0, 0, 0, 0, 0, 0, 0],
-              }],
-            }}
-            width={width - 40}
-            height={180}
-            chartConfig={{
-              ...chartConfig,
-              color: (opacity = 1) => `rgba(156, 39, 176, ${opacity})`,
-            }}
-            style={styles.chart}
-            bezier
-            getDotColor={(value) => value >= 80 ? '#4CAF50' : value >= 60 ? '#FF9800' : '#F44336'}
-          />
-        </View>
-
-        {/* Insights */}
-        <View style={styles.insightsSection}>
-          <Text style={styles.insightTitle}>📊 Insights</Text>
+        {/* Additional Insights */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Insights</Text>
           
+          <View style={styles.insightCard}>
+            <Text style={styles.insightTitle}>🎯 Mindfulness Rate</Text>
+            <Text style={styles.insightValue}>{stats.mindfulnessRate.toFixed(1)}%</Text>
+            <Text style={styles.insightDescription}>
+              of your prayers include mindfulness practice
+            </Text>
+          </View>
+          
+          <View style={styles.insightCard}>
+            <Text style={styles.insightTitle}>🏆 Longest Streak</Text>
+            <Text style={styles.insightValue}>{stats.longestStreak} days</Text>
+            <Text style={styles.insightDescription}>
+              your personal best consecutive prayer days
+            </Text>
+          </View>
+
           {stats.averageDailyCompletion >= 80 && (
-            <View style={styles.insightCard}>
-              <Text style={styles.insightEmoji}>🌟</Text>
-              <Text style={styles.insightText}>
-                Excellent consistency! You're praying {stats.averageDailyCompletion.toFixed(0)}% of your prayers.
-              </Text>
-            </View>
-          )}
-          
-          {currentStreak >= 7 && (
-            <View style={styles.insightCard}>
-              <Text style={styles.insightEmoji}>🔥</Text>
-              <Text style={styles.insightText}>
-                Amazing {currentStreak}-day streak! Keep it up!
-              </Text>
-            </View>
-          )}
-          
-          {stats.averageFocusScore >= 80 && (
-            <View style={styles.insightCard}>
-              <Text style={styles.insightEmoji}>🧘</Text>
-              <Text style={styles.insightText}>
-                Your focus during prayer is exceptional. Ma sha Allah!
-              </Text>
-            </View>
-          )}
-          
-          {stats.mindfulnessRate >= 50 && (
-            <View style={styles.insightCard}>
-              <Text style={styles.insightEmoji}>💚</Text>
-              <Text style={styles.insightText}>
-                You prepare mindfully for {stats.mindfulnessRate.toFixed(0)}% of your prayers.
+            <View style={[styles.insightCard, styles.achievementCard]}>
+              <Text style={styles.insightTitle}>⭐ Excellent Consistency!</Text>
+              <Text style={styles.insightDescription}>
+                You're maintaining an outstanding prayer completion rate. Keep up the amazing work!
               </Text>
             </View>
           )}
         </View>
 
-        {/* Export Button */}
-        <TouchableOpacity style={styles.exportButton}>
-          <Text style={styles.exportButtonText}>Export Prayer Data</Text>
-        </TouchableOpacity>
+        {/* Bottom spacing */}
+        <View style={{ height: 30 }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -426,147 +462,196 @@ const StatsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#F5F5F5',
   },
+  header: {
+    padding: 20,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#1B5E3F',
+    marginBottom: 20,
+  },
+  timeRangeContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#F0F0F0',
+    borderRadius: 8,
+    padding: 4,
+  },
+  timeRangeButton: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 6,
+    alignItems: 'center',
+  },
+  timeRangeButtonActive: {
+    backgroundColor: '#1B5E3F',
+  },
+  timeRangeText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#666666',
+  },
+  timeRangeTextActive: {
+    color: '#FFFFFF',
+  },
+  
+  // 🎯 NEW: Empty and loading states
+  emptyStateContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  emptyStateIcon: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  emptyStateTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1B5E3F',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  emptyStateText: {
+    fontSize: 16,
+    color: '#666666',
+    textAlign: 'center',
+    marginBottom: 8,
+    lineHeight: 24,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: '#999999',
+    textAlign: 'center',
+  },
+  
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 40,
   },
   loadingText: {
-    marginTop: 16,
     fontSize: 16,
-    color: '#757575',
+    color: '#666666',
+    marginTop: 16,
+    textAlign: 'center',
   },
-  header: {
-    padding: 20,
-    paddingBottom: 0,
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#212121',
-    marginBottom: 16,
-  },
-  timeRangeContainer: {
+  
+  // Existing styles...
+  statsGrid: {
     flexDirection: 'row',
-    backgroundColor: '#F5F5F5',
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 20,
+    flexWrap: 'wrap',
+    padding: 10,
+    gap: 10,
   },
-  timeRangeButton: {
-    flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  timeRangeButtonActive: {
+  statCard: {
     backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  timeRangeText: {
-    fontSize: 14,
-    color: '#757575',
-    fontWeight: '500',
-  },
-  timeRangeTextActive: {
-    color: '#1B5E3F',
-    fontWeight: '600',
-  },
-  metricsContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    gap: 12,
-  },
-  metricCard: {
-    width: 140,
+    borderRadius: 12,
     padding: 20,
-    borderRadius: 16,
-    marginRight: 12,
+    width: (width - 40) / 2,
+    alignItems: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
-  metricValue: {
-    fontSize: 36,
-    fontWeight: '700',
-    color: '#FFFFFF',
+  statValue: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#1B5E3F',
+    marginBottom: 4,
   },
-  metricLabel: {
+  statLabel: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.9)',
-    marginTop: 4,
+    fontWeight: '600',
+    color: '#333333',
+    textAlign: 'center',
+    marginBottom: 4,
   },
-  metricSubtext: {
+  statSubtext: {
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.7)',
-    marginTop: 2,
+    color: '#666666',
+    textAlign: 'center',
   },
-  chartSection: {
-    paddingHorizontal: 20,
-    marginTop: 24,
-  },
-  chartTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#212121',
-    marginBottom: 16,
-  },
-  chart: {
-    borderRadius: 16,
-    marginVertical: 8,
-  },
-  insightsSection: {
+  section: {
     padding: 20,
-    marginTop: 24,
   },
-  insightTitle: {
+  sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#212121',
+    color: '#1B5E3F',
     marginBottom: 16,
   },
-  insightCard: {
-    flexDirection: 'row',
+  todayProgressContainer: {
     backgroundColor: '#FFFFFF',
-    padding: 16,
     borderRadius: 12,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    padding: 16,
   },
-  insightEmoji: {
+  todayPrayerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  prayerEmoji: {
     fontSize: 24,
     marginRight: 12,
   },
-  insightText: {
+  prayerName: {
     flex: 1,
-    fontSize: 15,
-    color: '#424242',
-    lineHeight: 22,
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#333333',
   },
-  exportButton: {
-    backgroundColor: '#1B5E3F',
-    margin: 20,
-    padding: 16,
+  completedPrayerName: {
+    color: '#1B5E3F',
+  },
+  prayerTime: {
+    fontSize: 14,
+    color: '#666666',
+  },
+  chart: {
+    marginVertical: 8,
+    borderRadius: 16,
+  },
+  insightCard: {
+    backgroundColor: '#FFFFFF',
     borderRadius: 12,
-    alignItems: 'center',
+    padding: 20,
+    marginBottom: 12,
+    borderLeftWidth: 4,
+    borderLeftColor: '#1B5E3F',
   },
-  exportButtonText: {
+  achievementCard: {
+    borderLeftColor: '#FFD700',
+    backgroundColor: '#FFFEF7',
+  },
+  insightTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: '#1B5E3F',
+    marginBottom: 8,
+  },
+  insightValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1B5E3F',
+    marginBottom: 4,
+  },
+  insightDescription: {
+    fontSize: 14,
+    color: '#666666',
+    lineHeight: 20,
   },
 });
 
