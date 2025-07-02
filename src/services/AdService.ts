@@ -15,14 +15,14 @@ const AD_UNITS = {
   REWARDED: __DEV__ 
     ? TestIds.REWARDED
     : Platform.select({
-        ios: 'ca-app-pub-5474984690525462~1671116769', // Replace with your iOS ad unit ID
-        android: 'ca-app-pub-5474984690525462~6816196886', // Replace with your Android ad unit ID
+        ios: 'ca-app-pub-5474984690525462/3839513900', // Replace with your iOS ad unit ID
+        android: 'ca-app-pub-5474984690525462/5179116937', // Replace with your Android ad unit ID
       }),
   INTERSTITIAL: __DEV__
     ? TestIds.INTERSTITIAL
     : Platform.select({
-        ios: 'ca-app-pub-5474984690525462~1671116769',
-        android: 'ca-app-pub-5474984690525462~6816196886',
+        ios: 'ca-app-pub-5474984690525462/7038993514',
+        android: 'ca-app-pub-5474984690525462/9128619163',
       }),
 };
 
