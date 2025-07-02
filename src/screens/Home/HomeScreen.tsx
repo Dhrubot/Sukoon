@@ -1,3 +1,4 @@
+// src/screens/Home/HomeScreen.tsx
 import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
@@ -8,6 +9,7 @@ import {
   StyleSheet,
   Dimensions,
   ColorValue,
+  ActivityIndicator,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -15,10 +17,12 @@ import { format } from "date-fns";
 
 // Store and Services
 import { useStore } from "../../store/useStore";
-import PrayerTimeService from "../../services/PrayerTimeService";
 import StorageService from "../../services/StorageService";
 
-// Components (we'll create these next)
+// NEW: Use our centralized prayer times hook
+import { usePrayerTimes } from "../../providers/PrayerTimesProvider";
+
+// Components
 import PrayerCard from "../../components/prayer/PrayerCard";
 import NextPrayerCard from "../../components/prayer/NextPrayerCard";
 import DailyVerse from "../../components/common/DailyVerse";
@@ -34,28 +38,41 @@ import UsageStatsService from "../../services/UsageStatsService";
 const { width } = Dimensions.get("window");
 
 const HomeScreen = ({ navigation }: any) => {
+  // 🎯 NEW: Replace complex prayer time logic with simple hook
+  const { 
+    todayPrayerTimes, 
+    nextPrayer, 
+    isLoading: prayerTimesLoading, 
+    hasValidLocation, 
+    error: prayerTimesError,
+    refreshPrayerTimes 
+  } = usePrayerTimes();
+
+  // Keep existing store state for other features
   const {
     userSettings,
-    location,
-    todayPrayerTimes,
-    setTodayPrayerTimes,
-    nextPrayer,
-    setNextPrayer,
     todayPrayerRecords,
     setTodayPrayerRecords,
     currentStreak,
     isRefreshing,
     setIsRefreshing,
+    celebratingAchievement,
+    setCelebratingAchievement
   } = useStore();
 
+  // Local state for UI features
   const [currentTime, setCurrentTime] = useState(new Date());
   const [greeting, setGreeting] = useState("");
-  const { celebratingAchievement, setCelebratingAchievement } = useStore();
   const [screenTime, setScreenTime] = useState(0);
 
+  // 🎯 REMOVED: loadPrayerTimes function - now handled by provider!
+  // 🎯 REMOVED: location checks - now handled by provider!
+  // 🎯 REMOVED: prayer time error handling - now handled by provider!
+
   useEffect(() => {
-    loadPrayerTimes();
+    // Only load non-prayer-time related data
     loadTodayRecords();
+    loadScreenTime();
 
     // Update time every minute
     const timer = setInterval(() => {
@@ -66,45 +83,21 @@ const HomeScreen = ({ navigation }: any) => {
     updateGreeting();
 
     return () => clearInterval(timer);
-  }, [location, userSettings?.calculationMethod]);
-
-  useEffect(() => {
-    const loadScreenTime = async () => {
-      try {
-        const data = await UsageStatsService.getTodayScreenTime();
-        setScreenTime(data?.totalScreenTime || 0);
-      } catch (error) {
-        console.error("Error loading screen time:", error);
-      }
-    };
-
-    loadScreenTime();
-  }, []);
-
-  const loadPrayerTimes = async () => {
-    if (!location) return;
-
-    try {
-      const times = await PrayerTimeService.getPrayerTimesList(
-        location,
-        new Date(),
-        userSettings?.calculationMethod || "MWL",
-        userSettings?.adjustments
-      );
-
-      setTodayPrayerTimes(times);
-
-      const next = times.find((t) => t.isNext);
-      setNextPrayer(next || null);
-    } catch (error) {
-      console.error("Error loading prayer times:", error);
-    }
-  };
+  }, []); // 🎯 SIMPLIFIED: No dependencies on location/settings
 
   const loadTodayRecords = () => {
     const today = format(new Date(), "yyyy-MM-dd");
     const records = StorageService.getDayPrayerRecords(today);
     setTodayPrayerRecords(records);
+  };
+
+  const loadScreenTime = async () => {
+    try {
+      const data = await UsageStatsService.getTodayScreenTime();
+      setScreenTime(data?.totalScreenTime || 0);
+    } catch (error) {
+      console.error("Error loading screen time:", error);
+    }
   };
 
   const updateGreeting = () => {
@@ -124,12 +117,14 @@ const HomeScreen = ({ navigation }: any) => {
     }
   };
 
+  // 🎯 SIMPLIFIED: Refresh now just calls the provider's refresh
   const onRefresh = useCallback(async () => {
     setIsRefreshing(true);
-    await loadPrayerTimes();
+    await refreshPrayerTimes(); // 🎯 NEW: Use provider's refresh
     loadTodayRecords();
+    loadScreenTime();
     setIsRefreshing(false);
-  }, []);
+  }, [refreshPrayerTimes]);
 
   const handlePrayerComplete = async (prayerTime: PrayerTime) => {
     // Create a serializable version of prayerTime by converting Date to ISO string
@@ -170,21 +165,68 @@ const HomeScreen = ({ navigation }: any) => {
     return 365;
   };
 
-  const completedToday = todayPrayerRecords.filter(
-    (r) => r.status === "prayed"
-  ).length;
+  const completedToday = todayPrayerRecords.filter(r => r.status === 'prayed').length;
 
+  // 🎯 NEW: Handle invalid location state
+  if (!hasValidLocation) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LinearGradient colors={getBackgroundGradient()} style={styles.container}>
+          <View style={styles.locationSetupContainer}>
+            <Text style={styles.setupTitle}>🕌 Welcome to PrayerBuddy</Text>
+            <Text style={styles.setupSubtitle}>
+              To show accurate prayer times, we need your location
+            </Text>
+            <View style={styles.setupHelpBox}>
+              <Text style={styles.setupHelpText}>
+                📍 Please set your location in the modal that appeared, or go to Settings to configure your location manually.
+              </Text>
+            </View>
+          </View>
+        </LinearGradient>
+      </SafeAreaView>
+    );
+  }
+
+  // 🎯 NEW: Handle loading state
+  if (prayerTimesLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LinearGradient colors={getBackgroundGradient()} style={styles.container}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#FFFFFF" />
+            <Text style={styles.loadingText}>Loading your prayer times...</Text>
+          </View>
+        </LinearGradient>
+      </SafeAreaView>
+    );
+  }
+
+  // 🎯 NEW: Handle error state
+  if (prayerTimesError) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <LinearGradient colors={getBackgroundGradient()} style={styles.container}>
+          <View style={styles.errorContainer}>
+            <Text style={styles.errorTitle}>⚠️ Prayer Times Unavailable</Text>
+            <Text style={styles.errorText}>{prayerTimesError}</Text>
+            <TouchableOpacity style={styles.retryButton} onPress={refreshPrayerTimes}>
+              <Text style={styles.retryButtonText}>Try Again</Text>
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
+      </SafeAreaView>
+    );
+  }
+
+  // 🎯 MAIN UI: Same as before, but now using reliable prayer times from provider
   return (
-    <LinearGradient colors={getBackgroundGradient()} style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.container}>
+      <LinearGradient colors={getBackgroundGradient()} style={styles.container}>
         <ScrollView
-          contentContainerStyle={styles.scrollContent}
+          style={styles.scrollView}
           refreshControl={
-            <RefreshControl
-              refreshing={isRefreshing}
-              onRefresh={onRefresh}
-              tintColor="#FFFFFF"
-            />
+            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
           }
           showsVerticalScrollIndicator={false}
         >
@@ -192,13 +234,8 @@ const HomeScreen = ({ navigation }: any) => {
           <View style={styles.header}>
             <Text style={styles.greeting}>{greeting}</Text>
             <Text style={styles.date}>
-              {format(currentTime, "EEEE, dd MMMM yyyy")}
+              {format(currentTime, "EEEE, MMMM do, yyyy")}
             </Text>
-            {location && (
-              <Text style={styles.location}>
-                📍 {location.city}, {location.country}
-              </Text>
-            )}
           </View>
 
           {/* Next Prayer Card */}
@@ -209,53 +246,55 @@ const HomeScreen = ({ navigation }: any) => {
             />
           )}
 
-          {/* Quick Stats */}
-          <QuickStats
-            prayersToday={completedToday}
-            streak={currentStreak}
-            nextMilestone={getNextMilestone(currentStreak)}
-          />
-          {/* Digital Wellness Card */}
-          <View style={styles.section}>
-            <DigitalWellnessCard screenTime={screenTime} />
-          </View>
-
-          {/* Celebration */}
-          {celebratingAchievement && (
-            <AchievementCelebration
-              achievement={celebratingAchievement}
-              isVisible={!!celebratingAchievement}
-              onClose={() => setCelebratingAchievement(null)}
-            />
-          )}
-
-          {/* Today's Prayers */}
+          {/* Today's Prayer Times */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Today's Prayers</Text>
-            {todayPrayerTimes.map((prayer) => {
-              const record = todayPrayerRecords.find(
-                (r) => r.prayer === prayer.name
-              );
-              return (
-                <PrayerCard
-                  key={prayer.name}
-                  prayer={prayer}
-                  record={record}
-                  onComplete={() => handlePrayerComplete(prayer)}
-                  currentTime={currentTime}
-                />
-              );
-            })}
+            <View style={styles.prayerGrid}>
+              {todayPrayerTimes.map((prayer) => {
+                // 🎯 FIXED: Get the matching prayer record
+                const record = todayPrayerRecords.find(
+                  (r) => r.prayer === prayer.name
+                );
+                
+                return (
+                  <PrayerCard
+                    key={prayer.name}
+                    prayer={prayer}
+                    record={record} 
+                    onComplete={() => handlePrayerComplete(prayer)}
+                    currentTime={currentTime}
+                  />
+                );
+              })}
+            </View>
           </View>
+
+          {/* Quick Stats */}
+          <QuickStats
+            prayersToday={completedToday} 
+            streak={currentStreak}        
+            nextMilestone={getNextMilestone(currentStreak)} 
+          />
+
+          {/* Digital Wellness Card */}
+          <DigitalWellnessCard
+            screenTime={screenTime} 
+          />
 
           {/* Daily Verse */}
           <DailyVerse />
 
-          {/* Spacing at bottom */}
-          <View style={{ height: 20 }} />
+          {/* Achievement Celebration */}
+          {celebratingAchievement && (
+            <AchievementCelebration
+              achievement={celebratingAchievement}
+              onClose={() => setCelebratingAchievement(null)}
+              isVisible={true} 
+            />
+          )}
         </ScrollView>
-      </SafeAreaView>
-    </LinearGradient>
+      </LinearGradient>
+    </SafeAreaView>
   );
 };
 
@@ -263,43 +302,118 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  safeArea: {
+  scrollView: {
     flex: 1,
   },
-  scrollContent: {
-    paddingBottom: 80,
-  },
   header: {
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 10,
+    padding: 20,
+    alignItems: 'center',
   },
   greeting: {
-    fontSize: 28,
-    fontWeight: "700",
-    color: "#FFFFFF",
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textAlign: 'center',
     marginBottom: 8,
   },
   date: {
     fontSize: 16,
-    color: "#FFFFFF",
-    opacity: 0.9,
-    marginBottom: 4,
-  },
-  location: {
-    fontSize: 14,
-    color: "#FFFFFF",
-    opacity: 0.8,
+    color: 'rgba(255, 255, 255, 0.8)',
+    textAlign: 'center',
   },
   section: {
-    paddingHorizontal: 20,
-    marginTop: 20,
+    padding: 20,
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: "600",
-    color: "#FFFFFF",
+    fontWeight: '600',
+    color: '#FFFFFF',
     marginBottom: 16,
+  },
+  prayerGrid: {
+    gap: 12,
+  },
+  
+  // 🎯 NEW: Styles for improved state handling
+  locationSetupContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  setupTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  setupSubtitle: {
+    fontSize: 18,
+    color: 'rgba(255, 255, 255, 0.9)',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 26,
+  },
+  setupHelpBox: {
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 12,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  setupHelpText: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.9)',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  loadingText: {
+    fontSize: 18,
+    color: '#FFFFFF',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 40,
+  },
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  errorText: {
+    fontSize: 16,
+    color: 'rgba(255, 255, 255, 0.8)',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  retryButton: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.3)',
+  },
+  retryButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });
 

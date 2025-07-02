@@ -1,12 +1,12 @@
-import { useState, useEffect } from 'react';
-import * as SplashScreen from 'expo-splash-screen';
-import StorageService from '../services/StorageService';
-import NotificationService from '../services/NotificationService';
-import PrayerTimeService from '../services/PrayerTimeService';
-import LocationService from '../services/LocationService';
-import { useStore } from '../store/useStore';
-import { Location as LocationType } from '../types';
-import { usePrayerTimeRefresh } from './usePrayerTimeRefresh';
+import { useState, useEffect } from "react";
+import * as SplashScreen from "expo-splash-screen";
+import StorageService from "../services/StorageService";
+import NotificationService from "../services/NotificationService";
+import PrayerTimeService from "../services/PrayerTimeService";
+import LocationService from "../services/LocationService";
+import { useStore } from "../store/useStore";
+import { Location as LocationType } from "../types";
+import { usePrayerTimeRefresh } from "./usePrayerTimeRefresh";
 
 interface AppInitializationState {
   isLoading: boolean;
@@ -32,11 +32,11 @@ export const useAppInitialization = () => {
 
   const initializeApp = async () => {
     try {
-      console.log('Initializing app...');
+      console.log("Initializing app...");
 
       // Check if first launch
       const firstLaunch = StorageService.isFirstLaunch();
-      
+
       // Load or create user settings
       let settings = StorageService.getUserSettings();
       if (!settings) {
@@ -45,7 +45,18 @@ export const useAppInitialization = () => {
       }
 
       setUserSettings(settings);
-      setLocation(settings.location);
+
+      // ONLY SET LOCATION IF IT'S ACTUALLY VALID
+      const isValidLocation =
+        settings.location.latitude !== 0 || settings.location.longitude !== 0;
+
+      if (isValidLocation) {
+        console.log("📍 Setting valid location in store");
+        setLocation(settings.location);
+      } else {
+        console.log("⏳ No valid location yet, store location remains null");
+        // Don't set location - let it remain null until user provides real location
+      }
 
       // Initialize notifications
       await NotificationService.initialize();
@@ -58,7 +69,7 @@ export const useAppInitialization = () => {
         );
 
         if (needsRefresh) {
-          console.log('Refreshing prayer times...');
+          console.log("Refreshing prayer times...");
           try {
             await PrayerTimeService.fetchPrayerTimes(
               settings.location,
@@ -67,14 +78,15 @@ export const useAppInitialization = () => {
               settings.asrJuristic
             );
           } catch (error) {
-            console.error('Failed to refresh prayer times:', error);
+            console.error("Failed to refresh prayer times:", error);
             // Continue anyway, use cached times
           }
         }
       }
 
       // If no location is set, show location modal
-      const needsLocation = !settings.location.latitude || !settings.location.longitude;
+      const needsLocation =
+        !settings.location.latitude || !settings.location.longitude;
 
       setState({
         isLoading: false,
@@ -85,30 +97,29 @@ export const useAppInitialization = () => {
 
       // Hide splash screen
       await SplashScreen.hideAsync();
-      console.log('App initialization complete');
-
+      console.log("App initialization complete");
     } catch (error) {
-      console.error('App initialization failed:', error);
-      setState(prev => ({
+      console.error("App initialization failed:", error);
+      setState((prev) => ({
         ...prev,
         isLoading: false,
-        error: error instanceof Error ? error.message : 'Unknown error',
+        error: error instanceof Error ? error.message : "Unknown error",
       }));
-      
+
       // Hide splash screen even on error
       await SplashScreen.hideAsync();
     }
   };
 
   const completeOnboarding = () => {
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
       isFirstLaunch: false,
     }));
   };
 
   const closeLocationModal = () => {
-    setState(prev => ({
+    setState((prev) => ({
       ...prev,
       showLocationModal: false,
     }));

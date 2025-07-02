@@ -6,6 +6,7 @@ import * as SplashScreen from 'expo-splash-screen';
 // Components
 import { AppInitializer } from './src/components/AppInitializer';
 import { NavigationProvider } from './src/providers/NavigationProvider';
+import { PrayerTimesProvider } from './src/providers/PrayerTimesProvider';
 
 // Keep the splash screen visible
 SplashScreen.preventAutoHideAsync();
@@ -14,8 +15,10 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <NavigationProvider>
-        <StatusBar style="auto" />
-        <AppInitializer />
+        <PrayerTimesProvider>
+          <StatusBar style="auto" />
+          <AppInitializer />
+        </PrayerTimesProvider>
       </NavigationProvider>
     </SafeAreaProvider>
   );
