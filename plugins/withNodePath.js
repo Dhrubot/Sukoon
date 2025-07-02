@@ -54,6 +54,33 @@ const withNodePath = (config) => {
       console.warn('⚠️ Could not find Node.js path');
     }
     
+    // Add build optimization properties
+    config.modResults.push({
+      type: 'property',
+      key: 'org.gradle.jvmargs',
+      value: '-Xmx4096m -XX:MaxMetaspaceSize=512m -XX:+HeapDumpOnOutOfMemoryError',
+    });
+    
+    config.modResults.push({
+      type: 'property',
+      key: 'android.enableJetifier',
+      value: 'true',
+    });
+    
+    config.modResults.push({
+      type: 'property',
+      key: 'android.useAndroidX',
+      value: 'true',
+    });
+    
+    config.modResults.push({
+      type: 'property',
+      key: 'org.gradle.parallel',
+      value: 'true',
+    });
+    
+    console.log(`✅ Added build optimization properties`);
+    
     return config;
   });
 };
