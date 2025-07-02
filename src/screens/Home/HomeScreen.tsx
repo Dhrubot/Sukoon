@@ -150,15 +150,15 @@ const HomeScreen = ({ navigation }: any) => {
     const hour = currentTime.getHours();
 
     if (hour >= 4 && hour < 6) {
-      return ["#1a237e", "#3949ab"]; // Fajr
+      return ["#0d47a1", "#42a5f5"]; // Fajr
     } else if (hour >= 11 && hour < 15) {
-      return ["#fff59d", "#ffeb3b"]; // Dhuhr
+      return ["#c8e6c9", "#a5d6a7"]; // Dhuhr
     } else if (hour >= 15 && hour < 18) {
-      return ["#ffcc80", "#ff9800"]; // Asr
+      return ["#ffe0b2", "#ffb74d"]; // Asr
     } else if (hour >= 18 && hour < 20) {
-      return ["#e91e63", "#880e4f"]; // Maghrib
+      return ["#f8bbd0", "#f06292"]; // Maghrib
     } else {
-      return ["#1a237e", "#000051"]; // Isha/Night
+      return ["#1a237e", "#311b92"]; // Isha/Night
     }
   };
 
