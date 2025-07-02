@@ -1,10 +1,11 @@
-// src/screens/Settings/components/PrayerSettingsSection.tsx
+// src/screens/Settings/components/PrayerSettingsSection.tsx (ENHANCED)
 import React from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { format } from 'date-fns';
 import { SettingSection } from '../../../components/settings/SettingSection';
 import { SettingRow } from '../../../components/settings/SettingRow';
 import { SegmentedControl } from '../../../components/settings/SegmentedControl';
-import { CalculationMethodType, UserSettings } from '../../../types';
+import { CalculationMethodType, UserSettings, PrayerTime } from '../../../types';
 import StorageService from '../../../services/StorageService';
 
 interface PrayerSettingsSectionProps {
@@ -12,6 +13,15 @@ interface PrayerSettingsSectionProps {
   setUserSettings: (settings: UserSettings) => void;
   onCalculationMethodPress: () => void;
   calculationMethods: CalculationMethodType[];
+  
+  // 🎯 NEW: Enhanced props
+  isUpdatingMethod?: boolean;
+  todayPrayerTimes?: PrayerTime[];
+  nextPrayer?: PrayerTime | null;
+  prayerTimesLoading?: boolean;
+  hasValidLocation?: boolean;
+  onTestCalculations?: () => void;
+  onPreviewMethod?: (method: CalculationMethodType) => void;
 }
 
 export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
@@ -19,6 +29,15 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
   setUserSettings,
   onCalculationMethodPress,
   calculationMethods,
+  
+  // Enhanced props
+  isUpdatingMethod = false,
+  todayPrayerTimes = [],
+  nextPrayer = null,
+  prayerTimesLoading = false,
+  hasValidLocation = false,
+  onTestCalculations,
+  onPreviewMethod,
 }) => {
   const juristicOptions = [
     {
@@ -40,17 +59,79 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
   };
 
   const getCurrentMethodLabel = () => {
-    return calculationMethods.find(m => m.value === userSettings.calculationMethod)?.label || 'Unknown';
+    const method = calculationMethods.find(m => m.value === userSettings.calculationMethod);
+    return method?.label || 'Unknown';
+  };
+
+  // 🎯 NEW: Render current prayer times preview
+  const renderCurrentPrayerTimes = () => {
+    if (!hasValidLocation) {
+      return (
+        <View style={styles.statusContainer}>
+          <Text style={styles.statusText}>📍 Location required to show prayer times</Text>
+        </View>
+      );
+    }
+
+    if (prayerTimesLoading) {
+      return (
+        <View style={styles.statusContainer}>
+          <Text style={styles.statusText}>⏳ Loading prayer times...</Text>
+        </View>
+      );
+    }
+
+    if (todayPrayerTimes.length === 0) {
+      return (
+        <View style={styles.statusContainer}>
+          <Text style={styles.statusText}>❌ No prayer times available</Text>
+        </View>
+      );
+    }
+
+    return (
+      <View style={styles.prayerTimesContainer}>
+        <Text style={styles.prayerTimesTitle}>Today's Prayer Times</Text>
+        <View style={styles.prayerTimesList}>
+          {todayPrayerTimes.slice(0, 3).map((prayer) => (
+            <View key={prayer.name} style={styles.prayerTimeRow}>
+              <Text style={[
+                styles.prayerName,
+                prayer.name === nextPrayer?.name && styles.nextPrayerName
+              ]}>
+                {prayer.name}
+              </Text>
+              <Text style={[
+                styles.prayerTime,
+                prayer.name === nextPrayer?.name && styles.nextPrayerTime
+              ]}>
+                {format(prayer.time, 'h:mm a')}
+                {prayer.name === nextPrayer?.name && ' ⭐'}
+              </Text>
+            </View>
+          ))}
+          {todayPrayerTimes.length > 3 && (
+            <Text style={styles.moreText}>... and {todayPrayerTimes.length - 3} more</Text>
+          )}
+        </View>
+      </View>
+    );
   };
 
   return (
     <SettingSection title="Prayer Settings">
+      {/* Calculation Method */}
       <SettingRow
         label="Calculation Method"
-        value={getCurrentMethodLabel()}
+        value={isUpdatingMethod ? 'Updating...' : getCurrentMethodLabel()}
         onPress={onCalculationMethodPress}
+        disabled={isUpdatingMethod}
       />
 
+      {/* 🎯 NEW: Current prayer times preview */}
+      {renderCurrentPrayerTimes()}
+
+      {/* Juristic Method */}
       <View style={styles.juristicMethodWrapper}>
         <SettingRow
           label="Juristic Method"
@@ -64,6 +145,30 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
           style={styles.juristicControl}
         />
       </View>
+
+      {/* 🎯 NEW: Test calculations button */}
+      {onTestCalculations && hasValidLocation && (
+        <View style={styles.testSection}>
+          <TouchableOpacity 
+            style={styles.testButton} 
+            onPress={onTestCalculations}
+            disabled={prayerTimesLoading}
+          >
+            <Text style={styles.testButtonText}>
+              {prayerTimesLoading ? '⏳ Loading...' : '🧪 Test Prayer Calculations'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* 🎯 NEW: Method comparison hint */}
+      {hasValidLocation && todayPrayerTimes.length > 0 && (
+        <View style={styles.hintContainer}>
+          <Text style={styles.hintText}>
+            💡 Tap on calculation method to preview different timing methods
+          </Text>
+        </View>
+      )}
     </SettingSection>
   );
 };
@@ -77,5 +182,102 @@ const styles = StyleSheet.create({
   },
   juristicControl: {
     marginTop: 12,
+  },
+  
+  // 🎯 NEW: Prayer times preview styles
+  statusContainer: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 12,
+  },
+  statusText: {
+    fontSize: 14,
+    color: '#6C757D',
+    textAlign: 'center',
+  },
+  prayerTimesContainer: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#E9ECEF',
+  },
+  prayerTimesTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1B5E3F',
+    marginBottom: 12,
+  },
+  prayerTimesList: {
+    gap: 8,
+  },
+  prayerTimeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  prayerName: {
+    fontSize: 14,
+    color: '#495057',
+    fontWeight: '500',
+  },
+  nextPrayerName: {
+    color: '#1B5E3F',
+    fontWeight: '700',
+  },
+  prayerTime: {
+    fontSize: 14,
+    color: '#6C757D',
+    fontWeight: '400',
+  },
+  nextPrayerTime: {
+    color: '#1B5E3F',
+    fontWeight: '600',
+  },
+  moreText: {
+    fontSize: 12,
+    color: '#ADB5BD',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginTop: 4,
+  },
+  
+  // Test button styles
+  testSection: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  testButton: {
+    backgroundColor: '#E8F5E9',
+    borderRadius: 8,
+    padding: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#C8E6C9',
+  },
+  testButtonText: {
+    fontSize: 14,
+    color: '#1B5E3F',
+    fontWeight: '600',
+  },
+  
+  // Hint styles
+  hintContainer: {
+    backgroundColor: '#FFF3CD',
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#FFEAA7',
+  },
+  hintText: {
+    fontSize: 12,
+    color: '#856404',
+    textAlign: 'center',
+    lineHeight: 16,
   },
 });

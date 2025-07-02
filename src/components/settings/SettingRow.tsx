@@ -9,6 +9,7 @@ interface SettingRowProps {
   onPress?: () => void;
   rightComponent?: React.ReactNode;
   isDanger?: boolean;
+  disabled?: boolean;
 }
 
 export const SettingRow: React.FC<SettingRowProps> = ({
@@ -18,21 +19,22 @@ export const SettingRow: React.FC<SettingRowProps> = ({
   onPress,
   rightComponent,
   isDanger = false,
+  disabled = false,
 }) => {
   const Component = onPress ? TouchableOpacity : View;
   
   return (
     <Component
-      style={styles.settingRow}
+      style={[styles.settingRow, disabled && styles.disabledRow]}
       onPress={onPress}
-      disabled={!onPress}
+      disabled={disabled || !onPress}
     >
       <View style={styles.leftContent}>
-        <Text style={[styles.settingLabel, isDanger && styles.dangerText]}>
+        <Text style={[styles.settingLabel, isDanger && styles.dangerText, disabled && styles.disabledText]}>
           {label}
         </Text>
         {subtitle && (
-          <Text style={styles.settingSubtext}>
+          <Text style={[styles.settingSubtext, disabled && styles.disabledText]}>
             {subtitle}
           </Text>
         )}
@@ -42,11 +44,11 @@ export const SettingRow: React.FC<SettingRowProps> = ({
         {rightComponent || (
           <>
             {value && (
-              <Text style={styles.settingValue}>
+              <Text style={[styles.settingValue, disabled && styles.disabledText]}>
                 {value}
               </Text>
             )}
-            {onPress && <Text style={styles.chevron}>›</Text>}
+            {onPress && <Text style={[styles.chevron, disabled && styles.disabledText]}>›</Text>}
           </>
         )}
       </View>
@@ -89,5 +91,11 @@ const styles = StyleSheet.create({
   },
   dangerText: {
     color: '#F44336',
+  },
+  disabledText: {
+    color: '#BDBDBD',
+  },
+  disabledRow: {
+    opacity: 0.7,
   },
 });

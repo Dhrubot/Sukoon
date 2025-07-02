@@ -5,17 +5,25 @@ import { SettingSection } from '../../../components/settings/SettingSection';
 import { SettingRow } from '../../../components/settings/SettingRow';
 
 interface AboutSectionProps {
-  onPrivacyPolicyPress: () => void;
+  onPrivacyPolicy: () => void;
+  onShowDebugInfo?: () => Promise<void>;
 }
 
 export const AboutSection: React.FC<AboutSectionProps> = ({
-  onPrivacyPolicyPress,
+  onPrivacyPolicy,
+  onShowDebugInfo,
 }) => (
   <SettingSection title="About">
     <SettingRow
       label="Privacy Policy"
-      onPress={onPrivacyPolicyPress}
+      onPress={onPrivacyPolicy}
     />
+    {onShowDebugInfo && (
+      <SettingRow
+        label="Debug Information"
+        onPress={onShowDebugInfo}
+      />
+    )}
     <Text style={styles.aboutText}>
       PrayerBuddy is a free app built with ❤️ for the Muslim community
     </Text>

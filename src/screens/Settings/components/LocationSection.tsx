@@ -7,21 +7,26 @@ import { UserSettings } from '../../../types';
 interface LocationSectionProps {
   userSettings: UserSettings;
   isUpdatingLocation: boolean;
-  onUpdateLocation: () => void;
+  onUpdateLocation: () => Promise<void>;
+  onSelectManually?: () => void;
+  hasValidLocation?: boolean;
 }
 
 export const LocationSection: React.FC<LocationSectionProps> = ({
   userSettings,
   isUpdatingLocation,
   onUpdateLocation,
+  onSelectManually,
+  hasValidLocation = true,
 }) => (
   <SettingSection title="Location">
     <View style={styles.locationInfo}>
       <Text style={styles.locationText}>
         {userSettings.location.city || 'Unknown City'}, {userSettings.location.country || 'Unknown Country'}
       </Text>
-      <Text style={styles.coordinatesText}>
+      <Text style={[styles.coordinatesText, !hasValidLocation && styles.invalidText]}>
         {userSettings.location.latitude.toFixed(4)}°, {userSettings.location.longitude.toFixed(4)}°
+        {!hasValidLocation && ' (Invalid location)'}
       </Text>
     </View>
 
@@ -34,6 +39,16 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
         {isUpdatingLocation ? 'Updating...' : 'Update Location'}
       </Text>
     </TouchableOpacity>
+
+    {onSelectManually && (
+      <TouchableOpacity 
+        style={[styles.manualButton, isUpdatingLocation && styles.buttonDisabled]}
+        onPress={onSelectManually}
+        disabled={isUpdatingLocation}
+      >
+        <Text style={styles.manualButtonText}>Select Location Manually</Text>
+      </TouchableOpacity>
+    )}
   </SettingSection>
 );
 
@@ -53,11 +68,15 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#757575',
   },
+  invalidText: {
+    color: '#DC3545',
+  },
   button: {
     backgroundColor: '#1B5E3F',
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
+    marginBottom: 12,
   },
   buttonDisabled: {
     opacity: 0.6,
@@ -67,4 +86,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#FFFFFF',
   },
+  manualButton: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#1B5E3F',
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  manualButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1B5E3F',
+  }
 });

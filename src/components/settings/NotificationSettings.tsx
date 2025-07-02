@@ -2,21 +2,26 @@ import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   Switch,
+  StyleSheet,
   TouchableOpacity,
   ScrollView,
   Alert,
   Platform,
+  Linking,
 } from 'react-native';
 import Slider from '@react-native-community/slider';
 import * as Haptics from 'expo-haptics';
-import { useStore } from '../../store/useStore';
 import NotificationService from '../../services/NotificationService';
 import StorageService from '../../services/StorageService';
+import { UserSettings } from '../../types';
 
-const NotificationSettings: React.FC = () => {
-  const { userSettings, setUserSettings } = useStore();
+interface NotificationSettingsProps {
+  userSettings: UserSettings;
+  onUpdateSettings: (settings: UserSettings) => void;
+}
+
+const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSettings, onUpdateSettings }) => {
   const [localSettings, setLocalSettings] = useState(userSettings?.notifications || {
     enabled: true,
     soundEnabled: true,
@@ -80,7 +85,7 @@ const NotificationSettings: React.FC = () => {
           notifications: newSettings,
         };
         StorageService.setUserSettings(updated);
-        setUserSettings(updated);
+        onUpdateSettings(updated);
       }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

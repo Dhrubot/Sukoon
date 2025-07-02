@@ -8,15 +8,20 @@ import {
   StyleSheet,
 } from 'react-native';
 import NotificationSettings from '../../../components/settings/NotificationSettings';
+import { UserSettings } from '../../../types';
 
 interface NotificationModalProps {
   visible: boolean;
   onClose: () => void;
+  userSettings: UserSettings;
+  onUpdateSettings: (settings: UserSettings) => void;
 }
 
 export const NotificationModal: React.FC<NotificationModalProps> = ({
   visible,
   onClose,
+  userSettings,
+  onUpdateSettings,
 }) => (
   <Modal
     visible={visible}
@@ -33,7 +38,10 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
         </View>
         
         <View style={styles.modalBody}>
-          <NotificationSettings />
+          <NotificationSettings 
+            userSettings={userSettings}
+            onUpdateSettings={onUpdateSettings}
+          />
         </View>
       </View>
     </View>
