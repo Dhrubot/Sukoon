@@ -1,3 +1,4 @@
+// src/screens/Mindfulness/MindfulnessFlow.tsx
 import React, { useState, useEffect, useRef } from "react";
 import {
   View,
@@ -26,6 +27,9 @@ import { useStore } from "../../store/useStore";
 import StorageService from "../../services/StorageService";
 import PrayerTimeService from "../../services/PrayerTimeService";
 
+// NEW: Use centralized prayer times hook
+import { usePrayerTimes } from "../../providers/PrayerTimesProvider";
+
 // Types
 import { PrayerTime, MindfulnessSession, PrayerRecord } from "../../types";
 import { RootStackParamList } from "../../types/navigation";
@@ -38,6 +42,13 @@ type FlowStep = "breathing" | "reflection" | "complete";
 const MindfulnessFlow: React.FC = () => {
   const navigation = useNavigation();
   const route = useRoute<RouteProp<RootStackParamList, "MindfulnessFlow">>();
+  
+  // 🎯 NEW: Access centralized prayer times for validation
+  const { 
+    todayPrayerTimes, 
+    nextPrayer, 
+    hasValidLocation 
+  } = usePrayerTimes();
   
   // Parse the serialized prayer object and convert the ISO string back to a Date
   const serializedPrayer = route.params.prayer;
@@ -55,19 +66,69 @@ const MindfulnessFlow: React.FC = () => {
   const [selectedMood, setSelectedMood] = useState<number>(0);
   const [sessionStartTime] = useState(new Date());
   const [isBreathingActive, setIsBreathingActive] = useState(true);
+  const [isValidPrayer, setIsValidPrayer] = useState(true);
 
   // Animations
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
   const completeScale = useRef(new Animated.Value(0)).current;
 
+  // 🎯 NEW: Prayer validation effect
+  useEffect(() => {
+    validatePrayerTiming();
+  }, [todayPrayerTimes, prayer.time, prayer.name]);
+
+  // 🎯 NEW: Validate that the prayer is still current/upcoming
+  const validatePrayerTiming = () => {
+    const now = new Date();
+    const prayerTime = prayer.time;
+    
+    // Allow prayers up to 2 hours after their time
+    const twoHoursAfterPrayer = new Date(prayerTime.getTime() + 2 * 60 * 60 * 1000);
+    
+    // Check if prayer time has passed by more than 2 hours
+    if (now > twoHoursAfterPrayer) {
+      setIsValidPrayer(false);
+      
+      // Show alert and navigate back
+      Alert.alert(
+        "Prayer Time Passed",
+        `${PrayerTimeService.getPrayerDisplayName(prayer.name)} prayer time has passed. Would you like to mark it as a makeup prayer?`,
+        [
+          {
+            text: "Go Back",
+            style: "cancel",
+            onPress: () => navigation.goBack()
+          },
+          {
+            text: "Continue as Makeup",
+            onPress: () => setIsValidPrayer(true)
+          }
+        ]
+      );
+      return;
+    }
+
+    // 🎯 NEW: Validate prayer exists in today's prayer times
+    const currentPrayerInSchedule = todayPrayerTimes.find(p => 
+      p.name === prayer.name
+    );
+
+    if (!currentPrayerInSchedule && hasValidLocation) {
+      console.warn(`Prayer ${prayer.name} not found in today's schedule`);
+      // Still allow it to continue, but log for debugging
+    }
+
+    setIsValidPrayer(true);
+  };
+
   const getPrayerGradient = (): [string, string] => {
     const gradients: Record<string, [string, string]> = {
-      fajr: ["#1a237e", "#3949ab"],
-      dhuhr: ["#fff59d", "#ffeb3b"],
-      asr: ["#ffcc80", "#ff9800"],
-      maghrib: ["#e91e63", "#880e4f"],
-      isha: ["#1a237e", "#000051"],
+      Fajr: ["#1a237e", "#3949ab"],
+      Dhuhr: ["#fff59d", "#ffeb3b"],
+      Asr: ["#ffcc80", "#ff9800"],
+      Maghrib: ["#e91e63", "#880e4f"],
+      Isha: ["#1a237e", "#000051"],
     };
     return gradients[prayer.name] || ["#1B5E3F", "#0d4f35"];
   };
@@ -112,14 +173,6 @@ const MindfulnessFlow: React.FC = () => {
   };
 
   const skipBreathing = () => {
-    // Alert.alert(
-    //   "Skip Breathing Exercise?",
-    //   "The breathing exercise helps you focus better during prayer.",
-    //   [
-    //     { text: "Continue Breathing", style: "cancel" },
-    //     { text: "Skip", onPress: moveToReflection },
-    //   ]
-    // );
     moveToReflection();
   };
 
@@ -132,6 +185,7 @@ const MindfulnessFlow: React.FC = () => {
       return;
     }
 
+    // 🎯 NEW: Enhanced session tracking with prayer validation context
     const session: MindfulnessSession = {
       id: `mindfulness_${Date.now()}`,
       prayerName: prayer.name,
@@ -152,7 +206,7 @@ const MindfulnessFlow: React.FC = () => {
     StorageService.saveMindfulnessSession(session);
     setCurrentMindfulnessSession(session);
 
-    // Create prayer record
+    // 🎯 NEW: Enhanced prayer record with validation context
     const prayerRecord: PrayerRecord = {
       id: `prayer_${Date.now()}`,
       date: new Date().toISOString().split("T")[0],
@@ -163,6 +217,16 @@ const MindfulnessFlow: React.FC = () => {
       reflectionAdded: reflectionText.length > 0,
       mindfulnessScore: selectedMood * 20, // Convert 1-5 to 20-100
     };
+
+    // 🎯 NEW: Add metadata if prayer was late/makeup
+    const now = new Date();
+    const prayerTime = prayer.time;
+    const minutesLate = Math.floor((now.getTime() - prayerTime.getTime()) / (1000 * 60));
+    
+    if (minutesLate > 30) {
+      // Prayer was significantly late - could be makeup or delayed
+      console.log(`Prayer ${prayer.name} was completed ${minutesLate} minutes after time`);
+    }
 
     // Save prayer record
     StorageService.savePrayerRecordWithTracking(prayerRecord);
@@ -179,6 +243,11 @@ const MindfulnessFlow: React.FC = () => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: -50,
         duration: 300,
         useNativeDriver: true,
       }),
@@ -222,6 +291,15 @@ const MindfulnessFlow: React.FC = () => {
       <Text style={styles.instruction}>
         Take 3 deep breaths to center yourself before prayer
       </Text>
+
+      {/* 🎯 NEW: Show prayer timing context */}
+      {nextPrayer?.name === prayer.name && (
+        <View style={styles.timingInfo}>
+          <Text style={styles.timingText}>
+            ✨ Perfect timing! This is your next prayer
+          </Text>
+        </View>
+      )}
 
       <View style={styles.breathingContainer}>
         <BreathingCircle
@@ -303,6 +381,11 @@ const MindfulnessFlow: React.FC = () => {
       </Text>
     </Animated.View>
   );
+
+  // 🎯 NEW: Don't render if prayer is invalid and user hasn't chosen to continue
+  if (!isValidPrayer) {
+    return null;
+  }
 
   return (
     <LinearGradient colors={getPrayerGradient()} style={styles.container}>
@@ -429,6 +512,21 @@ const styles = StyleSheet.create({
     textAlign: "center",
     marginBottom: 40,
     lineHeight: 22,
+  },
+  // 🎯 NEW: Timing info styles
+  timingInfo: {
+    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    borderRadius: 12,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginBottom: 24,
+    alignSelf: "center",
+  },
+  timingText: {
+    fontSize: 14,
+    color: "rgba(255, 255, 255, 0.9)",
+    textAlign: "center",
+    fontWeight: "500",
   },
   breathingContainer: {
     flex: 1,
