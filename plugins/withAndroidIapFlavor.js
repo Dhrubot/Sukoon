@@ -2,15 +2,27 @@ const { withAppBuildGradle } = require('@expo/config-plugins');
 
 const withAndroidIapFlavor = (config) => {
   return withAppBuildGradle(config, (config) => {
-    const buildGradleContent = config.modResults.contents;
+    let buildGradleContent = config.modResults.contents;
     
     // Check if the strategy is already added
     if (!buildGradleContent.includes("missingDimensionStrategy 'store'")) {
-      // Add the missing dimension strategy to defaultConfig
-      config.modResults.contents = buildGradleContent.replace(
-        /defaultConfig\s*{[\s\S]*?targetSdkVersion\s+\d+/,
-        (match) => `${match}\n        missingDimensionStrategy 'store', 'play'`
-      );
+      // Look for the versionName line and add the strategy after it
+      const versionNamePattern = /(versionName\s+["'][^"']*["']\s*)/;
+      
+      if (versionNamePattern.test(buildGradleContent)) {
+        buildGradleContent = buildGradleContent.replace(
+          versionNamePattern,
+          `$1\n        missingDimensionStrategy 'store', 'play'`
+        );
+      } else {
+        // Fallback: add it right after the defaultConfig { line
+        buildGradleContent = buildGradleContent.replace(
+          /(defaultConfig\s*{\s*)/,
+          `$1\n        missingDimensionStrategy 'store', 'play'`
+        );
+      }
+      
+      config.modResults.contents = buildGradleContent;
     }
     
     return config;
