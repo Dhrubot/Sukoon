@@ -124,9 +124,9 @@ const MindfulnessFlow: React.FC = () => {
 
   const getPrayerGradient = (): [string, string] => {
     const gradients: Record<string, [string, string]> = {
-      Fajr: ["#1a237e", "#3949ab"],
-      Dhuhr: ["#fff59d", "#ffeb3b"],
-      Asr: ["#ffcc80", "#ff9800"],
+      Fajr: ["#1a237e", "#273384ff"],
+      Dhuhr: ["#BCAAA4", "#8D6E63"],
+      Asr: ["#E65100", "#BF360C"],
       Maghrib: ["#e91e63", "#880e4f"],
       Isha: ["#1a237e", "#000051"],
     };
