@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback } from 'react';
 import {
   View,
   Text,
@@ -27,98 +27,119 @@ const BreathingCircle: React.FC<BreathingCircleProps> = ({
   const opacityAnim = useRef(new Animated.Value(0.8)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const pulseAnim = useRef(new Animated.Value(1)).current;
-
-  // Timer animation for visual feedback
   const timerWidth = useRef(new Animated.Value(0)).current;
+  
   // State to track breathing phase
   const [breathingPhase, setBreathingPhase] = useState('Inhale slowly...');
+  
+  // Ref to track if animation is running
+  const animationRef = useRef<Animated.CompositeAnimation | null>(null);
+  const pulseAnimationRef = useRef<Animated.CompositeAnimation | null>(null);
 
-  useEffect(() => {
-    if (!isActive) return;
+  // 🔧 FIX: Wrap the breathing animation in useCallback to prevent recreating it
+  const startBreathingAnimation = useCallback(() => {
+    // Reset animations
+    scaleAnim.setValue(0.8);
+    opacityAnim.setValue(0.8);
+    timerWidth.setValue(0);
 
-    // Breathing cycle: 4s inhale, 4s hold, 4s exhale, 2s pause
-    const breathingAnimation = () => {
-      // Reset animations
-      scaleAnim.setValue(0.8);
-      opacityAnim.setValue(0.8);
-      timerWidth.setValue(0);
+    // Inhale phase
+    animationRef.current = Animated.parallel([
+      Animated.timing(scaleAnim, {
+        toValue: 1.2,
+        duration: 4000,
+        useNativeDriver: true,
+      }),
+      Animated.timing(opacityAnim, {
+        toValue: 1,
+        duration: 4000,
+        useNativeDriver: true,
+      }),
+      Animated.timing(rotateAnim, {
+        toValue: 1,
+        duration: 4000,
+        useNativeDriver: true,
+      }),
+      Animated.timing(timerWidth, {
+        toValue: 0.33,
+        duration: 4000,
+        useNativeDriver: false,
+      }),
+    ]);
 
-      // Inhale phase
-      Animated.parallel([
-        Animated.timing(scaleAnim, {
-          toValue: 1.2,
-          duration: 4000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 1,
-          duration: 4000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(rotateAnim, {
-          toValue: 1,
-          duration: 4000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(timerWidth, {
-          toValue: 0.33,
-          duration: 4000,
-          useNativeDriver: false,
-        }),
-      ]).start(() => {
-        // Trigger haptic for phase change
+    animationRef.current.start(() => {
+      // 🔧 FIX: Use queueMicrotask to defer state updates
+      queueMicrotask(() => {
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         setBreathingPhase('Hold...');
+      });
 
-        // Hold phase - just update timer
-        Animated.timing(timerWidth, {
-          toValue: 0.66,
-          duration: 4000,
-          useNativeDriver: false,
-        }).start(() => {
-          // Exhale phase
+      // Hold phase
+      Animated.timing(timerWidth, {
+        toValue: 0.66,
+        duration: 4000,
+        useNativeDriver: false,
+      }).start(() => {
+        // 🔧 FIX: Use queueMicrotask for exhale phase
+        queueMicrotask(() => {
           Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
           setBreathingPhase('Exhale completely...');
-          
-          Animated.parallel([
-            Animated.timing(scaleAnim, {
-              toValue: 0.8,
-              duration: 4000,
-              useNativeDriver: true,
-            }),
-            Animated.timing(opacityAnim, {
-              toValue: 0.8,
-              duration: 4000,
-              useNativeDriver: true,
-            }),
-            Animated.timing(rotateAnim, {
-              toValue: 2,
-              duration: 4000,
-              useNativeDriver: true,
-            }),
-            Animated.timing(timerWidth, {
-              toValue: 1,
-              duration: 4000,
-              useNativeDriver: false,
-            }),
-          ]).start(() => {
-            // Pause and complete
+        });
+        
+        // Exhale phase
+        Animated.parallel([
+          Animated.timing(scaleAnim, {
+            toValue: 0.8,
+            duration: 4000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(opacityAnim, {
+            toValue: 0.8,
+            duration: 4000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(rotateAnim, {
+            toValue: 2,
+            duration: 4000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(timerWidth, {
+            toValue: 1,
+            duration: 4000,
+            useNativeDriver: false,
+          }),
+        ]).start(() => {
+          // 🔧 FIX: Use queueMicrotask for pause phase
+          queueMicrotask(() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             setBreathingPhase('Pause...');
-            setTimeout(() => {
+          });
+          
+          setTimeout(() => {
+            queueMicrotask(() => {
               rotateAnim.setValue(0);
               setBreathingPhase('Inhale slowly...');
               onBreathComplete();
-            }, 2000);
-          });
+            });
+          }, 2000);
         });
       });
-    };
+    });
+  }, [scaleAnim, opacityAnim, rotateAnim, timerWidth, onBreathComplete]);
 
-    breathingAnimation();
+  // 🔧 FIX: Use separate effect for pulse animation
+  useEffect(() => {
+    if (!isActive) {
+      // Stop pulse animation when inactive
+      if (pulseAnimationRef.current) {
+        pulseAnimationRef.current.stop();
+        pulseAnimationRef.current = null;
+      }
+      return;
+    }
 
-    // Pulse animation for the inner circle
-    const pulseAnimation = Animated.loop(
+    // Start pulse animation
+    pulseAnimationRef.current = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
           toValue: 1.1,
@@ -132,21 +153,46 @@ const BreathingCircle: React.FC<BreathingCircleProps> = ({
         }),
       ])
     );
-    pulseAnimation.start();
+    
+    pulseAnimationRef.current.start();
 
     return () => {
-      pulseAnimation.stop();
+      if (pulseAnimationRef.current) {
+        pulseAnimationRef.current.stop();
+        pulseAnimationRef.current = null;
+      }
     };
-  }, [isActive, breathCount]);
+  }, [isActive, pulseAnim]);
+
+  // 🔧 FIX: Use separate effect for breathing animation with proper cleanup
+  useEffect(() => {
+    if (!isActive) {
+      // Stop breathing animation when inactive
+      if (animationRef.current) {
+        animationRef.current.stop();
+        animationRef.current = null;
+      }
+      return;
+    }
+
+    // 🔧 FIX: Use requestAnimationFrame to defer animation start
+    const animationFrameId = requestAnimationFrame(() => {
+      startBreathingAnimation();
+    });
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      if (animationRef.current) {
+        animationRef.current.stop();
+        animationRef.current = null;
+      }
+    };
+  }, [isActive, breathCount, startBreathingAnimation]);
 
   const rotateInterpolate = rotateAnim.interpolate({
     inputRange: [0, 1, 2],
     outputRange: ['0deg', '120deg', '240deg'],
   });
-
-  const getPhaseText = () => {
-    return breathingPhase;
-  };
 
   return (
     <View style={styles.container}>
@@ -215,7 +261,7 @@ const BreathingCircle: React.FC<BreathingCircleProps> = ({
           },
         ]}
       >
-        {getPhaseText()}
+        {breathingPhase}
       </Animated.Text>
     </View>
   );
