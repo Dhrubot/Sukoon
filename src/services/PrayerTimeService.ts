@@ -60,7 +60,7 @@ export class PrayerTimeService {
     }
 
     const dateStr = format(date, "dd-MM-yyyy");
-    const cacheKey = `${coordinates.latitude}-${coordinates.longitude}-${dateStr}-${method}`;
+    const cacheKey = `${coordinates.latitude}-${coordinates.longitude}-${dateStr}-${method}-${asrJuristic}`;
 
     // Check cache first
     if (this.cachedTimes.has(cacheKey)) {

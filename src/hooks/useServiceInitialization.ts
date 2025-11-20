@@ -32,7 +32,7 @@ export const useServiceInitialization = () => {
   const { todayPrayerTimes, nextPrayer, isLoading, hasValidLocation } =
     usePrayerTimes();
 
-  const { userSettings, setLocation } = useStore();
+  const { userSettings, setLocation, updateUserSettings } = useStore();
 
   // 🔄 Initialize all services once on mount
   useEffect(() => {
@@ -108,9 +108,10 @@ export const useServiceInitialization = () => {
       onLocationUpdate: async (location: Location) => {
         try {
           console.log(
-            "📍 Location updated, updating store and triggering prayer time refresh..."
+            "📍 Location updated, updating store states and triggering prayer time refresh..."
           );
           setLocation(location);
+          updateUserSettings({ location });
           // PrayerTimesProvider will react to location change automatically
         } catch (error) {
           console.error("❌ Error handling location update:", error);
@@ -125,5 +126,5 @@ export const useServiceInitialization = () => {
       LocationService.unregisterLocationUpdateCallback(locationCallback);
       console.log("🧹 LocationService callback unregistered");
     };
-  }, [setLocation]);
+  }, [setLocation, updateUserSettings]);
 };
