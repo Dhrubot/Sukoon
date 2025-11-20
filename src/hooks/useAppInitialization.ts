@@ -112,9 +112,17 @@ export const useAppInitialization = () => {
   };
 
   const completeOnboarding = () => {
+// Re-check location settings because the user just finished onboarding
+    const settings = StorageService.getUserSettings();
+    const hasValidLocation =
+      settings &&
+      (settings.location.latitude !== 0 || settings.location.longitude !== 0);
+
     setState((prev) => ({
       ...prev,
       isFirstLaunch: false,
+      // If we have a valid location now, ensure the modal doesn't show
+      showLocationModal: !hasValidLocation, 
     }));
   };
 
