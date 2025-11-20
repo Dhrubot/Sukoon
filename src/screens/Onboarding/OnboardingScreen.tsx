@@ -32,7 +32,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   const [name, setName] = useState('');
   const [selectedMethod, setSelectedMethod] = useState<CalculationMethod>('MWL');
   const [locationData, setLocationData] = useState<AppLocation | null>(null);
-  
+
   const { setUserSettings } = useStore();
 
   const handleNext = () => {
@@ -55,11 +55,11 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
     }
   };
 
-const requestLocationPermission = async () => {
+  const requestLocationPermission = async () => {
     try {
       // Use LocationService instead of raw Expo calls to get city/country logic
       const location = await LocationService.getCurrentLocation();
-      
+
       if (location) {
         setLocationData(location); // Store it for completeOnboarding
         handleNext();
@@ -83,14 +83,14 @@ const requestLocationPermission = async () => {
     const settings = StorageService.getDefaultSettings();
     settings.name = name;
     settings.calculationMethod = selectedMethod;
-    
-if (locationData) {
+
+    if (locationData) {
       settings.location = locationData;
     }
-    
+
     StorageService.setUserSettings(settings);
     setUserSettings(settings);
-    
+
     onComplete();
   };
 
@@ -129,8 +129,8 @@ if (locationData) {
               returnKeyType="done"
               onSubmitEditing={handleNext}
             />
-            <TouchableOpacity 
-              style={[styles.button, !name && styles.buttonDisabled]} 
+            <TouchableOpacity
+              style={[styles.button, !name && styles.buttonDisabled]}
               onPress={handleNext}
               disabled={!name}
             >
@@ -181,7 +181,8 @@ if (locationData) {
 
       case 'method':
         return (
-          <ScrollView contentContainerStyle={styles.stepContainer}>
+          <ScrollView contentContainerStyle={[styles.stepContainer, { flex: 0, flexGrow: 1, paddingVertical: 20 }]}
+            showsVerticalScrollIndicator={false}>
             <Text style={styles.emoji}>🕌</Text>
             <Text style={styles.title}>Calculation Method</Text>
             <Text style={styles.subtitle}>
@@ -229,8 +230,8 @@ if (locationData) {
           {/* Progress bar */}
           <View style={styles.progressContainer}>
             <View style={styles.progressBar}>
-              <View 
-                style={[styles.progressFill, { width: `${getProgress() * 100}%` }]} 
+              <View
+                style={[styles.progressFill, { width: `${getProgress() * 100}%` }]}
               />
             </View>
           </View>

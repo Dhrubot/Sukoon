@@ -282,7 +282,8 @@ export class PrayerTimeService {
   private calculatePrayerTimes(
     coordinates: Coordinates,
     date: Date,
-    method: CalculationMethod
+    method: CalculationMethod,
+    asrJuristic: "Standard" | "Hanafi" = "Standard"
   ): PrayerTimes {
     try {
       console.log("Using fallback prayer time calculation");
@@ -340,7 +341,7 @@ export class PrayerTimeService {
       const dhuhrTime = midDay + 2 / 60; // Add 2 minutes
 
       // Asr time (using Standard method - shadow length = object height + shadow length at noon)
-      const asrFactor = 1; // Standard Shafi'i (use 2 for Hanafi)
+      const asrFactor = asrJuristic === "Hanafi" ? 2 : 1; // Standard Shafi'i (use 2 for Hanafi)
       const asrAngle =
         (Math.atan(
           1 /

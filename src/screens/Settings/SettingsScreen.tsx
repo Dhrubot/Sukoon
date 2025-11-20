@@ -2,6 +2,7 @@
 import React from 'react';
 import { View, Text, ScrollView, StyleSheet, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LocationModal } from '../../components/LocationModal';
 
 // Hooks
 import { useSettingsManager } from './hooks';
@@ -28,6 +29,7 @@ const SettingsScreen = ({ navigation }: any) => {
     showNotificationModal,
     isUpdatingLocation,
     calculationMethods,
+    showManualLocationModal,
 
     // 🎯 NEW: Enhanced state
     isUpdatingMethod,
@@ -41,6 +43,7 @@ const SettingsScreen = ({ navigation }: any) => {
     setUserSettings,
     setShowCalculationPicker,
     setShowNotificationModal,
+    setShowManualLocationModal,
 
     // Enhanced actions
     handleCalculationMethodChange,
@@ -70,7 +73,7 @@ const SettingsScreen = ({ navigation }: any) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView 
+      <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
       >
@@ -85,7 +88,7 @@ const SettingsScreen = ({ navigation }: any) => {
           setUserSettings={setUserSettings}
           onCalculationMethodPress={() => setShowCalculationPicker(true)}
           calculationMethods={calculationMethods}
-          
+
           // Enhanced props
           isUpdatingMethod={isUpdatingMethod}
           todayPrayerTimes={todayPrayerTimes}
@@ -110,6 +113,12 @@ const SettingsScreen = ({ navigation }: any) => {
           onUpdateLocation={updateLocation}
           onSelectManually={selectLocationManually}
           hasValidLocation={hasValidLocation}
+        />
+
+        {/* Location modal for manual update */}
+        <LocationModal
+          visible={showManualLocationModal}
+          onClose={() => setShowManualLocationModal(false)}
         />
 
         {/* App Data */}
@@ -158,7 +167,7 @@ const SettingsScreen = ({ navigation }: any) => {
         calculationMethods={calculationMethods}
         selectedMethod={userSettings.calculationMethod}
         onMethodSelect={handleCalculationMethodChange}
-        
+
         // Enhanced props
         previewPrayerTimes={previewPrayerTimes}
         onPreviewMethod={previewCalculationMethod}
@@ -217,7 +226,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#6C757D',
   },
-  
+
   // 🎯 NEW: Status section styles
   statusSection: {
     margin: 20,
