@@ -32,18 +32,29 @@ const BreathingCircle: React.FC<BreathingCircleProps> = ({
   // State to track breathing phase
   const [breathingPhase, setBreathingPhase] = useState('Inhale slowly...');
   
-  // Ref to track if animation is running
+  // Refs to track animation state and timeouts
   const animationRef = useRef<Animated.CompositeAnimation | null>(null);
   const pulseAnimationRef = useRef<Animated.CompositeAnimation | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isMounted = useRef(true);
 
-  // 🔧 FIX: Wrap the breathing animation in useCallback to prevent recreating it
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
   const startBreathingAnimation = useCallback(() => {
     // Reset animations
     scaleAnim.setValue(0.8);
     opacityAnim.setValue(0.8);
     timerWidth.setValue(0);
 
-    // Inhale phase
+    // 1. Inhale phase
     animationRef.current = Animated.parallel([
       Animated.timing(scaleAnim, {
         toValue: 1.2,
@@ -67,26 +78,24 @@ const BreathingCircle: React.FC<BreathingCircleProps> = ({
       }),
     ]);
 
-    animationRef.current.start(() => {
-      // 🔧 FIX: Use queueMicrotask to defer state updates
-      queueMicrotask(() => {
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-        setBreathingPhase('Hold...');
-      });
+    animationRef.current.start(({ finished }) => {
+      if (!finished || !isMounted.current) return;
 
-      // Hold phase
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      setBreathingPhase('Hold...');
+
+      // 2. Hold phase
       Animated.timing(timerWidth, {
         toValue: 0.66,
         duration: 4000,
         useNativeDriver: false,
-      }).start(() => {
-        // 🔧 FIX: Use queueMicrotask for exhale phase
-        queueMicrotask(() => {
-          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-          setBreathingPhase('Exhale completely...');
-        });
+      }).start(({ finished }) => {
+        if (!finished || !isMounted.current) return;
+
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+        setBreathingPhase('Exhale completely...');
         
-        // Exhale phase
+        // 3. Exhale phase
         Animated.parallel([
           Animated.timing(scaleAnim, {
             toValue: 0.8,
@@ -108,29 +117,28 @@ const BreathingCircle: React.FC<BreathingCircleProps> = ({
             duration: 4000,
             useNativeDriver: false,
           }),
-        ]).start(() => {
-          // 🔧 FIX: Use queueMicrotask for pause phase
-          queueMicrotask(() => {
-            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-            setBreathingPhase('Pause...');
-          });
+        ]).start(({ finished }) => {
+          if (!finished || !isMounted.current) return;
+
+          Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+          setBreathingPhase('Pause...');
           
-          setTimeout(() => {
-            queueMicrotask(() => {
-              rotateAnim.setValue(0);
-              setBreathingPhase('Inhale slowly...');
-              onBreathComplete();
-            });
+          // 4. Pause phase
+          timeoutRef.current = setTimeout(() => {
+            if (!isMounted.current || !isActive) return;
+            
+            rotateAnim.setValue(0);
+            setBreathingPhase('Inhale slowly...');
+            onBreathComplete();
           }, 2000);
         });
       });
     });
-  }, [scaleAnim, opacityAnim, rotateAnim, timerWidth, onBreathComplete]);
+  }, [scaleAnim, opacityAnim, rotateAnim, timerWidth, onBreathComplete, isActive]);
 
-  // 🔧 FIX: Use separate effect for pulse animation
+  // Effect for Pulse Animation (Background)
   useEffect(() => {
     if (!isActive) {
-      // Stop pulse animation when inactive
       if (pulseAnimationRef.current) {
         pulseAnimationRef.current.stop();
         pulseAnimationRef.current = null;
@@ -138,7 +146,6 @@ const BreathingCircle: React.FC<BreathingCircleProps> = ({
       return;
     }
 
-    // Start pulse animation
     pulseAnimationRef.current = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
@@ -159,32 +166,32 @@ const BreathingCircle: React.FC<BreathingCircleProps> = ({
     return () => {
       if (pulseAnimationRef.current) {
         pulseAnimationRef.current.stop();
-        pulseAnimationRef.current = null;
       }
     };
   }, [isActive, pulseAnim]);
 
-  // 🔧 FIX: Use separate effect for breathing animation with proper cleanup
+  // Effect for Main Breathing Cycle
   useEffect(() => {
     if (!isActive) {
-      // Stop breathing animation when inactive
       if (animationRef.current) {
         animationRef.current.stop();
         animationRef.current = null;
       }
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
       return;
     }
 
-    // 🔧 FIX: Use requestAnimationFrame to defer animation start
-    const animationFrameId = requestAnimationFrame(() => {
-      startBreathingAnimation();
-    });
+    // Start the cycle
+    startBreathingAnimation();
 
     return () => {
-      cancelAnimationFrame(animationFrameId);
       if (animationRef.current) {
         animationRef.current.stop();
-        animationRef.current = null;
+      }
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
       }
     };
   }, [isActive, breathCount, startBreathingAnimation]);
