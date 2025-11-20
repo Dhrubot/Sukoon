@@ -8,6 +8,7 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -17,6 +18,8 @@ import * as Notifications from 'expo-notifications';
 import StorageService from '../../services/StorageService';
 import { useStore } from '../../store/useStore';
 import { CalculationMethod, CALCULATION_METHODS } from '../../types';
+import LocationService from '../../services/LocationService';
+import { Location as AppLocation } from '../../types'
 
 interface OnboardingScreenProps {
   onComplete: () => void;
@@ -28,6 +31,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome');
   const [name, setName] = useState('');
   const [selectedMethod, setSelectedMethod] = useState<CalculationMethod>('MWL');
+  const [locationData, setLocationData] = useState<AppLocation | null>(null);
   
   const { setUserSettings } = useStore();
 
@@ -51,9 +55,21 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
     }
   };
 
-  const requestLocationPermission = async () => {
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status === 'granted') {
+const requestLocationPermission = async () => {
+    try {
+      // Use LocationService instead of raw Expo calls to get city/country logic
+      const location = await LocationService.getCurrentLocation();
+      
+      if (location) {
+        setLocationData(location); // Store it for completeOnboarding
+        handleNext();
+      } else {
+        // Permission denied or fetch failed, move next anyway but warn?
+        Alert.alert('Location Skipped', 'We could not fetch your location automatically. You can set it manually later.');
+        handleNext();
+      }
+    } catch (error) {
+      console.log('Onboarding location error:', error);
       handleNext();
     }
   };
@@ -67,6 +83,10 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
     const settings = StorageService.getDefaultSettings();
     settings.name = name;
     settings.calculationMethod = selectedMethod;
+    
+if (locationData) {
+      settings.location = locationData;
+    }
     
     StorageService.setUserSettings(settings);
     setUserSettings(settings);

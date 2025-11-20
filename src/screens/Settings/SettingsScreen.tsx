@@ -94,6 +94,7 @@ const SettingsScreen = ({ navigation }: any) => {
           hasValidLocation={hasValidLocation}
           onTestCalculations={testPrayerCalculations}
           onPreviewMethod={previewCalculationMethod}
+          onRefreshPrayerTimes={refreshPrayerTimes}
         />
 
         {/* Notification Settings */}

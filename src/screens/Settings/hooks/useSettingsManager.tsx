@@ -334,7 +334,7 @@ export const useSettingsManager = () => {
     Alert.alert('Privacy Policy', 'Privacy policy will be shown here.', [{ text: 'OK' }]);
   };
 
-  const showDebugInfo = () => {
+  const showDebugInfo = async () => {
     Alert.alert(
       'Debug Info',
       JSON.stringify({
@@ -349,6 +349,7 @@ export const useSettingsManager = () => {
 
   return {
     userSettings,
+    setUserSettings,
     calculationMethods,
     showCalculationPicker,
     setShowCalculationPicker,
@@ -381,5 +382,6 @@ export const useSettingsManager = () => {
     nextPrayer,
     prayerTimesLoading,
     hasValidLocation,
+    refreshPrayerTimes
   };
 };
