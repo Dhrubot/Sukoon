@@ -1,12 +1,11 @@
-// src/screens/Settings/components/PrayerSettingsSection.tsx (ENHANCED)
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { format } from 'date-fns';
 import { SettingSection } from '../../../components/settings/SettingSection';
 import { SettingRow } from '../../../components/settings/SettingRow';
 import { SegmentedControl } from '../../../components/settings/SegmentedControl';
-import { CalculationMethodType, UserSettings, PrayerTime } from '../../../types';
 import StorageService from '../../../services/StorageService';
+import { UserSettings, CalculationMethodType, PrayerTime } from '../../../types';
 
 interface PrayerSettingsSectionProps {
   userSettings: UserSettings;
@@ -14,7 +13,7 @@ interface PrayerSettingsSectionProps {
   onCalculationMethodPress: () => void;
   calculationMethods: CalculationMethodType[];
   
-  // 🎯 NEW: Enhanced props
+  // Enhanced props
   isUpdatingMethod?: boolean;
   todayPrayerTimes?: PrayerTime[];
   nextPrayer?: PrayerTime | null;
@@ -22,6 +21,7 @@ interface PrayerSettingsSectionProps {
   hasValidLocation?: boolean;
   onTestCalculations?: () => void;
   onPreviewMethod?: (method: CalculationMethodType) => void;
+  onRefreshPrayerTimes?: () => Promise<void>; // 🆕 NEW: For immediate refresh
 }
 
 export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
@@ -38,6 +38,7 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
   hasValidLocation = false,
   onTestCalculations,
   onPreviewMethod,
+  onRefreshPrayerTimes, // 🆕 NEW
 }) => {
   const juristicOptions = [
     {
@@ -52,10 +53,47 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
     },
   ];
 
-  const handleJuristicChange = (value: string) => {
-    const updated = { ...userSettings, asrJuristic: value as 'Standard' | 'Hanafi' };
+  // 🔧 FIXED: Immediate refresh when Asr method changes
+  const handleJuristicChange = async (value: string) => {
+    const updated = { 
+      ...userSettings, 
+      asrJuristic: value as 'Standard' | 'Hanafi' 
+    };
+    
+    // Save to storage
     StorageService.setUserSettings(updated);
     setUserSettings(updated);
+    
+    // 🔧 FIX: Immediately refresh prayer times
+    if (onRefreshPrayerTimes && hasValidLocation) {
+      try {
+        await onRefreshPrayerTimes();
+        
+        // Show confirmation with new Asr time
+        const asrPrayer = todayPrayerTimes.find(p => p.name === 'Asr');
+        const timeStr = asrPrayer ? format(asrPrayer.time, 'h:mm a') : '';
+        
+        Alert.alert(
+          'Asr Method Updated ✅',
+          `Prayer times updated using ${value} juristic method.\n\n` +
+          (timeStr ? `New Asr time: ${timeStr}` : 'Prayer times have been recalculated.'),
+          [{ text: 'OK' }]
+        );
+      } catch (error) {
+        console.error('Failed to refresh prayer times:', error);
+        Alert.alert(
+          'Update Complete',
+          'Asr method changed. Prayer times will update on next refresh.',
+          [{ text: 'OK' }]
+        );
+      }
+    } else if (!hasValidLocation) {
+      Alert.alert(
+        'Location Required',
+        'Please set your location to see updated prayer times.',
+        [{ text: 'OK' }]
+      );
+    }
   };
 
   const getCurrentMethodLabel = () => {
@@ -63,7 +101,7 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
     return method?.label || 'Unknown';
   };
 
-  // 🎯 NEW: Render current prayer times preview
+  // Render current prayer times preview
   const renderCurrentPrayerTimes = () => {
     if (!hasValidLocation) {
       return (
@@ -97,7 +135,8 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
             <View key={prayer.name} style={styles.prayerTimeRow}>
               <Text style={[
                 styles.prayerName,
-                prayer.name === nextPrayer?.name && styles.nextPrayerName
+                prayer.name === nextPrayer?.name && styles.nextPrayerName,
+                prayer.name === 'Asr' && styles.asrHighlight // 🆕 Highlight Asr
               ]}>
                 {prayer.name}
               </Text>
@@ -128,14 +167,14 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
         disabled={isUpdatingMethod}
       />
 
-      {/* 🎯 NEW: Current prayer times preview */}
+      {/* Current prayer times preview */}
       {renderCurrentPrayerTimes()}
 
-      {/* Juristic Method */}
+      {/* Juristic Method for Asr */}
       <View style={styles.juristicMethodWrapper}>
         <SettingRow
           label="Juristic Method"
-          subtitle="Asr prayer calculation method"
+          subtitle="Asr prayer calculation - changes Asr time immediately"
         />
         
         <SegmentedControl
@@ -144,9 +183,19 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
           onValueChange={handleJuristicChange}
           style={styles.juristicControl}
         />
+        
+        {/* 🆕 NEW: Explanation of the difference */}
+        <View style={styles.juristicExplanation}>
+          <Text style={styles.explanationText}>
+            {userSettings.asrJuristic === 'Hanafi' 
+              ? '⏰ Hanafi: Asr begins when shadow = 2× object length (earlier)'
+              : '⏰ Standard: Asr begins when shadow = 1× object length (later)'
+            }
+          </Text>
+        </View>
       </View>
 
-      {/* 🎯 NEW: Test calculations button */}
+      {/* Test calculations button */}
       {onTestCalculations && hasValidLocation && (
         <View style={styles.testSection}>
           <TouchableOpacity 
@@ -161,7 +210,7 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
         </View>
       )}
 
-      {/* 🎯 NEW: Method comparison hint */}
+      {/* Method comparison hint */}
       {hasValidLocation && todayPrayerTimes.length > 0 && (
         <View style={styles.hintContainer}>
           <Text style={styles.hintText}>
@@ -183,8 +232,21 @@ const styles = StyleSheet.create({
   juristicControl: {
     marginTop: 12,
   },
+  juristicExplanation: {
+    backgroundColor: '#F8F9FA',
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 10,
+    borderLeftWidth: 3,
+    borderLeftColor: '#1B5E3F',
+  },
+  explanationText: {
+    fontSize: 13,
+    color: '#495057',
+    lineHeight: 18,
+  },
   
-  // 🎯 NEW: Prayer times preview styles
+  // Prayer times preview styles
   statusContainer: {
     backgroundColor: '#F8F9FA',
     borderRadius: 8,
@@ -226,6 +288,9 @@ const styles = StyleSheet.create({
   nextPrayerName: {
     color: '#1B5E3F',
     fontWeight: '700',
+  },
+  asrHighlight: {
+    color: '#FF6F00', // 🆕 Orange color for Asr to draw attention
   },
   prayerTime: {
     fontSize: 14,

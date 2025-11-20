@@ -1,26 +1,20 @@
-// src/screens/Settings/hooks/useSettingsManager.tsx (ENHANCED)
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Alert } from 'react-native';
 import { useStore } from '../../../store/useStore';
 import StorageService from '../../../services/StorageService';
-import NotificationService from '../../../services/NotificationService';
 import LocationService from '../../../services/LocationService';
-import { CalculationMethod, CalculationMethodType, CALCULATION_METHODS } from '../../../types';
-
-// 🎯 NEW: Use centralized prayer times for better UX
+import { CalculationMethodType, CALCULATION_METHODS } from '../../../types';
 import { usePrayerTimes } from '../../../providers/PrayerTimesProvider';
 
 export const useSettingsManager = () => {
-  const { userSettings, setUserSettings } = useStore();
+  const { userSettings, setUserSettings, setLocation } = useStore();
   const [showCalculationPicker, setShowCalculationPicker] = useState(false);
   const [showNotificationModal, setShowNotificationModal] = useState(false);
+  const [showManualLocationModal, setShowManualLocationModal] = useState(false);
   const [isUpdatingLocation, setIsUpdatingLocation] = useState(false);
-  
-  // 🎯 NEW: State for enhanced UX
   const [isUpdatingMethod, setIsUpdatingMethod] = useState(false);
   const [previewPrayerTimes, setPreviewPrayerTimes] = useState<any>(null);
 
-  // 🎯 NEW: Access centralized prayer times
   const { 
     todayPrayerTimes, 
     nextPrayer, 
@@ -31,7 +25,209 @@ export const useSettingsManager = () => {
 
   const calculationMethods = CALCULATION_METHODS;
 
-  // 🎯 NEW: Enhanced calculation method change with preview
+  // ✅ FIXED: Proper location update with full location object
+  const updateLocation = async () => {
+    setIsUpdatingLocation(true);
+    
+    try {
+      // getCurrentLocation already does reverse geocoding
+      const location = await LocationService.getCurrentLocation();
+      
+      if (location && userSettings) {
+        // ✅ Use the FULL location object (has city, country, timezone)
+        const updatedSettings = {
+          ...userSettings,
+          location: location,
+        };
+        
+        StorageService.setUserSettings(updatedSettings);
+        setUserSettings(updatedSettings);
+        setLocation(location); // Update store
+        
+        await refreshPrayerTimes();
+        
+        Alert.alert(
+          'Location Updated ✅',
+          `Your location has been set to ${location.city}, ${location.country}.\n\nPrayer times have been updated.`,
+          [{ text: 'Great!' }]
+        );
+      }
+    } catch (error) {
+      console.error('Failed to update location:', error);
+      
+      const errorMessage = error instanceof Error ? error.message : 'Failed to get location';
+      
+      Alert.alert(
+        'Location Update Failed',
+        `${errorMessage}\n\nWould you like to enter your location manually instead?`,
+        [
+          { text: 'Try Again', onPress: () => updateLocation() },
+          { text: 'Enter Manually', onPress: () => setShowManualLocationModal(true) },
+          { text: 'Cancel', style: 'cancel' }
+        ]
+      );
+    } finally {
+      setIsUpdatingLocation(false);
+    }
+  };
+
+  const selectLocationManually = () => {
+    setShowManualLocationModal(true);
+  };
+
+  // ✅ Manual location by city - uses existing setLocationByAddress
+  const handleManualLocationByCity = async (city: string, country: string) => {
+    if (!city.trim() || !country.trim()) {
+      Alert.alert('Missing Information', 'Please enter both city and country.');
+      return false;
+    }
+
+    setIsUpdatingLocation(true);
+    
+    try {
+      const location = await LocationService.setLocationByAddress(city.trim(), country.trim());
+
+      if (location && userSettings) {
+        const updatedSettings = {
+          ...userSettings,
+          location: location,
+        };
+        
+        StorageService.setUserSettings(updatedSettings);
+        setUserSettings(updatedSettings);
+        setLocation(location);
+        
+        await refreshPrayerTimes();
+        
+        setShowManualLocationModal(false);
+        
+        Alert.alert(
+          'Location Set! ✅',
+          `Your location has been set to ${location.city}, ${location.country}.`,
+          [{ text: 'Perfect!' }]
+        );
+        
+        return true;
+      } else {
+        throw new Error('Location not found');
+      }
+    } catch (error) {
+      console.error('Manual location failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Could not find location';
+      
+      Alert.alert(
+        'Location Not Found',
+        `${errorMessage}\n\nTry:\n• Check spelling\n• Use a major city nearby\n• Include state/province if needed`,
+        [{ text: 'OK' }]
+      );
+      
+      return false;
+    } finally {
+      setIsUpdatingLocation(false);
+    }
+  };
+
+  // ✅ Manual location by postal code - uses existing setLocationByPostalCode
+  const handleManualLocationByPostalCode = async (postalCode: string, countryCode: string) => {
+    if (!postalCode.trim() || !countryCode.trim()) {
+      Alert.alert('Missing Information', 'Please enter both postal code and country code.');
+      return false;
+    }
+
+    setIsUpdatingLocation(true);
+    
+    try {
+      const location = await LocationService.setLocationByPostalCode(postalCode.trim(), countryCode.trim());
+
+      if (location && userSettings) {
+        const updatedSettings = {
+          ...userSettings,
+          location: location,
+        };
+        
+        StorageService.setUserSettings(updatedSettings);
+        setUserSettings(updatedSettings);
+        setLocation(location);
+        
+        await refreshPrayerTimes();
+        
+        setShowManualLocationModal(false);
+        
+        Alert.alert(
+          'Location Found! ✅',
+          `Found: ${location.city}, ${location.country}`,
+          [{ text: 'Excellent!' }]
+        );
+        
+        return true;
+      } else {
+        throw new Error('Postal code not found');
+      }
+    } catch (error) {
+      console.error('Postal code location failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Could not find postal code';
+      
+      Alert.alert('Postal Code Not Found', errorMessage, [{ text: 'OK' }]);
+      
+      return false;
+    } finally {
+      setIsUpdatingLocation(false);
+    }
+  };
+
+  // ✅ CORRECTED: Manual location by coordinates
+  // Uses reverseGeocodeCoordinates instead of non-existent setLocationByCoordinates
+  const handleManualLocationByCoordinates = async (latitude: number, longitude: number) => {
+    if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
+      Alert.alert('Invalid Coordinates', 'Please enter valid latitude (-90 to 90) and longitude (-180 to 180).');
+      return false;
+    }
+
+    setIsUpdatingLocation(true);
+    
+    try {
+      // ✅ Use reverseGeocodeCoordinates (this method EXISTS)
+      const location = await LocationService.reverseGeocodeCoordinates({ latitude, longitude });
+
+      if (location && userSettings) {
+        // Save the location through LocationService to trigger callbacks
+        await LocationService.saveLocation(location);
+        
+        const updatedSettings = {
+          ...userSettings,
+          location: location,
+        };
+        
+        StorageService.setUserSettings(updatedSettings);
+        setUserSettings(updatedSettings);
+        setLocation(location);
+        
+        await refreshPrayerTimes();
+        
+        setShowManualLocationModal(false);
+        
+        Alert.alert(
+          'Coordinates Set! ✅',
+          `Location set to ${location.city}, ${location.country}`,
+          [{ text: 'Great!' }]
+        );
+        
+        return true;
+      } else {
+        throw new Error('Could not reverse geocode coordinates');
+      }
+    } catch (error) {
+      console.error('Coordinate location failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Could not set coordinates';
+      
+      Alert.alert('Error', errorMessage, [{ text: 'OK' }]);
+      
+      return false;
+    } finally {
+      setIsUpdatingLocation(false);
+    }
+  };
+
   const handleCalculationMethodChange = async (method: CalculationMethodType) => {
     if (!userSettings) return;
 
@@ -43,15 +239,12 @@ export const useSettingsManager = () => {
         calculationMethod: method.value,
       };
 
-      // Save settings
       StorageService.setUserSettings(updatedSettings);
       setUserSettings(updatedSettings);
       setShowCalculationPicker(false);
 
-      // 🎯 NEW: Refresh prayer times through provider (automatic notification rescheduling)
       await refreshPrayerTimes();
       
-      // 🎯 ENHANCED: Better user feedback
       Alert.alert(
         'Method Updated ✅',
         `Prayer calculation method changed to ${method.label}. Prayer times have been updated.`,
@@ -69,7 +262,6 @@ export const useSettingsManager = () => {
     }
   };
 
-  // 🎯 NEW: Preview prayer times for different calculation methods
   const previewCalculationMethod = async (method: CalculationMethodType) => {
     if (!userSettings?.location || !hasValidLocation) {
       Alert.alert(
@@ -80,7 +272,6 @@ export const useSettingsManager = () => {
     }
 
     try {
-      // Import PrayerTimeService for preview
       const PrayerTimeService = (await import('../../../services/PrayerTimeService')).default;
       
       const previewTimes = await PrayerTimeService.getPrayerTimesList(
@@ -100,204 +291,95 @@ export const useSettingsManager = () => {
     }
   };
 
-  // 🎯 ENHANCED: Location update with better feedback
-  const updateLocation = async () => {
-    setIsUpdatingLocation(true);
-    
-    try {
-      const location = await LocationService.getCurrentLocation();
-      
-      if (location && userSettings) {
-        const updatedSettings = {
-          ...userSettings,
-          location: {
-            latitude: location.latitude,
-            longitude: location.longitude,
-            city: 'Updated Location', // TODO: Get actual city name
-            country: 'Updated Country', // TODO: Get actual country name
-          },
-        };
-        
-        StorageService.setUserSettings(updatedSettings);
-        setUserSettings(updatedSettings);
-        
-        // 🎯 NEW: Use provider for refresh (automatic notification rescheduling)
-        await refreshPrayerTimes();
-        
-        Alert.alert(
-          'Location Updated ✅',
-          'Your location has been updated and prayer times recalculated.',
-          [{ text: 'OK' }]
-        );
-      }
-    } catch (error) {
-      console.error('Failed to update location:', error);
-      Alert.alert(
-        'Location Update Failed',
-        'Failed to get your current location. Please check your location permissions and try again.',
-        [{ text: 'OK' }]
-      );
-    } finally {
-      setIsUpdatingLocation(false);
-    }
-  };
-
-  // 🎯 NEW: Enhanced location selection with geocoding
-  const selectLocationManually = () => {
-    Alert.alert(
-      'Manual Location',
-      'Manual location selection coming soon! You\'ll be able to search for your city or enter coordinates.',
-      [{ text: 'OK' }]
-    );
-  };
-
-  // 🎯 NEW: Test prayer time calculations
   const testPrayerCalculations = async () => {
     if (!hasValidLocation) {
       Alert.alert('Location Required', 'Please set your location first.');
       return;
     }
 
-    try {
-      await refreshPrayerTimes();
-      
-      const debugInfo = await NotificationService.getDebugInfo();
-      
-      Alert.alert(
-        'Prayer Times Test ✅',
-        `Prayer times refreshed successfully!\n\n` +
-        `📅 Today's prayers: ${todayPrayerTimes.length}\n` +
-        `⏰ Next prayer: ${nextPrayer?.name || 'None'}\n` +
-        `🔔 Scheduled notifications: ${debugInfo.scheduledCount}`,
-        [{ text: 'OK' }]
-      );
-    } catch (error) {
-      console.error('Prayer calculation test failed:', error);
-      Alert.alert('Test Failed', 'Failed to refresh prayer times.');
-    }
+    Alert.alert(
+      '🧪 Prayer Calculations',
+      `Current method: ${userSettings?.calculationMethod}\n` +
+      `Asr method: ${userSettings?.asrJuristic}\n` +
+      `Location: ${userSettings?.location.city}\n` +
+      `Prayers today: ${todayPrayerTimes.length}\n` +
+      `Next prayer: ${nextPrayer?.name || 'None'}`,
+      [{ text: 'OK' }]
+    );
+  };
+
+  const handleExportData = async () => {
+    Alert.alert('Export Data', 'Data export feature coming soon!', [{ text: 'OK' }]);
   };
 
   const handleResetApp = () => {
     Alert.alert(
       'Reset App',
-      'This will delete all your prayer data and settings. Are you sure?',
+      'Are you sure? This will delete all your data and prayer history.',
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Reset',
           style: 'destructive',
-          onPress: async () => {
+          onPress: () => {
             StorageService.clearAllData();
-            await NotificationService.cancelAllPrayerNotifications();
-            Alert.alert('App Reset', 'All data has been cleared. Please restart the app.');
+            Alert.alert('App Reset', 'Please restart the app.', [{ text: 'OK' }]);
           },
         },
       ]
     );
   };
 
-  // 🎯 ENHANCED: Export with more comprehensive data
-  const handleExportData = async () => {
-    try {
-      // Get comprehensive debug info
-      const debugInfo = await NotificationService.getDebugInfo();
-      const scheduled = await NotificationService.getScheduledNotifications();
-      
-      const exportData = {
-        userSettings,
-        todayPrayerTimes,
-        nextPrayer,
-        notificationDebugInfo: debugInfo,
-        scheduledNotifications: scheduled.length,
-        exportedAt: new Date().toISOString(),
-      };
-
-      Alert.alert(
-        'Export Data',
-        `Ready to export:\n\n` +
-        `📊 User settings\n` +
-        `📅 Prayer times data\n` +
-        `🔔 ${scheduled.length} scheduled notifications\n\n` +
-        `Export feature coming soon!`,
-        [{ text: 'OK' }]
-      );
-    } catch (error) {
-      console.error('Failed to prepare export data:', error);
-      Alert.alert('Export Failed', 'Failed to prepare export data.');
-    }
+  const handlePrivacyPolicy = () => {
+    Alert.alert('Privacy Policy', 'Privacy policy will be shown here.', [{ text: 'OK' }]);
   };
 
-  const handlePrivacyPolicy = () => {
+  const showDebugInfo = () => {
     Alert.alert(
-      'Privacy Policy',
-      'Your privacy is important to us. We do not collect any personal information. All data is stored locally on your device.',
+      'Debug Info',
+      JSON.stringify({
+        hasLocation: hasValidLocation,
+        location: userSettings?.location,
+        prayerTimesCount: todayPrayerTimes.length,
+        nextPrayer: nextPrayer?.name,
+      }, null, 2),
       [{ text: 'OK' }]
     );
   };
 
-  // 🎯 NEW: Debug panel for development
-  const showDebugInfo = async () => {
-    try {
-      const debugInfo = await NotificationService.getDebugInfo();
-      
-      Alert.alert(
-        'Debug Information 🔧',
-        `Prayer Times Provider:\n` +
-        `• Has valid location: ${hasValidLocation}\n` +
-        `• Loading: ${prayerTimesLoading}\n` +
-        `• Today's prayers: ${todayPrayerTimes.length}\n` +
-        `• Next prayer: ${nextPrayer?.name || 'None'}\n\n` +
-        `Notifications:\n` +
-        `• Has source: ${debugInfo.hasSource}\n` +
-        `• Scheduled: ${debugInfo.scheduledCount}\n` +
-        `• Last hash: ${debugInfo.lastScheduledHash.slice(0, 10)}...`,
-        [{ text: 'OK' }]
-      );
-    } catch (error) {
-      Alert.alert('Debug Failed', 'Failed to get debug information.');
-    }
-  };
-
-  // 🎯 NEW: Clear preview when modal closes
-  useEffect(() => {
-    if (!showCalculationPicker) {
-      setPreviewPrayerTimes(null);
-    }
-  }, [showCalculationPicker]);
-
   return {
-    // Existing state
     userSettings,
-    showCalculationPicker,
-    showNotificationModal,
-    isUpdatingLocation,
     calculationMethods,
-
-    // 🎯 NEW: Enhanced state
+    showCalculationPicker,
+    setShowCalculationPicker,
+    showNotificationModal,
+    setShowNotificationModal,
+    showManualLocationModal,
+    setShowManualLocationModal,
+    isUpdatingLocation,
     isUpdatingMethod,
     previewPrayerTimes,
-    prayerTimesLoading,
-    hasValidLocation,
+    
+    // Enhanced functions
+    updateLocation,
+    selectLocationManually,
+    handleManualLocationByCity,
+    handleManualLocationByPostalCode,
+    handleManualLocationByCoordinates,
+    handleCalculationMethodChange,
+    previewCalculationMethod,
+    testPrayerCalculations,
+    
+    // Data functions
+    handleExportData,
+    handleResetApp,
+    handlePrivacyPolicy,
+    showDebugInfo,
+    
+    // Prayer times data
     todayPrayerTimes,
     nextPrayer,
-
-    // Existing setters
-    setUserSettings,
-    setShowCalculationPicker,
-    setShowNotificationModal,
-
-    // Enhanced actions
-    handleCalculationMethodChange,
-    updateLocation,
-    handleResetApp,
-    handleExportData,
-    handlePrivacyPolicy,
-
-    // 🎯 NEW: Enhanced actions
-    previewCalculationMethod,
-    selectLocationManually,
-    testPrayerCalculations,
-    showDebugInfo,
-    refreshPrayerTimes,
+    prayerTimesLoading,
+    hasValidLocation,
   };
 };

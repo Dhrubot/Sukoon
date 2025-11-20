@@ -1,4 +1,4 @@
-// src/screens/Settings/components/LocationSection.tsx
+// src/screens/Settings/components/LocationSection.tsx - FIXED VERSION
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { SettingSection } from '../../../components/settings/SettingSection';
@@ -18,39 +18,69 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
   onUpdateLocation,
   onSelectManually,
   hasValidLocation = true,
-}) => (
-  <SettingSection title="Location">
-    <View style={styles.locationInfo}>
-      <Text style={styles.locationText}>
-        {userSettings.location.city || 'Unknown City'}, {userSettings.location.country || 'Unknown Country'}
-      </Text>
-      <Text style={[styles.coordinatesText, !hasValidLocation && styles.invalidText]}>
-        {userSettings.location.latitude.toFixed(4)}°, {userSettings.location.longitude.toFixed(4)}°
-        {!hasValidLocation && ' (Invalid location)'}
-      </Text>
-    </View>
+}) => {
+  // 🔧 FIX: Check if location is actually valid
+  const isLocationSet = hasValidLocation && 
+    userSettings.location.latitude !== 0 && 
+    userSettings.location.longitude !== 0;
 
-    <TouchableOpacity 
-      style={[styles.button, isUpdatingLocation && styles.buttonDisabled]}
-      onPress={onUpdateLocation}
-      disabled={isUpdatingLocation}
-    >
-      <Text style={styles.buttonText}>
-        {isUpdatingLocation ? 'Updating...' : 'Update Location'}
-      </Text>
-    </TouchableOpacity>
+  return (
+    <SettingSection title="Location">
+      <View style={styles.locationInfo}>
+        {isLocationSet ? (
+          <>
+            <Text style={styles.locationText}>
+              {userSettings.location.city || 'Unknown City'}, {userSettings.location.country || 'Unknown Country'}
+            </Text>
+            <Text style={styles.coordinatesText}>
+              {userSettings.location.latitude.toFixed(4)}°, {userSettings.location.longitude.toFixed(4)}°
+            </Text>
+          </>
+        ) : (
+          <>
+            <Text style={styles.locationText}>
+              📍 Location Not Set
+            </Text>
+            <Text style={styles.invalidText}>
+              Please set your location to calculate accurate prayer times
+            </Text>
+          </>
+        )}
+      </View>
 
-    {onSelectManually && (
       <TouchableOpacity 
-        style={[styles.manualButton, isUpdatingLocation && styles.buttonDisabled]}
-        onPress={onSelectManually}
+        style={[styles.button, isUpdatingLocation && styles.buttonDisabled]}
+        onPress={onUpdateLocation}
         disabled={isUpdatingLocation}
       >
-        <Text style={styles.manualButtonText}>Select Location Manually</Text>
+        <Text style={styles.buttonText}>
+          {isUpdatingLocation ? '⏳ Updating...' : isLocationSet ? '🔄 Update Location' : '📍 Set Location'}
+        </Text>
       </TouchableOpacity>
-    )}
-  </SettingSection>
-);
+
+      {onSelectManually && (
+        <TouchableOpacity 
+          style={[styles.manualButton, isUpdatingLocation && styles.buttonDisabled]}
+          onPress={onSelectManually}
+          disabled={isUpdatingLocation}
+        >
+          <Text style={styles.manualButtonText}>
+            🗺️ Select Location Manually
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      {/* 🆕 NEW: Location status indicator */}
+      {!isLocationSet && (
+        <View style={styles.warningBox}>
+          <Text style={styles.warningText}>
+            ⚠️ Prayer times cannot be calculated without a valid location
+          </Text>
+        </View>
+      )}
+    </SettingSection>
+  );
+};
 
 const styles = StyleSheet.create({
   locationInfo: {
@@ -62,6 +92,7 @@ const styles = StyleSheet.create({
   locationText: {
     fontSize: 16,
     color: '#212121',
+    fontWeight: '500',
     marginBottom: 4,
   },
   coordinatesText: {
@@ -69,7 +100,10 @@ const styles = StyleSheet.create({
     color: '#757575',
   },
   invalidText: {
+    fontSize: 14,
     color: '#DC3545',
+    fontStyle: 'italic',
+    marginTop: 4,
   },
   button: {
     backgroundColor: '#1B5E3F',
@@ -98,5 +132,19 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#1B5E3F',
-  }
+  },
+  warningBox: {
+    backgroundColor: '#FFF3CD',
+    borderRadius: 8,
+    padding: 12,
+    marginTop: 12,
+    borderWidth: 1,
+    borderColor: '#FFEAA7',
+  },
+  warningText: {
+    fontSize: 13,
+    color: '#856404',
+    textAlign: 'center',
+    lineHeight: 18,
+  },
 });
