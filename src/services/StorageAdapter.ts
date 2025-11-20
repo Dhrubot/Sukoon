@@ -1,82 +1,78 @@
+// src/services/StorageAdapter.ts
 import { Platform } from 'react-native';
 import { MMKV } from 'react-native-mmkv';
-import { AsyncStorageFallback } from './AsyncStorageFallback';
 
-// Web storage implementation that mimics MMKV API
-class WebStorage {
-  private storage: Storage;
-  private storagePrefix: string;
+// 1. Simple In-Memory Storage for fallback (Data is lost on app restart, but app won't crash)
+class MemoryStorage {
+  private storage = new Map<string, string>();
 
-  constructor(options: { id: string }) {
-    this.storage = window.localStorage;
-    this.storagePrefix = options.id ? `${options.id}_` : '';
+  getString(key: string) { 
+    return this.storage.get(key); 
   }
-
-  getString(key: string): string | undefined {
-    const value = this.storage.getItem(this.storagePrefix + key);
-    return value !== null ? value : undefined;
+  
+  getNumber(key: string) { 
+    const val = this.storage.get(key);
+    return val ? Number(val) : undefined;
   }
-
-  getNumber(key: string): number | undefined {
-    const value = this.storage.getItem(this.storagePrefix + key);
-    return value !== null ? Number(value) : undefined;
+  
+  getBoolean(key: string) { 
+    const val = this.storage.get(key);
+    return val === 'true';
   }
-
-  getBoolean(key: string): boolean | undefined {
-    const value = this.storage.getItem(this.storagePrefix + key);
-    if (value === null) return undefined;
-    return value === 'true';
+  
+  set(key: string, value: string | number | boolean) {
+    this.storage.set(key, String(value));
   }
-
-  set(key: string, value: string | number | boolean): void {
-    this.storage.setItem(this.storagePrefix + key, String(value));
+  
+  delete(key: string) { 
+    this.storage.delete(key); 
   }
-
-  delete(key: string): void {
-    this.storage.removeItem(this.storagePrefix + key);
+  
+  getAllKeys() { 
+    return Array.from(this.storage.keys()); 
   }
-
-  getAllKeys(): string[] {
-    const keys: string[] = [];
-    
-    // Iterate through all localStorage items
-    for (let i = 0; i < this.storage.length; i++) {
-      const fullKey = this.storage.key(i);
-      if (fullKey && fullKey.startsWith(this.storagePrefix)) {
-        // Remove the prefix to return just the key part
-        keys.push(fullKey.slice(this.storagePrefix.length));
-      }
-    }
-    
-    return keys;
-  }
-
-  clearAll(): void {
-    // Only clear items with our prefix
-    const keysToRemove: string[] = [];
-    for (let i = 0; i < this.storage.length; i++) {
-      const key = this.storage.key(i);
-      if (key && key.startsWith(this.storagePrefix)) {
-        keysToRemove.push(key);
-      }
-    }
-    
-    keysToRemove.forEach(key => this.storage.removeItem(key));
+  
+  clearAll() { 
+    this.storage.clear(); 
   }
 }
 
-// Factory function that returns appropriate storage implementation based on platform
-export function createStorage(options: { id: string; encryptionKey?: string }): MMKV | WebStorage | AsyncStorageFallback {
+// Web storage implementation
+class WebStorage {
+  private storage = window.localStorage;
+  private prefix: string;
+
+  constructor(options: { id: string }) {
+    this.prefix = options.id ? `${options.id}_` : '';
+  }
+
+  getString(key: string) { return this.storage.getItem(this.prefix + key) || undefined; }
+  getNumber(key: string) { 
+    const v = this.storage.getItem(this.prefix + key);
+    return v ? Number(v) : undefined;
+  }
+  getBoolean(key: string) { return this.storage.getItem(this.prefix + key) === 'true'; }
+  set(key: string, value: string | number | boolean) { this.storage.setItem(this.prefix + key, String(value)); }
+  delete(key: string) { this.storage.removeItem(this.prefix + key); }
+  getAllKeys() { return Object.keys(this.storage).filter(k => k.startsWith(this.prefix)).map(k => k.slice(this.prefix.length)); }
+  clearAll() { 
+    const keys = this.getAllKeys();
+    keys.forEach(k => this.delete(k));
+  }
+}
+
+// 2. Factory function
+export function createStorage(options: { id: string; encryptionKey?: string }) {
   if (Platform.OS === 'web') {
-    console.log('Using WebStorage for storage');
     return new WebStorage(options);
-  } else {
-    try {
-      console.log('Attempting to use MMKV for storage');
-      return new MMKV(options);
-    } catch (error) {
-      console.warn('MMKV initialization failed, falling back to AsyncStorage:', error);
-      return new AsyncStorageFallback(options);
-    }
+  }
+
+  try {
+    // Try to initialize MMKV
+    return new MMKV(options);
+  } catch (error) {
+    // 3. Safe Fallback
+    console.error('⚠️ MMKV failed to load. Using in-memory storage fallback.', error);
+    return new MemoryStorage();
   }
 }
