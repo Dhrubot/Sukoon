@@ -20,6 +20,7 @@ import { useStore } from '../../store/useStore';
 import { CalculationMethod, CALCULATION_METHODS } from '../../types';
 import LocationService from '../../services/LocationService';
 import { Location as AppLocation } from '../../types'
+import { Switch } from 'react-native';
 
 interface OnboardingScreenProps {
   onComplete: () => void;
@@ -32,6 +33,8 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   const [name, setName] = useState('');
   const [selectedMethod, setSelectedMethod] = useState<CalculationMethod>('MWL');
   const [locationData, setLocationData] = useState<AppLocation | null>(null);
+  const [enableAdhan, setEnableAdhan] = useState(true);
+  const [isNotificationEnabled, setIsNotificationEnabled] = useState(false);
 
   const { setUserSettings } = useStore();
 
@@ -75,14 +78,32 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   };
 
   const requestNotificationPermission = async () => {
-    const { status } = await Notifications.requestPermissionsAsync();
-    handleNext(); // Continue even if denied
+    try {
+      // 2. Ask for permission and capture the result
+      const { status } = await Notifications.requestPermissionsAsync();
+      
+      // 3. Only set to true if they ACTUALLY granted it
+      if (status === 'granted') {
+        setIsNotificationEnabled(true);
+      } else {
+        setIsNotificationEnabled(false);
+      }
+    } catch (error) {
+      console.log('Error requesting notification permissions:', error);
+      setIsNotificationEnabled(false);
+    } finally {
+      // Move to next step regardless of outcome
+      handleNext(); 
+    }
   };
 
   const completeOnboarding = async () => {
     const settings = StorageService.getDefaultSettings();
     settings.name = name;
     settings.calculationMethod = selectedMethod;
+
+    settings.notifications.enabled = isNotificationEnabled;
+    settings.notifications.adhanEnabled = enableAdhan;
 
     if (locationData) {
       settings.location = locationData;
@@ -170,6 +191,21 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
             <Text style={styles.description}>
               We'll notify you 10 minutes before each prayer so you can prepare mindfully
             </Text>
+            {/* NEW: Adhan Toggle Section */}
+            <View style={styles.toggleContainer}>
+              <View style={styles.toggleRow}>
+                <Text style={styles.toggleLabel}>Play Adhan Sound</Text>
+                <Switch
+                  value={enableAdhan}
+                  onValueChange={setEnableAdhan}
+                  trackColor={{ false: '#767577', true: '#D4AF37' }}
+                  thumbColor={'#f4f3f4'}
+                />
+              </View>
+              <Text style={styles.toggleDescription}>
+                Hear the beautiful call to prayer when it's time.
+              </Text>
+            </View>
             <TouchableOpacity style={styles.button} onPress={requestNotificationPermission}>
               <Text style={styles.buttonText}>Enable Notifications</Text>
             </TouchableOpacity>
@@ -356,6 +392,28 @@ const styles = StyleSheet.create({
   methodTextSelected: {
     color: '#FFFFFF',
     fontWeight: '600',
+  },
+  toggleContainer: {
+    width: '100%',
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 24,
+  },
+  toggleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  toggleLabel: {
+    fontSize: 18,
+    color: '#FFFFFF',
+    fontWeight: '600',
+  },
+  toggleDescription: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.7)',
   },
 });
 

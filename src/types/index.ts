@@ -81,7 +81,8 @@ export interface UserSettings {
   };
   notifications: {
     enabled: boolean;
-    soundEnabled: boolean;
+    adhanEnabled: boolean;
+    soundEnabled: boolean; // This can control the standard "beep" if Adhan is off
     vibrationEnabled: boolean;
     beforePrayer: number; // minutes
     reminderText: string;

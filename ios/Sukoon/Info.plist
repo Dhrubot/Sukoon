@@ -54,6 +54,8 @@
     <string>Allow $(PRODUCT_NAME) to access your location</string>
     <key>NSLocationWhenInUseUsageDescription</key>
     <string>Sukoon needs your location to calculate accurate prayer times for your area.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to access your microphone</string>
     <key>NSUserNotificationsUsageDescription</key>
     <string>Sukoon needs notification permission to remind you of prayer times.</string>
     <key>UILaunchStoryboardName</key>

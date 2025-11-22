@@ -215,6 +215,10 @@ If you encounter any issues or have suggestions:
 
 ---
 
+### Sincere Thanks to Below Creators for their work
+- Adhan - Nasir Al-Qatami
+- icon - <a href="https://www.flaticon.com/free-icons/mosque" title="mosque icons">Mosque icons created by BW Designer - Flaticon</a>
+
 **Built with ❤️ for the Muslim Ummah**
 
 *"The best of people are those who bring most benefit to others" - Prophet Muhammad ﷺ*
