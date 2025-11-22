@@ -54,7 +54,7 @@ const DailyVerse: React.FC = () => {
   const handleShare = async () => {
     try {
       await Share.share({
-        message: `${verse.translation}\n\n${verse.arabic}\n\n- ${verse.reference}\n\nShared via PrayerBuddy 🕌`,
+        message: `${verse.translation}\n\n${verse.arabic}\n\n- ${verse.reference}\n\nShared via Sukoon 🕌`,
       });
     } catch (error) {
       console.error('Error sharing:', error);

@@ -121,7 +121,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
         return (
           <View style={styles.stepContainer}>
             <Text style={styles.emoji}>🕌</Text>
-            <Text style={styles.title}>Welcome to PrayerBuddy</Text>
+            <Text style={styles.title}>Welcome to Sukoon</Text>
             <Text style={styles.subtitle}>
               Your companion for mindful prayer and spiritual growth
             </Text>

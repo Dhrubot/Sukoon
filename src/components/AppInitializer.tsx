@@ -18,7 +18,7 @@ export const AppInitializer: React.FC = () => {
   } = useAppInitialization();
 
   if (isLoading) {
-    return <LoadingScreen message="Initializing PrayerBuddy..." />;
+    return <LoadingScreen message="Initializing Sukoon..." />;
   }
 
   if (error) {

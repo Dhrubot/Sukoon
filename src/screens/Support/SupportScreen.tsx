@@ -274,7 +274,7 @@ const SupportScreen: React.FC = () => {
       <View style={styles.donateHeader}>
         <Text style={styles.donateTitle}>Support Development</Text>
         <Text style={styles.donateSubtitle}>
-          Your generosity helps us maintain and improve PrayerBuddy for the Ummah
+          Your generosity helps us maintain and improve Sukoon for the Ummah
         </Text>
       </View>
 
@@ -341,7 +341,7 @@ const SupportScreen: React.FC = () => {
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={styles.title}>Support PrayerBuddy</Text>
+          <Text style={styles.title}>Support Sukoon</Text>
           <Text style={styles.subtitle}>
             Choose how you'd like to support continued development
           </Text>

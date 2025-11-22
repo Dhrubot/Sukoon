@@ -25,7 +25,7 @@ export const AboutSection: React.FC<AboutSectionProps> = ({
       />
     )}
     <Text style={styles.aboutText}>
-      PrayerBuddy is a free app built with ❤️ for the Muslim community
+      Sukoon is a free app built with ❤️ for the Muslim community
     </Text>
   </SettingSection>
 );

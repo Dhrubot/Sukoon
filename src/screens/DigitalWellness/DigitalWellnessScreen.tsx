@@ -72,7 +72,7 @@ const DigitalWellnessScreen: React.FC = () => {
     if (!granted) {
       Alert.alert(
         'Permission Required',
-        'Please enable usage access in Settings > Apps > PrayerBuddy > Special app access > Usage access',
+        'Please enable usage access in Settings > Apps > Sukoon > Special app access > Usage access',
         [
           { text: 'Cancel', style: 'cancel' },
           { text: 'Open Settings', onPress: () => {
@@ -164,7 +164,7 @@ const DigitalWellnessScreen: React.FC = () => {
       <Text style={styles.permissionIcon}>📊</Text>
       <Text style={styles.permissionTitle}>Enable Usage Tracking</Text>
       <Text style={styles.permissionText}>
-        To help you reduce phone distractions before prayer, PrayerBuddy needs permission to track your screen time.
+        To help you reduce phone distractions before prayer, Sukoon needs permission to track your screen time.
       </Text>
       <Text style={styles.permissionNote}>
         Your data stays on your device and is never shared.
