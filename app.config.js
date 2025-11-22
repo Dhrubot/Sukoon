@@ -75,6 +75,21 @@ export default {
           iosAppId: "ca-app-pub-5474984690525462~1671116769"
         },
       ],
+      [
+        "expo-build-properties",
+        {
+          android: {
+            newArchEnabled: true,
+            compileSdkVersion: 35,
+            targetSdkVersion: 35,
+            minSdkVersion: 24,
+          },
+          ios: {
+            newArchEnabled: true,
+            deploymentTarget: "13.4",
+          },
+        },
+      ],
     ],
     extra: {
       eas: {

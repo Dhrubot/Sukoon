@@ -44,13 +44,15 @@
     "react-native-gesture-handler": "~2.24.0",
     "react-native-google-mobile-ads": "^15.4.0",
     "react-native-iap": "^12.16.4",
-    "react-native-mmkv": "^2.10.1",
+    "react-native-mmkv": "^4.0.1",
+    "react-native-nitro-modules": "^0.31.9",
     "react-native-reanimated": "~3.17.4",
     "react-native-safe-area-context": "5.4.0",
     "react-native-screens": "^4.11.1",
     "react-native-svg": "15.11.2",
     "react-native-web": "^0.20.0",
-    "zustand": "^5.0.5"
+    "zustand": "^5.0.5",
+    "expo-build-properties": "~0.14.8"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",

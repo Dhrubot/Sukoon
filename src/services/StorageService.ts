@@ -1,4 +1,4 @@
-import { MMKV } from "react-native-mmkv";
+// src/services/StorageService.ts
 import {
   UserSettings,
   PrayerRecord,
@@ -17,15 +17,6 @@ import { createStorage } from "./StorageAdapter";
 import { PRAYER_NAMES as PrayerName } from "../constants";
 
 class StorageService {
-  // private storage: MMKV;
-
-  // constructor() {
-  //   this.storage = new MMKV({
-  //     id: 'prayer-buddy-storage',
-  //     encryptionKey: 'prayer-buddy-encryption-key' // In production, generate secure key
-  //   });
-  // }
-
   private storage;
 
   constructor() {
@@ -71,6 +62,7 @@ class StorageService {
       },
       notifications: {
         enabled: true,
+        adhanEnabled: true,
         soundEnabled: true,
         vibrationEnabled: true,
         beforePrayer: 10,
@@ -553,8 +545,9 @@ class StorageService {
     return userId || null;
   }
 
+  // 🎯 CHANGED: .delete() → .remove() for v4.x
   clearUserId(): void {
-    this.storage.delete("user_id");
+    this.storage.remove("user_id");
   }
 
   // Subscription management
@@ -686,9 +679,9 @@ class StorageService {
     return data ? JSON.parse(data) : null;
   }
 
-  // Clear subscription data
+  // 🎯 CHANGED: .delete() → .remove() for v4.x
   clearSubscription(): void {
-    this.storage.delete("subscription");
+    this.storage.remove("subscription");
   }
 
   // Donation tracking
@@ -723,8 +716,9 @@ class StorageService {
     this.storage.set("family_data", JSON.stringify(familyData));
   }
 
+  // 🎯 CHANGED: .delete() → .remove() for v4.x
   clearFamilyData(): void {
-    this.storage.delete("family_data");
+    this.storage.remove("family_data");
   }
 
   // Onboarding progress
@@ -736,6 +730,7 @@ class StorageService {
     const data = this.storage.getString("onboarding_progress");
     return data ? JSON.parse(data) : null;
   }
+
   // Data migration status
   isDataMigrated(): boolean {
     return this.storage.getBoolean('data_migrated') || false;
