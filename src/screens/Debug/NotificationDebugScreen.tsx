@@ -71,29 +71,30 @@ export const NotificationDebugScreen = () => {
 
   // 🧪 Test 3: Test with Adhan sound (30 seconds)
   const testAdhanNotification = async () => {
-    try {
-      const soundAsset = Platform.OS === 'ios' ? 'adhan_short.wav' : 'adhan_full';
-      const channelId = Platform.OS === 'android' ? 'prayer-times-adhan' : undefined;
+    // try {
+    //   const soundAsset = Platform.OS === 'ios' ? 'adhan_short.wav' : 'adhan_full';
+    //   const channelId = Platform.OS === 'android' ? 'prayer-times-adhan' : undefined;
 
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: '🕌 Adhan Test',
-          body: 'Testing Adhan sound',
-          sound: Platform.OS === 'ios' ? soundAsset : undefined,
-          ...(Platform.OS === 'android' && {
-            channelId: channelId,
-          }),
-        },
-        trigger: {
-          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-          seconds: 30,
-          repeats: false,
-        },
-      });
-      Alert.alert('Scheduled', 'Adhan notification will sound in 30 seconds');
-    } catch (error) {
-      Alert.alert('Error', `Failed: ${error}`);
-    }
+    //   await Notifications.scheduleNotificationAsync({
+    //     content: {
+    //       title: '🕌 Adhan Test',
+    //       body: 'Testing Adhan sound',
+    //       sound: Platform.OS === 'ios' ? soundAsset : undefined,
+    //       ...(Platform.OS === 'android' && {
+    //         channelId: channelId,
+    //       }),
+    //     },
+    //     trigger: {
+    //       type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+    //       seconds: 30,
+    //       repeats: false,
+    //     },
+    //   });
+    //   Alert.alert('Scheduled', 'Adhan notification will sound in 30 seconds');
+    // } catch (error) {
+    //   Alert.alert('Error', `Failed: ${error}`);
+    // }
+    NotificationService.sendTestAdhanNotification()
   };
 
   // 🧪 Test 4: Request permissions

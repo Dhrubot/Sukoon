@@ -347,10 +347,10 @@ class NotificationService {
       }
 
       console.log('🗓️ Scheduling prayer notifications via 14-day batch...');
-      
+
       // Simply call the extended scheduler - it handles everything
       await this.scheduleExtendedNotifications();
-      
+
     } catch (error) {
       console.error('❌ Failed to schedule notifications:', error);
     }
@@ -441,6 +441,7 @@ class NotificationService {
         type: 'timeInterval',
         seconds: Math.max((prayer.time.getTime() - now.getTime()) / 1000, 1),
         repeats: false,
+        channelId: androidChannel
       } as Notifications.NotificationTriggerInput,
       identifier: `prayer-${prayer.name}-${dateStr}`,
     });
@@ -721,21 +722,50 @@ class NotificationService {
       hasSource: !!source,
       sourceHasLocation: source?.hasValidLocation() || false,
       sourceLoading: source?.isLoading() || false,
-      upcomingNotifications: scheduled.slice(0, 5).map((n) => ({
-        id: n.identifier,
-        prayer: n.content.data?.prayer,
-        type: n.content.data?.type,
-        scheduledAt: n.content.data?.scheduledAt,
-        trigger: n.trigger && 'date' in n.trigger ? new Date(n.trigger.date).toLocaleString() : 'Unknown',
-      })),
+      upcomingNotifications: scheduled.slice(0, 5).map((n) => {
+        let triggerDisplay = 'Unknown';
+        const t = n.trigger as any;
+
+        if (t) {
+          if (t.date) triggerDisplay = new Date(t.date).toLocaleString();
+          else if (t.value) triggerDisplay = new Date(t.value).toLocaleString(); // Android often uses 'value'
+          else if (t.seconds) triggerDisplay = `In ${t.seconds}s`;
+        }
+
+        return {
+          id: n.identifier,
+          prayer: n.content.data?.prayer,
+          type: n.content.data?.type,
+          trigger: triggerDisplay,
+          channel: n.content.data?.channelId || 'unknown',
+          scheduledAt: n.content.data?.scheduledAt,
+        }
+      }),
       prayerTimesInfo: source
         ? {
-            todayPrayersCount: source.getTodayPrayerTimes().length,
-            hasNextPrayer: !!source.getNextPrayer(),
-            nextPrayerName: source.getNextPrayer()?.name || 'None',
-          }
+          todayPrayersCount: source.getTodayPrayerTimes().length,
+          hasNextPrayer: !!source.getNextPrayer(),
+          nextPrayerName: source.getNextPrayer()?.name || 'None',
+        }
         : null,
     };
+  }
+
+  // 🧪 NEW: Dedicated Adhan Test
+  async sendTestAdhanNotification() {
+    console.log('🔔 Sending Test Adhan...');
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: '🕌 Adhan Test',
+        body: 'This should play the full Adhan sound.',
+        data: { type: 'test' },
+        ...(Platform.OS === 'android' && {
+          channelId: CHANNELS.ADHAN, // ✅ EXPLICITLY USE ADHAN CHANNEL
+          priority: 'high',
+        }),
+      },
+      trigger: null,
+    });
   }
 
   // Force rescheduling method for debugging
