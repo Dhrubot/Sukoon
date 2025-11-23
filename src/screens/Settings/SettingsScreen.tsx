@@ -1,6 +1,6 @@
 // src/screens/Settings/SettingsScreen.tsx (ENHANCED)
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet, Alert } from 'react-native';
+import { View, Text, ScrollView, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LocationModal } from '../../components/LocationModal';
 
@@ -126,6 +126,10 @@ const SettingsScreen = ({ navigation }: any) => {
           onExportData={handleExportData}
           onResetApp={handleResetApp}
         />
+
+        <TouchableOpacity onPress={() => navigation.navigate('NotificationDebug')}>
+          <Text>🔧 Notification Debugger</Text>
+        </TouchableOpacity>
 
         {/* About */}
         <AboutSection
