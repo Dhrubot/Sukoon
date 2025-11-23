@@ -11,8 +11,8 @@
 		3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */; };
 		BB2F792D24A3F905000567C9 /* Expo.plist in Resources */ = {isa = PBXBuildFile; fileRef = BB2F792C24A3F905000567C9 /* Expo.plist */; };
 		F11748422D0307B40044C1D9 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F11748412D0307B40044C1D9 /* AppDelegate.swift */; };
-		F3FEED0678EA4D519AB23C7E /* adhan_short.wav in Resources */ = {isa = PBXBuildFile; fileRef = 0F38447E8043429F8B675251 /* adhan_short.wav */; };
-		09441507CAFA42C0B7AF7A57 /* adhan_full.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = 5232B7CF4468464B988426AD /* adhan_full.mp3 */; };
+		E509CC29B87A4C62AA3422D5 /* adhan_short.wav in Resources */ = {isa = PBXBuildFile; fileRef = 23746323B1A34146AC677C7E /* adhan_short.wav */; };
+		75B89FAFC1E5466CB178C6A5 /* adhan_full.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = CE183DAB5AB64B71BDE39E70 /* adhan_full.mp3 */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -24,8 +24,8 @@
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 		F11748412D0307B40044C1D9 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = Sukoon/AppDelegate.swift; sourceTree = "<group>"; };
 		F11748442D0722820044C1D9 /* Sukoon-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "Sukoon-Bridging-Header.h"; path = "Sukoon/Sukoon-Bridging-Header.h"; sourceTree = "<group>"; };
-		0F38447E8043429F8B675251 /* adhan_short.wav */ = {isa = PBXFileReference; name = "adhan_short.wav"; path = "Sukoon/adhan_short.wav"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
-		5232B7CF4468464B988426AD /* adhan_full.mp3 */ = {isa = PBXFileReference; name = "adhan_full.mp3"; path = "Sukoon/adhan_full.mp3"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		23746323B1A34146AC677C7E /* adhan_short.wav */ = {isa = PBXFileReference; name = "adhan_short.wav"; path = "Sukoon/adhan_short.wav"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+		CE183DAB5AB64B71BDE39E70 /* adhan_full.mp3 */ = {isa = PBXFileReference; name = "adhan_full.mp3"; path = "Sukoon/adhan_full.mp3"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -48,8 +48,8 @@
 				13B07FB51A68108700A75B9A /* Images.xcassets */,
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				AA286B85B6C04FC6940260E9 /* SplashScreen.storyboard */,
-				0F38447E8043429F8B675251 /* adhan_short.wav */,
-				5232B7CF4468464B988426AD /* adhan_full.mp3 */,
+				23746323B1A34146AC677C7E /* adhan_short.wav */,
+				CE183DAB5AB64B71BDE39E70 /* adhan_full.mp3 */,
 			);
 			name = Sukoon;
 			sourceTree = "<group>";
@@ -161,8 +161,8 @@
 				BB2F792D24A3F905000567C9 /* Expo.plist in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
 				3E461D99554A48A4959DE609 /* SplashScreen.storyboard in Resources */,
-				F3FEED0678EA4D519AB23C7E /* adhan_short.wav in Resources */,
-				09441507CAFA42C0B7AF7A57 /* adhan_full.mp3 in Resources */,
+				E509CC29B87A4C62AA3422D5 /* adhan_short.wav in Resources */,
+				75B89FAFC1E5466CB178C6A5 /* adhan_full.mp3 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

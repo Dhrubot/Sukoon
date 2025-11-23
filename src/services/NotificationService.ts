@@ -1,4 +1,4 @@
-// src/services/NotificationService.ts (COMPLETE VERSION WITH EXPO-AUDIO)
+// src/services/NotificationService.ts (COMPLETE MERGED VERSION)
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
@@ -6,16 +6,7 @@ import { createAudioPlayer, AudioPlayer, setAudioModeAsync } from 'expo-audio';
 import { PrayerTime, PrayerName, UserSettings } from '../types';
 import StorageService from './StorageService';
 import PrayerTimeService from './PrayerTimeService';
-
-// 🎵 SOUND CONFIGURATION
-const IOS_SHORT_SOUND = 'adhan_short.wav'; // iOS uses short version (<30s)
-const ANDROID_FULL_SOUND = 'adhan_full'; // Android uses full version (res/raw)
-
-// 📢 CHANNEL CONFIGURATION
-const CHANNEL_ADHAN = 'prayer-times-adhan';
-const CHANNEL_DEFAULT = 'prayer-times';
-const CHANNEL_PRE_PRAYER = 'pre-prayer';
-const CHANNEL_MINDFULNESS = 'mindfulness';
+import { CHANNELS, SOUNDS, NOTIFICATION_CHANNEL_VERSION } from '../constants/NotificationConstants';
 
 // Notification categories for iOS
 const NOTIFICATION_CATEGORIES = {
@@ -28,7 +19,7 @@ const NOTIFICATION_CATEGORIES = {
 Notifications.setNotificationHandler({
   handleNotification: async (notification) => {
     const isTest = notification.request.content.data?.type === 'test';
-    
+
     return {
       shouldShowAlert: !isTest || Platform.OS === 'ios',
       shouldPlaySound: true,
@@ -58,12 +49,11 @@ class NotificationService {
   private responseListener: Notifications.Subscription | null = null;
   private notificationCache = new Map<string, string>();
   private navigationHandler: ((prayer: PrayerName, action: string) => void) | null = null;
-  
-  // 🎯 NEW: AudioPlayer from expo-audio
+
+  // 🎵 AudioPlayer from expo-audio
   private audioPlayer: AudioPlayer | null = null;
-  
+
   private prayerTimesSource: PrayerTimesSource | null = null;
-  private lastScheduledHash: string = '';
 
   // Set the prayer times source
   setPrayerTimesSource(source: PrayerTimesSource) {
@@ -86,7 +76,7 @@ class NotificationService {
         return false;
       }
 
-      // 🎯 NEW: Set up Audio Mode with expo-audio
+      // Set up Audio Mode
       try {
         await setAudioModeAsync({
           playsInSilentMode: true, // Allow Adhan even if switch is silent
@@ -102,12 +92,15 @@ class NotificationService {
 
       // Set up notification channels (Android)
       if (Platform.OS === 'android') {
+        // 1. Cleanup old channels first to ensure sound updates apply
+        await this.cleanupOldChannels();
+        // 2. Setup new channels with versioned IDs
         await this.setupNotificationChannels();
       }
 
       // Set up listeners
       this.setupListeners();
-      
+
       console.log('✅ NotificationService initialized');
       return true;
     } catch (error) {
@@ -124,7 +117,7 @@ class NotificationService {
 
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
     let finalStatus = existingStatus;
-    
+
     if (existingStatus !== 'granted') {
       const { status } = await Notifications.requestPermissionsAsync({
         ios: {
@@ -135,15 +128,36 @@ class NotificationService {
       });
       finalStatus = status;
     }
-    
+
     return finalStatus === 'granted';
+  }
+
+  // 🧹 Auto-delete old channels to keep Android settings clean and force sound updates
+  private async cleanupOldChannels() {
+    if (Platform.OS !== 'android') return;
+    try {
+      const channels = await Notifications.getNotificationChannelsAsync();
+      for (const channel of channels) {
+        // If channel is from our app but has an old version number (or no version)
+        if (
+          (channel.id.includes('prayer-times') || channel.id.includes('adhan') || channel.id.includes('pre-prayer') || channel.id.includes('mindfulness')) &&
+          !channel.id.includes(`v${NOTIFICATION_CHANNEL_VERSION}`)
+        ) {
+          console.log(`🧹 Deleting old channel: ${channel.id}`);
+          await Notifications.deleteNotificationChannelAsync(channel.id);
+        }
+      }
+      console.log('✅ Old channels cleaned up');
+    } catch (e) {
+      console.warn('⚠️ Failed to cleanup old channels:', e);
+    }
   }
 
   // Setup notification channels with Adhan support
   private async setupNotificationChannels() {
     // 1. Default Channel (Standard Beep)
-    await Notifications.setNotificationChannelAsync(CHANNEL_DEFAULT, {
-      name: 'Prayer Times (Default)',
+    await Notifications.setNotificationChannelAsync(CHANNELS.DEFAULT, {
+      name: 'Prayer Times (Beep)',
       description: 'Standard notifications for prayer times',
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 250, 250, 250],
@@ -154,19 +168,20 @@ class NotificationService {
     });
 
     // 2. Adhan Channel (Plays Full Adhan)
-    await Notifications.setNotificationChannelAsync(CHANNEL_ADHAN, {
+    // CRITICAL: This links the channel to 'res/raw/adhan_full.mp3'
+    await Notifications.setNotificationChannelAsync(CHANNELS.ADHAN, {
       name: 'Prayer Times (Adhan)',
-      description: 'Plays the call to prayer',
+      description: 'Plays the full call to prayer',
       importance: Notifications.AndroidImportance.HIGH,
       vibrationPattern: [0, 1000, 500, 1000],
       lightColor: '#1B5E3F',
-      sound: ANDROID_FULL_SOUND, // References res/raw/adhan_full
+      sound: SOUNDS.ANDROID_FULL, // References android/app/src/main/res/raw/adhan_full.mp3
       bypassDnd: false,
       showBadge: true,
     });
 
     // 3. Pre-prayer reminder channel
-    await Notifications.setNotificationChannelAsync(CHANNEL_PRE_PRAYER, {
+    await Notifications.setNotificationChannelAsync(CHANNELS.PRE_PRAYER, {
       name: 'Prayer Preparation',
       description: 'Reminders before prayer time',
       importance: Notifications.AndroidImportance.DEFAULT,
@@ -176,13 +191,15 @@ class NotificationService {
     });
 
     // 4. Mindfulness channel
-    await Notifications.setNotificationChannelAsync(CHANNEL_MINDFULNESS, {
+    await Notifications.setNotificationChannelAsync(CHANNELS.MINDFULNESS, {
       name: 'Mindfulness Reminders',
       description: 'Gentle reminders for prayer preparation',
       importance: Notifications.AndroidImportance.LOW,
       vibrationPattern: [0, 50],
       sound: null, // Silent
     });
+
+    console.log('✅ Notification channels set up with versioning');
   }
 
   private async setupNotificationCategories() {
@@ -212,88 +229,91 @@ class NotificationService {
         },
       },
     ]);
+
+    await Notifications.setNotificationCategoryAsync(NOTIFICATION_CATEGORIES.POST_PRAYER_CHECK, [
+      {
+        identifier: 'mark_prayed',
+        buttonTitle: 'Yes, I Prayed',
+        options: {
+          opensAppToForeground: true,
+        },
+      },
+    ]);
   }
 
   private setupListeners() {
     // Handle notifications when app is in foreground
-    this.notificationListener = Notifications.addNotificationReceivedListener(
-      (notification) => {
-        console.log('🔔 Notification received:', notification.request.content.title);
-      }
-    );
+    this.notificationListener = Notifications.addNotificationReceivedListener((notification) => {
+      console.log('🔔 Notification received:', notification.request.content.title);
+    });
 
     // Handle notification responses (taps, actions)
-    this.responseListener = Notifications.addNotificationResponseReceivedListener(
-      async (response) => {
-        const { notification, actionIdentifier } = response;
-        const data = notification.request.content.data;
+    this.responseListener = Notifications.addNotificationResponseReceivedListener(async (response) => {
+      const { notification, actionIdentifier } = response;
+      const data = notification.request.content.data;
 
-        // If user taps the notification itself, play full Adhan
-        if (actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER) {
-          if (data?.type === 'prayer-time' && data?.prayer) {
-            // Play full adhan inside app (mostly for iOS experience)
-            this.playFullAdhan();
-            
-            if (this.navigationHandler) {
-              this.navigationHandler(data.prayer as PrayerName, 'default');
-            }
+      // If user taps the notification itself, play full Adhan
+      if (actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER) {
+        if (data?.type === 'prayer-time' && data?.prayer) {
+          // Play full adhan inside app (for immersive experience)
+          this.playFullAdhan();
+
+          if (this.navigationHandler) {
+            this.navigationHandler(data.prayer as PrayerName, 'default');
           }
         }
-
-        switch (actionIdentifier) {
-          case 'snooze':
-            if (data?.prayer) {
-              this.stopAdhan(); // Stop adhan if playing
-              await this.snoozePrayerNotification(data.prayer as PrayerName, 10);
-            }
-            break;
-            
-          case 'complete':
-            if (data?.prayer) {
-              this.stopAdhan();
-              if (this.navigationHandler) {
-                this.navigationHandler(data.prayer as PrayerName, 'complete');
-              }
-              console.log('Mark prayer complete:', data.prayer);
-            }
-            break;
-            
-          case 'prepare':
-            // Navigate to mindfulness flow
-            if (data?.prayer && this.navigationHandler) {
-              this.navigationHandler(data.prayer as PrayerName, 'prepare');
-            }
-            console.log('Open mindfulness flow for:', data?.prayer);
-            break;
-            
-          default:
-            // Already handled above for DEFAULT_ACTION_IDENTIFIER
-            break;
-        }
       }
-    );
+
+      switch (actionIdentifier) {
+        case 'snooze':
+          if (data?.prayer) {
+            this.stopAdhan(); // Stop adhan if playing
+            await this.snoozePrayerNotification(data.prayer as PrayerName, 10);
+          }
+          break;
+
+        case 'complete':
+        case 'mark_prayed':
+          if (data?.prayer) {
+            this.stopAdhan();
+            if (this.navigationHandler) {
+              this.navigationHandler(data.prayer as PrayerName, 'complete');
+            }
+            console.log('✅ Mark prayer complete:', data.prayer);
+          }
+          break;
+
+        case 'prepare':
+          // Navigate to mindfulness flow
+          if (data?.prayer && this.navigationHandler) {
+            this.navigationHandler(data.prayer as PrayerName, 'prepare');
+          }
+          console.log('🧘 Open mindfulness flow for:', data?.prayer);
+          break;
+
+        default:
+          // Already handled above for DEFAULT_ACTION_IDENTIFIER
+          break;
+      }
+    });
   }
 
-  // 🎵 AUDIO PLAYBACK METHODS (expo-audio)
+  // 🎵 AUDIO PLAYBACK METHODS
   playFullAdhan() {
     try {
       this.stopAdhan(); // Stop any existing sound first
-      
-      // 🎯 NEW: Synchronous creation of player
+
       const source = require('../../assets/sounds/adhan_full.mp3');
       this.audioPlayer = createAudioPlayer(source);
-      
-      // 🎯 NEW: Synchronous play()
       this.audioPlayer.play();
       console.log('🔊 Playing full Adhan in foreground');
-      
+
       // Optional: Cleanup when done
       this.audioPlayer.addListener('playbackStatusUpdate', (status) => {
         if (status.isLoaded && status.didJustFinish) {
           this.stopAdhan();
         }
       });
-      
     } catch (error) {
       console.error('❌ Error playing Adhan:', error);
     }
@@ -302,10 +322,9 @@ class NotificationService {
   stopAdhan() {
     if (this.audioPlayer) {
       try {
-        // 🎯 NEW: Methods for stopping/cleanup
         this.audioPlayer.pause();
-        this.audioPlayer.seekTo(0); // Reset position
-        this.audioPlayer.remove(); // Clean up
+        this.audioPlayer.seekTo(0);
+        this.audioPlayer.remove();
         this.audioPlayer = null;
       } catch (e) {
         // Ignore errors if already cleaned up
@@ -313,147 +332,65 @@ class NotificationService {
     }
   }
 
-  // Use centralized prayer times when available, fallback to API
+  // 🚀 MAIN ENTRY POINT - Now simply delegates to the 14-day batch scheduler
   async scheduleAllPrayerNotifications() {
     try {
-      // Cancel all existing prayer notifications
-      await this.cancelAllPrayerNotifications();
-      
       const settings = StorageService.getUserSettings();
       if (!settings || !settings.notifications.enabled) {
         console.log('📵 Notifications disabled in settings');
         return;
       }
 
-      let upcomingPrayers: PrayerTime[] = [];
-
-      // TRY: Use centralized prayer times first
-      if (this.prayerTimesSource?.hasValidLocation() && !this.prayerTimesSource.isLoading()) {
-        const todayPrayers = this.prayerTimesSource.getTodayPrayerTimes();
-        const nextPrayer = this.prayerTimesSource.getNextPrayer();
-        
-        // Get all upcoming prayers (today + next prayer which could be tomorrow's Fajr)
-        upcomingPrayers = [...todayPrayers];
-        if (nextPrayer && nextPrayer.time > new Date()) {
-          upcomingPrayers.push(nextPrayer);
-        }
-        
-        console.log('✅ Using centralized prayer times for notifications');
-      } 
-      // FALLBACK: Direct API call
-      else {
-        if (!settings.location?.latitude || !settings.location?.longitude) {
-          console.log('❌ No valid location for notifications');
-          return;
-        }
-
-        const today = new Date();
-        const tomorrow = new Date(today);
-        tomorrow.setDate(tomorrow.getDate() + 1);
-
-        // Get today's prayers
-        const todayPrayers = await PrayerTimeService.getPrayerTimesList(
-          settings.location,
-          today,
-          settings.calculationMethod,
-          settings.adjustments
-        );
-
-        upcomingPrayers = [...todayPrayers];
-
-        // If no more prayers today, get tomorrow's Fajr
-        const now = new Date();
-        const hasUpcomingToday = todayPrayers.some(p => p.time > now);
-        
-        if (!hasUpcomingToday) {
-          const tomorrowPrayers = await PrayerTimeService.getPrayerTimesList(
-            settings.location,
-            tomorrow,
-            settings.calculationMethod,
-            settings.adjustments
-          );
-          
-          const fajr = tomorrowPrayers.find(p => p.name === 'Fajr');
-          if (fajr) {
-            upcomingPrayers.push(fajr);
-          }
-        }
-        
-        console.log('⚠️ Using fallback prayer time calculation');
-      }
-
-      // SMART: Skip rescheduling if prayers haven't changed
-      const currentHash = this.generatePrayerHash(upcomingPrayers);
-      if (currentHash === this.lastScheduledHash) {
-        console.log('📋 Prayer times unchanged, skipping rescheduling');
+      if (!settings.location?.latitude || !settings.location?.longitude) {
+        console.log('❌ No valid location for notifications');
         return;
       }
 
-      // Filter to only future prayers
-      const futurePrayers = upcomingPrayers.filter(p => p.time > new Date());
-
-      // Batch scheduling with better error handling
-      const schedulingPromises = futurePrayers.map(prayer => 
-        this.schedulePrayerNotification(prayer, settings).catch(error => {
-          console.error(`❌ Failed to schedule notification for ${prayer.name}:`, error);
-          return null;
-        })
-      );
-
-      await Promise.allSettled(schedulingPromises);
-
-      this.lastScheduledHash = currentHash;
-      console.log(`✅ Scheduled notifications for ${futurePrayers.length} prayers`);
+      console.log('🗓️ Scheduling prayer notifications via 14-day batch...');
+      
+      // Simply call the extended scheduler - it handles everything
+      await this.scheduleExtendedNotifications();
       
     } catch (error) {
       console.error('❌ Failed to schedule notifications:', error);
     }
   }
 
-  // Hash generation for change detection
-  private generatePrayerHash(prayers: PrayerTime[]): string {
-    return prayers
-      .map(p => `${p.name}:${p.time.getTime()}`)
-      .join('|');
-  }
-
   private async schedulePrayerNotification(prayer: PrayerTime, settings: UserSettings) {
     const { notifications } = settings;
     const prayerName = PrayerTimeService.getPrayerDisplayName(prayer.name);
-    
+
     // Create unique identifiers to prevent duplicates
     const dateStr = prayer.time.toISOString().split('T')[0];
-    
+
     // Better validation of notification times
     const now = new Date();
     const maxFutureTime = new Date(now.getTime() + 48 * 60 * 60 * 1000); // 48 hours
-    
+
     if (prayer.time > maxFutureTime) {
       console.log(`⏭️ Skipping ${prayer.name} - too far in future`);
       return;
     }
-    
+
     // Schedule pre-prayer notification
     if (notifications.beforePrayer > 0) {
-      const preNotificationTime = new Date(
-        prayer.time.getTime() - notifications.beforePrayer * 60000
-      );
-      
+      const preNotificationTime = new Date(prayer.time.getTime() - notifications.beforePrayer * 60000);
+
       if (preNotificationTime > now) {
         const content = this.getPrePrayerContent(prayerName, notifications.beforePrayer);
-        
+
         await Notifications.scheduleNotificationAsync({
           content: {
             ...content,
-            data: { 
-              prayer: prayer.name, 
+            data: {
+              prayer: prayer.name,
               type: 'pre-prayer',
               time: prayer.time.toISOString(),
               scheduledAt: new Date().toISOString(),
             },
             categoryIdentifier: NOTIFICATION_CATEGORIES.PRE_PRAYER,
             ...(Platform.OS === 'android' && {
-              channelId: CHANNEL_PRE_PRAYER,
+              channelId: CHANNELS.PRE_PRAYER,
             }),
           },
           trigger: {
@@ -465,30 +402,30 @@ class NotificationService {
         });
       }
     }
-    
+
     // Schedule main prayer notification with Adhan logic
     let soundAsset: string | undefined = undefined;
-    let androidChannel = CHANNEL_DEFAULT;
+    let androidChannel = CHANNELS.DEFAULT;
 
     // Hybrid Audio Logic
     if (notifications.enabled && notifications.adhanEnabled) {
       // iOS: Use short clip (limitation < 30s)
-      soundAsset = IOS_SHORT_SOUND; 
+      soundAsset = Platform.OS === 'ios' ? SOUNDS.IOS_SHORT : undefined;
       // Android: Use specific Adhan channel (plays full sound)
-      androidChannel = CHANNEL_ADHAN;
+      androidChannel = CHANNELS.ADHAN;
     } else if (notifications.enabled && notifications.soundEnabled) {
       // Standard Beep
       soundAsset = 'default';
-      androidChannel = CHANNEL_DEFAULT;
+      androidChannel = CHANNELS.DEFAULT;
     }
 
     const mainContent = this.getPrayerTimeContent(prayerName, prayer.name);
-    
+
     await Notifications.scheduleNotificationAsync({
       content: {
         ...mainContent,
-        data: { 
-          prayer: prayer.name, 
+        data: {
+          prayer: prayer.name,
           type: 'prayer-time',
           time: prayer.time.toISOString(),
           scheduledAt: new Date().toISOString(),
@@ -507,23 +444,24 @@ class NotificationService {
       } as Notifications.NotificationTriggerInput,
       identifier: `prayer-${prayer.name}-${dateStr}`,
     });
-    
+
     // Schedule post-prayer check
     if (notifications.postPrayerCheck) {
       const postCheckTime = new Date(prayer.time.getTime() + 15 * 60000);
-      
+
       await Notifications.scheduleNotificationAsync({
         content: {
           title: `Did you pray ${prayerName}? 🤲`,
           body: 'Tap to mark your prayer and add a reflection',
-          data: { 
-            prayer: prayer.name, 
+          data: {
+            prayer: prayer.name,
             type: 'post-prayer-check',
             time: prayer.time.toISOString(),
             scheduledAt: new Date().toISOString(),
           },
+          categoryIdentifier: NOTIFICATION_CATEGORIES.POST_PRAYER_CHECK,
           ...(Platform.OS === 'android' && {
-            channelId: CHANNEL_DEFAULT,
+            channelId: CHANNELS.DEFAULT,
           }),
         },
         trigger: {
@@ -540,18 +478,18 @@ class NotificationService {
   async scheduleMindfulnessReminder(prayerName: PrayerName, delayMinutes: number = 30) {
     const reminderTime = new Date(Date.now() + delayMinutes * 60000);
     const displayName = PrayerTimeService.getPrayerDisplayName(prayerName);
-    
+
     await Notifications.scheduleNotificationAsync({
       content: {
         title: 'Mindful Moment 🧘‍♂️',
         body: `Take a moment to prepare your heart for ${displayName} prayer`,
-        data: { 
-          prayer: prayerName, 
+        data: {
+          prayer: prayerName,
           type: 'mindfulness-reminder',
           scheduledAt: new Date().toISOString(),
         },
         ...(Platform.OS === 'android' && {
-          channelId: CHANNEL_MINDFULNESS,
+          channelId: CHANNELS.MINDFULNESS,
         }),
       },
       trigger: {
@@ -569,7 +507,7 @@ class NotificationService {
       `Get ready for ${prayerName} prayer in ${minutes} minutes ✨`,
       `${prayerName} approaching in ${minutes} minutes. Find your peaceful space 🌿`,
     ];
-    
+
     return {
       title: `${prayerName} Prayer Soon`,
       body: messages[Math.floor(Math.random() * messages.length)],
@@ -605,9 +543,9 @@ class NotificationService {
         'Close your day with the final prayer ⭐',
       ],
     };
-    
+
     const messages = contextualMessages[prayerKey] || [`Time for ${displayName} prayer 🕌`];
-    
+
     return {
       title: `${displayName} Prayer Time`,
       body: messages[Math.floor(Math.random() * messages.length)],
@@ -617,19 +555,19 @@ class NotificationService {
   async snoozePrayerNotification(prayerName: PrayerName, minutes: number) {
     const snoozeTime = new Date(Date.now() + minutes * 60000);
     const displayName = PrayerTimeService.getPrayerDisplayName(prayerName);
-    
+
     await Notifications.scheduleNotificationAsync({
       content: {
         title: `Reminder: ${displayName} Prayer`,
         body: `Your ${minutes}-minute snooze is up! Time to pray 🕌`,
-        data: { 
-          prayer: prayerName, 
+        data: {
+          prayer: prayerName,
           type: 'snoozed',
           scheduledAt: new Date().toISOString(),
         },
         sound: 'default',
         ...(Platform.OS === 'android' && {
-          channelId: CHANNEL_DEFAULT,
+          channelId: CHANNELS.DEFAULT,
           priority: 'high',
         }),
       },
@@ -643,10 +581,8 @@ class NotificationService {
 
   async cancelPrayerNotifications(prayerName: PrayerName) {
     const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-    const toCancel = scheduled.filter(
-      notif => notif.content.data?.prayer === prayerName
-    );
-    
+    const toCancel = scheduled.filter((notif) => notif.content.data?.prayer === prayerName);
+
     for (const notif of toCancel) {
       await Notifications.cancelScheduledNotificationAsync(notif.identifier);
     }
@@ -655,16 +591,16 @@ class NotificationService {
   async cancelAllPrayerNotifications() {
     const scheduled = await Notifications.getAllScheduledNotificationsAsync();
     const prayerNotifications = scheduled.filter(
-      notif => notif.content.data?.prayer || 
+      (notif) =>
+        notif.content.data?.prayer ||
         (typeof notif.content.data?.type === 'string' && notif.content.data.type.includes('prayer'))
     );
-    
+
     for (const notif of prayerNotifications) {
       await Notifications.cancelScheduledNotificationAsync(notif.identifier);
     }
-    
-    // Reset the hash to force rescheduling next time
-    this.lastScheduledHash = '';
+
+    console.log(`🗑️ Cancelled ${prayerNotifications.length} prayer notifications`);
   }
 
   // Better integration with settings updates
@@ -682,13 +618,61 @@ class NotificationService {
 
     StorageService.setUserSettings(updatedSettings);
 
-    // Force rescheduling by clearing hash
-    this.lastScheduledHash = '';
-
     if (updatedSettings.notifications.enabled) {
       await this.scheduleAllPrayerNotifications();
     } else {
       await this.cancelAllPrayerNotifications();
+    }
+  }
+
+  // 📅 EXTENDED 14-DAY BATCH SCHEDULING
+  // This is called by your useNotificationRescheduler hook every 24 hours
+  async scheduleExtendedNotifications() {
+    try {
+      console.log('🗓️ Starting 14-day batch scheduling...');
+
+      // 1. Cancel everything to start fresh
+      await Notifications.cancelAllScheduledNotificationsAsync();
+
+      const settings = StorageService.getUserSettings();
+      if (!settings?.notifications.enabled || !settings.location) {
+        console.log('📵 Notifications disabled or no location');
+        return;
+      }
+
+      const today = new Date();
+      let totalScheduled = 0;
+
+      // 2. Loop for 14 days
+      for (let i = 0; i < 14; i++) {
+        const date = new Date(today);
+        date.setDate(date.getDate() + i);
+
+        try {
+          // Get times for this specific date
+          const prayers = await PrayerTimeService.getPrayerTimesList(
+            settings.location,
+            date,
+            settings.calculationMethod,
+            settings.adjustments
+          );
+
+          // Schedule them
+          for (const prayer of prayers) {
+            if (prayer.time > new Date()) {
+              await this.schedulePrayerNotification(prayer, settings);
+              totalScheduled++;
+            }
+          }
+        } catch (error) {
+          console.error(`❌ Failed to schedule day ${i}:`, error);
+          // Continue with next day
+        }
+      }
+
+      console.log(`✅ Extended scheduling complete: ${totalScheduled} notifications scheduled`);
+    } catch (error) {
+      console.error('❌ Extended scheduling failed:', error);
     }
   }
 
@@ -697,13 +681,13 @@ class NotificationService {
       content: {
         title: 'Test Notification',
         body: 'Alhamdulillah! Prayer notifications are working perfectly 🎉',
-        subtitle: 'You\'ll receive reminders for each prayer',
-        data: { 
+        subtitle: "You'll receive reminders for each prayer",
+        data: {
           type: 'test',
           scheduledAt: new Date().toISOString(),
         },
         ...(Platform.OS === 'android' && {
-          channelId: CHANNEL_DEFAULT,
+          channelId: CHANNELS.DEFAULT,
         }),
       },
       trigger: null, // Immediate
@@ -714,10 +698,11 @@ class NotificationService {
   async getScheduledNotifications() {
     const notifications = await Notifications.getAllScheduledNotificationsAsync();
     const prayerNotifications = notifications.filter(
-      notif => notif.content.data?.prayer || 
+      (notif) =>
+        notif.content.data?.prayer ||
         (typeof notif.content.data?.type === 'string' && notif.content.data.type.includes('prayer'))
     );
-    
+
     // Sort by trigger time for better debugging
     return prayerNotifications.sort((a, b) => {
       const aTime = a.trigger && 'date' in a.trigger ? a.trigger.date : 0;
@@ -730,32 +715,32 @@ class NotificationService {
   async getDebugInfo() {
     const scheduled = await this.getScheduledNotifications();
     const source = this.prayerTimesSource;
-    
+
     return {
       scheduledCount: scheduled.length,
       hasSource: !!source,
       sourceHasLocation: source?.hasValidLocation() || false,
       sourceLoading: source?.isLoading() || false,
-      lastScheduledHash: this.lastScheduledHash,
-      upcomingNotifications: scheduled.slice(0, 5).map(n => ({
+      upcomingNotifications: scheduled.slice(0, 5).map((n) => ({
         id: n.identifier,
         prayer: n.content.data?.prayer,
         type: n.content.data?.type,
         scheduledAt: n.content.data?.scheduledAt,
         trigger: n.trigger && 'date' in n.trigger ? new Date(n.trigger.date).toLocaleString() : 'Unknown',
       })),
-      prayerTimesInfo: source ? {
-        todayPrayersCount: source.getTodayPrayerTimes().length,
-        hasNextPrayer: !!source.getNextPrayer(),
-        nextPrayerName: source.getNextPrayer()?.name || 'None',
-      } : null,
+      prayerTimesInfo: source
+        ? {
+            todayPrayersCount: source.getTodayPrayerTimes().length,
+            hasNextPrayer: !!source.getNextPrayer(),
+            nextPrayerName: source.getNextPrayer()?.name || 'None',
+          }
+        : null,
     };
   }
 
   // Force rescheduling method for debugging
   async forceReschedule() {
     console.log('🔧 Force rescheduling notifications...');
-    this.lastScheduledHash = '';
     await this.scheduleAllPrayerNotifications();
   }
 
@@ -768,10 +753,10 @@ class NotificationService {
       this.responseListener.remove();
       this.responseListener = null;
     }
-    
+
     // Stop any playing audio
     this.stopAdhan();
-    
+
     // Clear the source reference
     this.prayerTimesSource = null;
     console.log('🧹 NotificationService cleaned up');
