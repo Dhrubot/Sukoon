@@ -5,6 +5,7 @@ import { LoadingScreen } from './LoadingScreen';
 import { LocationModal } from './LocationModal';
 import { AppNavigator } from '../navigation/AppNavigator';
 import { ServiceProvider } from '../providers/ServiceProvider';
+import { useNotificationRescheduler } from '../hooks/useNotificationRescheduler';
 
 export const AppInitializer: React.FC = () => {
   const {
@@ -16,6 +17,9 @@ export const AppInitializer: React.FC = () => {
     closeLocationModal,
     retryInitialization,
   } = useAppInitialization();
+
+  // This activates the "Check every 24h" logic
+  useNotificationRescheduler();
 
   if (isLoading) {
     return <LoadingScreen message="Initializing Sukoon..." />;
