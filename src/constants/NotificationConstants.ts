@@ -2,7 +2,7 @@
 
 // 🛠 BUMP THIS VERSION whenever change sound files or channel settings
 // This forces Android to create a new channel with the fresh config.
-export const NOTIFICATION_CHANNEL_VERSION = 3; 
+export const NOTIFICATION_CHANNEL_VERSION = 5; 
 
 export const CHANNELS = {
   // Appends version: "prayer-times-adhan-v2"
