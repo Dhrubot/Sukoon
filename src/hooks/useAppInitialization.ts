@@ -112,11 +112,29 @@ export const useAppInitialization = () => {
   };
 
   const completeOnboarding = () => {
-// Re-check location settings because the user just finished onboarding
+    // Re-check location settings because the user just finished onboarding
     const settings = StorageService.getUserSettings();
     const hasValidLocation =
       settings &&
       (settings.location.latitude !== 0 || settings.location.longitude !== 0);
+
+    // Update Zustand store with the new location
+    if (hasValidLocation && settings) {
+      console.log('✅ Onboarding complete - updating store with location:', {
+        city: settings.location.city,
+        country: settings.location.country,
+        lat: settings.location.latitude,
+        lng: settings.location.longitude,
+      });
+      
+      // Update user settings in store
+      setUserSettings(settings);
+      
+      // Update location in store (triggers prayer time refresh)
+      setLocation(settings.location);
+    } else {
+      console.log('⚠️ Onboarding complete but no valid location set');
+    }
 
     setState((prev) => ({
       ...prev,
