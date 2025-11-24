@@ -245,6 +245,14 @@ class NotificationService {
     // Handle notifications when app is in foreground
     this.notificationListener = Notifications.addNotificationReceivedListener((notification) => {
       console.log('🔔 Notification received:', notification.request.content.title);
+      
+      // Auto-play adhan for test notifications when app is in foreground
+      // This is necessary because Android doesn't play channel-specific sounds in foreground
+      const data = notification.request.content.data;
+      if ((data?.type === 'test' || data?.type === 'prayer-time') && Platform.OS === 'android') {
+        console.log('🎵 Playing adhan for test notification in foreground');
+        this.playFullAdhan();
+      }
     });
 
     // Handle notification responses (taps, actions)
@@ -254,11 +262,13 @@ class NotificationService {
 
       // If user taps the notification itself, play full Adhan
       if (actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER) {
-        if (data?.type === 'prayer-time' && data?.prayer) {
+        // Play adhan for both prayer-time and test notifications
+        if ((data?.type === 'prayer-time' || data?.type === 'test') && (data?.prayer || data?.type === 'test')) {
           // Play full adhan inside app (for immersive experience)
           this.playFullAdhan();
 
-          if (this.navigationHandler) {
+          // Only navigate if it's a prayer-time notification with prayer data
+          if (data?.prayer && this.navigationHandler) {
             this.navigationHandler(data.prayer as PrayerName, 'default');
           }
         }
