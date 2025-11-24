@@ -32,14 +32,16 @@ const styles = StyleSheet.create({
     marginVertical: 10,
   },
   wellnessCard: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: '#252B47', // Dark card background
     borderRadius: 16,
     padding: 20,
     alignItems: 'center',
     justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#2D3454',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 3,
   },

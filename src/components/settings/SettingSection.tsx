@@ -16,16 +16,16 @@ export const SettingSection: React.FC<SettingSectionProps> = ({ title, children 
 
 const styles = StyleSheet.create({
   section: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#252B47', // Dark card background
     marginBottom: 16,
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: '#2D3454',
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1B5E3F',
+    color: '#00C9A7', // Turquoise accent
     marginBottom: 16,
   },
 });

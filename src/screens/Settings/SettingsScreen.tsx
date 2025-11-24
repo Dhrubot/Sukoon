@@ -192,7 +192,7 @@ const SettingsScreen = ({ navigation }: any) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#1A1F3A', // Dark navy background
   },
   scrollContent: {
     paddingBottom: 20,
@@ -206,44 +206,44 @@ const styles = StyleSheet.create({
   loadingText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#495057',
+    color: '#FFFFFF',
     marginBottom: 8,
   },
   loadingSubtext: {
     fontSize: 14,
-    color: '#6C757D',
+    color: '#A0AEC0',
     textAlign: 'center',
   },
   header: {
     paddingHorizontal: 20,
     paddingVertical: 24,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: '#252B47',
   },
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#1B5E3F',
+    color: '#FFFFFF',
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
-    color: '#6C757D',
+    color: '#A0AEC0',
   },
 
   // 🎯 NEW: Status section styles
   statusSection: {
     margin: 20,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#252B47',
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#E9ECEF',
+    borderColor: '#2D3454',
   },
   statusTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#495057',
+    color: '#FFFFFF',
     marginBottom: 12,
   },
   statusRow: {
@@ -254,18 +254,18 @@ const styles = StyleSheet.create({
   },
   statusLabel: {
     fontSize: 14,
-    color: '#6C757D',
+    color: '#A0AEC0',
   },
   statusValue: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#495057',
+    color: '#FFFFFF',
   },
   statusConnected: {
-    color: '#28A745',
+    color: '#00C9A7',
   },
   statusDisconnected: {
-    color: '#DC3545',
+    color: '#F44336',
   },
 });
 

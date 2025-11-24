@@ -389,7 +389,7 @@ const SupportScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#1A1F3A', // Dark navy background
   },
   loadingContainer: {
     flex: 1,
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#757575',
+    color: '#A0AEC0',
   },
   header: {
     padding: 20,
@@ -408,18 +408,18 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#212121',
+    color: '#FFFFFF',
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#757575',
+    color: '#A0AEC0',
     textAlign: 'center',
   },
   tabContainer: {
     flexDirection: 'row',
     marginHorizontal: 20,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#2D3454',
     borderRadius: 12,
     padding: 4,
     marginBottom: 20,
@@ -435,10 +435,10 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   tabActive: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
+    backgroundColor: '#00C9A7', // Turquoise accent
+    shadowColor: '#00C9A7',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 2,
     elevation: 2,
   },
@@ -450,11 +450,11 @@ const styles = StyleSheet.create({
   },
   tabText: {
     fontSize: 14,
-    color: '#757575',
+    color: '#A0AEC0',
     fontWeight: '500',
   },
   tabTextActive: {
-    color: '#1B5E3F',
+    color: '#FFFFFF',
     fontWeight: '600',
   },
   tabContent: {
@@ -462,21 +462,23 @@ const styles = StyleSheet.create({
   },
   // Subscription Tab Styles
   introCard: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: '#252B47',
     marginHorizontal: 20,
     padding: 20,
     borderRadius: 12,
     marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#2D3454',
   },
   introTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#1B5E3F',
+    color: '#00C9A7', // Turquoise accent
     marginBottom: 8,
   },
   introText: {
     fontSize: 16,
-    color: '#2E7D32',
+    color: '#A0AEC0',
     lineHeight: 22,
   },
   featuresContainer: {
@@ -486,7 +488,7 @@ const styles = StyleSheet.create({
   featuresTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#212121',
+    color: '#FFFFFF',
     marginBottom: 16,
   },
   featureRow: {
@@ -500,7 +502,7 @@ const styles = StyleSheet.create({
   },
   featureText: {
     fontSize: 16,
-    color: '#424242',
+    color: '#A0AEC0',
     flex: 1,
   },
   plansContainer: {
@@ -508,25 +510,25 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   planCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#252B47',
     borderRadius: 12,
     padding: 20,
     marginBottom: 16,
     borderWidth: 2,
-    borderColor: '#E0E0E0',
+    borderColor: '#2D3454',
   },
   recommendedPlan: {
-    borderColor: '#4CAF50',
+    borderColor: '#00C9A7', // Turquoise accent
   },
   activePlan: {
-    backgroundColor: '#F5F5F5',
-    borderColor: '#9E9E9E',
+    backgroundColor: '#2D3454',
+    borderColor: '#00C9A7',
   },
   recommendedBadge: {
     position: 'absolute',
     top: -12,
     right: 16,
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#00C9A7', // Turquoise accent
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
@@ -545,20 +547,20 @@ const styles = StyleSheet.create({
   planName: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#212121',
+    color: '#FFFFFF',
   },
   planPrice: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#1B5E3F',
+    color: '#00C9A7', // Turquoise accent
   },
   planDescription: {
     fontSize: 16,
-    color: '#757575',
+    color: '#A0AEC0',
   },
   currentPlanBadge: {
     fontSize: 14,
-    color: '#4CAF50',
+    color: '#00C9A7', // Turquoise accent
     fontWeight: '600',
     marginTop: 8,
   },
@@ -569,7 +571,7 @@ const styles = StyleSheet.create({
   },
   manageButtonText: {
     fontSize: 16,
-    color: '#1B5E3F',
+    color: '#00C9A7', // Turquoise accent
     textDecorationLine: 'underline',
   },
   // Watch Ad Tab Styles
@@ -577,13 +579,15 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   adCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#252B47',
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#2D3454',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 3,
   },
@@ -594,19 +598,19 @@ const styles = StyleSheet.create({
   adTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#212121',
+    color: '#FFFFFF',
     marginBottom: 12,
   },
   adDescription: {
     fontSize: 16,
-    color: '#757575',
+    color: '#A0AEC0',
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 20,
   },
   adNote: {
     fontSize: 15,
-    color: '#424242',
+    color: '#A0AEC0',
     lineHeight: 22,
     marginBottom: 24,
   },
@@ -625,31 +629,33 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
   },
   adUnavailable: {
-    backgroundColor: '#FFF3E0',
+    backgroundColor: '#2D3454',
     padding: 16,
     borderRadius: 8,
     marginTop: 16,
   },
   adUnavailableText: {
     fontSize: 16,
-    color: '#E65100',
+    color: '#FFB74D',
     textAlign: 'center',
   },
   privacyNote: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: '#252B47',
     padding: 20,
     borderRadius: 12,
     marginTop: 24,
+    borderWidth: 1,
+    borderColor: '#2D3454',
   },
   privacyTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#1B5E3F',
+    color: '#00C9A7', // Turquoise accent
     marginBottom: 12,
   },
   privacyText: {
     fontSize: 15,
-    color: '#2E7D32',
+    color: '#A0AEC0',
     lineHeight: 22,
   },
   // Donate Tab Styles
@@ -661,12 +667,12 @@ const styles = StyleSheet.create({
   donateTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#212121',
+    color: '#FFFFFF',
     marginBottom: 8,
   },
   donateSubtitle: {
     fontSize: 16,
-    color: '#757575',
+    color: '#A0AEC0',
     textAlign: 'center',
     lineHeight: 22,
   },
@@ -675,13 +681,13 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   donationCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#252B47',
     borderRadius: 12,
     padding: 20,
     marginBottom: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: '#2D3454',
   },
   donationEmoji: {
     fontSize: 48,
@@ -690,19 +696,19 @@ const styles = StyleSheet.create({
   donationTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#212121',
+    color: '#FFFFFF',
     marginBottom: 8,
   },
   donationDescription: {
     fontSize: 14,
-    color: '#757575',
+    color: '#A0AEC0',
     textAlign: 'center',
     marginBottom: 12,
   },
   donationAmount: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1B5E3F',
+    color: '#00C9A7', // Turquoise accent
   },
   alternativeMethods: {
     paddingHorizontal: 20,
@@ -711,13 +717,13 @@ const styles = StyleSheet.create({
   alternativeTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#212121',
+    color: '#FFFFFF',
     marginBottom: 16,
   },
   alternativeButton: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#252B47',
     borderWidth: 1,
-    borderColor: '#1B5E3F',
+    borderColor: '#00C9A7', // Turquoise accent
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
@@ -725,25 +731,27 @@ const styles = StyleSheet.create({
   },
   alternativeButtonText: {
     fontSize: 16,
-    color: '#1B5E3F',
+    color: '#00C9A7', // Turquoise accent
     fontWeight: '500',
   },
   zakatNote: {
-    backgroundColor: '#FFF3E0',
+    backgroundColor: '#2D3454',
     marginHorizontal: 20,
     padding: 20,
     borderRadius: 12,
     marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#00C9A7',
   },
   zakatTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#E65100',
+    color: '#FFB74D',
     marginBottom: 8,
   },
   zakatText: {
     fontSize: 15,
-    color: '#BF360C',
+    color: '#A0AEC0',
     lineHeight: 22,
   },
   footer: {
@@ -752,7 +760,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 16,
-    color: '#757575',
+    color: '#A0AEC0',
     textAlign: 'center',
     fontStyle: 'italic',
   },

@@ -83,12 +83,13 @@ export const TabNavigator: React.FC = () => {
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: '#1B5E3F',
-        tabBarInactiveTintColor: '#757575',
+        tabBarActiveTintColor: '#00C9A7', // Turquoise accent
+        tabBarInactiveTintColor: '#6C7A89', // Gray for inactive
         headerShown: false,
         tabBarStyle: {
+          backgroundColor: '#1A1F3A', // Dark navy background
           borderTopWidth: 1,
-          borderTopColor: '#E0E0E0',
+          borderTopColor: '#252B47', // Subtle border
           paddingBottom: 5,
           paddingTop: 5,
           height: 60,

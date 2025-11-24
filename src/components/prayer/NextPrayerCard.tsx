@@ -54,14 +54,8 @@ const NextPrayerCard: React.FC<NextPrayerCardProps> = ({ prayer, onPrepare }) =>
   }, [prayer]);
 
   const getPrayerGradient = (name: string): [string, string] => {
-    const gradients: Record<string, [string, string]> = {
-      fajr: ['#1a237e', '#3949ab'],
-      dhuhr: ['#f57c00', '#ffb74d'],
-      asr: ['#ff6f00', '#ffca28'],
-      maghrib: ['#c2185b', '#f06292'],
-      isha: ['#512da8', '#7e57c2'],
-    };
-    return gradients[name] || ['#1B5E3F', '#2E7D32'];
+    // Use consistent dark theme with turquoise accent
+    return ['#252B47', '#2D3454'];
   };
 
   return (
@@ -111,9 +105,11 @@ const styles = StyleSheet.create({
     marginVertical: 16,
     borderRadius: 20,
     padding: 20,
-    shadowColor: '#000',
+    borderWidth: 2,
+    borderColor: '#00C9A7', // Turquoise border
+    shadowColor: '#00C9A7',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.4,
     shadowRadius: 12,
     elevation: 8,
   },
@@ -164,13 +160,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   prepareButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: '#00C9A7', // Turquoise button
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 24,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: '#1DD1A1',
   },
   prepareButtonText: {
     fontSize: 16,

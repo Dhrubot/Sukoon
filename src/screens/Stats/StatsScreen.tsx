@@ -462,23 +462,23 @@ const StatsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#1A1F3A', // Dark navy background
   },
   header: {
     padding: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#252B47',
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: '#2D3454',
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#1B5E3F',
+    color: '#FFFFFF',
     marginBottom: 20,
   },
   timeRangeContainer: {
     flexDirection: 'row',
-    backgroundColor: '#F0F0F0',
+    backgroundColor: '#2D3454',
     borderRadius: 8,
     padding: 4,
   },
@@ -490,12 +490,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   timeRangeButtonActive: {
-    backgroundColor: '#1B5E3F',
+    backgroundColor: '#00C9A7', // Turquoise accent
   },
   timeRangeText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#666666',
+    color: '#A0AEC0',
   },
   timeRangeTextActive: {
     color: '#FFFFFF',
@@ -515,20 +515,20 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1B5E3F',
+    color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 12,
   },
   emptyStateText: {
     fontSize: 16,
-    color: '#666666',
+    color: '#A0AEC0',
     textAlign: 'center',
     marginBottom: 8,
     lineHeight: 24,
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: '#999999',
+    color: '#6C7A89',
     textAlign: 'center',
   },
   
@@ -540,7 +540,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: '#666666',
+    color: '#A0AEC0',
     marginTop: 16,
     textAlign: 'center',
   },
@@ -553,33 +553,35 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   statCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#252B47', // Dark card background
     borderRadius: 12,
     padding: 20,
     width: (width - 40) / 2,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#2D3454',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 3,
   },
   statValue: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#1B5E3F',
+    color: '#00C9A7', // Turquoise accent
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#333333',
+    color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 4,
   },
   statSubtext: {
     fontSize: 12,
-    color: '#666666',
+    color: '#A0AEC0',
     textAlign: 'center',
   },
   section: {
@@ -588,20 +590,22 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#1B5E3F',
+    color: '#FFFFFF',
     marginBottom: 16,
   },
   todayProgressContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#252B47',
     borderRadius: 12,
     padding: 16,
+    borderWidth: 1,
+    borderColor: '#2D3454',
   },
   todayPrayerItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: '#2D3454',
   },
   prayerEmoji: {
     fontSize: 24,
@@ -611,46 +615,48 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: '500',
-    color: '#333333',
+    color: '#FFFFFF',
   },
   completedPrayerName: {
-    color: '#1B5E3F',
+    color: '#00C9A7', // Turquoise accent
   },
   prayerTime: {
     fontSize: 14,
-    color: '#666666',
+    color: '#A0AEC0',
   },
   chart: {
     marginVertical: 8,
     borderRadius: 16,
   },
   insightCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#252B47',
     borderRadius: 12,
     padding: 20,
     marginBottom: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#1B5E3F',
+    borderLeftColor: '#00C9A7', // Turquoise accent
+    borderWidth: 1,
+    borderColor: '#2D3454',
   },
   achievementCard: {
     borderLeftColor: '#FFD700',
-    backgroundColor: '#FFFEF7',
+    backgroundColor: '#2D3454',
   },
   insightTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1B5E3F',
+    color: '#00C9A7', // Turquoise accent
     marginBottom: 8,
   },
   insightValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#1B5E3F',
+    color: '#FFFFFF',
     marginBottom: 4,
   },
   insightDescription: {
     fontSize: 14,
-    color: '#666666',
+    color: '#A0AEC0',
     lineHeight: 20,
   },
 });

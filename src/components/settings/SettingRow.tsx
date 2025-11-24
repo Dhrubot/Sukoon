@@ -73,21 +73,21 @@ const styles = StyleSheet.create({
   },
   settingLabel: {
     fontSize: 16,
-    color: '#212121',
+    color: '#FFFFFF', // White text
   },
   settingSubtext: {
     fontSize: 14,
-    color: '#757575',
+    color: '#A0AEC0', // Gray secondary text
     marginTop: 4,
     lineHeight: 18,
   },
   settingValue: {
     fontSize: 16,
-    color: '#757575',
+    color: '#A0AEC0', // Gray secondary text
   },
   chevron: {
     fontSize: 20,
-    color: '#757575',
+    color: '#00C9A7', // Turquoise accent
   },
   dangerText: {
     color: '#F44336',

@@ -39,7 +39,7 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
   };
 
   const getStatusColor = (): string => {
-    if (record?.status === 'prayed') return '#4CAF50';
+    if (record?.status === 'prayed') return '#00C9A7'; // Turquoise for completed
     if (record?.status === 'missed' && isPast(prayer.time)) return '#F44336';
 
     // Check if prayer is truly missed (next prayer started)
@@ -47,8 +47,8 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
       return '#F44336'; // Red for missed
     }
 
-    if (isFuture(prayer.time)) return '#FFFFFF';
-    return '#FF9800'; // Current or in grace period
+    if (isFuture(prayer.time)) return '#A0AEC0'; // Gray for upcoming
+    return '#00C9A7'; // Turquoise for current or in grace period
   };
 
   const getStatusText = (): string => {
@@ -123,7 +123,7 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: '#252B47', // Dark card background
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
@@ -131,19 +131,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: '#2D3454',
   },
   activeContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    borderColor: 'rgba(255, 255, 255, 0.4)',
-    shadowColor: '#000',
+    backgroundColor: '#2D3454',
+    borderColor: '#00C9A7', // Turquoise border for active
+    borderWidth: 2,
+    shadowColor: '#00C9A7',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 5,
   },
   completedContainer: {
-    opacity: 0.7,
+    opacity: 0.6,
   },
   leftSection: {
     flexDirection: 'row',

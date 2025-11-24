@@ -13,7 +13,7 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
 }) => {
   const content = (
     <View style={styles.container}>
-      <ActivityIndicator size="large" color="#1B5E3F" />
+      <ActivityIndicator size="large" color="#00C9A7" />
       <Text style={styles.message}>{message}</Text>
     </View>
   );
@@ -37,12 +37,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#1A1F3A', // Dark navy background
   },
   message: {
     marginTop: 16,
     fontSize: 16,
-    color: '#757575',
+    color: '#A0AEC0',
     textAlign: 'center',
     paddingHorizontal: 20,
   },

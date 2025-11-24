@@ -461,7 +461,7 @@ const DigitalWellnessScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#1A1F3A', // Dark navy background
   },
   loadingContainer: {
     flex: 1,
@@ -471,7 +471,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#757575',
+    color: '#A0AEC0',
   },
   header: {
     padding: 20,
@@ -480,12 +480,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#212121',
+    color: '#FFFFFF',
     marginBottom: 16,
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#2D3454',
     borderRadius: 12,
     padding: 4,
     marginBottom: 20,
@@ -498,20 +498,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tabActive: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
+    backgroundColor: '#00C9A7', // Turquoise accent
+    shadowColor: '#00C9A7',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 2,
     elevation: 2,
   },
   tabText: {
     fontSize: 14,
-    color: '#757575',
+    color: '#A0AEC0',
     fontWeight: '500',
   },
   tabTextActive: {
-    color: '#1B5E3F',
+    color: '#FFFFFF',
     fontWeight: '600',
   },
   permissionContainer: {
@@ -527,26 +527,26 @@ const styles = StyleSheet.create({
   permissionTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#212121',
+    color: '#FFFFFF',
     marginBottom: 16,
     textAlign: 'center',
   },
   permissionText: {
     fontSize: 16,
-    color: '#757575',
+    color: '#A0AEC0',
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 16,
   },
   permissionNote: {
     fontSize: 14,
-    color: '#9E9E9E',
+    color: '#6C7A89',
     textAlign: 'center',
     fontStyle: 'italic',
     marginBottom: 32,
   },
   enableButton: {
-    backgroundColor: '#1B5E3F',
+    backgroundColor: '#00C9A7', // Turquoise accent
     paddingHorizontal: 32,
     paddingVertical: 16,
     borderRadius: 12,
@@ -589,15 +589,17 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   metricCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#252B47', // Dark card background
     padding: 20,
     borderRadius: 12,
     alignItems: 'center',
     flex: 1,
     marginHorizontal: 6,
+    borderWidth: 1,
+    borderColor: '#2D3454',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 3,
   },
@@ -608,12 +610,12 @@ const styles = StyleSheet.create({
   metricValue: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#212121',
+    color: '#00C9A7', // Turquoise accent
     marginBottom: 4,
   },
   metricLabel: {
     fontSize: 12,
-    color: '#757575',
+    color: '#A0AEC0',
   },
   section: {
     paddingHorizontal: 20,
@@ -622,22 +624,24 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#212121',
+    color: '#FFFFFF',
     marginBottom: 16,
   },
   sectionSubtext: {
     fontSize: 14,
-    color: '#757575',
+    color: '#A0AEC0',
     marginBottom: 12,
   },
   appRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#252B47',
     padding: 16,
     borderRadius: 8,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#2D3454',
   },
   appInfo: {
     flexDirection: 'row',
@@ -646,31 +650,33 @@ const styles = StyleSheet.create({
   appRank: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#757575',
+    color: '#6C7A89',
     marginRight: 12,
   },
   appName: {
     fontSize: 16,
-    color: '#212121',
+    color: '#FFFFFF',
   },
   appTime: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1B5E3F',
+    color: '#00C9A7', // Turquoise accent
   },
   prayerStatRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#252B47',
     padding: 16,
     borderRadius: 8,
     marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#2D3454',
   },
   prayerName: {
     fontSize: 16,
     fontWeight: '500',
-    color: '#212121',
+    color: '#FFFFFF',
   },
   prayerStatValues: {
     flexDirection: 'row',
@@ -678,7 +684,7 @@ const styles = StyleSheet.create({
   },
   prayerStatText: {
     fontSize: 14,
-    color: '#757575',
+    color: '#A0AEC0',
   },
   weeklyStats: {
     flexDirection: 'row',
@@ -691,12 +697,12 @@ const styles = StyleSheet.create({
   weeklyStatValue: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#1B5E3F',
+    color: '#00C9A7', // Turquoise accent
     marginBottom: 4,
   },
   weeklyStatLabel: {
     fontSize: 14,
-    color: '#757575',
+    color: '#A0AEC0',
   },
   chartSection: {
     paddingHorizontal: 20,
@@ -705,7 +711,7 @@ const styles = StyleSheet.create({
   chartTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#212121',
+    color: '#FFFFFF',
     marginBottom: 16,
   },
   chart: {
@@ -717,20 +723,22 @@ const styles = StyleSheet.create({
   insightsTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#212121',
+    color: '#FFFFFF',
     marginBottom: 20,
   },
   insightCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#252B47',
     padding: 20,
     borderRadius: 12,
     marginBottom: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#1B5E3F',
+    borderLeftColor: '#00C9A7', // Turquoise accent
+    borderWidth: 1,
+    borderColor: '#2D3454',
   },
   insightText: {
     fontSize: 16,
-    color: '#424242',
+    color: '#A0AEC0',
     lineHeight: 24,
   },
   tipsSection: {
@@ -739,16 +747,18 @@ const styles = StyleSheet.create({
   tipsTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#212121',
+    color: '#FFFFFF',
     marginBottom: 16,
   },
   tipCard: {
     flexDirection: 'row',
-    backgroundColor: '#E8F5E9',
+    backgroundColor: '#252B47',
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#2D3454',
   },
   tipEmoji: {
     fontSize: 24,
@@ -757,7 +767,7 @@ const styles = StyleSheet.create({
   tipText: {
     flex: 1,
     fontSize: 15,
-    color: '#2E7D32',
+    color: '#A0AEC0',
     lineHeight: 22,
   },
   iosMessage: {
@@ -773,12 +783,12 @@ const styles = StyleSheet.create({
   iosTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#212121',
+    color: '#FFFFFF',
     marginBottom: 16,
   },
   iosText: {
     fontSize: 16,
-    color: '#757575',
+    color: '#A0AEC0',
     textAlign: 'center',
     lineHeight: 24,
   },

@@ -142,19 +142,8 @@ const HomeScreen = ({ navigation }: any) => {
   };
 
   const getBackgroundGradient = (): readonly [ColorValue, ColorValue] => {
-    const hour = currentTime.getHours();
-
-    if (hour >= 4 && hour < 6) {
-      return ["#0d47a1", "#42a5f5"]; // Fajr
-    } else if (hour >= 11 && hour < 15) {
-      return ["#c8e6c9", "#a5d6a7"]; // Dhuhr
-    } else if (hour >= 15 && hour < 18) {
-      return ["#ffe0b2", "#ffb74d"]; // Asr
-    } else if (hour >= 18 && hour < 20) {
-      return ["#f8bbd0", "#f06292"]; // Maghrib
-    } else {
-      return ["#1a237e", "#311b92"]; // Isha/Night
-    }
+    // Dark navy theme with subtle variations
+    return ["#1A1F3A", "#252B47"]; // Consistent dark navy background
   };
 
   const getNextMilestone = (current: number): number => {

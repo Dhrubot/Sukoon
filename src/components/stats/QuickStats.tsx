@@ -89,13 +89,13 @@ const QuickStats: React.FC<QuickStatsProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: '#252B47', // Dark card background
     marginHorizontal: 20,
     marginVertical: 16,
     borderRadius: 16,
     padding: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: '#2D3454',
   },
   header: {
     flexDirection: 'row',
@@ -110,7 +110,8 @@ const styles = StyleSheet.create({
   },
   viewMore: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
+    color: '#00C9A7', // Turquoise accent
+    fontWeight: '500',
   },
   statsRow: {
     flexDirection: 'row',
@@ -118,7 +119,7 @@ const styles = StyleSheet.create({
   },
   statBox: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: '#2D3454', // Slightly lighter than card
     borderRadius: 12,
     padding: 16,
   },
@@ -149,7 +150,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#00C9A7', // Turquoise accent
     borderRadius: 2,
   },
   milestone: {

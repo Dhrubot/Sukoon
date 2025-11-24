@@ -270,7 +270,7 @@ const AchievementsScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: '#1A1F3A', // Dark navy background
   },
   loadingContainer: {
     flex: 1,
@@ -280,7 +280,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#757575',
+    color: '#A0AEC0',
   },
   header: {
     padding: 20,
@@ -288,23 +288,25 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#212121',
+    color: '#FFFFFF',
     marginBottom: 20,
   },
   progressCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#252B47', // Dark card background
     borderRadius: 16,
     padding: 20,
+    borderWidth: 1,
+    borderColor: '#2D3454',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 3,
   },
   progressTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#212121',
+    color: '#FFFFFF',
     marginBottom: 16,
   },
   progressStats: {
@@ -318,26 +320,26 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#1B5E3F',
+    color: '#00C9A7', // Turquoise accent
   },
   statLabel: {
     fontSize: 14,
-    color: '#757575',
+    color: '#A0AEC0',
     marginTop: 4,
   },
   statDivider: {
     width: 1,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: '#2D3454',
   },
   progressBarContainer: {
     height: 8,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: '#2D3454',
     borderRadius: 4,
     overflow: 'hidden',
   },
   progressBar: {
     height: '100%',
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#00C9A7', // Turquoise accent
     borderRadius: 4,
   },
   categoryContainer: {
@@ -348,17 +350,17 @@ const styles = StyleSheet.create({
   categoryButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#252B47',
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
     marginRight: 12,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: '#2D3454',
   },
   categoryButtonActive: {
-    backgroundColor: '#E8F5E9',
-    borderColor: '#4CAF50',
+    backgroundColor: '#2D3454',
+    borderColor: '#00C9A7', // Turquoise accent
   },
   categoryIcon: {
     fontSize: 20,
@@ -366,11 +368,11 @@ const styles = StyleSheet.create({
   },
   categoryLabel: {
     fontSize: 14,
-    color: '#757575',
+    color: '#A0AEC0',
     fontWeight: '500',
   },
   categoryLabelActive: {
-    color: '#1B5E3F',
+    color: '#00C9A7', // Turquoise accent
     fontWeight: '600',
   },
   achievementsGrid: {
@@ -403,9 +405,9 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: '#252B47',
     borderWidth: 2,
-    borderColor: '#E0E0E0',
+    borderColor: '#2D3454',
     borderStyle: 'dashed',
   },
   achievementIcon: {
@@ -429,7 +431,7 @@ const styles = StyleSheet.create({
   achievementNameLocked: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#424242',
+    color: '#A0AEC0',
     textAlign: 'center',
     marginBottom: 8,
   },
@@ -441,7 +443,7 @@ const styles = StyleSheet.create({
   },
   achievementDescriptionLocked: {
     fontSize: 12,
-    color: '#757575',
+    color: '#6C7A89',
     textAlign: 'center',
   },
   tierBadge: {
@@ -468,12 +470,12 @@ const styles = StyleSheet.create({
   },
   progressText: {
     fontSize: 12,
-    color: '#757575',
+    color: '#A0AEC0',
     fontWeight: '600',
   },
   miniProgressBar: {
     height: 4,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: '#2D3454',
     borderRadius: 2,
     overflow: 'hidden',
   },
@@ -482,20 +484,22 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   tipsSection: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: '#252B47',
     padding: 20,
     margin: 20,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#2D3454',
   },
   tipsTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#1B5E3F',
+    color: '#00C9A7', // Turquoise accent
     marginBottom: 12,
   },
   tipText: {
     fontSize: 14,
-    color: '#2E7D32',
+    color: '#A0AEC0',
     lineHeight: 22,
     marginBottom: 8,
   },

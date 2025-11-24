@@ -108,15 +108,15 @@ const styles = StyleSheet.create({
   },
   shareButton: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontWeight: '500',
+    color: '#00C9A7', // Turquoise accent
+    fontWeight: '600',
   },
   verseContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: '#252B47', // Dark card background
     borderRadius: 16,
     padding: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: '#2D3454',
   },
   arabic: {
     fontSize: 24,
