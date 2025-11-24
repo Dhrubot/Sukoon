@@ -1,6 +1,7 @@
-// ===== 5. Updated src/components/LoadingScreen.tsx =====
+// src/components/LoadingScreen.tsx
 import React from 'react';
 import { View, Text, ActivityIndicator, StyleSheet, TouchableOpacity } from 'react-native';
+import { useTheme } from '../providers/ThemeProvider';
 
 interface LoadingScreenProps {
   message?: string;
@@ -11,10 +12,12 @@ export const LoadingScreen: React.FC<LoadingScreenProps> = ({
   message = 'Preparing your prayer companion...',
   onPress
 }) => {
+  const { theme } = useTheme();
+  
   const content = (
-    <View style={styles.container}>
-      <ActivityIndicator size="large" color="#00C9A7" />
-      <Text style={styles.message}>{message}</Text>
+    <View style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
+      <ActivityIndicator size="large" color={theme.colors.primary.DEFAULT} />
+      <Text style={[styles.message, { color: theme.colors.text.secondary }]}>{message}</Text>
     </View>
   );
 
@@ -37,12 +40,10 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1A1F3A', // Dark navy background
   },
   message: {
     marginTop: 16,
     fontSize: 16,
-    color: '#A0AEC0',
     textAlign: 'center',
     paddingHorizontal: 20,
   },
