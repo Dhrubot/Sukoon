@@ -642,8 +642,9 @@ class NotificationService {
         }),
       },
       trigger: {
-        type: 'calendar',
-        date: reminderTime,
+        type: 'timeInterval',
+        seconds: Math.max((reminderTime.getTime() - Date.now()) / 1000, 1),
+        repeats: false,
       } as Notifications.NotificationTriggerInput,
       identifier: `mindfulness-${prayerName}-${Date.now()}`,
     });
@@ -723,8 +724,9 @@ class NotificationService {
         }),
       },
       trigger: {
-        type: 'calendar',
-        date: snoozeTime,
+        type: 'timeInterval',
+        seconds: Math.max((snoozeTime.getTime() - Date.now()) / 1000, 1),
+        repeats: false,
       } as Notifications.NotificationTriggerInput,
       identifier: `snooze-${prayerName}-${Date.now()}`,
     });
@@ -859,8 +861,9 @@ private async scheduleTier2PersistentReminders(
         }),
       },
       trigger: {
-        type: 'calendar',
-        date: reminderTime,
+        type: 'timeInterval',
+        seconds: Math.max((reminderTime.getTime() - now.getTime()) / 1000, 1),
+        repeats: false,
       } as Notifications.NotificationTriggerInput,
       identifier: `tier2-${prayerId}-${i}`,
     });
@@ -951,8 +954,9 @@ private async scheduleTier3GracePeriodWarning(
       }),
     },
     trigger: {
-      type: 'calendar',
-      date: warningTime,
+      type: 'timeInterval',
+      seconds: Math.max((warningTime.getTime() - now.getTime()) / 1000, 1),
+      repeats: false,
     } as Notifications.NotificationTriggerInput,
     identifier: `tier3-${prayerId}`,
   });
