@@ -4,3 +4,4 @@ export { SettingSection } from './SettingSection';
 export { SettingRow } from './SettingRow';
 export { SegmentedControl } from './SegmentedControl';
 export { default as NotificationSettings } from './NotificationSettings';
+export { default as PrayerHabitBuilderSettings } from './PrayerHabitBuilderSettings';

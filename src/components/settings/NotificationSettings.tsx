@@ -15,6 +15,7 @@ import * as Haptics from 'expo-haptics';
 import NotificationService from '../../services/NotificationService';
 import StorageService from '../../services/StorageService';
 import { UserSettings } from '../../types';
+import PrayerHabitBuilderSettings from './PrayerHabitBuilderSettings';
 
 interface NotificationSettingsProps {
   userSettings: UserSettings;
@@ -22,6 +23,7 @@ interface NotificationSettingsProps {
 }
 
 const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSettings, onUpdateSettings }) => {
+  const [activeTab, setActiveTab] = useState<'basic' | 'habit'>('basic');
   const [localSettings, setLocalSettings] = useState(userSettings?.notifications || {
     enabled: true,
     soundEnabled: true,
@@ -112,7 +114,30 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
   };
 
   return (
-    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <View style={styles.container}>
+      {/* Tab Navigation */}
+      <View style={styles.tabContainer}>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'basic' && styles.tabActive]}
+          onPress={() => setActiveTab('basic')}
+        >
+          <Text style={[styles.tabText, activeTab === 'basic' && styles.tabTextActive]}>
+            🔔 Basic
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[styles.tab, activeTab === 'habit' && styles.tabActive]}
+          onPress={() => setActiveTab('habit')}
+        >
+          <Text style={[styles.tabText, activeTab === 'habit' && styles.tabTextActive]}>
+            🏗️ Habit Builder
+          </Text>
+        </TouchableOpacity>
+      </View>
+
+      {/* Tab Content */}
+      {activeTab === 'basic' ? (
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
       {/* Main Toggle */}
       <View style={styles.section}>
         <View style={styles.settingRow}>
@@ -251,12 +276,55 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
           </View>
         </>
       )}
-    </ScrollView>
+        </ScrollView>
+      ) : (
+        <PrayerHabitBuilderSettings
+          userSettings={userSettings}
+          onUpdateSettings={onUpdateSettings}
+        />
+      )}
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#F5F5F5',
+    padding: 4,
+    margin: 16,
+    borderRadius: 12,
+    gap: 4,
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  tabActive: {
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  tabText: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#757575',
+  },
+  tabTextActive: {
+    color: '#1B5E3F',
+    fontWeight: '600',
+  },
+  scrollView: {
     flex: 1,
     backgroundColor: '#FAFAFA',
   },
