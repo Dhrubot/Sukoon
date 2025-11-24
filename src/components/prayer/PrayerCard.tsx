@@ -15,6 +15,7 @@ interface PrayerCardProps {
   record?: PrayerRecord;
   onComplete: () => void;
   currentTime: Date;
+  nextPrayer?: PrayerTime | null; // Used to determine grace period
 }
 
 const { width } = Dimensions.get('window');
@@ -24,6 +25,7 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
   record,
   onComplete,
   currentTime,
+  nextPrayer,
 }) => {
   const getPrayerIcon = (name: string): string => {
     const icons: Record<string, string> = {
@@ -39,17 +41,31 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
   const getStatusColor = (): string => {
     if (record?.status === 'prayed') return '#4CAF50';
     if (record?.status === 'missed' && isPast(prayer.time)) return '#F44336';
+
+    // Check if prayer is truly missed (next prayer started)
+    if (isPast(prayer.time) && !record && nextPrayer && isPast(nextPrayer.time)) {
+      return '#F44336'; // Red for missed
+    }
+
     if (isFuture(prayer.time)) return '#FFFFFF';
-    return '#FF9800'; // Current or recently passed
+    return '#FF9800'; // Current or in grace period
   };
 
   const getStatusText = (): string => {
     if (record?.status === 'prayed') {
       return record.mindfulnessCompleted ? '✓ Prayed Mindfully' : '✓ Prayed';
     }
+
+    // Check if prayer is truly missed (next prayer has started)
     if (isPast(prayer.time) && !record) {
-      return 'Missed';
+      // Only mark as missed if the next prayer has started
+      if (nextPrayer && isPast(nextPrayer.time)) {
+        return 'Missed';
+      }
+      // Otherwise, still in grace period
+      return 'Time to Pray';
     }
+
     if (prayer.isNext) {
       return 'Next Prayer';
     }
@@ -59,9 +75,9 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
     return 'Time to Pray';
   };
 
-  const isActive = prayer.isNext || 
-    (isPast(prayer.time) && !record && 
-     Math.abs(currentTime.getTime() - prayer.time.getTime()) < 30 * 60 * 1000);
+  // Prayer is active if it's the next prayer OR if it's in the grace period (time passed but next prayer hasn't started)
+  const isActive = prayer.isNext ||
+    (isPast(prayer.time) && !record && (!nextPrayer || isFuture(nextPrayer.time)));
 
   return (
     <TouchableOpacity
@@ -71,7 +87,14 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
         record?.status === 'prayed' && styles.completedContainer,
       ]}
       onPress={onComplete}
-      disabled={record?.status === 'prayed' || isFuture(prayer.time)}
+      disabled={
+        Boolean(
+          record?.status === 'prayed' ||
+          isFuture(prayer.time) ||
+          // Disable if prayer is truly missed (next prayer has started)
+          (isPast(prayer.time) && !record && nextPrayer && isPast(nextPrayer.time))
+        )
+      }
       activeOpacity={0.8}
     >
       <View style={styles.leftSection}>

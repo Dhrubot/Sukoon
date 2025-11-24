@@ -250,11 +250,17 @@ const HomeScreen = ({ navigation }: any) => {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Today's Prayers</Text>
             <View style={styles.prayerGrid}>
-              {todayPrayerTimes.map((prayer) => {
+              {todayPrayerTimes.map((prayer, index) => {
                 // 🎯 FIXED: Get the matching prayer record
                 const record = todayPrayerRecords.find(
                   (r) => r.prayer === prayer.name
                 );
+                
+                // Get the next prayer in the list (for grace period calculation)
+                // If this is the last prayer of the day, nextPrayer will be null
+                const nextPrayerInList = index < todayPrayerTimes.length - 1 
+                  ? todayPrayerTimes[index + 1] 
+                  : null;
                 
                 return (
                   <PrayerCard
@@ -263,6 +269,7 @@ const HomeScreen = ({ navigation }: any) => {
                     record={record} 
                     onComplete={() => handlePrayerComplete(prayer)}
                     currentTime={currentTime}
+                    nextPrayer={nextPrayerInList}
                   />
                 );
               })}
