@@ -3,6 +3,7 @@ import React from 'react';
 import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { TabParamList } from '../types/navigation';
+import { useTheme } from '../providers/ThemeProvider';
 
 import HomeScreen from '../screens/Home/HomeScreen';
 import StatsScreen from '../screens/Stats/StatsScreen';
@@ -80,16 +81,18 @@ const tabScreens: {
 ];
 
 export const TabNavigator: React.FC = () => {
+  const { theme } = useTheme();
+  
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: '#00C9A7', // Turquoise accent
-        tabBarInactiveTintColor: '#6C7A89', // Gray for inactive
+        tabBarActiveTintColor: theme.colors.primary.DEFAULT,
+        tabBarInactiveTintColor: theme.colors.secondary.DEFAULT,
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: '#1A1F3A', // Dark navy background
+          backgroundColor: theme.colors.background.primary,
           borderTopWidth: 1,
-          borderTopColor: '#252B47', // Subtle border
+          borderTopColor: theme.colors.border.secondary,
           paddingBottom: 5,
           paddingTop: 5,
           height: 60,

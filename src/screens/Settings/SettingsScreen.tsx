@@ -3,6 +3,9 @@ import React from 'react';
 import { View, Text, ScrollView, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LocationModal } from '../../components/LocationModal';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { useTheme } from '../../providers/ThemeProvider';
+import { AppTheme } from '../../theme';
 
 // Hooks
 import { useSettingsManager } from './hooks';
@@ -14,6 +17,8 @@ import {
   AppDataSection,
   AboutSection,
 } from './components';
+import { SettingSection } from '../../components/settings/SettingSection';
+import { SettingRow } from '../../components/settings/SettingRow';
 
 // Enhanced Components
 import { PrayerSettingsSection } from './components/PrayerSettingsSection';
@@ -22,6 +27,9 @@ import { PrayerSettingsSection } from './components/PrayerSettingsSection';
 import { CalculationMethodModal, NotificationModal } from './modals';
 
 const SettingsScreen = ({ navigation }: any) => {
+  const styles = useThemedStyles(createStyles);
+  const { theme, themeMode, toggleTheme } = useTheme();
+  
   const {
     // Existing state
     userSettings,
@@ -131,6 +139,16 @@ const SettingsScreen = ({ navigation }: any) => {
           <Text>🔧 Notification Debugger</Text>
         </TouchableOpacity>
 
+        {/* Appearance Settings */}
+        <SettingSection title="APPEARANCE">
+          <SettingRow
+            label="App Theme"
+            subtitle="Switch between dark and light mode"
+            value={themeMode === 'dark' ? '🌙 Dark' : '☀️ Light'}
+            onPress={toggleTheme}
+          />
+        </SettingSection>
+
         {/* About */}
         <AboutSection
           onPrivacyPolicy={handlePrivacyPolicy}
@@ -189,10 +207,10 @@ const SettingsScreen = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1A1F3A', // Dark navy background
+    backgroundColor: theme.colors.background.primary,
   },
   scrollContent: {
     paddingBottom: 20,
@@ -204,68 +222,84 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   loadingText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 8,
+    marginTop: 16,
+    fontSize: 16,
+    color: theme.colors.text.secondary,
   },
   loadingSubtext: {
+    marginTop: 8,
     fontSize: 14,
-    color: '#A0AEC0',
+    color: theme.colors.text.muted,
     textAlign: 'center',
   },
   header: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
+    padding: 20,
+    paddingBottom: 10,
+    backgroundColor: theme.colors.background.primary,
     borderBottomWidth: 1,
-    borderBottomColor: '#252B47',
+    borderBottomColor: theme.colors.border.secondary,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 4,
+    color: theme.colors.text.primary,
+    marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#A0AEC0',
+    color: theme.colors.text.secondary,
   },
 
   // 🎯 NEW: Status section styles
   statusSection: {
     margin: 20,
-    backgroundColor: '#252B47',
-    borderRadius: 12,
     padding: 16,
+    backgroundColor: theme.colors.card.background,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#2D3454',
+    borderColor: theme.colors.border.primary,
   },
   statusTitle: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: theme.colors.text.secondary,
     marginBottom: 12,
+    letterSpacing: 0.5,
   },
   statusRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
     marginBottom: 8,
   },
   statusLabel: {
     fontSize: 14,
-    color: '#A0AEC0',
+    color: theme.colors.text.secondary,
   },
   statusValue: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#FFFFFF',
+    fontWeight: '600',
+    color: theme.colors.text.primary,
+  },
+  statusValueGood: {
+    color: theme.colors.primary.DEFAULT,
   },
   statusConnected: {
-    color: '#00C9A7',
+    color: theme.colors.status.success,
   },
   statusDisconnected: {
-    color: '#F44336',
+    color: theme.colors.status.error,
+  },
+  debugButton: {
+    marginTop: 12,
+    backgroundColor: theme.colors.card.hover,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  debugButtonText: {
+    color: theme.colors.primary.DEFAULT,
+    fontSize: 14,
+    fontWeight: '600',
   },
 });
 

@@ -7,6 +7,7 @@ import {
   Share,
   Platform,
 } from 'react-native';
+import { useTheme } from '../../providers/ThemeProvider';
 
 // Sample verses - in production, this would come from a larger database
 const verses = [
@@ -37,6 +38,7 @@ const verses = [
 ];
 
 const DailyVerse: React.FC = () => {
+  const { theme } = useTheme();
   const [verse, setVerse] = useState(verses[0]);
   const [showTranslation, setShowTranslation] = useState(true);
 
@@ -64,28 +66,28 @@ const DailyVerse: React.FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Daily Verse 📖</Text>
+        <Text style={[styles.title, { color: theme.colors.text.primary }]}>Daily Verse 📖</Text>
         <TouchableOpacity onPress={handleShare}>
-          <Text style={styles.shareButton}>Share</Text>
+          <Text style={[styles.shareButton, { color: theme.colors.primary.DEFAULT }]}>Share</Text>
         </TouchableOpacity>
       </View>
 
       <TouchableOpacity
-        style={styles.verseContainer}
+        style={[styles.verseContainer, { backgroundColor: theme.colors.card.background, borderColor: theme.colors.border.primary }]}
         onPress={() => setShowTranslation(!showTranslation)}
         activeOpacity={0.8}
       >
-        <Text style={styles.arabic}>{verse.arabic}</Text>
+        <Text style={[styles.arabic, { color: theme.colors.text.primary }]}>{verse.arabic}</Text>
         
         {showTranslation && (
           <>
-            <Text style={styles.translation}>"{verse.translation}"</Text>
-            <Text style={styles.reference}>{verse.reference}</Text>
+            <Text style={[styles.translation, { color: theme.colors.text.secondary }]}>"{verse.translation}"</Text>
+            <Text style={[styles.reference, { color: theme.colors.text.muted }]}>{verse.reference}</Text>
           </>
         )}
       </TouchableOpacity>
 
-      <Text style={styles.hint}>Tap to toggle translation</Text>
+      <Text style={[styles.hint, { color: theme.colors.text.muted }]}>Tap to toggle translation</Text>
     </View>
   );
 };
@@ -104,24 +106,19 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#FFFFFF',
   },
   shareButton: {
     fontSize: 14,
-    color: '#00C9A7', // Turquoise accent
     fontWeight: '600',
   },
   verseContainer: {
-    backgroundColor: '#252B47', // Dark card background
     borderRadius: 16,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#2D3454',
   },
   arabic: {
     fontSize: 24,
     textAlign: 'center',
-    color: '#FFFFFF',
     marginBottom: 16,
     lineHeight: 36,
     fontFamily: Platform.OS === 'ios' ? 'Damascus' : 'serif',
@@ -129,7 +126,6 @@ const styles = StyleSheet.create({
   translation: {
     fontSize: 16,
     textAlign: 'center',
-    color: 'rgba(255, 255, 255, 0.9)',
     marginBottom: 12,
     lineHeight: 24,
     fontStyle: 'italic',
@@ -137,13 +133,11 @@ const styles = StyleSheet.create({
   reference: {
     fontSize: 14,
     textAlign: 'center',
-    color: 'rgba(255, 255, 255, 0.7)',
     fontWeight: '500',
   },
   hint: {
     fontSize: 12,
     textAlign: 'center',
-    color: 'rgba(255, 255, 255, 0.5)',
     marginTop: 8,
   },
 });

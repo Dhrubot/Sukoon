@@ -18,6 +18,7 @@ import { format } from "date-fns";
 // Store and Services
 import { useStore } from "../../store/useStore";
 import StorageService from "../../services/StorageService";
+import { useTheme } from "../../providers/ThemeProvider";
 
 // NEW: Use our centralized prayer times hook
 import { usePrayerTimes } from "../../providers/PrayerTimesProvider";
@@ -38,6 +39,8 @@ import UsageStatsService from "../../services/UsageStatsService";
 const { width } = Dimensions.get("window");
 
 const HomeScreen = ({ navigation }: any) => {
+  const { theme } = useTheme();
+  
   // 🎯 NEW: Replace complex prayer time logic with simple hook
   const { 
     todayPrayerTimes, 
@@ -142,8 +145,7 @@ const HomeScreen = ({ navigation }: any) => {
   };
 
   const getBackgroundGradient = (): readonly [ColorValue, ColorValue] => {
-    // Dark navy theme with subtle variations
-    return ["#1A1F3A", "#252B47"]; // Consistent dark navy background
+    return [theme.colors.background.primary, theme.colors.background.secondary];
   };
 
   const getNextMilestone = (current: number): number => {

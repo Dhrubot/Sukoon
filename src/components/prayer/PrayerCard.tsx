@@ -9,6 +9,7 @@ import {
 import { format, isPast, isFuture } from 'date-fns';
 import { PrayerTime, PrayerRecord } from '../../types';
 import PrayerTimeService from '../../services/PrayerTimeService';
+import { useTheme } from '../../providers/ThemeProvider';
 
 interface PrayerCardProps {
   prayer: PrayerTime;
@@ -27,6 +28,7 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
   currentTime,
   nextPrayer,
 }) => {
+  const { theme } = useTheme();
   const getPrayerIcon = (name: string): string => {
     const icons: Record<string, string> = {
       fajr: '🌅',
@@ -39,16 +41,16 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
   };
 
   const getStatusColor = (): string => {
-    if (record?.status === 'prayed') return '#00C9A7'; // Turquoise for completed
-    if (record?.status === 'missed' && isPast(prayer.time)) return '#F44336';
+    if (record?.status === 'prayed') return theme.colors.status.success;
+    if (record?.status === 'missed' && isPast(prayer.time)) return theme.colors.status.error;
 
     // Check if prayer is truly missed (next prayer started)
     if (isPast(prayer.time) && !record && nextPrayer && isPast(nextPrayer.time)) {
-      return '#F44336'; // Red for missed
+      return theme.colors.status.error;
     }
 
-    if (isFuture(prayer.time)) return '#A0AEC0'; // Gray for upcoming
-    return '#00C9A7'; // Turquoise for current or in grace period
+    if (isFuture(prayer.time)) return theme.colors.text.secondary;
+    return theme.colors.primary.DEFAULT;
   };
 
   const getStatusText = (): string => {
@@ -83,7 +85,8 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
     <TouchableOpacity
       style={[
         styles.container,
-        isActive && styles.activeContainer,
+        { backgroundColor: theme.colors.card.background, borderColor: theme.colors.border.primary },
+        isActive && [styles.activeContainer, { backgroundColor: theme.colors.card.hover, borderColor: theme.colors.primary.DEFAULT, shadowColor: theme.colors.primary.DEFAULT }],
         record?.status === 'prayed' && styles.completedContainer,
       ]}
       onPress={onComplete}
@@ -100,10 +103,10 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
       <View style={styles.leftSection}>
         <Text style={styles.icon}>{getPrayerIcon(prayer.name)}</Text>
         <View style={styles.timeInfo}>
-          <Text style={[styles.prayerName, isActive && styles.activeName]}>
+          <Text style={[styles.prayerName, { color: theme.colors.text.primary }, isActive && styles.activeName]}>
             {PrayerTimeService.getPrayerDisplayName(prayer.name)}
           </Text>
-          <Text style={[styles.time, isActive && styles.activeTime]}>
+          <Text style={[styles.time, { color: theme.colors.text.secondary }, isActive && [styles.activeTime, { color: theme.colors.text.primary }]]}>
             {format(prayer.time, 'h:mm a')}
           </Text>
         </View>
@@ -123,7 +126,6 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#252B47', // Dark card background
     borderRadius: 16,
     padding: 16,
     marginBottom: 12,
@@ -131,13 +133,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#2D3454',
   },
   activeContainer: {
-    backgroundColor: '#2D3454',
-    borderColor: '#00C9A7', // Turquoise border for active
     borderWidth: 2,
-    shadowColor: '#00C9A7',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -160,7 +158,6 @@ const styles = StyleSheet.create({
   prayerName: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFFFFF',
     marginBottom: 4,
   },
   activeName: {
@@ -169,10 +166,8 @@ const styles = StyleSheet.create({
   },
   time: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
   },
   activeTime: {
-    color: '#FFFFFF',
     fontWeight: '500',
   },
   rightSection: {

@@ -9,6 +9,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { PrayerTime } from '../../types';
 import PrayerTimeService from '../../services/PrayerTimeService';
+import { useTheme } from '../../providers/ThemeProvider';
 
 interface NextPrayerCardProps {
   prayer: PrayerTime;
@@ -18,6 +19,7 @@ interface NextPrayerCardProps {
 const { width } = Dimensions.get('window');
 
 const NextPrayerCard: React.FC<NextPrayerCardProps> = ({ prayer, onPrepare }) => {
+  const { theme } = useTheme();
   const [timeRemaining, setTimeRemaining] = useState('');
   const [progress, setProgress] = useState(0);
 
@@ -53,28 +55,27 @@ const NextPrayerCard: React.FC<NextPrayerCardProps> = ({ prayer, onPrepare }) =>
     return () => clearInterval(timer);
   }, [prayer]);
 
-  const getPrayerGradient = (name: string): [string, string] => {
-    // Use consistent dark theme with turquoise accent
-    return ['#252B47', '#2D3454'];
+  const getPrayerGradient = (): [string, string] => {
+    return [theme.colors.card.background, theme.colors.card.hover];
   };
 
   return (
     <LinearGradient
-      colors={getPrayerGradient(prayer.name)}
-      style={styles.container}
+      colors={getPrayerGradient()}
+      style={[styles.container, { borderColor: theme.colors.primary.DEFAULT, shadowColor: theme.colors.primary.DEFAULT }]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
     >
       <View style={styles.header}>
-        <Text style={styles.nextLabel}>NEXT PRAYER</Text>
-        <Text style={styles.timeRemaining}>{timeRemaining}</Text>
+        <Text style={[styles.nextLabel, { color: theme.colors.text.secondary }]}>NEXT PRAYER</Text>
+        <Text style={[styles.timeRemaining, { color: theme.colors.text.primary }]}>{timeRemaining}</Text>
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.prayerName}>
+        <Text style={[styles.prayerName, { color: theme.colors.text.primary }]}>
           {PrayerTimeService.getPrayerDisplayName(prayer.name)}
         </Text>
-        <Text style={styles.prayerTime}>
+        <Text style={[styles.prayerTime, { color: theme.colors.text.secondary }]}>
           {PrayerTimeService.formatPrayerTime(prayer.time)}
         </Text>
       </View>
@@ -92,8 +93,8 @@ const NextPrayerCard: React.FC<NextPrayerCardProps> = ({ prayer, onPrepare }) =>
         ))}
       </View>
 
-      <TouchableOpacity style={styles.prepareButton} onPress={onPrepare}>
-        <Text style={styles.prepareButtonText}>Prepare Mindfully</Text>
+      <TouchableOpacity style={[styles.prepareButton, { backgroundColor: theme.colors.primary.DEFAULT, borderColor: theme.colors.primary.light }]} onPress={onPrepare}>
+        <Text style={[styles.prepareButtonText, { color: theme.colors.primary.contrast }]}>Prepare Mindfully</Text>
       </TouchableOpacity>
     </LinearGradient>
   );
@@ -106,8 +107,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 20,
     borderWidth: 2,
-    borderColor: '#00C9A7', // Turquoise border
-    shadowColor: '#00C9A7',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
     shadowRadius: 12,
@@ -122,13 +121,11 @@ const styles = StyleSheet.create({
   nextLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.8)',
     letterSpacing: 1,
   },
   timeRemaining: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
   },
   content: {
     alignItems: 'center',
@@ -137,12 +134,10 @@ const styles = StyleSheet.create({
   prayerName: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#FFFFFF',
     marginBottom: 8,
   },
   prayerTime: {
     fontSize: 20,
-    color: 'rgba(255, 255, 255, 0.9)',
   },
   progressContainer: {
     flexDirection: 'row',
@@ -160,18 +155,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   prepareButton: {
-    backgroundColor: '#00C9A7', // Turquoise button
     borderRadius: 12,
     paddingVertical: 14,
     paddingHorizontal: 24,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#1DD1A1',
   },
   prepareButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
   },
 });
 
