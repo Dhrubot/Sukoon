@@ -86,12 +86,12 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   label: {
-    fontSize: 16,
+    fontSize: 16,  // lg
     color: '#000000', // Adjust for dark mode (e.g., #FFFFFF)
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 12,
+    fontSize: 13,  // sm (adjusted up)
     color: '#666666', // Adjust for dark mode (e.g., #AAAAAA)
   },
 });

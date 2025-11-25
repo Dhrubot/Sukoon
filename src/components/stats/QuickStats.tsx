@@ -91,51 +91,51 @@ const QuickStats: React.FC<QuickStatsProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    marginHorizontal: 20,
-    marginVertical: 16,
-    borderRadius: 16,
-    padding: 20,
+    marginHorizontal: 20,     // xl
+    marginVertical: 16,       // lg
+    borderRadius: 16,         // lg
+    padding: 20,              // xl
     borderWidth: 1,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 20,         // xl
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 18,  // xl
+    fontWeight: '600',  // semibold
   },
   viewMore: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 14,  // md
+    fontWeight: '500',  // medium
   },
   statsRow: {
     flexDirection: 'row',
-    gap: 16,
+    gap: 16,                  // lg
   },
   statBox: {
     flex: 1,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 12,         // md
+    padding: 16,              // lg
   },
   statHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
+    gap: 8,                   // sm
+    marginBottom: 8,          // sm
   },
   statEmoji: {
-    fontSize: 20,
+    fontSize: 20,  // 2xl
   },
   statLabel: {
-    fontSize: 14,
+    fontSize: 14,  // md
   },
   statValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    marginBottom: 8,
+    fontSize: 24,             // 3xl
+    fontWeight: '700',        // bold
+    marginBottom: 8,          // sm
   },
   progressBar: {
     height: 4,
@@ -148,12 +148,12 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   milestone: {
-    fontSize: 12,
+    fontSize: 13,  // sm (adjusted up)
   },
   encouragement: {
-    fontSize: 14,
+    fontSize: 14,             // md
     textAlign: 'center',
-    marginTop: 16,
+    marginTop: 16,            // lg
     fontStyle: 'italic',
   },
 });

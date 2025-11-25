@@ -304,32 +304,32 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    padding: 20,
+    padding: 20,           // theme.spacing.xl
     alignItems: 'center',
   },
   greeting: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 24,          // theme.typography.fontSize['3xl']
+    fontWeight: '700',     // theme.typography.fontWeight.bold
     color: '#FFFFFF',
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: 8,       // theme.spacing.sm
   },
   date: {
-    fontSize: 16,
+    fontSize: 14,          // theme.typography.fontSize.md
     color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
   },
   section: {
-    padding: 20,
+    padding: 20,           // theme.spacing.xl
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 20,          // theme.typography.fontSize['2xl']
+    fontWeight: '600',     // theme.typography.fontWeight.semibold
     color: '#FFFFFF',
-    marginBottom: 16,
+    marginBottom: 16,      // theme.spacing.lg
   },
   prayerGrid: {
-    gap: 12,
+    gap: 12,               // theme.spacing.md
   },
   
   // 🎯 NEW: Styles for improved state handling
@@ -337,31 +337,31 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
+    padding: 40,           // theme.spacing['4xl']
   },
   setupTitle: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: 28,          // theme.typography.fontSize['4xl']
+    fontWeight: '700',     // theme.typography.fontWeight.bold
     color: '#FFFFFF',
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: 16,      // theme.spacing.lg
   },
   setupSubtitle: {
-    fontSize: 18,
+    fontSize: 16,          // theme.typography.fontSize.lg
     color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
-    marginBottom: 24,
-    lineHeight: 26,
+    marginBottom: 24,      // theme.spacing['2xl']
+    lineHeight: 24,
   },
   setupHelpBox: {
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 12,
-    padding: 20,
+    borderRadius: 12,      // theme.borderRadius.md
+    padding: 20,           // theme.spacing.xl
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   setupHelpText: {
-    fontSize: 16,
+    fontSize: 15,          // theme.typography.fontSize.base
     color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
     lineHeight: 22,
@@ -371,12 +371,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
+    padding: 40,           // theme.spacing['4xl']
   },
   loadingText: {
-    fontSize: 18,
+    fontSize: 16,          // theme.typography.fontSize.lg
     color: '#FFFFFF',
-    marginTop: 16,
+    marginTop: 16,         // theme.spacing.lg
     textAlign: 'center',
   },
   
@@ -384,33 +384,33 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
+    padding: 40,           // theme.spacing['4xl']
   },
   errorTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 24,          // theme.typography.fontSize['3xl']
+    fontWeight: '700',     // theme.typography.fontWeight.bold
     color: '#FFFFFF',
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: 16,      // theme.spacing.lg
   },
   errorText: {
-    fontSize: 16,
+    fontSize: 15,          // theme.typography.fontSize.base
     color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: 24,      // theme.spacing['2xl']
     lineHeight: 22,
   },
   retryButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 12,
-    paddingVertical: 12,
-    paddingHorizontal: 24,
+    borderRadius: 12,      // theme.borderRadius.md
+    paddingVertical: 12,   // theme.spacing.md
+    paddingHorizontal: 24, // theme.spacing['2xl']
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   retryButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 15,          // theme.typography.fontSize.base
+    fontWeight: '600',     // theme.typography.fontWeight.semibold
     color: '#FFFFFF',
   },
 });

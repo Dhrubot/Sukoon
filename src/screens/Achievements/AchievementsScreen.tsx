@@ -282,15 +282,15 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   loadingText: {
     marginTop: 16,
-    fontSize: 16,
+    fontSize: 16,  // lg
     color: theme.colors.text.secondary,
   },
   header: {
     padding: 20,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '700',
+    fontSize: 32,  // 5xl
+    fontWeight: '700',  // bold
     color: theme.colors.text.primary,
     marginBottom: 20,
   },
@@ -307,8 +307,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     elevation: 3,
   },
   progressTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 18,  // xl
+    fontWeight: '600',  // semibold
     color: theme.colors.text.primary,
     marginBottom: 16,
   },
@@ -321,12 +321,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     alignItems: 'center',
   },
   statNumber: {
-    fontSize: 28,
-    fontWeight: '700',
+    fontSize: 28,  // 4xl
+    fontWeight: '700',  // bold
     color: theme.colors.primary.DEFAULT,
   },
   statLabel: {
-    fontSize: 14,
+    fontSize: 14,  // md
     color: theme.colors.text.secondary,
     marginTop: 4,
   },
@@ -366,17 +366,17 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderColor: theme.colors.primary.DEFAULT,
   },
   categoryIcon: {
-    fontSize: 20,
+    fontSize: 20,  // 2xl
     marginRight: 8,
   },
   categoryLabel: {
-    fontSize: 14,
+    fontSize: 14,  // md
     color: theme.colors.text.secondary,
-    fontWeight: '500',
+    fontWeight: '500',  // medium
   },
   categoryLabelActive: {
     color: theme.colors.primary.DEFAULT,
-    fontWeight: '600',
+    fontWeight: '600',  // semibold
   },
   achievementsGrid: {
     flexDirection: 'row',
@@ -414,38 +414,38 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderStyle: 'dashed',
   },
   achievementIcon: {
-    fontSize: 48,
+    fontSize: 48,  // icon 4xl
     marginBottom: 12,
   },
   lockedIconContainer: {
     marginBottom: 12,
   },
   lockedIcon: {
-    fontSize: 32,
+    fontSize: 32,  // 5xl
     opacity: 0.5,
   },
   achievementName: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 16,  // lg
+    fontWeight: '600',  // semibold
     color: theme.colors.text.primary,
     textAlign: 'center',
     marginBottom: 8,
   },
   achievementNameLocked: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 16,  // lg
+    fontWeight: '600',  // semibold
     color: theme.colors.text.secondary,
     textAlign: 'center',
     marginBottom: 8,
   },
   achievementDescription: {
-    fontSize: 12,
+    fontSize: 13,  // sm (adjusted up)
     color: theme.colors.text.primary,
     textAlign: 'center',
     marginBottom: 12,
   },
   achievementDescriptionLocked: {
-    fontSize: 12,
+    fontSize: 13,  // sm (adjusted up)
     color: theme.colors.text.muted,
     textAlign: 'center',
   },
@@ -459,8 +459,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderRadius: 12,
   },
   tierText: {
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: 11,  // xs (adjusted up)
+    fontWeight: '700',  // bold
     color: theme.colors.text.primary,
   },
   progressContainer: {
@@ -472,9 +472,9 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginBottom: 8,
   },
   progressText: {
-    fontSize: 12,
+    fontSize: 13,  // sm (adjusted up)
     color: theme.colors.text.secondary,
-    fontWeight: '600',
+    fontWeight: '600',  // semibold
   },
   miniProgressBar: {
     height: 4,
@@ -495,13 +495,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderColor: theme.colors.border.primary,
   },
   tipsTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 16,  // lg
+    fontWeight: '600',  // semibold
     color: theme.colors.primary.DEFAULT,
     marginBottom: 12,
   },
   tipText: {
-    fontSize: 14,
+    fontSize: 14,  // md
     color: theme.colors.text.secondary,
     lineHeight: 22,
     marginBottom: 8,

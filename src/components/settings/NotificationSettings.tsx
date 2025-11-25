@@ -316,13 +316,13 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   tabText: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: 15,  // base
+    fontWeight: '500',  // medium
     color: '#757575',
   },
   tabTextActive: {
     color: '#1B5E3F',
-    fontWeight: '600',
+    fontWeight: '600',  // semibold
   },
   scrollView: {
     flex: 1,
@@ -336,8 +336,8 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E0E0E0',
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 18,  // xl
+    fontWeight: '600',  // semibold
     color: '#1B5E3F',
     marginBottom: 12,
   },
@@ -351,13 +351,13 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   settingLabel: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 16,  // lg
+    fontWeight: '500',  // medium
     color: '#212121',
     marginBottom: 4,
   },
   settingDescription: {
-    fontSize: 14,
+    fontSize: 14,  // md
     color: '#757575',
     lineHeight: 20,
   },
@@ -380,12 +380,12 @@ const styles = StyleSheet.create({
     borderColor: '#4CAF50',
   },
   reminderOptionText: {
-    fontSize: 14,
+    fontSize: 14,  // md
     color: '#757575',
   },
   reminderOptionTextActive: {
     color: '#1B5E3F',
-    fontWeight: '600',
+    fontWeight: '600',  // semibold
   },
   button: {
     backgroundColor: '#1B5E3F',
@@ -400,8 +400,8 @@ const styles = StyleSheet.create({
     borderColor: '#1B5E3F',
   },
   buttonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 16,  // lg
+    fontWeight: '600',  // semibold
     color: '#FFFFFF',
   },
   secondaryButtonText: {
@@ -415,13 +415,13 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
   },
   tipsTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 16,  // lg
+    fontWeight: '600',  // semibold
     color: '#1B5E3F',
     marginBottom: 12,
   },
   tipText: {
-    fontSize: 14,
+    fontSize: 14,  // md
     color: '#2E7D32',
     lineHeight: 22,
     marginBottom: 8,

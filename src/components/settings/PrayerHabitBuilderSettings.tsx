@@ -603,13 +603,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 18,  // xl
+    fontWeight: '600',  // semibold
     color: '#1B5E3F',
     marginBottom: 4,
   },
   settingDescription: {
-    fontSize: 14,
+    fontSize: 14,  // md
     color: '#757575',
     lineHeight: 20,
     marginBottom: 16,
@@ -624,13 +624,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sliderLabel: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: 15,  // base
+    fontWeight: '500',  // medium
     color: '#212121',
   },
   sliderValue: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 15,  // base
+    fontWeight: '600',  // semibold
     color: '#1B5E3F',
   },
   slider: {
@@ -638,7 +638,7 @@ const styles = StyleSheet.create({
     height: 40,
   },
   sliderHint: {
-    fontSize: 12,
+    fontSize: 13,  // sm (adjusted up)
     color: '#9E9E9E',
     marginTop: 4,
   },
@@ -646,8 +646,8 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   optionLabel: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: 15,  // base
+    fontWeight: '500',  // medium
     color: '#212121',
     marginBottom: 12,
   },
@@ -669,13 +669,13 @@ const styles = StyleSheet.create({
     borderColor: '#4CAF50',
   },
   snoozeButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 14,  // md
+    fontWeight: '500',  // medium
     color: '#757575',
   },
   snoozeButtonTextActive: {
     color: '#1B5E3F',
-    fontWeight: '600',
+    fontWeight: '600',  // semibold
   },
   timePickerContainer: {
     marginTop: 16,
@@ -687,8 +687,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   timeLabel: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: 15,  // base
+    fontWeight: '500',  // medium
     color: '#212121',
   },
   timeButton: {
@@ -700,12 +700,12 @@ const styles = StyleSheet.create({
     borderColor: '#4CAF50',
   },
   timeButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 16,  // lg
+    fontWeight: '600',  // semibold
     color: '#1B5E3F',
   },
   quietHoursHint: {
-    fontSize: 12,
+    fontSize: 13,  // sm (adjusted up)
     color: '#9E9E9E',
     marginTop: 8,
     fontStyle: 'italic',
@@ -718,8 +718,8 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
   },
   infoTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 16,  // lg
+    fontWeight: '600',  // semibold
     color: '#1976D2',
     marginBottom: 16,
   },
@@ -727,13 +727,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   infoLabel: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 14,  // md
+    fontWeight: '600',  // semibold
     color: '#1565C0',
     marginBottom: 4,
   },
   infoText: {
-    fontSize: 13,
+    fontSize: 13,  // sm
     color: '#1976D2',
     lineHeight: 18,
   },
@@ -758,8 +758,8 @@ const styles = StyleSheet.create({
     elevation: 8,
   },
   timePickerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 20,  // 2xl
+    fontWeight: '600',  // semibold
     color: '#1B5E3F',
     marginBottom: 24,
     textAlign: 'center',
@@ -774,10 +774,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   timeInputLabel: {
-    fontSize: 12,
+    fontSize: 13,  // sm (adjusted up)
     color: '#757575',
     marginBottom: 8,
-    fontWeight: '500',
+    fontWeight: '500',  // medium
   },
   timeInput: {
     width: 70,
@@ -785,20 +785,20 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#4CAF50',
     borderRadius: 12,
-    fontSize: 28,
-    fontWeight: '600',
+    fontSize: 28,  // 4xl
+    fontWeight: '600',  // semibold
     color: '#1B5E3F',
     textAlign: 'center',
     backgroundColor: '#F5F5F5',
   },
   timeSeparator: {
-    fontSize: 32,
-    fontWeight: '700',
+    fontSize: 32,  // 5xl
+    fontWeight: '700',  // bold
     color: '#1B5E3F',
     marginHorizontal: 12,
   },
   timeInputHint: {
-    fontSize: 12,
+    fontSize: 13,  // sm (adjusted up)
     color: '#9E9E9E',
     textAlign: 'center',
     marginBottom: 24,
@@ -820,16 +820,16 @@ const styles = StyleSheet.create({
     borderColor: '#E0E0E0',
   },
   cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 16,  // lg
+    fontWeight: '600',  // semibold
     color: '#757575',
   },
   saveButton: {
     backgroundColor: '#1B5E3F',
   },
   saveButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 16,  // lg
+    fontWeight: '600',  // semibold
     color: '#FFFFFF',
   },
 });

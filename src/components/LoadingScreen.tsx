@@ -43,7 +43,7 @@ const styles = StyleSheet.create({
   },
   message: {
     marginTop: 16,
-    fontSize: 16,
+    fontSize: 16,  // lg
     textAlign: 'center',
     paddingHorizontal: 20,
   },

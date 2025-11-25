@@ -456,7 +456,7 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   prayerName: {
-    fontSize: 24,
+    fontSize: 24,  // 3xl
     fontWeight: "700",
     color: "theme.colors.text.primary",
   },
@@ -469,7 +469,7 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   closeText: {
-    fontSize: 20,
+    fontSize: 20,  // 2xl
     color: "theme.colors.text.primary",
   },
   progressContainer: {
@@ -500,14 +500,14 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   stepTitle: {
-    fontSize: 28,
+    fontSize: 28,  // 4xl
     fontWeight: "700",
     color: "theme.colors.text.primary",
     textAlign: "center",
     marginBottom: 12,
   },
   instruction: {
-    fontSize: 16,
+    fontSize: 16,  // lg
     color: "rgba(255, 255, 255, 0.9)",
     textAlign: "center",
     marginBottom: 40,
@@ -523,7 +523,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   timingText: {
-    fontSize: 14,
+    fontSize: 14,  // md
     color: "rgba(255, 255, 255, 0.9)",
     textAlign: "center",
     fontWeight: "500",
@@ -540,7 +540,7 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   skipText: {
-    fontSize: 16,
+    fontSize: 16,  // lg
     color: "rgba(255, 255, 255, 0.7)",
   },
   moodSection: {
@@ -560,7 +560,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   completeButtonText: {
-    fontSize: 18,
+    fontSize: 18,  // xl
     fontWeight: "600",
     color: "theme.colors.text.primary",
   },
@@ -581,7 +581,7 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   completeText: {
-    fontSize: 18,
+    fontSize: 18,  // xl
     color: "rgba(255, 255, 255, 0.9)",
     textAlign: "center",
     lineHeight: 26,

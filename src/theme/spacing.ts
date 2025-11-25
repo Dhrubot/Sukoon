@@ -1,13 +1,14 @@
 // src/theme/spacing.ts
 export const spacing = {
-  xs: 4,
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
-  xxl: 24,
-  xxxl: 32,
-  xxxxl: 40,
+  xxs: 2,   // Minimal gap
+  xs: 4,    // Tight spacing
+  sm: 8,    // Small gaps, icon margins
+  md: 12,   // Default spacing between items
+  lg: 16,   // Card padding, section gaps
+  xl: 20,   // Large card padding
+  '2xl': 24, // Screen padding
+  '3xl': 32, // Large sections
+  '4xl': 40, // Extra large spacing
 };
 
 export const borderRadius = {

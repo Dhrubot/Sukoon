@@ -475,8 +475,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderBottomColor: theme.colors.border.primary,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontSize: 28,  // 4xl
+    fontWeight: '700',  // bold
     color: theme.colors.text.primary,
     marginBottom: 20,
   },
@@ -497,8 +497,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     backgroundColor: theme.colors.primary.DEFAULT,
   },
   timeRangeText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 14,  // md
+    fontWeight: '500',  // medium
     color: theme.colors.text.secondary,
   },
   timeRangeTextActive: {
@@ -517,21 +517,21 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginBottom: 16,
   },
   emptyStateTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 24,  // 3xl
+    fontWeight: '700',  // bold
     color: theme.colors.text.primary,
     textAlign: 'center',
     marginBottom: 12,
   },
   emptyStateText: {
-    fontSize: 16,
+    fontSize: 16,  // lg
     color: theme.colors.text.secondary,
     textAlign: 'center',
     marginBottom: 8,
     lineHeight: 24,
   },
   emptyStateSubtext: {
-    fontSize: 14,
+    fontSize: 14,  // md
     color: theme.colors.text.muted,
     textAlign: 'center',
   },
@@ -543,7 +543,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     padding: 40,
   },
   loadingText: {
-    fontSize: 16,
+    fontSize: 16,  // lg
     color: theme.colors.text.secondary,
     marginTop: 16,
     textAlign: 'center',
@@ -571,20 +571,20 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     elevation: 3,
   },
   statValue: {
-    fontSize: 32,
-    fontWeight: 'bold',
+    fontSize: 32,  // 5xl
+    fontWeight: '700',  // bold
     color: theme.colors.primary.DEFAULT,
     marginBottom: 4,
   },
   statLabel: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 14,  // md
+    fontWeight: '600',  // semibold
     color: theme.colors.text.primary,
     textAlign: 'center',
     marginBottom: 4,
   },
   statSubtext: {
-    fontSize: 12,
+    fontSize: 13,  // sm (adjusted up)
     color: theme.colors.text.secondary,
     textAlign: 'center',
   },
@@ -592,8 +592,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     padding: 20,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 20,  // 2xl
+    fontWeight: '600',  // semibold
     color: theme.colors.text.primary,
     marginBottom: 16,
   },
@@ -612,20 +612,20 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderBottomColor: theme.colors.border.primary,
   },
   prayerEmoji: {
-    fontSize: 24,
+    fontSize: 24,  // 3xl
     marginRight: 12,
   },
   prayerName: {
     flex: 1,
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 16,  // lg
+    fontWeight: '500',  // medium
     color: theme.colors.text.primary,
   },
   completedPrayerName: {
     color: theme.colors.primary.DEFAULT,
   },
   prayerTime: {
-    fontSize: 14,
+    fontSize: 14,  // md
     color: theme.colors.text.secondary,
   },
   chart: {
@@ -647,19 +647,19 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     backgroundColor: theme.colors.card.hover,
   },
   insightTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 16,  // lg
+    fontWeight: '600',  // semibold
     color: theme.colors.primary.DEFAULT,
     marginBottom: 8,
   },
   insightValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
+    fontSize: 24,  // 3xl
+    fontWeight: '700',  // bold
     color: theme.colors.text.primary,
     marginBottom: 4,
   },
   insightDescription: {
-    fontSize: 14,
+    fontSize: 14,  // md
     color: theme.colors.text.secondary,
     lineHeight: 20,
   },

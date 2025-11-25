@@ -215,13 +215,13 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E9ECEF',
   },
   modalTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+    fontSize: 18,  // xl
+    fontWeight: '700',  // bold
     color: '#1B5E3F',
   },
   modalClose: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 16,  // lg
+    fontWeight: '600',  // semibold
     color: '#1B5E3F',
   },
   modalCloseDisabled: {
@@ -241,8 +241,8 @@ const styles = StyleSheet.create({
     borderColor: '#1B5E3F',
   },
   previewTitle: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: 16,  // lg
+    fontWeight: '700',  // bold
     color: '#1B5E3F',
     marginBottom: 12,
     textAlign: 'center',
@@ -258,17 +258,17 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   previewPrayerName: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 14,  // md
+    fontWeight: '600',  // semibold
     color: '#495057',
   },
   previewPrayerTime: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 14,  // md
+    fontWeight: '500',  // medium
     color: '#1B5E3F',
   },
   previewNote: {
-    fontSize: 12,
+    fontSize: 13,  // sm (adjusted up)
     color: '#6C757D',
     textAlign: 'center',
     fontStyle: 'italic',
@@ -279,8 +279,8 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 16,  // lg
+    fontWeight: '600',  // semibold
     color: '#495057',
     marginBottom: 12,
   },
@@ -308,8 +308,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   methodText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 16,  // lg
+    fontWeight: '600',  // semibold
     color: '#495057',
   },
   methodTextSelected: {
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
     color: '#ADB5BD',
   },
   methodDescription: {
-    fontSize: 12,
+    fontSize: 13,  // sm (adjusted up)
     color: '#6C757D',
     marginTop: 2,
   },
@@ -329,9 +329,9 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   checkmark: {
-    fontSize: 18,
+    fontSize: 18,  // xl
     color: '#1B5E3F',
-    fontWeight: '700',
+    fontWeight: '700',  // bold
   },
   
   // 🎯 NEW: Preview button styles
@@ -346,8 +346,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   previewButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 13,  // sm (adjusted up)
+    fontWeight: '600',  // semibold
     color: '#1B5E3F',
   },
   
@@ -361,13 +361,13 @@ const styles = StyleSheet.create({
     borderColor: '#E9ECEF',
   },
   infoTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 14,  // md
+    fontWeight: '600',  // semibold
     color: '#495057',
     marginBottom: 8,
   },
   infoText: {
-    fontSize: 12,
+    fontSize: 13,  // sm (adjusted up)
     color: '#6C757D',
     lineHeight: 16,
     marginBottom: 6,

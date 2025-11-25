@@ -81,8 +81,8 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   segmentText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: 15,  // base
+    fontWeight: '600',  // semibold
     color: '#6B7280',
     textAlign: 'center',
     marginBottom: 4,
@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
     color: '#1B5E3F',
   },
   segmentDesc: {
-    fontSize: 12,
+    fontSize: 13,  // sm (adjusted up)
     color: '#9CA3AF',
     textAlign: 'center',
     lineHeight: 16,

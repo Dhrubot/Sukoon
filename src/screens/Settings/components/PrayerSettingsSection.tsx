@@ -241,7 +241,7 @@ const styles = StyleSheet.create({
     borderLeftColor: '#1B5E3F',
   },
   explanationText: {
-    fontSize: 13,
+    fontSize: 13,  // sm
     color: '#495057',
     lineHeight: 18,
   },
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   statusText: {
-    fontSize: 14,
+    fontSize: 14,  // md
     color: '#6C757D',
     textAlign: 'center',
   },
@@ -267,8 +267,8 @@ const styles = StyleSheet.create({
     borderColor: '#E9ECEF',
   },
   prayerTimesTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 16,  // lg
+    fontWeight: '600',  // semibold
     color: '#1B5E3F',
     marginBottom: 12,
   },
@@ -281,28 +281,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   prayerName: {
-    fontSize: 14,
+    fontSize: 14,  // md
     color: '#495057',
-    fontWeight: '500',
+    fontWeight: '500',  // medium
   },
   nextPrayerName: {
     color: '#1B5E3F',
-    fontWeight: '700',
+    fontWeight: '700',  // bold
   },
   asrHighlight: {
     color: '#FF6F00', // 🆕 Orange color for Asr to draw attention
   },
   prayerTime: {
-    fontSize: 14,
+    fontSize: 14,  // md
     color: '#6C757D',
-    fontWeight: '400',
+    fontWeight: '400',  // regular
   },
   nextPrayerTime: {
     color: '#1B5E3F',
-    fontWeight: '600',
+    fontWeight: '600',  // semibold
   },
   moreText: {
-    fontSize: 12,
+    fontSize: 13,  // sm (adjusted up)
     color: '#ADB5BD',
     fontStyle: 'italic',
     textAlign: 'center',
@@ -325,9 +325,9 @@ const styles = StyleSheet.create({
     borderColor: '#C8E6C9',
   },
   testButtonText: {
-    fontSize: 14,
+    fontSize: 14,  // md
     color: '#1B5E3F',
-    fontWeight: '600',
+    fontWeight: '600',  // semibold
   },
   
   // Hint styles
@@ -340,7 +340,7 @@ const styles = StyleSheet.create({
     borderColor: '#FFEAA7',
   },
   hintText: {
-    fontSize: 12,
+    fontSize: 13,  // sm (adjusted up)
     color: '#856404',
     textAlign: 'center',
     lineHeight: 16,

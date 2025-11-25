@@ -29,8 +29,8 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   sectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 14,  // md
+    fontWeight: '600',  // semibold
     marginBottom: 12,
     paddingHorizontal: 20,
     letterSpacing: 0.5,

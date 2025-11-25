@@ -75,19 +75,19 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   settingLabel: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 16,  // lg
+    fontWeight: '500',  // medium
   },
   settingSubtext: {
-    fontSize: 13,
+    fontSize: 13,  // sm
     marginTop: 4,
   },
   settingValue: {
-    fontSize: 15,
+    fontSize: 15,  // base
     marginRight: 8,
   },
   chevron: {
-    fontSize: 24,
+    fontSize: 24,  // 3xl
     fontWeight: '300',
   },
   dangerText: {

@@ -318,21 +318,21 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginBottom: 32,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '700',
+    fontSize: 32,  // 5xl
+    fontWeight: '700',  // bold
     color: 'theme.colors.text.primary',
     textAlign: 'center',
     marginBottom: 16,
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: 18,  // xl
     color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
     marginBottom: 16,
     lineHeight: 26,
   },
   description: {
-    fontSize: 16,
+    fontSize: 16,  // lg
     color: 'rgba(255, 255, 255, 0.7)',
     textAlign: 'center',
     marginBottom: 40,
@@ -343,7 +343,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 20,
-    fontSize: 18,
+    fontSize: 18,  // xl
     color: 'theme.colors.text.primary',
     width: '100%',
     marginBottom: 32,
@@ -362,12 +362,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     opacity: 0.5,
   },
   buttonText: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 18,  // xl
+    fontWeight: '600',  // semibold
     color: 'theme.colors.text.primary',
   },
   skipText: {
-    fontSize: 16,
+    fontSize: 16,  // lg
     color: 'rgba(255, 255, 255, 0.6)',
     marginTop: 20,
   },
@@ -389,12 +389,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderColor: 'theme.colors.text.primary',
   },
   methodText: {
-    fontSize: 16,
+    fontSize: 16,  // lg
     color: 'rgba(255, 255, 255, 0.8)',
   },
   methodTextSelected: {
     color: 'theme.colors.text.primary',
-    fontWeight: '600',
+    fontWeight: '600',  // semibold
   },
   toggleContainer: {
     width: '100%',
@@ -410,12 +410,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginBottom: 8,
   },
   toggleLabel: {
-    fontSize: 18,
+    fontSize: 18,  // xl
     color: 'theme.colors.text.primary',
-    fontWeight: '600',
+    fontWeight: '600',  // semibold
   },
   toggleDescription: {
-    fontSize: 14,
+    fontSize: 14,  // md
     color: 'rgba(255,255,255,0.7)',
   },
 });

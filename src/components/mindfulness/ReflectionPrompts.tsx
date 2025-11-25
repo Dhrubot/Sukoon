@@ -164,15 +164,15 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   promptText: {
-    fontSize: 20,
-    fontWeight: '500',
+    fontSize: 20,  // 2xl
+    fontWeight: '500',  // medium
     color: '#FFFFFF',
     textAlign: 'center',
     lineHeight: 28,
     marginBottom: 8,
   },
   changePrompt: {
-    fontSize: 14,
+    fontSize: 14,  // md
     color: 'rgba(255, 255, 255, 0.7)',
     textAlign: 'center',
     marginTop: 8,
@@ -181,7 +181,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderRadius: 16,
     padding: 16,
-    fontSize: 16,
+    fontSize: 16,  // lg
     color: '#FFFFFF',
     minHeight: 120,
     marginBottom: 20,
@@ -192,7 +192,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   quickOptionsTitle: {
-    fontSize: 14,
+    fontSize: 14,  // md
     color: 'rgba(255, 255, 255, 0.8)',
     textAlign: 'center',
     marginBottom: 12,
@@ -206,7 +206,7 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   quickOptionText: {
-    fontSize: 14,
+    fontSize: 14,  // md
     color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
   },
@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
     marginTop: -12,
   },
   characterCountText: {
-    fontSize: 12,
+    fontSize: 13,  // sm (adjusted up)
     color: 'rgba(255, 255, 255, 0.6)',
   },
 });

@@ -274,21 +274,21 @@ const styles = StyleSheet.create({
     fontSize: 80,
   },
   unlockedText: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 14,  // md
+    fontWeight: '700',  // bold
     color: 'rgba(255, 255, 255, 0.9)',
     letterSpacing: 2,
     marginBottom: 12,
   },
   achievementName: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 24,  // 3xl
+    fontWeight: '700',  // bold
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 8,
   },
   achievementDescription: {
-    fontSize: 16,
+    fontSize: 16,  // lg
     color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
     marginBottom: 24,
@@ -302,8 +302,8 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   tierText: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 13,  // sm (adjusted up)
+    fontWeight: '700',  // bold
     color: '#FFFFFF',
     letterSpacing: 1,
   },
@@ -316,8 +316,8 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255, 255, 255, 0.4)',
   },
   continueText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 16,  // lg
+    fontWeight: '600',  // semibold
     color: '#FFFFFF',
   },
 });

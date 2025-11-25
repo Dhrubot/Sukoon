@@ -223,12 +223,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   loadingText: {
     marginTop: 16,
-    fontSize: 16,
+    fontSize: 16,  // lg
     color: theme.colors.text.secondary,
   },
   loadingSubtext: {
     marginTop: 8,
-    fontSize: 14,
+    fontSize: 14,  // md
     color: theme.colors.text.muted,
     textAlign: 'center',
   },
@@ -240,13 +240,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderBottomColor: theme.colors.border.secondary,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '700',
+    fontSize: 32,  // 5xl
+    fontWeight: '700',  // bold
     color: theme.colors.text.primary,
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
+    fontSize: 16,  // lg
     color: theme.colors.text.secondary,
   },
 
@@ -260,8 +260,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderColor: theme.colors.border.primary,
   },
   statusTitle: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 14,  // md
+    fontWeight: '600',  // semibold
     color: theme.colors.text.secondary,
     marginBottom: 12,
     letterSpacing: 0.5,
@@ -272,12 +272,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginBottom: 8,
   },
   statusLabel: {
-    fontSize: 14,
+    fontSize: 14,  // md
     color: theme.colors.text.secondary,
   },
   statusValue: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 14,  // md
+    fontWeight: '600',  // semibold
     color: theme.colors.text.primary,
   },
   statusValueGood: {
@@ -298,8 +298,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   debugButtonText: {
     color: theme.colors.primary.DEFAULT,
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 14,  // md
+    fontWeight: '600',  // semibold
   },
 });
 

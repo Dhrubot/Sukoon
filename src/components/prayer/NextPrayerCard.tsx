@@ -102,10 +102,10 @@ const NextPrayerCard: React.FC<NextPrayerCardProps> = ({ prayer, onPrepare }) =>
 
 const styles = StyleSheet.create({
   container: {
-    marginHorizontal: 20,
-    marginVertical: 16,
-    borderRadius: 20,
-    padding: 20,
+    marginHorizontal: 20,      // xl
+    marginVertical: 16,        // lg
+    borderRadius: 20,          // xl
+    padding: 20,               // xl
     borderWidth: 2,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.4,
@@ -116,34 +116,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 16,          // lg
   },
   nextLabel: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: 11,              // xs
+    fontWeight: '600',         // semibold
     letterSpacing: 1,
   },
   timeRemaining: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,              // md
+    fontWeight: '600',         // semibold
   },
   content: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 20,          // xl
   },
   prayerName: {
-    fontSize: 32,
-    fontWeight: '700',
-    marginBottom: 8,
+    fontSize: 32,              // 5xl
+    fontWeight: '700',         // bold
+    marginBottom: 8,           // sm
   },
   prayerTime: {
-    fontSize: 20,
+    fontSize: 20,              // 2xl
   },
   progressContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 8,
-    marginBottom: 20,
+    gap: 8,                    // sm
+    marginBottom: 20,          // xl
   },
   progressDot: {
     width: 8,
@@ -155,15 +155,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   prepareButton: {
-    borderRadius: 12,
-    paddingVertical: 14,
+    borderRadius: 12,          // md
+    paddingVertical: 14,       // md+
     paddingHorizontal: 24,
     alignItems: 'center',
     borderWidth: 1,
   },
   prepareButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 16,  // lg
+    fontWeight: '600',  // semibold
   },
 });
 

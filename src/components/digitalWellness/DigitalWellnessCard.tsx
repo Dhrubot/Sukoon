@@ -46,16 +46,16 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   wellnessTitle: {
-    fontSize: 16,
+    fontSize: 16,  // lg
     marginBottom: 8,
   },
   wellnessValue: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 24,  // 3xl
+    fontWeight: '700',  // bold
     marginBottom: 8,
   },
   wellnessSubtext: {
-    fontSize: 14,
+    fontSize: 14,  // md
   },
 });
 

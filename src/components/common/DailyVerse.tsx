@@ -104,12 +104,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 20,  // 2xl
+    fontWeight: '600',  // semibold
   },
   shareButton: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 14,  // md
+    fontWeight: '600',  // semibold
   },
   verseContainer: {
     borderRadius: 16,
@@ -117,26 +117,26 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   arabic: {
-    fontSize: 24,
+    fontSize: 24,  // 3xl
     textAlign: 'center',
     marginBottom: 16,
     lineHeight: 36,
     fontFamily: Platform.OS === 'ios' ? 'Damascus' : 'serif',
   },
   translation: {
-    fontSize: 16,
+    fontSize: 16,  // lg
     textAlign: 'center',
     marginBottom: 12,
     lineHeight: 24,
     fontStyle: 'italic',
   },
   reference: {
-    fontSize: 14,
+    fontSize: 14,  // md
     textAlign: 'center',
-    fontWeight: '500',
+    fontWeight: '500',  // medium
   },
   hint: {
-    fontSize: 12,
+    fontSize: 13,  // sm (adjusted up)
     textAlign: 'center',
     marginTop: 8,
   },

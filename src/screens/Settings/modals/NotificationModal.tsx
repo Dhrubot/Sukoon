@@ -69,14 +69,14 @@ const styles = StyleSheet.create({
     borderBottomColor: '#E0E0E0',
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 20,  // 2xl
+    fontWeight: '600',  // semibold
     color: '#212121',
   },
   modalClose: {
-    fontSize: 16,
+    fontSize: 16,  // lg
     color: '#1B5E3F',
-    fontWeight: '600',
+    fontWeight: '600',  // semibold
   },
   modalBody: {
     flex: 1,

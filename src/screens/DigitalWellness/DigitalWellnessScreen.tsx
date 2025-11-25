@@ -473,7 +473,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   loadingText: {
     marginTop: 16,
-    fontSize: 16,
+    fontSize: 16,  // lg
     color: 'theme.colors.text.secondary',
   },
   header: {
@@ -481,8 +481,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     paddingBottom: 0,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '700',
+    fontSize: 32,  // 5xl
+    fontWeight: '700',  // bold
     color: 'theme.colors.text.primary',
     marginBottom: 16,
   },
@@ -509,13 +509,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     elevation: 2,
   },
   tabText: {
-    fontSize: 14,
+    fontSize: 14,  // md
     color: 'theme.colors.text.secondary',
-    fontWeight: '500',
+    fontWeight: '500',  // medium
   },
   tabTextActive: {
     color: 'theme.colors.text.primary',
-    fontWeight: '600',
+    fontWeight: '600',  // semibold
   },
   permissionContainer: {
     flex: 1,
@@ -528,21 +528,21 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginBottom: 24,
   },
   permissionTitle: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 24,  // 3xl
+    fontWeight: '700',  // bold
     color: 'theme.colors.text.primary',
     marginBottom: 16,
     textAlign: 'center',
   },
   permissionText: {
-    fontSize: 16,
+    fontSize: 16,  // lg
     color: 'theme.colors.text.secondary',
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 16,
   },
   permissionNote: {
-    fontSize: 14,
+    fontSize: 14,  // md
     color: 'theme.colors.text.muted',
     textAlign: 'center',
     fontStyle: 'italic',
@@ -555,8 +555,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderRadius: 12,
   },
   enableButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 16,  // lg
+    fontWeight: '600',  // semibold
     color: 'theme.colors.text.primary',
   },
   focusCard: {
@@ -571,18 +571,18 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     elevation: 5,
   },
   focusTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 18,  // xl
+    fontWeight: '600',  // semibold
     color: 'rgba(255, 255, 255, 0.9)',
     marginBottom: 16,
   },
   focusScore: {
     fontSize: 64,
-    fontWeight: '700',
+    fontWeight: '700',  // bold
     marginBottom: 8,
   },
   focusSubtext: {
-    fontSize: 16,
+    fontSize: 16,  // lg
     color: 'rgba(255, 255, 255, 0.8)',
   },
   metricsGrid: {
@@ -607,17 +607,17 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     elevation: 3,
   },
   metricIcon: {
-    fontSize: 32,
+    fontSize: 32,  // 5xl
     marginBottom: 8,
   },
   metricValue: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 24,  // 3xl
+    fontWeight: '700',  // bold
     color: 'theme.colors.primary.DEFAULT', // Turquoise accent
     marginBottom: 4,
   },
   metricLabel: {
-    fontSize: 12,
+    fontSize: 13,  // sm (adjusted up)
     color: 'theme.colors.text.secondary',
   },
   section: {
@@ -625,13 +625,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginBottom: 24,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 20,  // 2xl
+    fontWeight: '600',  // semibold
     color: 'theme.colors.text.primary',
     marginBottom: 16,
   },
   sectionSubtext: {
-    fontSize: 14,
+    fontSize: 14,  // md
     color: 'theme.colors.text.secondary',
     marginBottom: 12,
   },
@@ -651,18 +651,18 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     alignItems: 'center',
   },
   appRank: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 16,  // lg
+    fontWeight: '600',  // semibold
     color: 'theme.colors.text.muted',
     marginRight: 12,
   },
   appName: {
-    fontSize: 16,
+    fontSize: 16,  // lg
     color: 'theme.colors.text.primary',
   },
   appTime: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 16,  // lg
+    fontWeight: '600',  // semibold
     color: 'theme.colors.primary.DEFAULT', // Turquoise accent
   },
   prayerStatRow: {
@@ -677,8 +677,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderColor: 'theme.colors.card.hover',
   },
   prayerName: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: 16,  // lg
+    fontWeight: '500',  // medium
     color: 'theme.colors.text.primary',
   },
   prayerStatValues: {
@@ -686,7 +686,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     gap: 16,
   },
   prayerStatText: {
-    fontSize: 14,
+    fontSize: 14,  // md
     color: 'theme.colors.text.secondary',
   },
   weeklyStats: {
@@ -698,13 +698,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     alignItems: 'center',
   },
   weeklyStatValue: {
-    fontSize: 32,
-    fontWeight: '700',
+    fontSize: 32,  // 5xl
+    fontWeight: '700',  // bold
     color: 'theme.colors.primary.DEFAULT', // Turquoise accent
     marginBottom: 4,
   },
   weeklyStatLabel: {
-    fontSize: 14,
+    fontSize: 14,  // md
     color: 'theme.colors.text.secondary',
   },
   chartSection: {
@@ -712,8 +712,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginBottom: 24,
   },
   chartTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 18,  // xl
+    fontWeight: '600',  // semibold
     color: 'theme.colors.text.primary',
     marginBottom: 16,
   },
@@ -724,8 +724,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     padding: 20,
   },
   insightsTitle: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 24,  // 3xl
+    fontWeight: '700',  // bold
     color: 'theme.colors.text.primary',
     marginBottom: 20,
   },
@@ -740,7 +740,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderColor: 'theme.colors.card.hover',
   },
   insightText: {
-    fontSize: 16,
+    fontSize: 16,  // lg
     color: 'theme.colors.text.secondary',
     lineHeight: 24,
   },
@@ -748,8 +748,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginTop: 24,
   },
   tipsTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 20,  // 2xl
+    fontWeight: '600',  // semibold
     color: 'theme.colors.text.primary',
     marginBottom: 16,
   },
@@ -764,12 +764,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderColor: 'theme.colors.card.hover',
   },
   tipEmoji: {
-    fontSize: 24,
+    fontSize: 24,  // 3xl
     marginRight: 12,
   },
   tipText: {
     flex: 1,
-    fontSize: 15,
+    fontSize: 15,  // base
     color: 'theme.colors.text.secondary',
     lineHeight: 22,
   },
@@ -784,13 +784,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginBottom: 24,
   },
   iosTitle: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: 24,  // 3xl
+    fontWeight: '700',  // bold
     color: 'theme.colors.text.primary',
     marginBottom: 16,
   },
   iosText: {
-    fontSize: 16,
+    fontSize: 16,  // lg
     color: 'theme.colors.text.secondary',
     textAlign: 'center',
     lineHeight: 24,

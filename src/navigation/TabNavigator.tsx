@@ -91,8 +91,12 @@ export const TabNavigator: React.FC = () => {
         headerShown: false,
         tabBarStyle: {
           backgroundColor: theme.colors.background.primary,
-          borderTopWidth: 1,
-          borderTopColor: theme.colors.border.secondary,
+          borderTopWidth: 0,              // Remove border - no white line!
+          elevation: 8,                   // Add shadow instead (Android)
+          shadowColor: '#000',            // Shadow (iOS)
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
           paddingBottom: 5,
           paddingTop: 5,
           height: 60,

@@ -126,9 +126,9 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: 12,      // theme.borderRadius.md
+    padding: 16,           // theme.spacing.lg
+    marginBottom: 12,      // theme.spacing.md
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -149,38 +149,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   icon: {
-    fontSize: 32,
-    marginRight: 12,
+    fontSize: 28,          // theme.iconSizes.xl (slightly smaller for balance)
+    marginRight: 12,       // theme.spacing.md
   },
   timeInfo: {
     justifyContent: 'center',
   },
   prayerName: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 4,
+    fontSize: 16,          // theme.typography.fontSize.lg
+    fontWeight: '500',     // theme.typography.fontWeight.medium
+    marginBottom: 4,       // theme.spacing.xs
   },
   activeName: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 18,          // theme.typography.fontSize.xl
+    fontWeight: '600',     // theme.typography.fontWeight.semibold
   },
   time: {
-    fontSize: 14,
+    fontSize: 14,          // theme.typography.fontSize.md
   },
   activeTime: {
-    fontWeight: '500',
+    fontWeight: '500',     // theme.typography.fontWeight.medium
   },
   rightSection: {
     alignItems: 'flex-end',
     flexDirection: 'row',
-    gap: 8,
+    gap: 8,                // theme.spacing.sm
   },
   status: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 13,          // theme.typography.fontSize.sm
+    fontWeight: '500',  // medium
   },
   reflectionBadge: {
-    fontSize: 16,
+    fontSize: 16,  // lg
   },
 });
 
