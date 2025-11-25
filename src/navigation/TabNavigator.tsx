@@ -1,9 +1,14 @@
 // src/navigation/TabNavigator.tsx
 import React from 'react';
-import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { TabParamList } from '../types/navigation';
 import { useTheme } from '../providers/ThemeProvider';
+import { Icon } from '../components/common/Icon';
+import {
+  HomeTabIcon,
+  QiblaTabIcon,
+  ProgressTabIcon,
+} from '../assets/icons';
 
 import HomeScreen from '../screens/Home/HomeScreen';
 import StatsScreen from '../screens/Stats/StatsScreen';
@@ -11,6 +16,17 @@ import QiblaFinderScreen from '../screens/QiblaFinder/QiblaFinderScreen';
 import { MenuStackNavigator } from './MenuStackNavigator';
 
 const Tab = createBottomTabNavigator<TabParamList>();
+
+import Svg, { Circle } from 'react-native-svg';
+
+// More menu icon component (three dots)
+const MoreIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+    <Circle cx="12" cy="5" r="2" fill={color} />
+    <Circle cx="12" cy="12" r="2" fill={color} />
+    <Circle cx="12" cy="19" r="2" fill={color} />
+  </Svg>
+);
 
 export const TabNavigator: React.FC = () => {
   const { theme } = useTheme();
@@ -49,7 +65,7 @@ export const TabNavigator: React.FC = () => {
         options={{
           tabBarLabel: 'Prayer Times',
           tabBarIcon: ({ color, size }) => (
-            <Text style={{ fontSize: size, color }}>🕌</Text>
+            <Icon source={HomeTabIcon} size={size} color={color} />
           ),
         }}
       />
@@ -59,7 +75,7 @@ export const TabNavigator: React.FC = () => {
         options={{
           tabBarLabel: 'Qibla',
           tabBarIcon: ({ color, size }) => (
-            <Text style={{ fontSize: size, color }}>🧭</Text>
+            <Icon source={QiblaTabIcon} size={size} color={color} />
           ),
         }}
       />
@@ -69,7 +85,7 @@ export const TabNavigator: React.FC = () => {
         options={{
           tabBarLabel: 'Progress',
           tabBarIcon: ({ color, size }) => (
-            <Text style={{ fontSize: size, color }}>📊</Text>
+            <Icon source={ProgressTabIcon} size={size} color={color} />
           ),
         }}
       />
@@ -79,7 +95,7 @@ export const TabNavigator: React.FC = () => {
         options={{
           tabBarLabel: 'More',
           tabBarIcon: ({ color, size }) => (
-            <Text style={{ fontSize: size, color }}>⋮</Text>
+            <MoreIcon color={color} size={size} />
           ),
           headerShown: false,
         }}

@@ -260,7 +260,10 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   };
 
   return (
-    <LinearGradient colors={['#1B5E3F', '#14432B']} style={styles.container}>
+    <LinearGradient 
+      colors={['#1A1F3A', '#252B47', '#2D3454']}  // Dark theme gradient
+      style={styles.container}
+    >
       <SafeAreaView style={styles.safeArea}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}

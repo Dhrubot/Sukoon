@@ -10,7 +10,7 @@ export default {
     splash: {
       image: "./assets/crescent.png",
       resizeMode: "contain",
-      backgroundColor: "#1B5E3F",
+      backgroundColor: "#1A1F3A",  // Dark theme background
     },
     assetBundlePatterns: ["**/*"],
     ios: {
@@ -32,7 +32,7 @@ export default {
     android: {
       adaptiveIcon: {
         foregroundImage: "./assets/crescent.png",
-        backgroundColor: "#1B5E3F",
+        backgroundColor: "#1A1F3A",  // Dark theme background
       },
       package: "com.talukders.sukoon",
       jsEngine: "hermes",
@@ -61,7 +61,7 @@ export default {
         "expo-notifications",
         {
           "icon": "./assets/notification-icon.png",
-          "color": "#1B5E3F",
+          "color": "#00C9A7",  // Turquoise primary color
           "sounds": [
             "./assets/sounds/adhan_short.wav",
             "./assets/sounds/adhan_full.mp3"

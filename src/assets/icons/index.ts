@@ -1,0 +1,24 @@
+// src/assets/icons/index.ts
+// Export all icon assets for easy importing
+
+// Tab Navigation Icons (SVG)
+export { default as HomeTabIcon } from '../../../assets/icons/home-tab-icon.svg';
+export { default as QiblaTabIcon } from '../../../assets/icons/qibla-tab-icon.svg';
+export { default as ProgressTabIcon } from '../../../assets/icons/progress-tab-icon.svg';
+export { default as DuaTabIcon } from '../../../assets/icons/dua-tab-icon.svg';
+
+// Feature Icons (SVG)
+export { default as AchievementIcon } from '../../../assets/icons/achievement-icon.svg';
+export { default as DigitalWellnessIcon } from '../../../assets/icons/digital-wellness-icon.svg';
+
+// Prayer Time Icons (PNG)
+export const FajrIcon = require('../../../assets/icons/fajr-icon.png');
+export const DhuhrIcon = require('../../../assets/icons/duhr-icon.png');
+export const AsrIcon = require('../../../assets/icons/asr-icon.png');
+export const MaghribIcon = require('../../../assets/icons/maghrib-icon.png');
+export const IshaIcon = require('../../../assets/icons/isha-icon.png');
+export const SunriseIcon = require('../../../assets/icons/sunrise-icon.png');
+export const SunsetIcon = require('../../../assets/icons/sunset-icon.png');
+
+// Other Icons
+export const MoonIcon = require('../../../assets/icons/thin-moon (1).png');
