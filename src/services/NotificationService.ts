@@ -485,8 +485,14 @@ class NotificationService {
   }
 
   private async schedulePrayerNotification(prayer: PrayerTime, settings: UserSettings, nextPrayer?: PrayerTime | null) {
-    const { notifications } = settings;
+    const { notifications, prayerNotifications } = settings;
     const prayerName = PrayerTimeService.getPrayerDisplayName(prayer.name);
+
+    // ✅ NEW: Check per-prayer notification setting
+    if (prayerNotifications && !prayerNotifications[prayer.name]) {
+      console.log(`🔕 Skipping ${prayer.name} - notifications disabled for this prayer`);
+      return;
+    }
 
     // Create unique identifiers to prevent duplicates
     const dateStr = prayer.time.toISOString().split('T')[0];

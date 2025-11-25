@@ -88,6 +88,14 @@ export interface UserSettings {
     reminderText: string;
     postPrayerCheck: boolean; // DEPRECATED - replaced by habitBuilder
   };
+  // Per-prayer notification toggles (individual control)
+  prayerNotifications: {
+    Fajr: boolean;
+    Dhuhr: boolean;
+    Asr: boolean;
+    Maghrib: boolean;
+    Isha: boolean;
+  };
   habitBuilder: HabitBuilderSettings;
   theme: "light" | "dark" | "auto";
 }

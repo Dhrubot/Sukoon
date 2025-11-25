@@ -16,6 +16,12 @@ export { default as AchievementIcon } from '../../../assets/icons/achievement-ic
 export { default as DigitalWellnessIcon } from '../../../assets/icons/digital-wellness-icon.svg';
 
 // ========================================
+// NOTIFICATION ICONS (SVG)
+// ========================================
+export { default as SoundOnIcon } from '../../../assets/icons/sound-on-icon.svg';
+export { default as SoundOffIcon } from '../../../assets/icons/sound-off-icon.svg';
+
+// ========================================
 // PRAYER TIME ICONS (PNG)
 // ========================================
 export const FajrIcon = require('../../../assets/icons/fajr-icon.png');

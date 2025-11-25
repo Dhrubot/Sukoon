@@ -5,7 +5,9 @@ import { SettingSection } from '../../../components/settings/SettingSection';
 import { SettingRow } from '../../../components/settings/SettingRow';
 import { SegmentedControl } from '../../../components/settings/SegmentedControl';
 import StorageService from '../../../services/StorageService';
-import { UserSettings, CalculationMethodType, PrayerTime } from '../../../types';
+import { UserSettings, CalculationMethodType, PrayerTime, PrayerName } from '../../../types';
+import { useTheme } from '../../../providers/ThemeProvider';
+import { NotificationToggleButton } from '../../../components/common/NotificationToggleButton';
 
 interface PrayerSettingsSectionProps {
   userSettings: UserSettings;
@@ -54,6 +56,22 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
   ];
 
   // 🔧 FIXED: Immediate refresh when Asr method changes
+  // Handle notification toggle for individual prayers
+  const handleNotificationToggle = (prayerName: PrayerName, newState: boolean) => {
+    const updatedSettings = {
+      ...userSettings,
+      prayerNotifications: {
+        ...userSettings.prayerNotifications,
+        [prayerName]: newState,
+      },
+    };
+
+    StorageService.setUserSettings(updatedSettings);
+    setUserSettings(updatedSettings);
+    
+    console.log(`${prayerName} notifications ${newState ? 'enabled' : 'disabled'}`);
+  };
+
   const handleJuristicChange = async (value: string) => {
     const updated = { 
       ...userSettings, 
@@ -131,22 +149,31 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
       <View style={styles.prayerTimesContainer}>
         <Text style={styles.prayerTimesTitle}>Today's Prayer Times</Text>
         <View style={styles.prayerTimesList}>
-          {todayPrayerTimes.slice(0, 3).map((prayer) => (
+          {todayPrayerTimes.map((prayer) => (
             <View key={prayer.name} style={styles.prayerTimeRow}>
-              <Text style={[
-                styles.prayerName,
-                prayer.name === nextPrayer?.name && styles.nextPrayerName,
-                prayer.name === 'Asr' && styles.asrHighlight // 🆕 Highlight Asr
-              ]}>
-                {prayer.name}
-              </Text>
-              <Text style={[
-                styles.prayerTime,
-                prayer.name === nextPrayer?.name && styles.nextPrayerTime
-              ]}>
-                {format(prayer.time, 'h:mm a')}
-                {prayer.name === nextPrayer?.name && ' ⭐'}
-              </Text>
+              <View style={styles.prayerInfoSection}>
+                <Text style={[
+                  styles.prayerName,
+                  prayer.name === nextPrayer?.name && styles.nextPrayerName,
+                  prayer.name === 'Asr' && styles.asrHighlight // 🆕 Highlight Asr
+                ]}>
+                  {prayer.name}
+                </Text>
+                <Text style={[
+                  styles.prayerTime,
+                  prayer.name === nextPrayer?.name && styles.nextPrayerTime
+                ]}>
+                  {format(prayer.time, 'h:mm a')}
+                  {prayer.name === nextPrayer?.name && ' ⭐'}
+                </Text>
+              </View>
+              <NotificationToggleButton
+                prayerName={prayer.name}
+                enabled={userSettings.prayerNotifications?.[prayer.name] ?? true}
+                onToggle={handleNotificationToggle}
+                disabled={!userSettings.notifications?.enabled}
+                size={20}
+              />
             </View>
           ))}
           {todayPrayerTimes.length > 3 && (
@@ -279,18 +306,28 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  prayerInfoSection: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginRight: 12,
   },
   prayerName: {
-    fontSize: 14,  // md
+    fontSize: 14,  
     color: '#495057',
-    fontWeight: '500',  // medium
+    fontWeight: '500',  
   },
   nextPrayerName: {
     color: '#1B5E3F',
-    fontWeight: '700',  // bold
+    fontWeight: '700',  
   },
   asrHighlight: {
-    color: '#FF6F00', // 🆕 Orange color for Asr to draw attention
+    color: '#FF6F00', // Orange color for Asr to draw attention
   },
   prayerTime: {
     fontSize: 14,  // md

@@ -71,6 +71,13 @@ class StorageService {
         reminderText: "Time for {prayer} prayer 🕌",
         postPrayerCheck: false, // DEPRECATED
       },
+      prayerNotifications: {
+        Fajr: true,
+        Dhuhr: true,
+        Asr: true,
+        Maghrib: true,
+        Isha: true,
+      },
       habitBuilder: this.getDefaultHabitBuilderSettings(),
       theme: "auto",
     };

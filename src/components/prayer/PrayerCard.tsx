@@ -7,10 +7,13 @@ import {
   Dimensions,
 } from 'react-native';
 import { format, isPast, isFuture } from 'date-fns';
-import { PrayerTime, PrayerRecord } from '../../types';
+import { PrayerTime, PrayerRecord, PrayerName } from '../../types';
 import PrayerTimeService from '../../services/PrayerTimeService';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useStore } from '../../store/useStore';
+import StorageService from '../../services/StorageService';
 import { Icon } from '../common/Icon';
+import { NotificationToggleButton } from '../common/NotificationToggleButton';
 import { getPrayerIcon } from '../../assets/icons';
 
 interface PrayerCardProps {
@@ -31,6 +34,26 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
   nextPrayer,
 }) => {
   const { theme } = useTheme();
+  const { userSettings, setUserSettings } = useStore();
+
+  // Handle notification toggle
+  const handleNotificationToggle = (prayerName: PrayerName, newState: boolean) => {
+    if (!userSettings) return;
+
+    const updatedSettings = {
+      ...userSettings,
+      prayerNotifications: {
+        ...userSettings.prayerNotifications,
+        [prayerName]: newState,
+      },
+    };
+
+    setUserSettings(updatedSettings);
+    StorageService.setUserSettings(updatedSettings);
+    
+    // TODO: Reschedule notifications
+    console.log(`${prayerName} notifications ${newState ? 'enabled' : 'disabled'}`);
+  };
 
   const getStatusColor = (): string => {
     if (record?.status === 'prayed') return theme.colors.status.success;
@@ -111,12 +134,21 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
       </View>
 
       <View style={styles.rightSection}>
-        <Text style={[styles.status, { color: getStatusColor() }]}>
-          {getStatusText()}
-        </Text>
-        {record?.reflectionAdded && (
-          <Text style={styles.reflectionBadge}>📝</Text>
-        )}
+        <View style={styles.statusContainer}>
+          <Text style={[styles.status, { color: getStatusColor() }]}>
+            {getStatusText()}
+          </Text>
+          {record?.reflectionAdded && (
+            <Text style={styles.reflectionBadge}>📝</Text>
+          )}
+        </View>
+        <NotificationToggleButton
+          prayerName={prayer.name}
+          enabled={userSettings?.prayerNotifications?.[prayer.name] ?? true}
+          onToggle={handleNotificationToggle}
+          disabled={!userSettings?.notifications?.enabled}
+          size={22}
+        />
       </View>
     </TouchableOpacity>
   );
@@ -172,9 +204,12 @@ const styles = StyleSheet.create({
     fontWeight: '500',     // theme.typography.fontWeight.medium
   },
   rightSection: {
-    alignItems: 'flex-end',
+    alignItems: 'center',
     flexDirection: 'row',
-    gap: 8,                // theme.spacing.sm
+    gap: 12,                // theme.spacing.md
+  },
+  statusContainer: {
+    alignItems: 'flex-end',
   },
   status: {
     fontSize: 13,          // theme.typography.fontSize.sm
