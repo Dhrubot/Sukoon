@@ -8,6 +8,8 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../providers/ThemeProvider';
+import { Icon } from '../common/Icon';
+import { HomeTabIcon, AchievementIcon } from '../../assets/icons';
 
 interface QuickStatsProps {
   prayersToday: number;
@@ -28,13 +30,11 @@ const QuickStats: React.FC<QuickStatsProps> = ({
     navigation.navigate('Stats' as never);
   };
 
-  const getStreakEmoji = () => {
-    if (streak === 0) return '🌱';
-    if (streak < 3) return '🌿';
-    if (streak < 7) return '🔥';
-    if (streak < 30) return '⭐';
-    if (streak < 100) return '💎';
-    return '👑';
+  const getStreakColor = () => {
+    if (streak === 0) return theme.colors.text.muted;
+    if (streak < 7) return theme.colors.status.warning;
+    if (streak < 30) return theme.colors.primary.DEFAULT;
+    return theme.colors.status.success;
   };
 
   const getEncouragement = () => {
@@ -55,7 +55,7 @@ const QuickStats: React.FC<QuickStatsProps> = ({
         {/* Prayers Today */}
         <View style={[styles.statBox, { backgroundColor: theme.colors.card.hover }]}>
           <View style={styles.statHeader}>
-            <Text style={styles.statEmoji}>🕌</Text>
+            <Icon source={HomeTabIcon} size={20} color={theme.colors.primary.DEFAULT} />
             <Text style={[styles.statLabel, { color: theme.colors.text.secondary }]}>Today</Text>
           </View>
           <Text style={[styles.statValue, { color: theme.colors.text.primary }]}>{prayersToday}/5</Text>
@@ -72,7 +72,7 @@ const QuickStats: React.FC<QuickStatsProps> = ({
         {/* Streak */}
         <View style={[styles.statBox, { backgroundColor: theme.colors.card.hover }]}>
           <View style={styles.statHeader}>
-            <Text style={styles.statEmoji}>{getStreakEmoji()}</Text>
+            <Icon source={AchievementIcon} size={20} color={getStreakColor()} />
             <Text style={[styles.statLabel, { color: theme.colors.text.secondary }]}>Streak</Text>
           </View>
           <Text style={[styles.statValue, { color: theme.colors.text.primary }]}>{streak} days</Text>
@@ -125,9 +125,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,                   // sm
     marginBottom: 8,          // sm
-  },
-  statEmoji: {
-    fontSize: 20,  // 2xl
   },
   statLabel: {
     fontSize: 14,  // md

@@ -10,6 +10,8 @@ import { format, isPast, isFuture } from 'date-fns';
 import { PrayerTime, PrayerRecord } from '../../types';
 import PrayerTimeService from '../../services/PrayerTimeService';
 import { useTheme } from '../../providers/ThemeProvider';
+import { Icon } from '../common/Icon';
+import { getPrayerIcon } from '../../assets/icons';
 
 interface PrayerCardProps {
   prayer: PrayerTime;
@@ -29,16 +31,6 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
   nextPrayer,
 }) => {
   const { theme } = useTheme();
-  const getPrayerIcon = (name: string): string => {
-    const icons: Record<string, string> = {
-      fajr: '🌅',
-      dhuhr: '☀️',
-      asr: '🌤',
-      maghrib: '🌇',
-      isha: '🌙',
-    };
-    return icons[name] || '🕌';
-  };
 
   const getStatusColor = (): string => {
     if (record?.status === 'prayed') return theme.colors.status.success;
@@ -101,7 +93,13 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
       activeOpacity={0.8}
     >
       <View style={styles.leftSection}>
-        <Text style={styles.icon}>{getPrayerIcon(prayer.name)}</Text>
+        <View style={styles.iconContainer}>
+          <Icon 
+            source={getPrayerIcon(prayer.name)} 
+            size={32}
+            color={isActive ? theme.colors.primary.DEFAULT : theme.colors.text.secondary}
+          />
+        </View>
         <View style={styles.timeInfo}>
           <Text style={[styles.prayerName, { color: theme.colors.text.primary }, isActive && styles.activeName]}>
             {PrayerTimeService.getPrayerDisplayName(prayer.name)}
@@ -148,9 +146,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  icon: {
-    fontSize: 28,          // theme.iconSizes.xl (slightly smaller for balance)
+  iconContainer: {
+    width: 40,
+    height: 40,
     marginRight: 12,       // theme.spacing.md
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   timeInfo: {
     justifyContent: 'center',

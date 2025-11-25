@@ -68,7 +68,7 @@ export const TabNavigator: React.FC = () => {
         options={{
           tabBarLabel: 'Prayer Times',
           tabBarIcon: ({ color }) => (
-            <Icon source={HomeTabIcon} size={28} color={color} />
+            <Icon source={HomeTabIcon} size={36} color={color} />
           ),
         }}
       />

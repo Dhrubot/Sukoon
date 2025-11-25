@@ -7,7 +7,36 @@ import {
   Share,
   Platform,
 } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
 import { useTheme } from '../../providers/ThemeProvider';
+
+// Quran/Book Icon Component
+const QuranIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M4 19.5C4 18.837 4.26339 18.2011 4.73223 17.7322C5.20107 17.2634 5.83696 17 6.5 17H20"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M6.5 2H20V22H6.5C5.83696 22 5.20107 21.7366 4.73223 21.2678C4.26339 20.7989 4 20.163 4 19.5V4.5C4 3.83696 4.26339 3.20107 4.73223 2.73223C5.20107 2.26339 5.83696 2 6.5 2Z"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M12 6L14 10L12 14L10 10L12 6Z"
+      fill={color}
+      stroke={color}
+      strokeWidth="1"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
 
 // Sample verses - in production, this would come from a larger database
 const verses = [
@@ -66,7 +95,10 @@ const DailyVerse: React.FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={[styles.title, { color: theme.colors.text.primary }]}>Daily Verse 📖</Text>
+        <View style={styles.titleRow}>
+          <QuranIcon color={theme.colors.primary.DEFAULT} size={24} />
+          <Text style={[styles.title, { color: theme.colors.text.primary }]}>Daily Verse</Text>
+        </View>
         <TouchableOpacity onPress={handleShare}>
           <Text style={[styles.shareButton, { color: theme.colors.primary.DEFAULT }]}>Share</Text>
         </TouchableOpacity>
@@ -102,6 +134,11 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 12,
+  },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   title: {
     fontSize: 20,  // 2xl
