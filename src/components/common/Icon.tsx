@@ -1,6 +1,6 @@
 // src/components/common/Icon.tsx
 import React from 'react';
-import { Image, ImageSourcePropType, StyleSheet } from 'react-native';
+import { Image, ImageSourcePropType, StyleSheet, View } from 'react-native';
 import { SvgProps } from 'react-native-svg';
 
 interface IconProps {
@@ -26,13 +26,18 @@ export const Icon: React.FC<IconProps> = ({
   if (typeof source === 'function') {
     const SvgComponent = source as React.FC<SvgProps>;
     return (
-      <SvgComponent 
-        width={size} 
-        height={size} 
-        fill={color}
-        color={color}
-        style={style}
-      />
+      <View style={[{ width: size, height: size }, style]}>
+        <SvgComponent 
+          width={size} 
+          height={size} 
+          fill={color}
+          stroke={color}
+          color={color}
+          // @ts-ignore - These props override hardcoded SVG colors
+          fillColor={color}
+          strokeColor={color}
+        />
+      </View>
     );
   }
 

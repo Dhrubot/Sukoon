@@ -57,6 +57,9 @@ export const TabNavigator: React.FC = () => {
         tabBarItemStyle: {
           paddingHorizontal: 4,
         },
+        tabBarIconStyle: {
+          marginTop: 4,
+        },
       }}
     >
       <Tab.Screen
@@ -64,8 +67,8 @@ export const TabNavigator: React.FC = () => {
         component={HomeScreen}
         options={{
           tabBarLabel: 'Prayer Times',
-          tabBarIcon: ({ color, size }) => (
-            <Icon source={HomeTabIcon} size={size} color={color} />
+          tabBarIcon: ({ color }) => (
+            <Icon source={HomeTabIcon} size={28} color={color} />
           ),
         }}
       />
@@ -74,8 +77,8 @@ export const TabNavigator: React.FC = () => {
         component={QiblaFinderScreen}
         options={{
           tabBarLabel: 'Qibla',
-          tabBarIcon: ({ color, size }) => (
-            <Icon source={QiblaTabIcon} size={size} color={color} />
+          tabBarIcon: ({ color }) => (
+            <Icon source={QiblaTabIcon} size={28} color={color} />
           ),
         }}
       />
@@ -84,8 +87,8 @@ export const TabNavigator: React.FC = () => {
         component={StatsScreen}
         options={{
           tabBarLabel: 'Progress',
-          tabBarIcon: ({ color, size }) => (
-            <Icon source={ProgressTabIcon} size={size} color={color} />
+          tabBarIcon: ({ color }) => (
+            <Icon source={ProgressTabIcon} size={28} color={color} />
           ),
         }}
       />
@@ -94,8 +97,8 @@ export const TabNavigator: React.FC = () => {
         component={MenuStackNavigator}
         options={{
           tabBarLabel: 'More',
-          tabBarIcon: ({ color, size }) => (
-            <MoreIcon color={color} size={size} />
+          tabBarIcon: ({ color }) => (
+            <MoreIcon color={color} size={28} />
           ),
           headerShown: false,
         }}

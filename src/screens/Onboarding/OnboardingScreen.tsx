@@ -307,7 +307,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: 'theme.colors.text.primary',
+    backgroundColor: theme.colors.primary.DEFAULT,
     borderRadius: 2,
   },
   stepContainer: {
@@ -323,7 +323,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   title: {
     fontSize: 32,  // 5xl
     fontWeight: '700',  // bold
-    color: 'theme.colors.text.primary',
+    color: theme.colors.text.primary,
     textAlign: 'center',
     marginBottom: 16,
   },
@@ -347,7 +347,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 20,
     fontSize: 18,  // xl
-    color: 'theme.colors.text.primary',
+    color: theme.colors.text.primary,
     width: '100%',
     marginBottom: 32,
     borderWidth: 1,
@@ -367,7 +367,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   buttonText: {
     fontSize: 18,  // xl
     fontWeight: '600',  // semibold
-    color: 'theme.colors.text.primary',
+    color: theme.colors.text.primary,
   },
   skipText: {
     fontSize: 16,  // lg
@@ -389,14 +389,14 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   methodOptionSelected: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderColor: 'theme.colors.text.primary',
+    borderColor: theme.colors.primary.DEFAULT,
   },
   methodText: {
     fontSize: 16,  // lg
     color: 'rgba(255, 255, 255, 0.8)',
   },
   methodTextSelected: {
-    color: 'theme.colors.text.primary',
+    color: theme.colors.primary.DEFAULT,
     fontWeight: '600',  // semibold
   },
   toggleContainer: {
@@ -414,7 +414,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   toggleLabel: {
     fontSize: 18,  // xl
-    color: 'theme.colors.text.primary',
+    color: theme.colors.text.primary,
     fontWeight: '600',  // semibold
   },
   toggleDescription: {
