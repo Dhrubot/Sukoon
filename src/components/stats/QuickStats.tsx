@@ -72,7 +72,7 @@ const QuickStats: React.FC<QuickStatsProps> = ({
         {/* Streak */}
         <View style={[styles.statBox, { backgroundColor: theme.colors.card.hover }]}>
           <View style={styles.statHeader}>
-            <Icon source={AchievementIcon} size={20} color={getStreakColor()} />
+            <Icon source={AchievementIcon} size={28} color={getStreakColor()} />
             <Text style={[styles.statLabel, { color: theme.colors.text.secondary }]}>Streak</Text>
           </View>
           <Text style={[styles.statValue, { color: theme.colors.text.primary }]}>{streak} days</Text>
