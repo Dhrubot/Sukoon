@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 
@@ -29,6 +31,7 @@ interface OnboardingScreenProps {
 type OnboardingStep = 'welcome' | 'name' | 'location' | 'notifications' | 'method';
 
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
+  const styles = useThemedStyles(createStyles);
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome');
   const [name, setName] = useState('');
   const [selectedMethod, setSelectedMethod] = useState<CalculationMethod>('MWL');
@@ -279,7 +282,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -301,7 +304,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'theme.colors.text.primary',
     borderRadius: 2,
   },
   stepContainer: {
@@ -317,7 +320,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: 'theme.colors.text.primary',
     textAlign: 'center',
     marginBottom: 16,
   },
@@ -341,7 +344,7 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     paddingHorizontal: 20,
     fontSize: 18,
-    color: '#FFFFFF',
+    color: 'theme.colors.text.primary',
     width: '100%',
     marginBottom: 32,
     borderWidth: 1,
@@ -361,7 +364,7 @@ const styles = StyleSheet.create({
   buttonText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: 'theme.colors.text.primary',
   },
   skipText: {
     fontSize: 16,
@@ -383,14 +386,14 @@ const styles = StyleSheet.create({
   },
   methodOptionSelected: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderColor: '#FFFFFF',
+    borderColor: 'theme.colors.text.primary',
   },
   methodText: {
     fontSize: 16,
     color: 'rgba(255, 255, 255, 0.8)',
   },
   methodTextSelected: {
-    color: '#FFFFFF',
+    color: 'theme.colors.text.primary',
     fontWeight: '600',
   },
   toggleContainer: {
@@ -408,7 +411,7 @@ const styles = StyleSheet.create({
   },
   toggleLabel: {
     fontSize: 18,
-    color: '#FFFFFF',
+    color: 'theme.colors.text.primary',
     fontWeight: '600',
   },
   toggleDescription: {

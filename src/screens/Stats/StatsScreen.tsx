@@ -21,12 +21,16 @@ import { PrayerRecord, DailyStats } from '../../types';
 
 // NEW: Use our centralized prayer times hook
 import { usePrayerTimes } from '../../providers/PrayerTimesProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 
 const { width } = Dimensions.get('window');
 
 type TimeRange = 'week' | 'month' | 'all';
 
 const StatsScreen: React.FC = () => {
+  const styles = useThemedStyles(createStyles);
+  
   // 🎯 NEW: Use centralized prayer times hook
   const { 
     todayPrayerTimes, 
@@ -459,26 +463,26 @@ const StatsScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1A1F3A', // Dark navy background
+    backgroundColor: theme.colors.background.primary,
   },
   header: {
     padding: 20,
-    backgroundColor: '#252B47',
+    backgroundColor: theme.colors.card.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#2D3454',
+    borderBottomColor: theme.colors.border.primary,
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: theme.colors.text.primary,
     marginBottom: 20,
   },
   timeRangeContainer: {
     flexDirection: 'row',
-    backgroundColor: '#2D3454',
+    backgroundColor: theme.colors.card.hover,
     borderRadius: 8,
     padding: 4,
   },
@@ -490,15 +494,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   timeRangeButtonActive: {
-    backgroundColor: '#00C9A7', // Turquoise accent
+    backgroundColor: theme.colors.primary.DEFAULT,
   },
   timeRangeText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#A0AEC0',
+    color: theme.colors.text.secondary,
   },
   timeRangeTextActive: {
-    color: '#FFFFFF',
+    color: theme.colors.primary.contrast,
   },
   
   // 🎯 NEW: Empty and loading states
@@ -515,20 +519,20 @@ const styles = StyleSheet.create({
   emptyStateTitle: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: theme.colors.text.primary,
     textAlign: 'center',
     marginBottom: 12,
   },
   emptyStateText: {
     fontSize: 16,
-    color: '#A0AEC0',
+    color: theme.colors.text.secondary,
     textAlign: 'center',
     marginBottom: 8,
     lineHeight: 24,
   },
   emptyStateSubtext: {
     fontSize: 14,
-    color: '#6C7A89',
+    color: theme.colors.text.muted,
     textAlign: 'center',
   },
   
@@ -540,7 +544,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: '#A0AEC0',
+    color: theme.colors.text.secondary,
     marginTop: 16,
     textAlign: 'center',
   },
@@ -553,13 +557,13 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   statCard: {
-    backgroundColor: '#252B47', // Dark card background
+    backgroundColor: theme.colors.card.background,
     borderRadius: 12,
     padding: 20,
     width: (width - 40) / 2,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#2D3454',
+    borderColor: theme.colors.border.primary,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
@@ -569,19 +573,19 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 32,
     fontWeight: 'bold',
-    color: '#00C9A7', // Turquoise accent
+    color: theme.colors.primary.DEFAULT,
     marginBottom: 4,
   },
   statLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: theme.colors.text.primary,
     textAlign: 'center',
     marginBottom: 4,
   },
   statSubtext: {
     fontSize: 12,
-    color: '#A0AEC0',
+    color: theme.colors.text.secondary,
     textAlign: 'center',
   },
   section: {
@@ -590,22 +594,22 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: theme.colors.text.primary,
     marginBottom: 16,
   },
   todayProgressContainer: {
-    backgroundColor: '#252B47',
+    backgroundColor: theme.colors.card.background,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#2D3454',
+    borderColor: theme.colors.border.primary,
   },
   todayPrayerItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#2D3454',
+    borderBottomColor: theme.colors.border.primary,
   },
   prayerEmoji: {
     fontSize: 24,
@@ -615,48 +619,48 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 16,
     fontWeight: '500',
-    color: '#FFFFFF',
+    color: theme.colors.text.primary,
   },
   completedPrayerName: {
-    color: '#00C9A7', // Turquoise accent
+    color: theme.colors.primary.DEFAULT,
   },
   prayerTime: {
     fontSize: 14,
-    color: '#A0AEC0',
+    color: theme.colors.text.secondary,
   },
   chart: {
     marginVertical: 8,
     borderRadius: 16,
   },
   insightCard: {
-    backgroundColor: '#252B47',
+    backgroundColor: theme.colors.card.background,
     borderRadius: 12,
     padding: 20,
     marginBottom: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#00C9A7', // Turquoise accent
+    borderLeftColor: theme.colors.primary.DEFAULT,
     borderWidth: 1,
-    borderColor: '#2D3454',
+    borderColor: theme.colors.border.primary,
   },
   achievementCard: {
     borderLeftColor: '#FFD700',
-    backgroundColor: '#2D3454',
+    backgroundColor: theme.colors.card.hover,
   },
   insightTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#00C9A7', // Turquoise accent
+    color: theme.colors.primary.DEFAULT,
     marginBottom: 8,
   },
   insightValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#FFFFFF',
+    color: theme.colors.text.primary,
     marginBottom: 4,
   },
   insightDescription: {
     fontSize: 14,
-    color: '#A0AEC0',
+    color: theme.colors.text.secondary,
     lineHeight: 20,
   },
 });

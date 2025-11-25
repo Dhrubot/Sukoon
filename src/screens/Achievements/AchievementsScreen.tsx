@@ -14,12 +14,15 @@ import { useStore } from '../../store/useStore';
 import StorageService from '../../services/StorageService';
 import AchievementService from '../../services/AchievementService';
 import { Achievement } from '../../types';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 
 const { width } = Dimensions.get('window');
 
 type CategoryFilter = 'all' | 'prayer' | 'streak' | 'mindfulness' | 'focus' | 'special';
 
 const AchievementsScreen: React.FC = () => {
+  const styles = useThemedStyles(createStyles);
   const { achievements, setAchievements } = useStore();
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>('all');
@@ -267,10 +270,10 @@ const AchievementsScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#1A1F3A', // Dark navy background
+    backgroundColor: theme.colors.background.primary,
   },
   loadingContainer: {
     flex: 1,
@@ -280,7 +283,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#A0AEC0',
+    color: theme.colors.text.secondary,
   },
   header: {
     padding: 20,
@@ -288,15 +291,15 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: theme.colors.text.primary,
     marginBottom: 20,
   },
   progressCard: {
-    backgroundColor: '#252B47', // Dark card background
+    backgroundColor: theme.colors.card.background,
     borderRadius: 16,
     padding: 20,
     borderWidth: 1,
-    borderColor: '#2D3454',
+    borderColor: theme.colors.border.primary,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
@@ -306,7 +309,7 @@ const styles = StyleSheet.create({
   progressTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: theme.colors.text.primary,
     marginBottom: 16,
   },
   progressStats: {
@@ -320,26 +323,26 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#00C9A7', // Turquoise accent
+    color: theme.colors.primary.DEFAULT,
   },
   statLabel: {
     fontSize: 14,
-    color: '#A0AEC0',
+    color: theme.colors.text.secondary,
     marginTop: 4,
   },
   statDivider: {
     width: 1,
-    backgroundColor: '#2D3454',
+    backgroundColor: theme.colors.border.primary,
   },
   progressBarContainer: {
     height: 8,
-    backgroundColor: '#2D3454',
+    backgroundColor: theme.colors.card.hover,
     borderRadius: 4,
     overflow: 'hidden',
   },
   progressBar: {
     height: '100%',
-    backgroundColor: '#00C9A7', // Turquoise accent
+    backgroundColor: theme.colors.primary.DEFAULT,
     borderRadius: 4,
   },
   categoryContainer: {
@@ -350,17 +353,17 @@ const styles = StyleSheet.create({
   categoryButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#252B47',
+    backgroundColor: theme.colors.card.background,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
     marginRight: 12,
     borderWidth: 1,
-    borderColor: '#2D3454',
+    borderColor: theme.colors.border.primary,
   },
   categoryButtonActive: {
-    backgroundColor: '#2D3454',
-    borderColor: '#00C9A7', // Turquoise accent
+    backgroundColor: theme.colors.card.hover,
+    borderColor: theme.colors.primary.DEFAULT,
   },
   categoryIcon: {
     fontSize: 20,
@@ -368,11 +371,11 @@ const styles = StyleSheet.create({
   },
   categoryLabel: {
     fontSize: 14,
-    color: '#A0AEC0',
+    color: theme.colors.text.secondary,
     fontWeight: '500',
   },
   categoryLabelActive: {
-    color: '#00C9A7', // Turquoise accent
+    color: theme.colors.primary.DEFAULT,
     fontWeight: '600',
   },
   achievementsGrid: {
@@ -405,9 +408,9 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#252B47',
+    backgroundColor: theme.colors.card.background,
     borderWidth: 2,
-    borderColor: '#2D3454',
+    borderColor: theme.colors.border.primary,
     borderStyle: 'dashed',
   },
   achievementIcon: {
@@ -424,26 +427,26 @@ const styles = StyleSheet.create({
   achievementName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#FFFFFF',
+    color: theme.colors.text.primary,
     textAlign: 'center',
     marginBottom: 8,
   },
   achievementNameLocked: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#A0AEC0',
+    color: theme.colors.text.secondary,
     textAlign: 'center',
     marginBottom: 8,
   },
   achievementDescription: {
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: theme.colors.text.primary,
     textAlign: 'center',
     marginBottom: 12,
   },
   achievementDescriptionLocked: {
     fontSize: 12,
-    color: '#6C7A89',
+    color: theme.colors.text.muted,
     textAlign: 'center',
   },
   tierBadge: {
@@ -458,7 +461,7 @@ const styles = StyleSheet.create({
   tierText: {
     fontSize: 10,
     fontWeight: '700',
-    color: '#FFFFFF',
+    color: theme.colors.text.primary,
   },
   progressContainer: {
     width: '100%',
@@ -470,12 +473,12 @@ const styles = StyleSheet.create({
   },
   progressText: {
     fontSize: 12,
-    color: '#A0AEC0',
+    color: theme.colors.text.secondary,
     fontWeight: '600',
   },
   miniProgressBar: {
     height: 4,
-    backgroundColor: '#2D3454',
+    backgroundColor: theme.colors.card.hover,
     borderRadius: 2,
     overflow: 'hidden',
   },
@@ -484,22 +487,22 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   tipsSection: {
-    backgroundColor: '#252B47',
+    backgroundColor: theme.colors.card.background,
     padding: 20,
     margin: 20,
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#2D3454',
+    borderColor: theme.colors.border.primary,
   },
   tipsTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#00C9A7', // Turquoise accent
+    color: theme.colors.primary.DEFAULT,
     marginBottom: 12,
   },
   tipText: {
     fontSize: 14,
-    color: '#A0AEC0',
+    color: theme.colors.text.secondary,
     lineHeight: 22,
     marginBottom: 8,
   },

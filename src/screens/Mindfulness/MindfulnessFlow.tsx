@@ -458,7 +458,7 @@ const styles = StyleSheet.create({
   prayerName: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: "theme.colors.text.primary",
   },
   closeButton: {
     width: 40,
@@ -470,7 +470,7 @@ const styles = StyleSheet.create({
   },
   closeText: {
     fontSize: 20,
-    color: "#FFFFFF",
+    color: "theme.colors.text.primary",
   },
   progressContainer: {
     flexDirection: "row",
@@ -485,7 +485,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.3)",
   },
   progressDotActive: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "theme.colors.text.primary",
     width: 24,
   },
   content: {
@@ -502,7 +502,7 @@ const styles = StyleSheet.create({
   stepTitle: {
     fontSize: 28,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: "theme.colors.text.primary",
     textAlign: "center",
     marginBottom: 12,
   },
@@ -562,7 +562,7 @@ const styles = StyleSheet.create({
   completeButtonText: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: "theme.colors.text.primary",
   },
   completeContainer: {
     flex: 1,
@@ -577,7 +577,7 @@ const styles = StyleSheet.create({
   completeTitle: {
     fontSize: 36,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: "theme.colors.text.primary",
     marginBottom: 16,
   },
   completeText: {
