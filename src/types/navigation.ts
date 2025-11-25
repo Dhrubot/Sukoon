@@ -1,23 +1,22 @@
 import { NavigatorScreenParams } from '@react-navigation/native';
 import { PrayerTime, PrayerName } from './index';
+import { MenuStackParamList } from '../navigation/MenuStackNavigator';
 
-// Tab navigator parameter types
+// Tab navigator parameter types (only visible tabs)
 export type TabParamList = {
   Home: undefined;
   QiblaFinder: undefined;
   Stats: undefined;
-  Menu: undefined;
-  // These are now accessible from Menu
-  Achievements: undefined;
-  DigitalWellness: undefined;
-  Support: undefined;
-  Settings: undefined;
+  Menu: NavigatorScreenParams<MenuStackParamList>; // Nested stack
 };
 
 // Root stack parameter types
 export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<TabParamList>;
+  // Modal screens
   MindfulnessFlow: { prayer: PrayerTime };
+  // Debug screens
+  NotificationDebug: undefined;
 };
 
 // Onboarding and other modal screens (if needed)

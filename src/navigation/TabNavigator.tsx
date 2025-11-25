@@ -8,7 +8,7 @@ import { useTheme } from '../providers/ThemeProvider';
 import HomeScreen from '../screens/Home/HomeScreen';
 import StatsScreen from '../screens/Stats/StatsScreen';
 import QiblaFinderScreen from '../screens/QiblaFinder/QiblaFinderScreen';
-import MenuScreen from '../screens/Menu/MenuScreen';
+import { MenuStackNavigator } from './MenuStackNavigator';
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
@@ -37,6 +37,9 @@ export const TabNavigator: React.FC = () => {
           fontSize: 11,
           fontWeight: '600',
           marginTop: 4,
+        },
+        tabBarItemStyle: {
+          paddingHorizontal: 4,
         },
       }}
     >
@@ -72,12 +75,13 @@ export const TabNavigator: React.FC = () => {
       />
       <Tab.Screen
         name="Menu"
-        component={MenuScreen}
+        component={MenuStackNavigator}
         options={{
           tabBarLabel: 'More',
           tabBarIcon: ({ color, size }) => (
             <Text style={{ fontSize: size, color }}>⋮</Text>
           ),
+          headerShown: false,
         }}
       />
     </Tab.Navigator>
