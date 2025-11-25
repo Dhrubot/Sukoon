@@ -7,78 +7,10 @@ import { useTheme } from '../providers/ThemeProvider';
 
 import HomeScreen from '../screens/Home/HomeScreen';
 import StatsScreen from '../screens/Stats/StatsScreen';
-import SettingsScreen from '../screens/Settings/SettingsScreen';
-import AchievementsScreen from '../screens/Achievements/AchievementsScreen';
-import DigitalWellnessScreen from '../screens/DigitalWellness/DigitalWellnessScreen';
-import SupportScreen from '../screens/Support/SupportScreen';
+import QiblaFinderScreen from '../screens/QiblaFinder/QiblaFinderScreen';
+import MenuScreen from '../screens/Menu/MenuScreen';
 
 const Tab = createBottomTabNavigator<TabParamList>();
-
-const tabScreens: {
-  name: keyof TabParamList;
-  component: React.ComponentType<any>;
-  options: any;
-}[] = [
-  {
-    name: 'Home',
-    component: HomeScreen,
-    options: {
-      tabBarLabel: 'Prayer Times',
-      tabBarIcon: ({ color, size }: any) => (
-        <Text style={{ fontSize: size, color }}>🕌</Text>
-      ),
-    },
-  },
-  {
-    name: 'Stats',
-    component: StatsScreen,
-    options: {
-      tabBarLabel: 'Progress',
-      tabBarIcon: ({ color, size }: any) => (
-        <Text style={{ fontSize: size, color }}>📊</Text>
-      ),
-    },
-  },
-  {
-    name: 'Achievements',
-    component: AchievementsScreen,
-    options: {
-      tabBarIcon: ({ color, size }: any) => (
-        <Text style={{ fontSize: size }}>🏆</Text>
-      ),
-    },
-  },
-  {
-    name: 'DigitalWellness',
-    component: DigitalWellnessScreen,
-    options: {
-      tabBarIcon: ({ color, size }: any) => (
-        <Text style={{ fontSize: size }}>📱</Text>
-      ),
-      tabBarLabel: 'Digital',
-    },
-  },
-  {
-    name: 'Support',
-    component: SupportScreen,
-    options: {
-      tabBarIcon: ({ color, size }: any) => (
-        <Text style={{ fontSize: size, color }}>💚</Text>
-      ),
-      tabBarLabel: 'Support',
-    },
-  },
-  {
-    name: 'Settings',
-    component: SettingsScreen,
-    options: {
-      tabBarLabel: 'Settings',
-      tabBarIcon: ({ color, size }: any) => (
-        <Text style={{ fontSize: size, color }}>⚙️</Text>
-      ),
-    },
-  },
-];
 
 export const TabNavigator: React.FC = () => {
   const { theme } = useTheme();
@@ -87,30 +19,67 @@ export const TabNavigator: React.FC = () => {
     <Tab.Navigator
       screenOptions={{
         tabBarActiveTintColor: theme.colors.primary.DEFAULT,
-        tabBarInactiveTintColor: theme.colors.secondary.DEFAULT,
+        tabBarInactiveTintColor: theme.colors.text.muted,
         headerShown: false,
         tabBarStyle: {
           backgroundColor: theme.colors.background.primary,
-          borderTopWidth: 0,              // Remove border - no white line!
-          elevation: 8,                   // Add shadow instead (Android)
-          shadowColor: '#000',            // Shadow (iOS)
+          borderTopWidth: 0,
+          elevation: 8,
+          shadowColor: '#000',
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.1,
           shadowRadius: 8,
-          paddingBottom: 5,
-          paddingTop: 5,
-          height: 60,
+          paddingBottom: 8,
+          paddingTop: 8,
+          height: 65,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+          marginTop: 4,
         },
       }}
     >
-      {tabScreens.map((screen) => (
-        <Tab.Screen
-          key={screen.name}
-          name={screen.name}
-          component={screen.component}
-          options={screen.options}
-        />
-      ))}
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{
+          tabBarLabel: 'Prayer Times',
+          tabBarIcon: ({ color, size }) => (
+            <Text style={{ fontSize: size, color }}>🕌</Text>
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="QiblaFinder"
+        component={QiblaFinderScreen}
+        options={{
+          tabBarLabel: 'Qibla',
+          tabBarIcon: ({ color, size }) => (
+            <Text style={{ fontSize: size, color }}>🧭</Text>
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Stats"
+        component={StatsScreen}
+        options={{
+          tabBarLabel: 'Progress',
+          tabBarIcon: ({ color, size }) => (
+            <Text style={{ fontSize: size, color }}>📊</Text>
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Menu"
+        component={MenuScreen}
+        options={{
+          tabBarLabel: 'More',
+          tabBarIcon: ({ color, size }) => (
+            <Text style={{ fontSize: size, color }}>⋮</Text>
+          ),
+        }}
+      />
     </Tab.Navigator>
   );
 };

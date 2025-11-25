@@ -3,12 +3,15 @@ import { PrayerTime, PrayerName } from './index';
 
 // Tab navigator parameter types
 export type TabParamList = {
-  Home: { markPrayerComplete?: PrayerName } | undefined;
+  Home: undefined;
+  QiblaFinder: undefined;
   Stats: undefined;
-  Settings: undefined;
+  Menu: undefined;
+  // These are now accessible from Menu
   Achievements: undefined;
   DigitalWellness: undefined;
   Support: undefined;
+  Settings: undefined;
 };
 
 // Root stack parameter types
