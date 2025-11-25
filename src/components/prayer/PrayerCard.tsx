@@ -34,7 +34,7 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
   nextPrayer,
 }) => {
   const { theme } = useTheme();
-  const { userSettings, setUserSettings } = useStore();
+  const { userSettings, setUserSettings, todaySunrise } = useStore();
 
   // Handle notification toggle
   const handleNotificationToggle = (prayerName: PrayerName, newState: boolean) => {
@@ -59,6 +59,11 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
     if (record?.status === 'prayed') return theme.colors.status.success;
     if (record?.status === 'missed' && isPast(prayer.time)) return theme.colors.status.error;
 
+    // Special case: Fajr is missed after Sunrise
+    if (prayer.name === 'Fajr' && todaySunrise && isPast(prayer.time) && !record && isPast(todaySunrise)) {
+      return theme.colors.status.error;
+    }
+
     // Check if prayer is truly missed (next prayer started)
     if (isPast(prayer.time) && !record && nextPrayer && isPast(nextPrayer.time)) {
       return theme.colors.status.error;
@@ -73,9 +78,13 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
       return record.mindfulnessCompleted ? '✓ Prayed Mindfully' : '✓ Prayed';
     }
 
-    // Check if prayer is truly missed (next prayer has started)
+    // Check if prayer is truly missed
     if (isPast(prayer.time) && !record) {
-      // Only mark as missed if the next prayer has started
+      // Special case: Fajr is missed after Sunrise
+      if (prayer.name === 'Fajr' && todaySunrise && isPast(todaySunrise)) {
+        return 'Missed';
+      }
+      // Other prayers: Only mark as missed if the next prayer has started
       if (nextPrayer && isPast(nextPrayer.time)) {
         return 'Missed';
       }
@@ -92,16 +101,26 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
     return 'Time to Pray';
   };
 
-  // Prayer is active if it's the next prayer OR if it's in the grace period (time passed but next prayer hasn't started)
-  const isActive = prayer.isNext ||
-    (isPast(prayer.time) && !record && (!nextPrayer || isFuture(nextPrayer.time)));
+  // Prayer is active if it's the next prayer OR if it's in the grace period
+  const isActive = () => {
+    if (prayer.isNext) return true;
+    if (!isPast(prayer.time) || record) return false;
+    
+    // Special case: Fajr is not active after Sunrise
+    if (prayer.name === 'Fajr' && todaySunrise && isPast(todaySunrise)) {
+      return false;
+    }
+    
+    // Other prayers: active until next prayer starts
+    return !nextPrayer || isFuture(nextPrayer.time);
+  };
 
   return (
     <TouchableOpacity
       style={[
         styles.container,
         { backgroundColor: theme.colors.card.background, borderColor: theme.colors.border.primary },
-        isActive && [styles.activeContainer, { backgroundColor: theme.colors.card.hover, borderColor: theme.colors.primary.DEFAULT, shadowColor: theme.colors.primary.DEFAULT }],
+        isActive() && [styles.activeContainer, { backgroundColor: theme.colors.card.hover, borderColor: theme.colors.primary.DEFAULT, shadowColor: theme.colors.primary.DEFAULT }],
         record?.status === 'prayed' && styles.completedContainer,
       ]}
       onPress={onComplete}
@@ -109,7 +128,9 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
         Boolean(
           record?.status === 'prayed' ||
           isFuture(prayer.time) ||
-          // Disable if prayer is truly missed (next prayer has started)
+          // Special case: Fajr disabled after Sunrise
+          (prayer.name === 'Fajr' && todaySunrise && isPast(todaySunrise) && !record) ||
+          // Other prayers: disabled if next prayer has started
           (isPast(prayer.time) && !record && nextPrayer && isPast(nextPrayer.time))
         )
       }
@@ -120,14 +141,14 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
           <Icon 
             source={getPrayerIcon(prayer.name)} 
             size={32}
-            color={isActive ? theme.colors.primary.DEFAULT : theme.colors.text.secondary}
+            color={isActive() ? theme.colors.primary.DEFAULT : theme.colors.text.secondary}
           />
         </View>
         <View style={styles.timeInfo}>
-          <Text style={[styles.prayerName, { color: theme.colors.text.primary }, isActive && styles.activeName]}>
+          <Text style={[styles.prayerName, { color: theme.colors.text.primary }, isActive() && styles.activeName]}>
             {PrayerTimeService.getPrayerDisplayName(prayer.name)}
           </Text>
-          <Text style={[styles.time, { color: theme.colors.text.secondary }, isActive && [styles.activeTime, { color: theme.colors.text.primary }]]}>
+          <Text style={[styles.time, { color: theme.colors.text.secondary }, isActive() && [styles.activeTime, { color: theme.colors.text.primary }]]}>
             {format(prayer.time, 'h:mm a')}
           </Text>
         </View>

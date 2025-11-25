@@ -30,7 +30,16 @@ interface PrayerTimesProviderProps {
 }
 
 export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ children }) => {
-  const { location, userSettings, setTodayPrayerTimes, setNextPrayer } = useStore();
+  const { 
+    location, 
+    userSettings, 
+    setTodayPrayerTimes, 
+    setNextPrayer, 
+    todayPrayerTimes, 
+    nextPrayer,
+    setTodaySunrise,
+    setTodaySunset 
+  } = useStore();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tomorrowFajr, setTomorrowFajr] = useState<PrayerTime | null>(null);
@@ -87,8 +96,8 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
-      // Load today's prayer times
-      const todayPrayers = await PrayerTimeService.getPrayerTimesList(
+      // Load today's prayer times with sunrise/sunset
+      const todayResult = await PrayerTimeService.getPrayerTimesList(
         location,
         today,
         userSettings.calculationMethod,
@@ -97,7 +106,7 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
       );
 
       // Load tomorrow's Fajr
-      const tomorrowPrayers = await PrayerTimeService.getPrayerTimesList(
+      const tomorrowResult = await PrayerTimeService.getPrayerTimesList(
         location,
         tomorrow,
         userSettings.calculationMethod,
@@ -105,14 +114,16 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
         userSettings.asrJuristic
       );
 
-      const tomorrowFajrPrayer = tomorrowPrayers.find(p => p.name === 'Fajr') || null;
+      const tomorrowFajrPrayer = tomorrowResult.prayerTimes.find(p => p.name === 'Fajr') || null;
 
-      // Update state
-      setTodayPrayerTimes(todayPrayers);
+      // Update state with prayer times and sun times
+      setTodayPrayerTimes(todayResult.prayerTimes);
+      setTodaySunrise(todayResult.sunrise);
+      setTodaySunset(todayResult.sunset);
       setTomorrowFajr(tomorrowFajrPrayer);
 
       // Calculate next prayer
-      const nextPrayer = calculateNextPrayer(todayPrayers, tomorrowFajrPrayer);
+      const nextPrayer = calculateNextPrayer(todayResult.prayerTimes, tomorrowFajrPrayer);
       setNextPrayer(nextPrayer);
 
       console.log('✅ Prayer times loaded successfully');
@@ -142,8 +153,8 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
   };
 
   const value: PrayerTimesContextType = {
-    todayPrayerTimes: useStore.getState().todayPrayerTimes,
-    nextPrayer: useStore.getState().nextPrayer,
+    todayPrayerTimes, // ✅ Now subscribed to store changes!
+    nextPrayer,       // ✅ Now subscribed to store changes!
     isLoading,
     error,
     hasValidLocation,

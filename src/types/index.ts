@@ -13,9 +13,16 @@ export interface PrayerTimes {
   Sunrise: string;
   Dhuhr: string;
   Asr: string;
+  Sunset: string;
   Maghrib: string;
   Isha: string;
   Midnight: string;
+}
+
+export interface PrayerTimesWithSun {
+  prayerTimes: PrayerTime[];
+  sunrise: Date;
+  sunset: Date;
 }
 
 export interface PrayerRecord {

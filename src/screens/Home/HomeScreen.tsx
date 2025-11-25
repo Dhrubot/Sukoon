@@ -29,6 +29,7 @@ import NextPrayerCard from "../../components/prayer/NextPrayerCard";
 import DailyVerse from "../../components/common/DailyVerse";
 import QuickStats from "../../components/stats/QuickStats";
 import DigitalWellnessCard from "../../components/digitalWellness/DigitalWellnessCard";
+import { SunTimesDisplay } from "../../components/common/SunTimesDisplay";
 
 // Types
 import { Achievement, PrayerTime } from "../../types";
@@ -60,7 +61,9 @@ const HomeScreen = ({ navigation }: any) => {
     isRefreshing,
     setIsRefreshing,
     celebratingAchievement,
-    setCelebratingAchievement
+    setCelebratingAchievement,
+    todaySunrise,
+    todaySunset
   } = useStore();
 
   // Local state for UI features
@@ -228,6 +231,9 @@ const HomeScreen = ({ navigation }: any) => {
               {format(currentTime, "EEEE, MMMM do, yyyy")}
             </Text>
           </View>
+
+          {/* Sunrise & Sunset Times */}
+          <SunTimesDisplay sunrise={todaySunrise} sunset={todaySunset} />
 
           {/* Next Prayer Card */}
           {nextPrayer && (

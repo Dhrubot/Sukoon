@@ -25,6 +25,12 @@ interface AppState {
   nextPrayer: PrayerTime | null;
   setNextPrayer: (prayer: PrayerTime | null) => void;
   
+  // Sun times (Sunrise/Sunset)
+  todaySunrise: Date | null;
+  setTodaySunrise: (time: Date | null) => void;
+  todaySunset: Date | null;
+  setTodaySunset: (time: Date | null) => void;
+  
   // Prayer records
   todayPrayerRecords: PrayerRecord[];
   setTodayPrayerRecords: (records: PrayerRecord[]) => void;
@@ -73,6 +79,12 @@ export const useStore = create<AppState>((set) => ({
   setTodayPrayerTimes: (times) => set({ todayPrayerTimes: times }),
   nextPrayer: null,
   setNextPrayer: (prayer) => set({ nextPrayer: prayer }),
+  
+  // Sun times
+  todaySunrise: null,
+  setTodaySunrise: (time) => set({ todaySunrise: time }),
+  todaySunset: null,
+  setTodaySunset: (time) => set({ todaySunset: time }),
   
   // Prayer records
   todayPrayerRecords: [],
