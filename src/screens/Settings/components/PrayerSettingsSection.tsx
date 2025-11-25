@@ -49,7 +49,7 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
     {
       value: 'Hanafi',
       label: 'Hanafi',
-      description: 'Earlier Asr time',
+      description: 'Later Asr time',
     },
   ];
 
@@ -188,8 +188,8 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
         <View style={styles.juristicExplanation}>
           <Text style={styles.explanationText}>
             {userSettings.asrJuristic === 'Hanafi' 
-              ? '⏰ Hanafi: Asr begins when shadow = 2× object length (earlier)'
-              : '⏰ Standard: Asr begins when shadow = 1× object length (later)'
+              ? '⏰ Hanafi: Asr begins when shadow = 2× object length (later)'
+              : '⏰ Standard: Asr begins when shadow = 1× object length (earlier)'
             }
           </Text>
         </View>

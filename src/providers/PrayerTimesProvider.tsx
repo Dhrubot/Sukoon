@@ -92,7 +92,8 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
         location,
         today,
         userSettings.calculationMethod,
-        userSettings.adjustments
+        userSettings.adjustments,
+        userSettings.asrJuristic
       );
 
       // Load tomorrow's Fajr
@@ -100,7 +101,8 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
         location,
         tomorrow,
         userSettings.calculationMethod,
-        userSettings.adjustments
+        userSettings.adjustments,
+        userSettings.asrJuristic
       );
 
       const tomorrowFajrPrayer = tomorrowPrayers.find(p => p.name === 'Fajr') || null;
@@ -133,7 +135,7 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
         hasSettings: !!userSettings,
       });
     }
-  }, [hasValidLocation, userSettings?.calculationMethod]);
+  }, [hasValidLocation, userSettings?.calculationMethod, userSettings?.asrJuristic]);
 
   const refreshPrayerTimes = async () => {
     await loadPrayerTimes();

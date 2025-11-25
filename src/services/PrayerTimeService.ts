@@ -161,7 +161,8 @@ export class PrayerTimeService {
     coordinates: Coordinates,
     date: Date,
     method: CalculationMethod = "MWL",
-    adjustments?: Record<PrayerName, number>
+    adjustments?: Record<PrayerName, number>,
+    asrJuristic: "Standard" | "Hanafi" = "Standard"
   ): Promise<PrayerTime[]> {
     // CENTRAL GUARD - Stop invalid calls immediately
     if (!PrayerTimeService.isValidCoordinates(coordinates)) {
@@ -172,7 +173,7 @@ export class PrayerTimeService {
     }
 
     try {
-      const times = await this.fetchPrayerTimes(coordinates, date, method);
+      const times = await this.fetchPrayerTimes(coordinates, date, method, asrJuristic);
       const now = new Date();
 
       const prayerNames: PrayerName[] = [
@@ -214,7 +215,8 @@ export class PrayerTimeService {
           const tomorrowTimes = await this.fetchPrayerTimes(
             coordinates,
             addDays(date, 1),
-            method
+            method,
+            asrJuristic
           );
           const tomorrowFajr = this.parseTimeToDate(
             tomorrowTimes.Fajr,
