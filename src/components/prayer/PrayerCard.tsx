@@ -127,11 +127,9 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
       disabled={
         Boolean(
           record?.status === 'prayed' ||
-          isFuture(prayer.time) ||
-          // Special case: Fajr disabled after Sunrise
-          (prayer.name === 'Fajr' && todaySunrise && isPast(todaySunrise) && !record) ||
-          // Other prayers: disabled if next prayer has started
-          (isPast(prayer.time) && !record && nextPrayer && isPast(nextPrayer.time))
+          isFuture(prayer.time)
+          // ✅ REMOVED: Disabled conditions for missed prayers
+          // Users can now click missed prayers to mark them as makeup
         )
       }
       activeOpacity={0.8}
