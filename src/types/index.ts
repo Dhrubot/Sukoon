@@ -104,6 +104,7 @@ export interface UserSettings {
     Isha: boolean;
   };
   habitBuilder: HabitBuilderSettings;
+  mosqueMode: MosqueModeSettings;
   theme: "light" | "dark" | "auto";
 }
 
@@ -153,6 +154,33 @@ export interface HabitBuilderSettings {
     start: string; // "22:00" format
     end: string; // "04:00" format
   };
+}
+
+// Mosque Mode Settings (Silent Phone for Iqamah)
+export interface MosqueModeSettings {
+  enabled: boolean; // Master toggle for Mosque Mode
+  
+  // Iqamah times (minutes after adhan)
+  // e.g., if Fajr adhan is 5:10 AM and iqamah is 5:20 AM, offset is 10
+  iqamahOffsets: {
+    Fajr: number;    // Minutes after Fajr adhan (default: 10)
+    Dhuhr: number;   // Minutes after Dhuhr adhan (default: 10)
+    Asr: number;     // Minutes after Asr adhan (default: 10)
+    Maghrib: number; // Minutes after Maghrib adhan (default: 5)
+    Isha: number;    // Minutes after Isha adhan (default: 10)
+  };
+  
+  // Silent mode duration (minutes)
+  silentDuration: number; // How long to stay silent (default: 10)
+  
+  // Auto-restore ringer after duration
+  autoRestore: boolean; // Automatically restore normal mode (default: true)
+  
+  // Ask before enabling (show "Heading to mosque?" prompt)
+  promptBeforeEnable: boolean; // Show confirmation dialog (default: true)
+  
+  // Platform-specific settings
+  useVibrateInsteadOfSilent: boolean; // Use vibrate instead of complete silence (default: false)
 }
 
 // Prayer reminder state tracking

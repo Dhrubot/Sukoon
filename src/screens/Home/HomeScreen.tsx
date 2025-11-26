@@ -30,6 +30,7 @@ import DailyVerse from "../../components/common/DailyVerse";
 import QuickStats from "../../components/stats/QuickStats";
 import DigitalWellnessCard from "../../components/digitalWellness/DigitalWellnessCard";
 import { SunTimesDisplay } from "../../components/common/SunTimesDisplay";
+import { MosqueModeStatus } from "../../components/mosque";
 
 // Types
 import { Achievement, PrayerTime } from "../../types";
@@ -234,6 +235,9 @@ const HomeScreen = ({ navigation }: any) => {
 
           {/* Sunrise & Sunset Times */}
           <SunTimesDisplay sunrise={todaySunrise} sunset={todaySunset} />
+
+          {/* 🕌 Mosque Mode Status Banner */}
+          <MosqueModeStatus />
 
           {/* Next Prayer Card */}
           {nextPrayer && (

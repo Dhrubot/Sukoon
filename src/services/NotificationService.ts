@@ -9,6 +9,7 @@ import PrayerTimeService from './PrayerTimeService';
 import ReminderStateService from './ReminderStateService';
 import { format } from 'date-fns';
 import { CHANNELS, SOUNDS, NOTIFICATION_CHANNEL_VERSION } from '../constants/NotificationConstants';
+import MosqueModeService from './MosqueModeService';
 
 // Notification categories for iOS (Prayer Habit Builder)
 const NOTIFICATION_CATEGORIES = {
@@ -17,6 +18,7 @@ const NOTIFICATION_CATEGORIES = {
   POST_PRAYER_CHECK: 'post-prayer-check', // Tier 2: "Have you prayed?" reminders
   GRACE_PERIOD_WARNING: 'grace-period-warning', // Tier 3: Grace period ending warning
   SNOOZE_OPTIONS: 'snooze-options', // Custom snooze intervals
+  MOSQUE_REMINDER: 'mosque-reminder', // Mosque Mode: iOS reminder to enable DND
 };
 
 // Configure notification behavior
@@ -420,6 +422,10 @@ class NotificationService {
           break;
 
         default:
+          // Handle mosque mode notifications
+          if (data?.type && typeof data.type === 'string' && data.type.startsWith('mosque_mode')) {
+            await MosqueModeService.handleNotificationResponse(data);
+          }
           // Already handled above for DEFAULT_ACTION_IDENTIFIER
           break;
       }
@@ -1017,7 +1023,7 @@ private async scheduleTier3GracePeriodWarning(
 
         try {
           // Get times for this specific date
-          const prayers = await PrayerTimeService.getPrayerTimesList(
+          const prayerData = await PrayerTimeService.getPrayerTimesList(
             settings.location,
             date,
             settings.calculationMethod,
@@ -1025,6 +1031,7 @@ private async scheduleTier3GracePeriodWarning(
           );
 
           // Schedule them with next prayer info for Habit Builder
+          const prayers = prayerData.prayerTimes;
           for (let j = 0; j < prayers.length; j++) {
             const prayer = prayers[j];
             const nextPrayer = prayers[j + 1] || null; // Get next prayer for Tier 3

@@ -23,6 +23,9 @@ import { SettingRow } from '../../components/settings/SettingRow';
 // Enhanced Components
 import { PrayerSettingsSection } from './components/PrayerSettingsSection';
 
+// Mosque Mode Components
+import { MosqueModeToggle, IqamahTimeConfig } from '../../components/mosque';
+
 // Modal Components
 import { CalculationMethodModal, NotificationModal } from './modals';
 
@@ -113,6 +116,16 @@ const SettingsScreen = ({ navigation }: any) => {
           userSettings={userSettings}
           onNotificationPress={() => setShowNotificationModal(true)}
         />
+
+        {/* 🕌 Mosque Mode Settings */}
+        <SettingSection title="MOSQUE MODE">
+          <MosqueModeToggle />
+          {userSettings.mosqueMode?.enabled && (
+            <View style={{ marginTop: 16 }}>
+              <IqamahTimeConfig />
+            </View>
+          )}
+        </SettingSection>
 
         {/* 🎯 ENHANCED: Location Section with manual selection */}
         <LocationSection

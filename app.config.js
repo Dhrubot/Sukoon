@@ -55,6 +55,7 @@ export default {
       "./plugins/withModularHeaders.js",
       "./plugins/withAndroidIapFlavor.js",
       "./plugins/withNodePath.js",
+      "./plugins/withRingerMode.js",
       "expo-location",
       "expo-audio",
       [

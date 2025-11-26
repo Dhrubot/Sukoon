@@ -14,6 +14,7 @@ import {
   OnboardingProgress,
   PrayerReminderState,
   HabitBuilderSettings,
+  MosqueModeSettings,
 } from "../types";
 import { createStorage } from "./StorageAdapter";
 import { PRAYER_NAMES as PrayerName } from "../constants";
@@ -79,6 +80,7 @@ class StorageService {
         Isha: true,
       },
       habitBuilder: this.getDefaultHabitBuilderSettings(),
+      mosqueMode: this.getDefaultMosqueModeSettings(),
       theme: "auto",
     };
   }
@@ -107,6 +109,24 @@ class StorageService {
         start: "22:00",
         end: "04:00",
       },
+    };
+  }
+
+  // Default Mosque Mode settings
+  private getDefaultMosqueModeSettings(): MosqueModeSettings {
+    return {
+      enabled: false, // Disabled by default - user must opt-in
+      iqamahOffsets: {
+        Fajr: 10,    // 10 minutes after Fajr adhan
+        Dhuhr: 10,   // 10 minutes after Dhuhr adhan
+        Asr: 10,     // 10 minutes after Asr adhan
+        Maghrib: 5,  // 5 minutes after Maghrib (usually quicker)
+        Isha: 10,    // 10 minutes after Isha adhan
+      },
+      silentDuration: 10, // 10 minutes of silent mode
+      autoRestore: true,  // Automatically restore ringer
+      promptBeforeEnable: true, // Ask "Heading to mosque?" before enabling
+      useVibrateInsteadOfSilent: false, // Use complete silence by default
     };
   }
 
