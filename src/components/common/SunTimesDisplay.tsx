@@ -23,7 +23,7 @@ export const SunTimesDisplay: React.FC<SunTimesDisplayProps> = ({
     <View style={[styles.container, { backgroundColor: theme.colors.card.hover, borderColor: theme.colors.border.primary }]}>
       {/* Sunrise */}
       <View style={styles.timeBox}>
-        <Icon source={SunriseIcon} size={28} color={theme.colors.primary.DEFAULT} />
+        <Icon source={SunriseIcon} size={28} />
         <Text style={[styles.label, { color: theme.colors.text.secondary }]}>Sunrise</Text>
         <Text style={[styles.time, { color: theme.colors.text.primary }]}>{format(sunrise, 'h:mm a')}</Text>
       </View>
@@ -33,7 +33,7 @@ export const SunTimesDisplay: React.FC<SunTimesDisplayProps> = ({
 
       {/* Sunset */}
       <View style={styles.timeBox}>
-        <Icon source={SunsetIcon} size={28} color={theme.colors.primary.DEFAULT} />
+        <Icon source={SunsetIcon} size={28} />
         <Text style={[styles.label, { color: theme.colors.text.secondary }]}>Sunset</Text>
         <Text style={[styles.time, { color: theme.colors.text.primary }]}>{format(sunset, 'h:mm a')}</Text>
       </View>
