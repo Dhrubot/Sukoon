@@ -8,7 +8,7 @@ export default {
     icon: "./assets/icon.png",
     userInterfaceStyle: "automatic",
     splash: {
-      image: "./assets/crescent.png",
+      image: "./assets/icon.png",
       resizeMode: "contain",
       backgroundColor: "#1A1F3A",  // Dark theme background
     },
@@ -31,7 +31,7 @@ export default {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: "./assets/crescent.png",
+        foregroundImage: "./assets/icon.png",
         backgroundColor: "#1A1F3A",  // Dark theme background
       },
       package: "com.talukders.sukoon",
