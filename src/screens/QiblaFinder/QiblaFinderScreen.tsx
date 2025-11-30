@@ -1,31 +1,36 @@
 // src/screens/QiblaFinder/QiblaFinderScreen.tsx
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, Animated, Platform, Alert } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
-import { Magnetometer } from 'expo-sensors';
 import { useTheme } from '../../providers/ThemeProvider';
 
 const QiblaFinderScreen: React.FC = () => {
   const { theme } = useTheme();
   const [qiblaDirection, setQiblaDirection] = useState<number>(0);
-  const [magnetometerData, setMagnetometerData] = useState<number>(0);
+  const [compassHeading, setCompassHeading] = useState<number>(0);
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const rotateAnim = new Animated.Value(0);
+  
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const headingSubscription = useRef<Location.LocationSubscription | null>(null);
 
   // Kaaba coordinates
   const KAABA_LAT = 21.4225;
   const KAABA_LNG = 39.8262;
 
   useEffect(() => {
-    requestPermissions();
+    setupLocationAndCompass();
     return () => {
-      Magnetometer.removeAllListeners();
+      // Cleanup heading subscription
+      if (headingSubscription.current) {
+        headingSubscription.current.remove();
+      }
     };
   }, []);
 
+  // Update Qibla direction when location is found
   useEffect(() => {
     if (location) {
       const direction = calculateQiblaDirection(location.latitude, location.longitude);
@@ -33,24 +38,23 @@ const QiblaFinderScreen: React.FC = () => {
     }
   }, [location]);
 
+  // Handle smooth animation with shortest path rotation
   useEffect(() => {
-    let subscription: any;
-    if (location) {
-      subscription = Magnetometer.addListener((data: { x: number; y: number; z: number }) => {
-        let angle = Math.atan2(data.y, data.x) * (180 / Math.PI);
-        angle = angle >= 0 ? angle : angle + 360;
-        setMagnetometerData(angle);
-      });
-      Magnetometer.setUpdateInterval(100);
-    }
-    return () => {
-      if (subscription) {
-        subscription.remove();
-      }
-    };
-  }, [location]);
+    let diff = qiblaDirection - compassHeading;
 
-  const requestPermissions = async () => {
+    // Normalize rotation to take shortest path (avoid 360° spins)
+    while (diff < -180) diff += 360;
+    while (diff > 180) diff -= 360;
+
+    Animated.timing(rotateAnim, {
+      toValue: diff,
+      duration: 300,
+      easing: Easing.out(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+  }, [qiblaDirection, compassHeading, rotateAnim]);
+
+  const setupLocationAndCompass = async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
@@ -59,14 +63,26 @@ const QiblaFinderScreen: React.FC = () => {
         return;
       }
 
-      const currentLocation = await Location.getCurrentPositionAsync({});
+      // Get current location
+      const currentLocation = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      
       setLocation({
         latitude: currentLocation.coords.latitude,
         longitude: currentLocation.coords.longitude,
       });
+
+      // Start watching compass heading
+      headingSubscription.current = await Location.watchHeadingAsync((newHeading) => {
+        // Use trueHeading if available (more accurate), otherwise use magHeading
+        const heading = newHeading.trueHeading >= 0 ? newHeading.trueHeading : newHeading.magHeading;
+        setCompassHeading(heading);
+      });
+
       setIsLoading(false);
     } catch (err) {
-      setError('Unable to get your location. Please check your settings.');
+      setError('Unable to get location or compass data. Please check settings.');
       setIsLoading(false);
     }
   };
@@ -89,8 +105,6 @@ const QiblaFinderScreen: React.FC = () => {
 
     return bearing;
   };
-
-  const compassRotation = qiblaDirection - magnetometerData;
 
   if (isLoading) {
     return (
@@ -123,16 +137,13 @@ const QiblaFinderScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]} edges={['top']}>
-      {/* Header */}
       <View style={styles.header}>
         <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>
           Qibla Finder
         </Text>
       </View>
 
-      {/* Main Compass */}
       <View style={styles.compassContainer}>
-        {/* Kaaba Icon */}
         <View style={styles.kaabaIconContainer}>
           <Text style={styles.kaabaIcon}>🕋</Text>
           <Text style={[styles.kaabaText, { color: theme.colors.text.secondary }]}>
@@ -140,14 +151,19 @@ const QiblaFinderScreen: React.FC = () => {
           </Text>
         </View>
 
-        {/* Compass Circle */}
         <View style={[styles.compassCircle, { borderColor: theme.colors.border.primary }]}>
-          {/* Compass Needle */}
           <Animated.View
             style={[
               styles.needleContainer,
               {
-                transform: [{ rotate: `${compassRotation}deg` }],
+                transform: [
+                  { 
+                    rotate: rotateAnim.interpolate({
+                      inputRange: [-360, 360],
+                      outputRange: ['-360deg', '360deg']
+                    }) 
+                  }
+                ],
               },
             ]}
           >
@@ -155,21 +171,18 @@ const QiblaFinderScreen: React.FC = () => {
             <View style={[styles.needleBase, { backgroundColor: theme.colors.primary.light }]} />
           </Animated.View>
 
-          {/* Center Dot */}
           <View style={[styles.centerDot, { backgroundColor: theme.colors.primary.DEFAULT }]} />
         </View>
 
-        {/* Direction Info */}
         <View style={styles.directionInfo}>
           <Text style={[styles.directionLabel, { color: theme.colors.text.secondary }]}>
-            Direction
+            Qibla Direction
           </Text>
           <Text style={[styles.directionValue, { color: theme.colors.primary.DEFAULT }]}>
             {Math.round(qiblaDirection)}°
           </Text>
         </View>
 
-        {/* Location Info */}
         {location && (
           <View style={styles.locationInfo}>
             <Text style={[styles.locationText, { color: theme.colors.text.muted }]}>
@@ -178,7 +191,6 @@ const QiblaFinderScreen: React.FC = () => {
           </View>
         )}
 
-        {/* Instructions */}
         <View style={[styles.instructions, { backgroundColor: theme.colors.card.background, borderColor: theme.colors.border.primary }]}>
           <Text style={[styles.instructionText, { color: theme.colors.text.secondary }]}>
             Hold your phone flat and rotate until the needle points upward
@@ -194,61 +206,61 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingHorizontal: 24,           // 2xl
-    paddingTop: 20,                  // xl
-    paddingBottom: 16,               // lg
+    paddingHorizontal: 24,
+    paddingTop: 20,
+    paddingBottom: 16,
   },
   headerTitle: {
-    fontSize: 28,                    // 4xl
-    fontWeight: '700',               // bold
+    fontSize: 28,
+    fontWeight: '700',
   },
   content: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,           // 4xl
+    paddingHorizontal: 40,
   },
   loadingIcon: {
     fontSize: 60,
-    marginBottom: 24,                // 2xl
+    marginBottom: 24,
   },
   loadingText: {
-    fontSize: 16,                    // lg
-    fontWeight: '500',               // medium
+    fontSize: 16,
+    fontWeight: '500',
   },
   errorIcon: {
     fontSize: 60,
-    marginBottom: 24,                // 2xl
+    marginBottom: 24,
   },
   errorTitle: {
-    fontSize: 20,                    // 2xl
-    fontWeight: '700',               // bold
-    marginBottom: 12,                // md
+    fontSize: 20,
+    fontWeight: '700',
+    marginBottom: 12,
     textAlign: 'center',
   },
   errorText: {
-    fontSize: 15,                    // base
+    fontSize: 15,
     textAlign: 'center',
     lineHeight: 22,
-    paddingHorizontal: 20,           // xl
+    paddingHorizontal: 20,
   },
   compassContainer: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 40,             // 4xl
+    paddingVertical: 40,
   },
   kaabaIconContainer: {
     alignItems: 'center',
-    marginBottom: 40,                // 4xl
+    marginBottom: 40,
   },
   kaabaIcon: {
-    fontSize: 48,                    // icon 4xl
-    marginBottom: 8,                 // sm
+    fontSize: 48,
+    marginBottom: 8,
   },
   kaabaText: {
-    fontSize: 14,                    // md
-    fontWeight: '500',               // medium
+    fontSize: 14,
+    fontWeight: '500',
   },
   compassCircle: {
     width: 280,
@@ -287,31 +299,31 @@ const styles = StyleSheet.create({
   },
   directionInfo: {
     alignItems: 'center',
-    marginTop: 32,                   // 3xl
+    marginTop: 32,
   },
   directionLabel: {
-    fontSize: 14,                    // md
-    marginBottom: 8,                 // sm
+    fontSize: 14,
+    marginBottom: 8,
   },
   directionValue: {
-    fontSize: 32,                    // 5xl
-    fontWeight: '700',               // bold
+    fontSize: 32,
+    fontWeight: '700',
   },
   locationInfo: {
-    marginTop: 16,                   // lg
+    marginTop: 16,
   },
   locationText: {
-    fontSize: 13,                    // sm
+    fontSize: 13,
   },
   instructions: {
-    marginTop: 32,                   // 3xl
-    marginHorizontal: 32,            // 3xl
-    padding: 16,                     // lg
-    borderRadius: 12,                // md
+    marginTop: 32,
+    marginHorizontal: 32,
+    padding: 16,
+    borderRadius: 12,
     borderWidth: 1,
   },
   instructionText: {
-    fontSize: 14,                    // md
+    fontSize: 14,
     textAlign: 'center',
     lineHeight: 20,
   },
