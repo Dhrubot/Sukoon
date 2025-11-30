@@ -12,6 +12,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 import * as Location from 'expo-location';
 import * as Notifications from 'expo-notifications';
 
@@ -29,6 +31,7 @@ interface OnboardingScreenProps {
 type OnboardingStep = 'welcome' | 'name' | 'location' | 'notifications' | 'method';
 
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
+  const styles = useThemedStyles(createStyles);
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome');
   const [name, setName] = useState('');
   const [selectedMethod, setSelectedMethod] = useState<CalculationMethod>('MWL');
@@ -257,7 +260,10 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   };
 
   return (
-    <LinearGradient colors={['#1B5E3F', '#14432B']} style={styles.container}>
+    <LinearGradient 
+      colors={['#1A1F3A', '#252B47', '#2D3454']}  // Dark theme gradient
+      style={styles.container}
+    >
       <SafeAreaView style={styles.safeArea}>
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -279,7 +285,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -301,7 +307,7 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.primary.DEFAULT,
     borderRadius: 2,
   },
   stepContainer: {
@@ -315,21 +321,21 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontSize: 32,  // 5xl
+    fontWeight: '700',  // bold
+    color: theme.colors.text.primary,
     textAlign: 'center',
     marginBottom: 16,
   },
   subtitle: {
-    fontSize: 18,
+    fontSize: 18,  // xl
     color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
     marginBottom: 16,
     lineHeight: 26,
   },
   description: {
-    fontSize: 16,
+    fontSize: 16,  // lg
     color: 'rgba(255, 255, 255, 0.7)',
     textAlign: 'center',
     marginBottom: 40,
@@ -340,8 +346,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 20,
-    fontSize: 18,
-    color: '#FFFFFF',
+    fontSize: 18,  // xl
+    color: theme.colors.text.primary,
     width: '100%',
     marginBottom: 32,
     borderWidth: 1,
@@ -359,12 +365,12 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   buttonText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontSize: 18,  // xl
+    fontWeight: '600',  // semibold
+    color: theme.colors.text.primary,
   },
   skipText: {
-    fontSize: 16,
+    fontSize: 16,  // lg
     color: 'rgba(255, 255, 255, 0.6)',
     marginTop: 20,
   },
@@ -383,15 +389,15 @@ const styles = StyleSheet.create({
   },
   methodOptionSelected: {
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderColor: '#FFFFFF',
+    borderColor: theme.colors.primary.DEFAULT,
   },
   methodText: {
-    fontSize: 16,
+    fontSize: 16,  // lg
     color: 'rgba(255, 255, 255, 0.8)',
   },
   methodTextSelected: {
-    color: '#FFFFFF',
-    fontWeight: '600',
+    color: theme.colors.primary.DEFAULT,
+    fontWeight: '600',  // semibold
   },
   toggleContainer: {
     width: '100%',
@@ -407,12 +413,12 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   toggleLabel: {
-    fontSize: 18,
-    color: '#FFFFFF',
-    fontWeight: '600',
+    fontSize: 18,  // xl
+    color: theme.colors.text.primary,
+    fontWeight: '600',  // semibold
   },
   toggleDescription: {
-    fontSize: 14,
+    fontSize: 14,  // md
     color: 'rgba(255,255,255,0.7)',
   },
 });

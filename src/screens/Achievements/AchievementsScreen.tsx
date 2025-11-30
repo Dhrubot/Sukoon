@@ -14,12 +14,15 @@ import { useStore } from '../../store/useStore';
 import StorageService from '../../services/StorageService';
 import AchievementService from '../../services/AchievementService';
 import { Achievement } from '../../types';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 
 const { width } = Dimensions.get('window');
 
 type CategoryFilter = 'all' | 'prayer' | 'streak' | 'mindfulness' | 'focus' | 'special';
 
 const AchievementsScreen: React.FC = () => {
+  const styles = useThemedStyles(createStyles);
   const { achievements, setAchievements } = useStore();
   const [isLoading, setIsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState<CategoryFilter>('all');
@@ -267,10 +270,10 @@ const AchievementsScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: theme.colors.background.primary,
   },
   loadingContainer: {
     flex: 1,
@@ -279,32 +282,34 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 16,
-    fontSize: 16,
-    color: '#757575',
+    fontSize: 16,  // lg
+    color: theme.colors.text.secondary,
   },
   header: {
     padding: 20,
   },
   title: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#212121',
+    fontSize: 32,  // 5xl
+    fontWeight: '700',  // bold
+    color: theme.colors.text.primary,
     marginBottom: 20,
   },
   progressCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.card.background,
     borderRadius: 16,
     padding: 20,
+    borderWidth: 1,
+    borderColor: theme.colors.border.primary,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 3,
   },
   progressTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#212121',
+    fontSize: 18,  // xl
+    fontWeight: '600',  // semibold
+    color: theme.colors.text.primary,
     marginBottom: 16,
   },
   progressStats: {
@@ -316,28 +321,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statNumber: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#1B5E3F',
+    fontSize: 28,  // 4xl
+    fontWeight: '700',  // bold
+    color: theme.colors.primary.DEFAULT,
   },
   statLabel: {
-    fontSize: 14,
-    color: '#757575',
+    fontSize: 14,  // md
+    color: theme.colors.text.secondary,
     marginTop: 4,
   },
   statDivider: {
     width: 1,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: theme.colors.border.primary,
   },
   progressBarContainer: {
     height: 8,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: theme.colors.card.hover,
     borderRadius: 4,
     overflow: 'hidden',
   },
   progressBar: {
     height: '100%',
-    backgroundColor: '#4CAF50',
+    backgroundColor: theme.colors.primary.DEFAULT,
     borderRadius: 4,
   },
   categoryContainer: {
@@ -348,30 +353,30 @@ const styles = StyleSheet.create({
   categoryButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.card.background,
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 20,
     marginRight: 12,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: theme.colors.border.primary,
   },
   categoryButtonActive: {
-    backgroundColor: '#E8F5E9',
-    borderColor: '#4CAF50',
+    backgroundColor: theme.colors.card.hover,
+    borderColor: theme.colors.primary.DEFAULT,
   },
   categoryIcon: {
-    fontSize: 20,
+    fontSize: 20,  // 2xl
     marginRight: 8,
   },
   categoryLabel: {
-    fontSize: 14,
-    color: '#757575',
-    fontWeight: '500',
+    fontSize: 14,  // md
+    color: theme.colors.text.secondary,
+    fontWeight: '500',  // medium
   },
   categoryLabelActive: {
-    color: '#1B5E3F',
-    fontWeight: '600',
+    color: theme.colors.primary.DEFAULT,
+    fontWeight: '600',  // semibold
   },
   achievementsGrid: {
     flexDirection: 'row',
@@ -403,45 +408,45 @@ const styles = StyleSheet.create({
     padding: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: theme.colors.card.background,
     borderWidth: 2,
-    borderColor: '#E0E0E0',
+    borderColor: theme.colors.border.primary,
     borderStyle: 'dashed',
   },
   achievementIcon: {
-    fontSize: 48,
+    fontSize: 48,  // icon 4xl
     marginBottom: 12,
   },
   lockedIconContainer: {
     marginBottom: 12,
   },
   lockedIcon: {
-    fontSize: 32,
+    fontSize: 32,  // 5xl
     opacity: 0.5,
   },
   achievementName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontSize: 16,  // lg
+    fontWeight: '600',  // semibold
+    color: theme.colors.text.primary,
     textAlign: 'center',
     marginBottom: 8,
   },
   achievementNameLocked: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#424242',
+    fontSize: 16,  // lg
+    fontWeight: '600',  // semibold
+    color: theme.colors.text.secondary,
     textAlign: 'center',
     marginBottom: 8,
   },
   achievementDescription: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 13,  // sm (adjusted up)
+    color: theme.colors.text.primary,
     textAlign: 'center',
     marginBottom: 12,
   },
   achievementDescriptionLocked: {
-    fontSize: 12,
-    color: '#757575',
+    fontSize: 13,  // sm (adjusted up)
+    color: theme.colors.text.muted,
     textAlign: 'center',
   },
   tierBadge: {
@@ -454,9 +459,9 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   tierText: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontSize: 11,  // xs (adjusted up)
+    fontWeight: '700',  // bold
+    color: theme.colors.text.primary,
   },
   progressContainer: {
     width: '100%',
@@ -467,13 +472,13 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   progressText: {
-    fontSize: 12,
-    color: '#757575',
-    fontWeight: '600',
+    fontSize: 13,  // sm (adjusted up)
+    color: theme.colors.text.secondary,
+    fontWeight: '600',  // semibold
   },
   miniProgressBar: {
     height: 4,
-    backgroundColor: '#E0E0E0',
+    backgroundColor: theme.colors.card.hover,
     borderRadius: 2,
     overflow: 'hidden',
   },
@@ -482,20 +487,22 @@ const styles = StyleSheet.create({
     borderRadius: 2,
   },
   tipsSection: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: theme.colors.card.background,
     padding: 20,
     margin: 20,
     borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.border.primary,
   },
   tipsTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1B5E3F',
+    fontSize: 16,  // lg
+    fontWeight: '600',  // semibold
+    color: theme.colors.primary.DEFAULT,
     marginBottom: 12,
   },
   tipText: {
-    fontSize: 14,
-    color: '#2E7D32',
+    fontSize: 14,  // md
+    color: theme.colors.text.secondary,
     lineHeight: 22,
     marginBottom: 8,
   },

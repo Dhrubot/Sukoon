@@ -1,6 +1,13 @@
 // src/components/settings/SettingRow.tsx
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  Switch,
+} from 'react-native';
+import { useTheme } from '../../providers/ThemeProvider';
 
 interface SettingRowProps {
   label: string;
@@ -21,8 +28,10 @@ export const SettingRow: React.FC<SettingRowProps> = ({
   isDanger = false,
   disabled = false,
 }) => {
+  const { theme } = useTheme();
+
   const Component = onPress ? TouchableOpacity : View;
-  
+
   return (
     <Component
       style={[styles.settingRow, disabled && styles.disabledRow]}
@@ -30,25 +39,19 @@ export const SettingRow: React.FC<SettingRowProps> = ({
       disabled={disabled || !onPress}
     >
       <View style={styles.leftContent}>
-        <Text style={[styles.settingLabel, isDanger && styles.dangerText, disabled && styles.disabledText]}>
-          {label}
-        </Text>
+        <Text style={[styles.settingLabel, isDanger && styles.dangerText, disabled && styles.disabledText, { color: theme.colors.text.primary }]}>{label}</Text>
         {subtitle && (
-          <Text style={[styles.settingSubtext, disabled && styles.disabledText]}>
-            {subtitle}
-          </Text>
+          <Text style={[styles.settingSubtext, disabled && styles.disabledText, { color: theme.colors.text.muted }]}>{subtitle}</Text>
         )}
       </View>
-      
+
       <View style={styles.rightContent}>
         {rightComponent || (
           <>
             {value && (
-              <Text style={[styles.settingValue, disabled && styles.disabledText]}>
-                {value}
-              </Text>
+              <Text style={[styles.settingValue, disabled && styles.disabledText, { color: theme.colors.text.secondary }]}>{value}</Text>
             )}
-            {onPress && <Text style={[styles.chevron, disabled && styles.disabledText]}>›</Text>}
+            {onPress && <Text style={[styles.chevron, disabled && styles.disabledText, { color: theme.colors.primary.DEFAULT }]}>›</Text>}
           </>
         )}
       </View>
@@ -72,22 +75,20 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   settingLabel: {
-    fontSize: 16,
-    color: '#212121',
+    fontSize: 16,  // lg
+    fontWeight: '500',  // medium
   },
   settingSubtext: {
-    fontSize: 14,
-    color: '#757575',
+    fontSize: 13,  // sm
     marginTop: 4,
-    lineHeight: 18,
   },
   settingValue: {
-    fontSize: 16,
-    color: '#757575',
+    fontSize: 15,  // base
+    marginRight: 8,
   },
   chevron: {
-    fontSize: 20,
-    color: '#757575',
+    fontSize: 24,  // 3xl
+    fontWeight: '300',
   },
   dangerText: {
     color: '#F44336',

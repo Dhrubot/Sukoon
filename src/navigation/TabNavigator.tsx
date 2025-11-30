@@ -1,108 +1,108 @@
 // src/navigation/TabNavigator.tsx
 import React from 'react';
-import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { TabParamList } from '../types/navigation';
+import { useTheme } from '../providers/ThemeProvider';
+import { Icon } from '../components/common/Icon';
+import {
+  HomeTabIcon,
+  QiblaTabIcon,
+  ProgressTabIcon,
+} from '../assets/icons';
 
 import HomeScreen from '../screens/Home/HomeScreen';
 import StatsScreen from '../screens/Stats/StatsScreen';
-import SettingsScreen from '../screens/Settings/SettingsScreen';
-import AchievementsScreen from '../screens/Achievements/AchievementsScreen';
-import DigitalWellnessScreen from '../screens/DigitalWellness/DigitalWellnessScreen';
-import SupportScreen from '../screens/Support/SupportScreen';
+import QiblaFinderScreen from '../screens/QiblaFinder/QiblaFinderScreen';
+import { MenuStackNavigator } from './MenuStackNavigator';
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
-const tabScreens: {
-  name: keyof TabParamList;
-  component: React.ComponentType<any>;
-  options: any;
-}[] = [
-  {
-    name: 'Home',
-    component: HomeScreen,
-    options: {
-      tabBarLabel: 'Prayer Times',
-      tabBarIcon: ({ color, size }: any) => (
-        <Text style={{ fontSize: size, color }}>🕌</Text>
-      ),
-    },
-  },
-  {
-    name: 'Stats',
-    component: StatsScreen,
-    options: {
-      tabBarLabel: 'Progress',
-      tabBarIcon: ({ color, size }: any) => (
-        <Text style={{ fontSize: size, color }}>📊</Text>
-      ),
-    },
-  },
-  {
-    name: 'Achievements',
-    component: AchievementsScreen,
-    options: {
-      tabBarIcon: ({ color, size }: any) => (
-        <Text style={{ fontSize: size }}>🏆</Text>
-      ),
-    },
-  },
-  {
-    name: 'DigitalWellness',
-    component: DigitalWellnessScreen,
-    options: {
-      tabBarIcon: ({ color, size }: any) => (
-        <Text style={{ fontSize: size }}>📱</Text>
-      ),
-      tabBarLabel: 'Digital',
-    },
-  },
-  {
-    name: 'Support',
-    component: SupportScreen,
-    options: {
-      tabBarIcon: ({ color, size }: any) => (
-        <Text style={{ fontSize: size, color }}>💚</Text>
-      ),
-      tabBarLabel: 'Support',
-    },
-  },
-  {
-    name: 'Settings',
-    component: SettingsScreen,
-    options: {
-      tabBarLabel: 'Settings',
-      tabBarIcon: ({ color, size }: any) => (
-        <Text style={{ fontSize: size, color }}>⚙️</Text>
-      ),
-    },
-  },
-];
+import Svg, { Circle } from 'react-native-svg';
+
+// More menu icon component (three dots)
+const MoreIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill={color}>
+    <Circle cx="12" cy="5" r="2" fill={color} />
+    <Circle cx="12" cy="12" r="2" fill={color} />
+    <Circle cx="12" cy="19" r="2" fill={color} />
+  </Svg>
+);
 
 export const TabNavigator: React.FC = () => {
+  const { theme } = useTheme();
+  
   return (
     <Tab.Navigator
       screenOptions={{
-        tabBarActiveTintColor: '#1B5E3F',
-        tabBarInactiveTintColor: '#757575',
+        tabBarActiveTintColor: theme.colors.primary.DEFAULT,
+        tabBarInactiveTintColor: theme.colors.text.muted,
         headerShown: false,
         tabBarStyle: {
-          borderTopWidth: 1,
-          borderTopColor: '#E0E0E0',
-          paddingBottom: 5,
-          paddingTop: 5,
-          height: 60,
+          backgroundColor: theme.colors.background.primary,
+          borderTopWidth: 0,
+          elevation: 8,
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 8,
+          paddingBottom: 8,
+          paddingTop: 8,
+          height: 65,
+        },
+        tabBarLabelStyle: {
+          fontSize: 11,
+          fontWeight: '600',
+          marginTop: 4,
+        },
+        tabBarItemStyle: {
+          paddingHorizontal: 4,
+        },
+        tabBarIconStyle: {
+          marginTop: 4,
         },
       }}
     >
-      {tabScreens.map((screen) => (
-        <Tab.Screen
-          key={screen.name}
-          name={screen.name}
-          component={screen.component}
-          options={screen.options}
-        />
-      ))}
+      <Tab.Screen
+        name="Home"
+        component={HomeScreen}
+        options={{
+          tabBarLabel: 'Prayer Times',
+          tabBarIcon: ({ color }) => (
+            <Icon source={HomeTabIcon} size={36} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="QiblaFinder"
+        component={QiblaFinderScreen}
+        options={{
+          tabBarLabel: 'Qibla',
+          tabBarIcon: ({ color }) => (
+            <Icon source={QiblaTabIcon} size={28} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Stats"
+        component={StatsScreen}
+        options={{
+          tabBarLabel: 'Progress',
+          tabBarIcon: ({ color }) => (
+            <Icon source={ProgressTabIcon} size={28} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Menu"
+        component={MenuStackNavigator}
+        options={{
+          tabBarLabel: 'More',
+          tabBarIcon: ({ color }) => (
+            <MoreIcon color={color} size={28} />
+          ),
+          headerShown: false,
+        }}
+      />
     </Tab.Navigator>
   );
 };

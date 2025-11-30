@@ -7,6 +7,36 @@ import {
   Share,
   Platform,
 } from 'react-native';
+import Svg, { Path } from 'react-native-svg';
+import { useTheme } from '../../providers/ThemeProvider';
+
+// Quran/Book Icon Component
+const QuranIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M4 19.5C4 18.837 4.26339 18.2011 4.73223 17.7322C5.20107 17.2634 5.83696 17 6.5 17H20"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M6.5 2H20V22H6.5C5.83696 22 5.20107 21.7366 4.73223 21.2678C4.26339 20.7989 4 20.163 4 19.5V4.5C4 3.83696 4.26339 3.20107 4.73223 2.73223C5.20107 2.26339 5.83696 2 6.5 2Z"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M12 6L14 10L12 14L10 10L12 6Z"
+      fill={color}
+      stroke={color}
+      strokeWidth="1"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
 
 // Sample verses - in production, this would come from a larger database
 const verses = [
@@ -37,6 +67,7 @@ const verses = [
 ];
 
 const DailyVerse: React.FC = () => {
+  const { theme } = useTheme();
   const [verse, setVerse] = useState(verses[0]);
   const [showTranslation, setShowTranslation] = useState(true);
 
@@ -64,28 +95,31 @@ const DailyVerse: React.FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Daily Verse 📖</Text>
+        <View style={styles.titleRow}>
+          <QuranIcon color={theme.colors.primary.DEFAULT} size={24} />
+          <Text style={[styles.title, { color: theme.colors.text.primary }]}>Daily Verse</Text>
+        </View>
         <TouchableOpacity onPress={handleShare}>
-          <Text style={styles.shareButton}>Share</Text>
+          <Text style={[styles.shareButton, { color: theme.colors.primary.DEFAULT }]}>Share</Text>
         </TouchableOpacity>
       </View>
 
       <TouchableOpacity
-        style={styles.verseContainer}
+        style={[styles.verseContainer, { backgroundColor: theme.colors.card.background, borderColor: theme.colors.border.primary }]}
         onPress={() => setShowTranslation(!showTranslation)}
         activeOpacity={0.8}
       >
-        <Text style={styles.arabic}>{verse.arabic}</Text>
+        <Text style={[styles.arabic, { color: theme.colors.text.primary }]}>{verse.arabic}</Text>
         
         {showTranslation && (
           <>
-            <Text style={styles.translation}>"{verse.translation}"</Text>
-            <Text style={styles.reference}>{verse.reference}</Text>
+            <Text style={[styles.translation, { color: theme.colors.text.secondary }]}>"{verse.translation}"</Text>
+            <Text style={[styles.reference, { color: theme.colors.text.muted }]}>{verse.reference}</Text>
           </>
         )}
       </TouchableOpacity>
 
-      <Text style={styles.hint}>Tap to toggle translation</Text>
+      <Text style={[styles.hint, { color: theme.colors.text.muted }]}>Tap to toggle translation</Text>
     </View>
   );
 };
@@ -101,49 +135,46 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 12,
   },
+  titleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   title: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontSize: 20,  // 2xl
+    fontWeight: '600',  // semibold
   },
   shareButton: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontWeight: '500',
+    fontSize: 14,  // md
+    fontWeight: '600',  // semibold
   },
   verseContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
     borderRadius: 16,
     padding: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   arabic: {
-    fontSize: 24,
+    fontSize: 24,  // 3xl
     textAlign: 'center',
-    color: '#FFFFFF',
     marginBottom: 16,
     lineHeight: 36,
     fontFamily: Platform.OS === 'ios' ? 'Damascus' : 'serif',
   },
   translation: {
-    fontSize: 16,
+    fontSize: 16,  // lg
     textAlign: 'center',
-    color: 'rgba(255, 255, 255, 0.9)',
     marginBottom: 12,
     lineHeight: 24,
     fontStyle: 'italic',
   },
   reference: {
-    fontSize: 14,
+    fontSize: 14,  // md
     textAlign: 'center',
-    color: 'rgba(255, 255, 255, 0.7)',
-    fontWeight: '500',
+    fontWeight: '500',  // medium
   },
   hint: {
-    fontSize: 12,
+    fontSize: 13,  // sm (adjusted up)
     textAlign: 'center',
-    color: 'rgba(255, 255, 255, 0.5)',
     marginTop: 8,
   },
 });

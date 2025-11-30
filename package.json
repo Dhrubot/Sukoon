@@ -27,12 +27,14 @@
     "expo-apple-authentication": "^7.2.4",
     "expo-audio": "~0.4.9",
     "expo-auth-session": "^6.2.0",
+    "expo-build-properties": "~0.14.8",
     "expo-constants": "^17.1.6",
     "expo-device": "^7.1.4",
     "expo-haptics": "^14.1.4",
     "expo-linear-gradient": "^14.1.5",
     "expo-location": "^18.1.5",
     "expo-notifications": "^0.31.3",
+    "expo-sensors": "^15.0.7",
     "expo-splash-screen": "^0.30.9",
     "expo-status-bar": "~2.2.3",
     "nativewind": "^4.1.23",
@@ -51,8 +53,7 @@
     "react-native-screens": "^4.11.1",
     "react-native-svg": "15.11.2",
     "react-native-web": "^0.20.0",
-    "zustand": "^5.0.5",
-    "expo-build-properties": "~0.14.8"
+    "zustand": "^5.0.5"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
@@ -64,6 +65,7 @@
     "eslint-plugin-react": "^7.34.1",
     "eslint-plugin-react-native": "^4.1.0",
     "react-native-clean-project": "^4.0.3",
+    "react-native-svg-transformer": "^1.5.2",
     "tailwindcss": "^3.4.17",
     "typescript": "~5.8.3"
   },

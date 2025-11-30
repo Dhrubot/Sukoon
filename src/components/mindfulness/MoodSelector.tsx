@@ -111,8 +111,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 18,  // xl
+    fontWeight: '600',  // semibold
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 24,
@@ -147,23 +147,23 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   moodEmoji: {
-    fontSize: 32,
+    fontSize: 32,  // 5xl
   },
   moodLabel: {
-    fontSize: 12,
+    fontSize: 13,  // sm (adjusted up)
     color: 'rgba(255, 255, 255, 0.7)',
     textAlign: 'center',
   },
   moodLabelActive: {
     color: '#FFFFFF',
-    fontWeight: '600',
+    fontWeight: '600',  // semibold
   },
   feedbackContainer: {
     marginTop: 16,
     paddingHorizontal: 32,
   },
   feedbackText: {
-    fontSize: 16,
+    fontSize: 16,  // lg
     color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
     fontStyle: 'italic',

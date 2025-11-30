@@ -3,6 +3,9 @@ import React from 'react';
 import { View, Text, ScrollView, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LocationModal } from '../../components/LocationModal';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { useTheme } from '../../providers/ThemeProvider';
+import { AppTheme } from '../../theme';
 
 // Hooks
 import { useSettingsManager } from './hooks';
@@ -14,14 +17,22 @@ import {
   AppDataSection,
   AboutSection,
 } from './components';
+import { SettingSection } from '../../components/settings/SettingSection';
+import { SettingRow } from '../../components/settings/SettingRow';
 
 // Enhanced Components
 import { PrayerSettingsSection } from './components/PrayerSettingsSection';
+
+// Mosque Mode Components
+import { MosqueModeToggle, IqamahTimeConfig } from '../../components/mosque';
 
 // Modal Components
 import { CalculationMethodModal, NotificationModal } from './modals';
 
 const SettingsScreen = ({ navigation }: any) => {
+  const styles = useThemedStyles(createStyles);
+  const { theme, themeMode, toggleTheme } = useTheme();
+  
   const {
     // Existing state
     userSettings,
@@ -106,6 +117,16 @@ const SettingsScreen = ({ navigation }: any) => {
           onNotificationPress={() => setShowNotificationModal(true)}
         />
 
+        {/* 🕌 Mosque Mode Settings */}
+        <SettingSection title="MOSQUE MODE">
+          <MosqueModeToggle />
+          {userSettings.mosqueMode?.enabled && (
+            <View style={{ marginTop: 16 }}>
+              <IqamahTimeConfig />
+            </View>
+          )}
+        </SettingSection>
+
         {/* 🎯 ENHANCED: Location Section with manual selection */}
         <LocationSection
           userSettings={userSettings}
@@ -130,6 +151,16 @@ const SettingsScreen = ({ navigation }: any) => {
         <TouchableOpacity onPress={() => navigation.navigate('NotificationDebug')}>
           <Text>🔧 Notification Debugger</Text>
         </TouchableOpacity>
+
+        {/* Appearance Settings */}
+        <SettingSection title="APPEARANCE">
+          <SettingRow
+            label="App Theme"
+            subtitle="Switch between dark and light mode"
+            value={themeMode === 'dark' ? '🌙 Dark' : '☀️ Light'}
+            onPress={toggleTheme}
+          />
+        </SettingSection>
 
         {/* About */}
         <AboutSection
@@ -189,10 +220,10 @@ const SettingsScreen = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.background.primary,
   },
   scrollContent: {
     paddingBottom: 20,
@@ -204,68 +235,84 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   loadingText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#495057',
-    marginBottom: 8,
+    marginTop: 16,
+    fontSize: 16,  // lg
+    color: theme.colors.text.secondary,
   },
   loadingSubtext: {
-    fontSize: 14,
-    color: '#6C757D',
+    marginTop: 8,
+    fontSize: 14,  // md
+    color: theme.colors.text.muted,
     textAlign: 'center',
   },
   header: {
-    paddingHorizontal: 20,
-    paddingVertical: 24,
+    padding: 20,
+    paddingBottom: 10,
+    backgroundColor: theme.colors.background.primary,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: theme.colors.border.secondary,
   },
   title: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#1B5E3F',
-    marginBottom: 4,
+    fontSize: 32,  // 5xl
+    fontWeight: '700',  // bold
+    color: theme.colors.text.primary,
+    marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#6C757D',
+    fontSize: 16,  // lg
+    color: theme.colors.text.secondary,
   },
 
   // 🎯 NEW: Status section styles
   statusSection: {
     margin: 20,
-    backgroundColor: '#F8F9FA',
-    borderRadius: 12,
     padding: 16,
+    backgroundColor: theme.colors.card.background,
+    borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#E9ECEF',
+    borderColor: theme.colors.border.primary,
   },
   statusTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#495057',
+    fontSize: 14,  // md
+    fontWeight: '600',  // semibold
+    color: theme.colors.text.secondary,
     marginBottom: 12,
+    letterSpacing: 0.5,
   },
   statusRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
     marginBottom: 8,
   },
   statusLabel: {
-    fontSize: 14,
-    color: '#6C757D',
+    fontSize: 14,  // md
+    color: theme.colors.text.secondary,
   },
   statusValue: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#495057',
+    fontSize: 14,  // md
+    fontWeight: '600',  // semibold
+    color: theme.colors.text.primary,
+  },
+  statusValueGood: {
+    color: theme.colors.primary.DEFAULT,
   },
   statusConnected: {
-    color: '#28A745',
+    color: theme.colors.status.success,
   },
   statusDisconnected: {
-    color: '#DC3545',
+    color: theme.colors.status.error,
+  },
+  debugButton: {
+    marginTop: 12,
+    backgroundColor: theme.colors.card.hover,
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  debugButtonText: {
+    color: theme.colors.primary.DEFAULT,
+    fontSize: 14,  // md
+    fontWeight: '600',  // semibold
   },
 });
 

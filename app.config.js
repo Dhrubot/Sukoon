@@ -8,9 +8,9 @@ export default {
     icon: "./assets/icon.png",
     userInterfaceStyle: "automatic",
     splash: {
-      image: "./assets/crescent.png",
+      image: "./assets/icon.png",
       resizeMode: "contain",
-      backgroundColor: "#1B5E3F",
+      backgroundColor: "#1A1F3A",  // Dark theme background
     },
     assetBundlePatterns: ["**/*"],
     ios: {
@@ -30,10 +30,13 @@ export default {
       jsEngine: "hermes"
     },
     android: {
+      appBundles: true,
       adaptiveIcon: {
-        foregroundImage: "./assets/crescent.png",
-        backgroundColor: "#1B5E3F",
+        foregroundImage: "./assets/icon.png",
+        backgroundColor: "#1A1F3A",  // Dark theme background
       },
+      enableProguardInReleaseBuilds: true,
+      enableShrinkResources: true,
       package: "com.talukders.sukoon",
       jsEngine: "hermes",
       permissions: [
@@ -55,13 +58,14 @@ export default {
       "./plugins/withModularHeaders.js",
       "./plugins/withAndroidIapFlavor.js",
       "./plugins/withNodePath.js",
+      "./plugins/withRingerMode.js",
       "expo-location",
       "expo-audio",
       [
         "expo-notifications",
         {
           "icon": "./assets/notification-icon.png",
-          "color": "#1B5E3F",
+          "color": "#00C9A7",  // Turquoise primary color
           "sounds": [
             "./assets/sounds/adhan_short.wav",
             "./assets/sounds/adhan_full.mp3"

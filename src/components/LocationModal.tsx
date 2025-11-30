@@ -131,27 +131,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: 'white',
+    backgroundColor: '#252B47', // Dark card background
     borderRadius: 10,
     padding: 20,
     width: '90%',
     maxWidth: 500,
+    borderWidth: 1,
+    borderColor: '#2D3454',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
+    shadowOpacity: 0.4,
     shadowRadius: 3.84,
     elevation: 5,
   },
   modalTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
+    fontSize: 20,  // 2xl (adjusted)
+    fontWeight: '700',  // bold
     marginBottom: 8,
-    color: '#1B5E3F',
+    color: '#00C9A7', // Turquoise accent
     textAlign: 'center',
   },
   modalSubtitle: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 14,  // md
+    color: '#A0AEC0',
     marginBottom: 20,
     textAlign: 'center',
   },
@@ -159,17 +161,18 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   label: {
-    fontSize: 16,
+    fontSize: 16,  // lg
     marginBottom: 5,
-    color: '#333',
+    color: '#FFFFFF',
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#2D3454',
     borderRadius: 5,
     padding: 10,
-    fontSize: 16,
-    backgroundColor: '#f9f9f9',
+    fontSize: 16,  // lg
+    backgroundColor: '#1A1F3A',
+    color: '#FFFFFF',
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -183,21 +186,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   submitButton: {
-    backgroundColor: '#1B5E3F',
+    backgroundColor: '#00C9A7', // Turquoise accent
   },
   buttonText: {
     color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 16,  // lg
+    fontWeight: '600',  // semibold
   },
   errorText: {
-    color: 'red',
+    color: '#F44336',
     marginBottom: 10,
     textAlign: 'center',
   },
   noteText: {
-    fontSize: 12,
-    color: '#666',
+    fontSize: 13,  // sm (adjusted up)
+    color: '#6C7A89',
     marginTop: 15,
     textAlign: 'center',
     fontStyle: 'italic',

@@ -32,7 +32,7 @@ export const AboutSection: React.FC<AboutSectionProps> = ({
 
 const styles = StyleSheet.create({
   aboutText: {
-    fontSize: 14,
+    fontSize: 14,  // md
     color: '#757575',
     textAlign: 'center',
     marginTop: 16,

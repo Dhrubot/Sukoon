@@ -10,6 +10,7 @@ export const CHANNELS = {
   DEFAULT: `prayer-times-default-v${NOTIFICATION_CHANNEL_VERSION}`,
   PRE_PRAYER: `pre-prayer-v${NOTIFICATION_CHANNEL_VERSION}`,
   MINDFULNESS: `mindfulness-v${NOTIFICATION_CHANNEL_VERSION}`,
+  GRACE_WARNING: `grace-warning-v${NOTIFICATION_CHANNEL_VERSION}`, // Prayer Habit Builder Tier 3
 };
 
 export const SOUNDS = {

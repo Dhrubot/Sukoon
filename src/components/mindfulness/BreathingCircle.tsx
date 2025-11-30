@@ -329,20 +329,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   breathNumber: {
-    fontSize: 48,
+    fontSize: 48,  // icon 4xl
     fontWeight: '300',
     color: '#FFFFFF',
   },
   breathLabel: {
-    fontSize: 16,
+    fontSize: 16,  // lg
     color: 'rgba(255, 255, 255, 0.8)',
     marginTop: -4,
   },
   phaseText: {
     position: 'absolute',
     bottom: -50,
-    fontSize: 20,
-    fontWeight: '500',
+    fontSize: 20,  // 2xl
+    fontWeight: '500',  // medium
     color: '#FFFFFF',
     textAlign: 'center',
   },

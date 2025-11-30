@@ -5,7 +5,9 @@ import { SettingSection } from '../../../components/settings/SettingSection';
 import { SettingRow } from '../../../components/settings/SettingRow';
 import { SegmentedControl } from '../../../components/settings/SegmentedControl';
 import StorageService from '../../../services/StorageService';
-import { UserSettings, CalculationMethodType, PrayerTime } from '../../../types';
+import { UserSettings, CalculationMethodType, PrayerTime, PrayerName } from '../../../types';
+import { useTheme } from '../../../providers/ThemeProvider';
+import { NotificationToggleButton } from '../../../components/common/NotificationToggleButton';
 
 interface PrayerSettingsSectionProps {
   userSettings: UserSettings;
@@ -49,11 +51,27 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
     {
       value: 'Hanafi',
       label: 'Hanafi',
-      description: 'Earlier Asr time',
+      description: 'Later Asr time',
     },
   ];
 
   // 🔧 FIXED: Immediate refresh when Asr method changes
+  // Handle notification toggle for individual prayers
+  const handleNotificationToggle = (prayerName: PrayerName, newState: boolean) => {
+    const updatedSettings = {
+      ...userSettings,
+      prayerNotifications: {
+        ...userSettings.prayerNotifications,
+        [prayerName]: newState,
+      },
+    };
+
+    StorageService.setUserSettings(updatedSettings);
+    setUserSettings(updatedSettings);
+    
+    console.log(`${prayerName} notifications ${newState ? 'enabled' : 'disabled'}`);
+  };
+
   const handleJuristicChange = async (value: string) => {
     const updated = { 
       ...userSettings, 
@@ -131,22 +149,31 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
       <View style={styles.prayerTimesContainer}>
         <Text style={styles.prayerTimesTitle}>Today's Prayer Times</Text>
         <View style={styles.prayerTimesList}>
-          {todayPrayerTimes.slice(0, 3).map((prayer) => (
+          {todayPrayerTimes.map((prayer) => (
             <View key={prayer.name} style={styles.prayerTimeRow}>
-              <Text style={[
-                styles.prayerName,
-                prayer.name === nextPrayer?.name && styles.nextPrayerName,
-                prayer.name === 'Asr' && styles.asrHighlight // 🆕 Highlight Asr
-              ]}>
-                {prayer.name}
-              </Text>
-              <Text style={[
-                styles.prayerTime,
-                prayer.name === nextPrayer?.name && styles.nextPrayerTime
-              ]}>
-                {format(prayer.time, 'h:mm a')}
-                {prayer.name === nextPrayer?.name && ' ⭐'}
-              </Text>
+              <View style={styles.prayerInfoSection}>
+                <Text style={[
+                  styles.prayerName,
+                  prayer.name === nextPrayer?.name && styles.nextPrayerName,
+                  prayer.name === 'Asr' && styles.asrHighlight // 🆕 Highlight Asr
+                ]}>
+                  {prayer.name}
+                </Text>
+                <Text style={[
+                  styles.prayerTime,
+                  prayer.name === nextPrayer?.name && styles.nextPrayerTime
+                ]}>
+                  {format(prayer.time, 'h:mm a')}
+                  {prayer.name === nextPrayer?.name && ' ⭐'}
+                </Text>
+              </View>
+              <NotificationToggleButton
+                prayerName={prayer.name}
+                enabled={userSettings.prayerNotifications?.[prayer.name] ?? true}
+                onToggle={handleNotificationToggle}
+                disabled={!userSettings.notifications?.enabled}
+                size={20}
+              />
             </View>
           ))}
           {todayPrayerTimes.length > 3 && (
@@ -188,8 +215,8 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
         <View style={styles.juristicExplanation}>
           <Text style={styles.explanationText}>
             {userSettings.asrJuristic === 'Hanafi' 
-              ? '⏰ Hanafi: Asr begins when shadow = 2× object length (earlier)'
-              : '⏰ Standard: Asr begins when shadow = 1× object length (later)'
+              ? '⏰ Hanafi: Asr begins when shadow = 2× object length (later)'
+              : '⏰ Standard: Asr begins when shadow = 1× object length (earlier)'
             }
           </Text>
         </View>
@@ -241,7 +268,7 @@ const styles = StyleSheet.create({
     borderLeftColor: '#1B5E3F',
   },
   explanationText: {
-    fontSize: 13,
+    fontSize: 13,  // sm
     color: '#495057',
     lineHeight: 18,
   },
@@ -254,7 +281,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
   },
   statusText: {
-    fontSize: 14,
+    fontSize: 14,  // md
     color: '#6C757D',
     textAlign: 'center',
   },
@@ -267,8 +294,8 @@ const styles = StyleSheet.create({
     borderColor: '#E9ECEF',
   },
   prayerTimesTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 16,  // lg
+    fontWeight: '600',  // semibold
     color: '#1B5E3F',
     marginBottom: 12,
   },
@@ -279,30 +306,40 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  prayerInfoSection: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginRight: 12,
   },
   prayerName: {
-    fontSize: 14,
+    fontSize: 14,  
     color: '#495057',
-    fontWeight: '500',
+    fontWeight: '500',  
   },
   nextPrayerName: {
     color: '#1B5E3F',
-    fontWeight: '700',
+    fontWeight: '700',  
   },
   asrHighlight: {
-    color: '#FF6F00', // 🆕 Orange color for Asr to draw attention
+    color: '#FF6F00', // Orange color for Asr to draw attention
   },
   prayerTime: {
-    fontSize: 14,
+    fontSize: 14,  // md
     color: '#6C757D',
-    fontWeight: '400',
+    fontWeight: '400',  // regular
   },
   nextPrayerTime: {
     color: '#1B5E3F',
-    fontWeight: '600',
+    fontWeight: '600',  // semibold
   },
   moreText: {
-    fontSize: 12,
+    fontSize: 13,  // sm (adjusted up)
     color: '#ADB5BD',
     fontStyle: 'italic',
     textAlign: 'center',
@@ -325,9 +362,9 @@ const styles = StyleSheet.create({
     borderColor: '#C8E6C9',
   },
   testButtonText: {
-    fontSize: 14,
+    fontSize: 14,  // md
     color: '#1B5E3F',
-    fontWeight: '600',
+    fontWeight: '600',  // semibold
   },
   
   // Hint styles
@@ -340,7 +377,7 @@ const styles = StyleSheet.create({
     borderColor: '#FFEAA7',
   },
   hintText: {
-    fontSize: 12,
+    fontSize: 13,  // sm (adjusted up)
     color: '#856404',
     textAlign: 'center',
     lineHeight: 16,

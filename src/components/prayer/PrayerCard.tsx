@@ -7,8 +7,14 @@ import {
   Dimensions,
 } from 'react-native';
 import { format, isPast, isFuture } from 'date-fns';
-import { PrayerTime, PrayerRecord } from '../../types';
+import { PrayerTime, PrayerRecord, PrayerName } from '../../types';
 import PrayerTimeService from '../../services/PrayerTimeService';
+import { useTheme } from '../../providers/ThemeProvider';
+import { useStore } from '../../store/useStore';
+import StorageService from '../../services/StorageService';
+import { Icon } from '../common/Icon';
+import { NotificationToggleButton } from '../common/NotificationToggleButton';
+import { getPrayerIcon } from '../../assets/icons';
 
 interface PrayerCardProps {
   prayer: PrayerTime;
@@ -27,28 +33,44 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
   currentTime,
   nextPrayer,
 }) => {
-  const getPrayerIcon = (name: string): string => {
-    const icons: Record<string, string> = {
-      fajr: '🌅',
-      dhuhr: '☀️',
-      asr: '🌤',
-      maghrib: '🌇',
-      isha: '🌙',
+  const { theme } = useTheme();
+  const { userSettings, setUserSettings, todaySunrise } = useStore();
+
+  // Handle notification toggle
+  const handleNotificationToggle = (prayerName: PrayerName, newState: boolean) => {
+    if (!userSettings) return;
+
+    const updatedSettings = {
+      ...userSettings,
+      prayerNotifications: {
+        ...userSettings.prayerNotifications,
+        [prayerName]: newState,
+      },
     };
-    return icons[name] || '🕌';
+
+    setUserSettings(updatedSettings);
+    StorageService.setUserSettings(updatedSettings);
+    
+    // TODO: Reschedule notifications
+    console.log(`${prayerName} notifications ${newState ? 'enabled' : 'disabled'}`);
   };
 
   const getStatusColor = (): string => {
-    if (record?.status === 'prayed') return '#4CAF50';
-    if (record?.status === 'missed' && isPast(prayer.time)) return '#F44336';
+    if (record?.status === 'prayed') return theme.colors.status.success;
+    if (record?.status === 'missed' && isPast(prayer.time)) return theme.colors.status.error;
+
+    // Special case: Fajr is missed after Sunrise
+    if (prayer.name === 'Fajr' && todaySunrise && isPast(prayer.time) && !record && isPast(todaySunrise)) {
+      return theme.colors.status.error;
+    }
 
     // Check if prayer is truly missed (next prayer started)
     if (isPast(prayer.time) && !record && nextPrayer && isPast(nextPrayer.time)) {
-      return '#F44336'; // Red for missed
+      return theme.colors.status.error;
     }
 
-    if (isFuture(prayer.time)) return '#FFFFFF';
-    return '#FF9800'; // Current or in grace period
+    if (isFuture(prayer.time)) return theme.colors.text.secondary;
+    return theme.colors.primary.DEFAULT;
   };
 
   const getStatusText = (): string => {
@@ -56,9 +78,13 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
       return record.mindfulnessCompleted ? '✓ Prayed Mindfully' : '✓ Prayed';
     }
 
-    // Check if prayer is truly missed (next prayer has started)
+    // Check if prayer is truly missed
     if (isPast(prayer.time) && !record) {
-      // Only mark as missed if the next prayer has started
+      // Special case: Fajr is missed after Sunrise
+      if (prayer.name === 'Fajr' && todaySunrise && isPast(todaySunrise)) {
+        return 'Missed';
+      }
+      // Other prayers: Only mark as missed if the next prayer has started
       if (nextPrayer && isPast(nextPrayer.time)) {
         return 'Missed';
       }
@@ -75,47 +101,73 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
     return 'Time to Pray';
   };
 
-  // Prayer is active if it's the next prayer OR if it's in the grace period (time passed but next prayer hasn't started)
-  const isActive = prayer.isNext ||
-    (isPast(prayer.time) && !record && (!nextPrayer || isFuture(nextPrayer.time)));
+  // Prayer is active if it's the next prayer OR if it's in the grace period
+  const isActive = () => {
+    if (prayer.isNext) return true;
+    if (!isPast(prayer.time) || record) return false;
+    
+    // Special case: Fajr is not active after Sunrise
+    if (prayer.name === 'Fajr' && todaySunrise && isPast(todaySunrise)) {
+      return false;
+    }
+    
+    // Other prayers: active until next prayer starts
+    return !nextPrayer || isFuture(nextPrayer.time);
+  };
 
   return (
     <TouchableOpacity
       style={[
         styles.container,
-        isActive && styles.activeContainer,
+        { backgroundColor: theme.colors.card.background, borderColor: theme.colors.border.primary },
+        isActive() && [styles.activeContainer, { backgroundColor: theme.colors.card.hover, borderColor: theme.colors.primary.DEFAULT, shadowColor: theme.colors.primary.DEFAULT }],
         record?.status === 'prayed' && styles.completedContainer,
       ]}
       onPress={onComplete}
       disabled={
         Boolean(
           record?.status === 'prayed' ||
-          isFuture(prayer.time) ||
-          // Disable if prayer is truly missed (next prayer has started)
-          (isPast(prayer.time) && !record && nextPrayer && isPast(nextPrayer.time))
+          isFuture(prayer.time)
+          // ✅ REMOVED: Disabled conditions for missed prayers
+          // Users can now click missed prayers to mark them as makeup
         )
       }
       activeOpacity={0.8}
     >
       <View style={styles.leftSection}>
-        <Text style={styles.icon}>{getPrayerIcon(prayer.name)}</Text>
+        <View style={styles.iconContainer}>
+          <Icon 
+            source={getPrayerIcon(prayer.name)} 
+            size={32}
+            color={isActive() ? theme.colors.primary.DEFAULT : theme.colors.text.secondary}
+          />
+        </View>
         <View style={styles.timeInfo}>
-          <Text style={[styles.prayerName, isActive && styles.activeName]}>
+          <Text style={[styles.prayerName, { color: theme.colors.text.primary }, isActive() && styles.activeName]}>
             {PrayerTimeService.getPrayerDisplayName(prayer.name)}
           </Text>
-          <Text style={[styles.time, isActive && styles.activeTime]}>
+          <Text style={[styles.time, { color: theme.colors.text.secondary }, isActive() && [styles.activeTime, { color: theme.colors.text.primary }]]}>
             {format(prayer.time, 'h:mm a')}
           </Text>
         </View>
       </View>
 
       <View style={styles.rightSection}>
-        <Text style={[styles.status, { color: getStatusColor() }]}>
-          {getStatusText()}
-        </Text>
-        {record?.reflectionAdded && (
-          <Text style={styles.reflectionBadge}>📝</Text>
-        )}
+        <View style={styles.statusContainer}>
+          <Text style={[styles.status, { color: getStatusColor() }]}>
+            {getStatusText()}
+          </Text>
+          {record?.reflectionAdded && (
+            <Text style={styles.reflectionBadge}>📝</Text>
+          )}
+        </View>
+        <NotificationToggleButton
+          prayerName={prayer.name}
+          enabled={userSettings?.prayerNotifications?.[prayer.name] ?? true}
+          onToggle={handleNotificationToggle}
+          disabled={!userSettings?.notifications?.enabled}
+          size={22}
+        />
       </View>
     </TouchableOpacity>
   );
@@ -123,68 +175,67 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: 12,      // theme.borderRadius.md
+    padding: 16,           // theme.spacing.lg
+    marginBottom: 12,      // theme.spacing.md
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   activeContainer: {
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
-    borderColor: 'rgba(255, 255, 255, 0.4)',
-    shadowColor: '#000',
+    borderWidth: 2,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 5,
   },
   completedContainer: {
-    opacity: 0.7,
+    opacity: 0.6,
   },
   leftSection: {
     flexDirection: 'row',
     alignItems: 'center',
   },
-  icon: {
-    fontSize: 32,
-    marginRight: 12,
+  iconContainer: {
+    width: 40,
+    height: 40,
+    marginRight: 12,       // theme.spacing.md
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   timeInfo: {
     justifyContent: 'center',
   },
   prayerName: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FFFFFF',
-    marginBottom: 4,
+    fontSize: 16,          // theme.typography.fontSize.lg
+    fontWeight: '500',     // theme.typography.fontWeight.medium
+    marginBottom: 4,       // theme.spacing.xs
   },
   activeName: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 18,          // theme.typography.fontSize.xl
+    fontWeight: '600',     // theme.typography.fontWeight.semibold
   },
   time: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 14,          // theme.typography.fontSize.md
   },
   activeTime: {
-    color: '#FFFFFF',
-    fontWeight: '500',
+    fontWeight: '500',     // theme.typography.fontWeight.medium
   },
   rightSection: {
-    alignItems: 'flex-end',
+    alignItems: 'center',
     flexDirection: 'row',
-    gap: 8,
+    gap: 12,                // theme.spacing.md
+  },
+  statusContainer: {
+    alignItems: 'flex-end',
   },
   status: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 13,          // theme.typography.fontSize.sm
+    fontWeight: '500',  // medium
   },
   reflectionBadge: {
-    fontSize: 16,
+    fontSize: 16,  // lg
   },
 });
 

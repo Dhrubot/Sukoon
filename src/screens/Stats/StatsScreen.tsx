@@ -21,12 +21,16 @@ import { PrayerRecord, DailyStats } from '../../types';
 
 // NEW: Use our centralized prayer times hook
 import { usePrayerTimes } from '../../providers/PrayerTimesProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 
 const { width } = Dimensions.get('window');
 
 type TimeRange = 'week' | 'month' | 'all';
 
 const StatsScreen: React.FC = () => {
+  const styles = useThemedStyles(createStyles);
+  
   // 🎯 NEW: Use centralized prayer times hook
   const { 
     todayPrayerTimes, 
@@ -459,26 +463,26 @@ const StatsScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: theme.colors.background.primary,
   },
   header: {
     padding: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.card.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: theme.colors.border.primary,
   },
   title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#1B5E3F',
+    fontSize: 28,  // 4xl
+    fontWeight: '700',  // bold
+    color: theme.colors.text.primary,
     marginBottom: 20,
   },
   timeRangeContainer: {
     flexDirection: 'row',
-    backgroundColor: '#F0F0F0',
+    backgroundColor: theme.colors.card.hover,
     borderRadius: 8,
     padding: 4,
   },
@@ -490,15 +494,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   timeRangeButtonActive: {
-    backgroundColor: '#1B5E3F',
+    backgroundColor: theme.colors.primary.DEFAULT,
   },
   timeRangeText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#666666',
+    fontSize: 14,  // md
+    fontWeight: '500',  // medium
+    color: theme.colors.text.secondary,
   },
   timeRangeTextActive: {
-    color: '#FFFFFF',
+    color: theme.colors.primary.contrast,
   },
   
   // 🎯 NEW: Empty and loading states
@@ -513,22 +517,22 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   emptyStateTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1B5E3F',
+    fontSize: 24,  // 3xl
+    fontWeight: '700',  // bold
+    color: theme.colors.text.primary,
     textAlign: 'center',
     marginBottom: 12,
   },
   emptyStateText: {
-    fontSize: 16,
-    color: '#666666',
+    fontSize: 16,  // lg
+    color: theme.colors.text.secondary,
     textAlign: 'center',
     marginBottom: 8,
     lineHeight: 24,
   },
   emptyStateSubtext: {
-    fontSize: 14,
-    color: '#999999',
+    fontSize: 14,  // md
+    color: theme.colors.text.muted,
     textAlign: 'center',
   },
   
@@ -539,8 +543,8 @@ const styles = StyleSheet.create({
     padding: 40,
   },
   loadingText: {
-    fontSize: 16,
-    color: '#666666',
+    fontSize: 16,  // lg
+    color: theme.colors.text.secondary,
     marginTop: 16,
     textAlign: 'center',
   },
@@ -553,104 +557,110 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   statCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.card.background,
     borderRadius: 12,
     padding: 20,
     width: (width - 40) / 2,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.border.primary,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 3,
   },
   statValue: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#1B5E3F',
+    fontSize: 32,  // 5xl
+    fontWeight: '700',  // bold
+    color: theme.colors.primary.DEFAULT,
     marginBottom: 4,
   },
   statLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333333',
+    fontSize: 14,  // md
+    fontWeight: '600',  // semibold
+    color: theme.colors.text.primary,
     textAlign: 'center',
     marginBottom: 4,
   },
   statSubtext: {
-    fontSize: 12,
-    color: '#666666',
+    fontSize: 13,  // sm (adjusted up)
+    color: theme.colors.text.secondary,
     textAlign: 'center',
   },
   section: {
     padding: 20,
   },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1B5E3F',
+    fontSize: 20,  // 2xl
+    fontWeight: '600',  // semibold
+    color: theme.colors.text.primary,
     marginBottom: 16,
   },
   todayProgressContainer: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.card.background,
     borderRadius: 12,
     padding: 16,
+    borderWidth: 1,
+    borderColor: theme.colors.border.primary,
   },
   todayPrayerItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: theme.colors.border.primary,
   },
   prayerEmoji: {
-    fontSize: 24,
+    fontSize: 24,  // 3xl
     marginRight: 12,
   },
   prayerName: {
     flex: 1,
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333333',
+    fontSize: 16,  // lg
+    fontWeight: '500',  // medium
+    color: theme.colors.text.primary,
   },
   completedPrayerName: {
-    color: '#1B5E3F',
+    color: theme.colors.primary.DEFAULT,
   },
   prayerTime: {
-    fontSize: 14,
-    color: '#666666',
+    fontSize: 14,  // md
+    color: theme.colors.text.secondary,
   },
   chart: {
     marginVertical: 8,
     borderRadius: 16,
   },
   insightCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.card.background,
     borderRadius: 12,
     padding: 20,
     marginBottom: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#1B5E3F',
+    borderLeftColor: theme.colors.primary.DEFAULT,
+    borderWidth: 1,
+    borderColor: theme.colors.border.primary,
   },
   achievementCard: {
     borderLeftColor: '#FFD700',
-    backgroundColor: '#FFFEF7',
+    backgroundColor: theme.colors.card.hover,
   },
   insightTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1B5E3F',
+    fontSize: 16,  // lg
+    fontWeight: '600',  // semibold
+    color: theme.colors.primary.DEFAULT,
     marginBottom: 8,
   },
   insightValue: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#1B5E3F',
+    fontSize: 24,  // 3xl
+    fontWeight: '700',  // bold
+    color: theme.colors.text.primary,
     marginBottom: 4,
   },
   insightDescription: {
-    fontSize: 14,
-    color: '#666666',
+    fontSize: 14,  // md
+    color: theme.colors.text.secondary,
     lineHeight: 20,
   },
 });

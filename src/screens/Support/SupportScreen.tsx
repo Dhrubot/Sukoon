@@ -5,11 +5,15 @@ import {
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  ActivityIndicator,
+  Linking,
   Alert,
+  Platform,
+  ActivityIndicator,
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 
@@ -25,6 +29,7 @@ import { SubscriptionPlan } from '../../types';
 const { width } = Dimensions.get('window');
 
 const SupportScreen: React.FC = () => {
+  const styles = useThemedStyles(createStyles);
   const [isLoading, setIsLoading] = useState(true);
   const [currentPlan, setCurrentPlan] = useState<SubscriptionPlan | null>(null);
   const [canWatchAd, setCanWatchAd] = useState(false);
@@ -386,10 +391,10 @@ const SupportScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: 'theme.colors.background.primary', // Dark navy background
   },
   loadingContainer: {
     flex: 1,
@@ -398,28 +403,28 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     marginTop: 16,
-    fontSize: 16,
-    color: '#757575',
+    fontSize: 16,  // lg
+    color: 'theme.colors.text.secondary',
   },
   header: {
     padding: 20,
     alignItems: 'center',
   },
   title: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#212121',
+    fontSize: 32,  // 5xl
+    fontWeight: '700',  // bold
+    color: 'theme.colors.text.primary',
     marginBottom: 8,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#757575',
+    fontSize: 16,  // lg
+    color: 'theme.colors.text.secondary',
     textAlign: 'center',
   },
   tabContainer: {
     flexDirection: 'row',
     marginHorizontal: 20,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: 'theme.colors.card.hover',
     borderRadius: 12,
     padding: 4,
     marginBottom: 20,
@@ -435,48 +440,50 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   tabActive: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
+    backgroundColor: 'theme.colors.primary.DEFAULT', // Turquoise accent
+    shadowColor: 'theme.colors.primary.DEFAULT',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 2,
     elevation: 2,
   },
   tabIcon: {
-    fontSize: 20,
+    fontSize: 20,  // 2xl
   },
   tabIconActive: {
-    fontSize: 20,
+    fontSize: 20,  // 2xl
   },
   tabText: {
-    fontSize: 14,
-    color: '#757575',
-    fontWeight: '500',
+    fontSize: 14,  // md
+    color: 'theme.colors.text.secondary',
+    fontWeight: '500',  // medium
   },
   tabTextActive: {
-    color: '#1B5E3F',
-    fontWeight: '600',
+    color: 'theme.colors.text.primary',
+    fontWeight: '600',  // semibold
   },
   tabContent: {
     flex: 1,
   },
   // Subscription Tab Styles
   introCard: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: 'theme.colors.card.background',
     marginHorizontal: 20,
     padding: 20,
     borderRadius: 12,
     marginBottom: 24,
+    borderWidth: 1,
+    borderColor: 'theme.colors.card.hover',
   },
   introTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#1B5E3F',
+    fontSize: 20,  // 2xl
+    fontWeight: '600',  // semibold
+    color: 'theme.colors.primary.DEFAULT', // Turquoise accent
     marginBottom: 8,
   },
   introText: {
-    fontSize: 16,
-    color: '#2E7D32',
+    fontSize: 16,  // lg
+    color: 'theme.colors.text.secondary',
     lineHeight: 22,
   },
   featuresContainer: {
@@ -484,9 +491,9 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   featuresTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#212121',
+    fontSize: 18,  // xl
+    fontWeight: '600',  // semibold
+    color: 'theme.colors.text.primary',
     marginBottom: 16,
   },
   featureRow: {
@@ -495,12 +502,12 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   featureIcon: {
-    fontSize: 24,
+    fontSize: 24,  // 3xl
     marginRight: 12,
   },
   featureText: {
-    fontSize: 16,
-    color: '#424242',
+    fontSize: 16,  // lg
+    color: 'theme.colors.text.secondary',
     flex: 1,
   },
   plansContainer: {
@@ -508,33 +515,33 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   planCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'theme.colors.card.background',
     borderRadius: 12,
     padding: 20,
     marginBottom: 16,
     borderWidth: 2,
-    borderColor: '#E0E0E0',
+    borderColor: 'theme.colors.card.hover',
   },
   recommendedPlan: {
-    borderColor: '#4CAF50',
+    borderColor: 'theme.colors.primary.DEFAULT', // Turquoise accent
   },
   activePlan: {
-    backgroundColor: '#F5F5F5',
-    borderColor: '#9E9E9E',
+    backgroundColor: 'theme.colors.card.hover',
+    borderColor: 'theme.colors.primary.DEFAULT',
   },
   recommendedBadge: {
     position: 'absolute',
     top: -12,
     right: 16,
-    backgroundColor: '#4CAF50',
+    backgroundColor: 'theme.colors.primary.DEFAULT', // Turquoise accent
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
   },
   recommendedText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#FFFFFF',
+    fontSize: 13,  // sm (adjusted up)
+    fontWeight: '700',  // bold
+    color: 'theme.colors.text.primary',
   },
   planHeader: {
     flexDirection: 'row',
@@ -543,23 +550,23 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   planName: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#212121',
+    fontSize: 20,  // 2xl
+    fontWeight: '600',  // semibold
+    color: 'theme.colors.text.primary',
   },
   planPrice: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1B5E3F',
+    fontSize: 24,  // 3xl
+    fontWeight: '700',  // bold
+    color: 'theme.colors.primary.DEFAULT', // Turquoise accent
   },
   planDescription: {
-    fontSize: 16,
-    color: '#757575',
+    fontSize: 16,  // lg
+    color: 'theme.colors.text.secondary',
   },
   currentPlanBadge: {
-    fontSize: 14,
-    color: '#4CAF50',
-    fontWeight: '600',
+    fontSize: 14,  // md
+    color: 'theme.colors.primary.DEFAULT', // Turquoise accent
+    fontWeight: '600',  // semibold
     marginTop: 8,
   },
   manageButton: {
@@ -568,8 +575,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   manageButtonText: {
-    fontSize: 16,
-    color: '#1B5E3F',
+    fontSize: 16,  // lg
+    color: 'theme.colors.primary.DEFAULT', // Turquoise accent
     textDecorationLine: 'underline',
   },
   // Watch Ad Tab Styles
@@ -577,13 +584,15 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   adCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'theme.colors.card.background',
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: 'theme.colors.card.hover',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 3,
   },
@@ -592,21 +601,21 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   adTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#212121',
+    fontSize: 24,  // 3xl
+    fontWeight: '700',  // bold
+    color: 'theme.colors.text.primary',
     marginBottom: 12,
   },
   adDescription: {
-    fontSize: 16,
-    color: '#757575',
+    fontSize: 16,  // lg
+    color: 'theme.colors.text.secondary',
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 20,
   },
   adNote: {
-    fontSize: 15,
-    color: '#424242',
+    fontSize: 15,  // base
+    color: 'theme.colors.text.secondary',
     lineHeight: 22,
     marginBottom: 24,
   },
@@ -620,36 +629,38 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   watchAdButtonText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontSize: 18,  // xl
+    fontWeight: '600',  // semibold
+    color: 'theme.colors.text.primary',
   },
   adUnavailable: {
-    backgroundColor: '#FFF3E0',
+    backgroundColor: 'theme.colors.card.hover',
     padding: 16,
     borderRadius: 8,
     marginTop: 16,
   },
   adUnavailableText: {
-    fontSize: 16,
-    color: '#E65100',
+    fontSize: 16,  // lg
+    color: '#FFB74D',
     textAlign: 'center',
   },
   privacyNote: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: 'theme.colors.card.background',
     padding: 20,
     borderRadius: 12,
     marginTop: 24,
+    borderWidth: 1,
+    borderColor: 'theme.colors.card.hover',
   },
   privacyTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1B5E3F',
+    fontSize: 18,  // xl
+    fontWeight: '600',  // semibold
+    color: 'theme.colors.primary.DEFAULT', // Turquoise accent
     marginBottom: 12,
   },
   privacyText: {
-    fontSize: 15,
-    color: '#2E7D32',
+    fontSize: 15,  // base
+    color: 'theme.colors.text.secondary',
     lineHeight: 22,
   },
   // Donate Tab Styles
@@ -659,14 +670,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   donateTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#212121',
+    fontSize: 24,  // 3xl
+    fontWeight: '700',  // bold
+    color: 'theme.colors.text.primary',
     marginBottom: 8,
   },
   donateSubtitle: {
-    fontSize: 16,
-    color: '#757575',
+    fontSize: 16,  // lg
+    color: 'theme.colors.text.secondary',
     textAlign: 'center',
     lineHeight: 22,
   },
@@ -675,75 +686,77 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   donationCard: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'theme.colors.card.background',
     borderRadius: 12,
     padding: 20,
     marginBottom: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: 'theme.colors.card.hover',
   },
   donationEmoji: {
-    fontSize: 48,
+    fontSize: 48,  // icon 4xl
     marginBottom: 12,
   },
   donationTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#212121',
+    fontSize: 18,  // xl
+    fontWeight: '600',  // semibold
+    color: 'theme.colors.text.primary',
     marginBottom: 8,
   },
   donationDescription: {
-    fontSize: 14,
-    color: '#757575',
+    fontSize: 14,  // md
+    color: 'theme.colors.text.secondary',
     textAlign: 'center',
     marginBottom: 12,
   },
   donationAmount: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#1B5E3F',
+    fontSize: 20,  // 2xl
+    fontWeight: '700',  // bold
+    color: 'theme.colors.primary.DEFAULT', // Turquoise accent
   },
   alternativeMethods: {
     paddingHorizontal: 20,
     marginBottom: 24,
   },
   alternativeTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#212121',
+    fontSize: 18,  // xl
+    fontWeight: '600',  // semibold
+    color: 'theme.colors.text.primary',
     marginBottom: 16,
   },
   alternativeButton: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: 'theme.colors.card.background',
     borderWidth: 1,
-    borderColor: '#1B5E3F',
+    borderColor: 'theme.colors.primary.DEFAULT', // Turquoise accent
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
     marginBottom: 12,
   },
   alternativeButtonText: {
-    fontSize: 16,
-    color: '#1B5E3F',
-    fontWeight: '500',
+    fontSize: 16,  // lg
+    color: 'theme.colors.primary.DEFAULT', // Turquoise accent
+    fontWeight: '500',  // medium
   },
   zakatNote: {
-    backgroundColor: '#FFF3E0',
+    backgroundColor: 'theme.colors.card.hover',
     marginHorizontal: 20,
     padding: 20,
     borderRadius: 12,
     marginBottom: 24,
+    borderWidth: 1,
+    borderColor: 'theme.colors.primary.DEFAULT',
   },
   zakatTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#E65100',
+    fontSize: 18,  // xl
+    fontWeight: '600',  // semibold
+    color: '#FFB74D',
     marginBottom: 8,
   },
   zakatText: {
-    fontSize: 15,
-    color: '#BF360C',
+    fontSize: 15,  // base
+    color: 'theme.colors.text.secondary',
     lineHeight: 22,
   },
   footer: {
@@ -751,8 +764,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   footerText: {
-    fontSize: 16,
-    color: '#757575',
+    fontSize: 16,  // lg
+    color: 'theme.colors.text.secondary',
     textAlign: 'center',
     fontStyle: 'italic',
   },

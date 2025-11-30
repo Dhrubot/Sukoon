@@ -13,9 +13,16 @@ export interface PrayerTimes {
   Sunrise: string;
   Dhuhr: string;
   Asr: string;
+  Sunset: string;
   Maghrib: string;
   Isha: string;
   Midnight: string;
+}
+
+export interface PrayerTimesWithSun {
+  prayerTimes: PrayerTime[];
+  sunrise: Date;
+  sunset: Date;
 }
 
 export interface PrayerRecord {
@@ -86,8 +93,18 @@ export interface UserSettings {
     vibrationEnabled: boolean;
     beforePrayer: number; // minutes
     reminderText: string;
-    postPrayerCheck: boolean;
+    postPrayerCheck: boolean; // DEPRECATED - replaced by habitBuilder
   };
+  // Per-prayer notification toggles (individual control)
+  prayerNotifications: {
+    Fajr: boolean;
+    Dhuhr: boolean;
+    Asr: boolean;
+    Maghrib: boolean;
+    Isha: boolean;
+  };
+  habitBuilder: HabitBuilderSettings;
+  mosqueMode: MosqueModeSettings;
   theme: "light" | "dark" | "auto";
 }
 
@@ -104,6 +121,91 @@ export interface MindfulnessSession {
     mood: 1 | 2 | 3 | 4 | 5;
     text?: string;
   };
+}
+
+// Prayer Habit Builder Types
+export interface HabitBuilderSettings {
+  enabled: boolean; // Master toggle for Prayer Habit Builder
+  
+  // Persistent "Have you prayed?" reminders
+  persistentReminders: {
+    enabled: boolean;
+    firstCheckDelay: number; // Minutes after prayer time before first check (default: 15)
+    interval: number; // Minutes between subsequent reminders (default: 15)
+    maxReminders: number; // Maximum number of reminders to send (default: 3)
+  };
+  
+  // Grace period warning (before next prayer starts)
+  gracePeriodWarning: {
+    enabled: boolean;
+    minutesBeforeNext: number; // Warn X minutes before next prayer (default: 15)
+  };
+  
+  // Snooze customization
+  snooze: {
+    allowedIntervals: number[]; // Available snooze durations in minutes (default: [5, 10, 15, 30])
+    defaultInterval: number; // Default snooze duration (default: 10)
+    maxSnoozesPerPrayer: number; // Maximum snoozes allowed per prayer (default: 5)
+  };
+  
+  // Respect user's sleep/quiet time
+  quietHours: {
+    enabled: boolean;
+    start: string; // "22:00" format
+    end: string; // "04:00" format
+  };
+}
+
+// Mosque Mode Settings (Silent Phone for Iqamah)
+export interface MosqueModeSettings {
+  enabled: boolean; // Master toggle for Mosque Mode
+  
+  // Iqamah times (minutes after adhan)
+  // e.g., if Fajr adhan is 5:10 AM and iqamah is 5:20 AM, offset is 10
+  iqamahOffsets: {
+    Fajr: number;    // Minutes after Fajr adhan (default: 10)
+    Dhuhr: number;   // Minutes after Dhuhr adhan (default: 10)
+    Asr: number;     // Minutes after Asr adhan (default: 10)
+    Maghrib: number; // Minutes after Maghrib adhan (default: 5)
+    Isha: number;    // Minutes after Isha adhan (default: 10)
+  };
+  
+  // Silent mode duration (minutes)
+  silentDuration: number; // How long to stay silent (default: 10)
+  
+  // Auto-restore ringer after duration
+  autoRestore: boolean; // Automatically restore normal mode (default: true)
+  
+  // Ask before enabling (show "Heading to mosque?" prompt)
+  promptBeforeEnable: boolean; // Show confirmation dialog (default: true)
+  
+  // Platform-specific settings
+  useVibrateInsteadOfSilent: boolean; // Use vibrate instead of complete silence (default: false)
+}
+
+// Prayer reminder state tracking
+export interface PrayerReminderState {
+  prayerId: string; // Unique ID: Format "Fajr-2025-01-15"
+  prayerName: PrayerName;
+  prayerTime: Date;
+  nextPrayerTime: Date | null;
+  
+  status: 'pending' | 'snoozed' | 'completed' | 'skipped' | 'missed';
+  
+  // Notification tracking
+  tier1Sent: boolean; // Main prayer notification sent
+  tier2SentCount: number; // Number of persistent reminders sent
+  tier3Sent: boolean; // Grace period warning sent
+  
+  // Snooze tracking
+  snoozeCount: number;
+  lastSnoozeTime: Date | null;
+  
+  // Completion tracking
+  completedAt: Date | null;
+  skippedAt: Date | null;
+  
+  createdAt: Date;
 }
 
 // Stats types

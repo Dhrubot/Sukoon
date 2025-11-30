@@ -7,6 +7,9 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
+import { useTheme } from '../../providers/ThemeProvider';
+import { Icon } from '../common/Icon';
+import { HomeTabIcon, AchievementIcon } from '../../assets/icons';
 
 interface QuickStatsProps {
   prayersToday: number;
@@ -19,6 +22,7 @@ const QuickStats: React.FC<QuickStatsProps> = ({
   streak,
   nextMilestone,
 }) => {
+  const { theme } = useTheme();
   const navigation = useNavigation();
 
   const handlePress = () => {
@@ -26,13 +30,11 @@ const QuickStats: React.FC<QuickStatsProps> = ({
     navigation.navigate('Stats' as never);
   };
 
-  const getStreakEmoji = () => {
-    if (streak === 0) return '🌱';
-    if (streak < 3) return '🌿';
-    if (streak < 7) return '🔥';
-    if (streak < 30) return '⭐';
-    if (streak < 100) return '💎';
-    return '👑';
+  const getStreakColor = () => {
+    if (streak === 0) return theme.colors.text.muted;
+    if (streak < 7) return theme.colors.status.warning;
+    if (streak < 30) return theme.colors.primary.DEFAULT;
+    return theme.colors.status.success;
   };
 
   const getEncouragement = () => {
@@ -43,103 +45,94 @@ const QuickStats: React.FC<QuickStatsProps> = ({
   };
 
   return (
-    <TouchableOpacity style={styles.container} onPress={handlePress} activeOpacity={0.8}>
+    <TouchableOpacity style={[styles.container, { backgroundColor: theme.colors.card.background, borderColor: theme.colors.border.primary }]} onPress={handlePress} activeOpacity={0.8}>
       <View style={styles.header}>
-        <Text style={styles.title}>Today's Progress</Text>
-        <Text style={styles.viewMore}>View Details →</Text>
+        <Text style={[styles.title, { color: theme.colors.text.primary }]}>Today's Progress</Text>
+        <Text style={[styles.viewMore, { color: theme.colors.primary.DEFAULT }]}>View Details →</Text>
       </View>
 
       <View style={styles.statsRow}>
         {/* Prayers Today */}
-        <View style={styles.statBox}>
+        <View style={[styles.statBox, { backgroundColor: theme.colors.card.hover }]}>
           <View style={styles.statHeader}>
-            <Text style={styles.statEmoji}>🕌</Text>
-            <Text style={styles.statLabel}>Today</Text>
+            <Icon source={HomeTabIcon} size={20} color={theme.colors.primary.DEFAULT} />
+            <Text style={[styles.statLabel, { color: theme.colors.text.secondary }]}>Today</Text>
           </View>
-          <Text style={styles.statValue}>{prayersToday}/5</Text>
+          <Text style={[styles.statValue, { color: theme.colors.text.primary }]}>{prayersToday}/5</Text>
           <View style={styles.progressBar}>
             <View 
               style={[
                 styles.progressFill,
-                { width: `${(prayersToday / 5) * 100}%` }
+                { width: `${(prayersToday / 5) * 100}%`, backgroundColor: theme.colors.primary.DEFAULT }
               ]} 
             />
           </View>
         </View>
 
         {/* Streak */}
-        <View style={styles.statBox}>
+        <View style={[styles.statBox, { backgroundColor: theme.colors.card.hover }]}>
           <View style={styles.statHeader}>
-            <Text style={styles.statEmoji}>{getStreakEmoji()}</Text>
-            <Text style={styles.statLabel}>Streak</Text>
+            <Icon source={AchievementIcon} size={28} color={getStreakColor()} />
+            <Text style={[styles.statLabel, { color: theme.colors.text.secondary }]}>Streak</Text>
           </View>
-          <Text style={styles.statValue}>{streak} days</Text>
+          <Text style={[styles.statValue, { color: theme.colors.text.primary }]}>{streak} days</Text>
           {nextMilestone && streak > 0 && (
-            <Text style={styles.milestone}>
+            <Text style={[styles.milestone, { color: theme.colors.text.muted }]}>
               {nextMilestone - streak} to {nextMilestone}!
             </Text>
           )}
         </View>
       </View>
 
-      <Text style={styles.encouragement}>{getEncouragement()}</Text>
+      <Text style={[styles.encouragement, { color: theme.colors.text.secondary }]}>{getEncouragement()}</Text>
     </TouchableOpacity>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
-    marginHorizontal: 20,
-    marginVertical: 16,
-    borderRadius: 16,
-    padding: 20,
+    marginHorizontal: 20,     // xl
+    marginVertical: 16,       // lg
+    borderRadius: 16,         // lg
+    padding: 20,              // xl
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 20,         // xl
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontSize: 18,  // xl
+    fontWeight: '600',  // semibold
   },
   viewMore: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 14,  // md
+    fontWeight: '500',  // medium
   },
   statsRow: {
     flexDirection: 'row',
-    gap: 16,
+    gap: 16,                  // lg
   },
   statBox: {
     flex: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: 12,         // md
+    padding: 16,              // lg
   },
   statHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginBottom: 8,
-  },
-  statEmoji: {
-    fontSize: 20,
+    gap: 8,                   // sm
+    marginBottom: 8,          // sm
   },
   statLabel: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 14,  // md
   },
   statValue: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 8,
+    fontSize: 24,             // 3xl
+    fontWeight: '700',        // bold
+    marginBottom: 8,          // sm
   },
   progressBar: {
     height: 4,
@@ -149,18 +142,15 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#4CAF50',
     borderRadius: 2,
   },
   milestone: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 13,  // sm (adjusted up)
   },
   encouragement: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 14,             // md
     textAlign: 'center',
-    marginTop: 16,
+    marginTop: 16,            // lg
     fontStyle: 'italic',
   },
 });

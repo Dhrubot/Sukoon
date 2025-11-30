@@ -90,17 +90,17 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   locationText: {
-    fontSize: 16,
+    fontSize: 16,  // lg
     color: '#212121',
-    fontWeight: '500',
+    fontWeight: '500',  // medium
     marginBottom: 4,
   },
   coordinatesText: {
-    fontSize: 14,
+    fontSize: 14,  // md
     color: '#757575',
   },
   invalidText: {
-    fontSize: 14,
+    fontSize: 14,  // md
     color: '#DC3545',
     fontStyle: 'italic',
     marginTop: 4,
@@ -116,8 +116,8 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 16,  // lg
+    fontWeight: '600',  // semibold
     color: '#FFFFFF',
   },
   manualButton: {
@@ -129,8 +129,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   manualButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 16,  // lg
+    fontWeight: '600',  // semibold
     color: '#1B5E3F',
   },
   warningBox: {
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
     borderColor: '#FFEAA7',
   },
   warningText: {
-    fontSize: 13,
+    fontSize: 13,  // sm
     color: '#856404',
     textAlign: 'center',
     lineHeight: 18,

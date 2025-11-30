@@ -12,6 +12,9 @@ import {
   TemporaryPremium,
   Donation,
   OnboardingProgress,
+  PrayerReminderState,
+  HabitBuilderSettings,
+  MosqueModeSettings,
 } from "../types";
 import { createStorage } from "./StorageAdapter";
 import { PRAYER_NAMES as PrayerName } from "../constants";
@@ -67,9 +70,63 @@ class StorageService {
         vibrationEnabled: true,
         beforePrayer: 10,
         reminderText: "Time for {prayer} prayer 🕌",
-        postPrayerCheck: false,
+        postPrayerCheck: false, // DEPRECATED
       },
+      prayerNotifications: {
+        Fajr: true,
+        Dhuhr: true,
+        Asr: true,
+        Maghrib: true,
+        Isha: true,
+      },
+      habitBuilder: this.getDefaultHabitBuilderSettings(),
+      mosqueMode: this.getDefaultMosqueModeSettings(),
       theme: "auto",
+    };
+  }
+
+  // Default Prayer Habit Builder settings
+  private getDefaultHabitBuilderSettings(): HabitBuilderSettings {
+    return {
+      enabled: true, // Enable by default for better user engagement
+      persistentReminders: {
+        enabled: true,
+        firstCheckDelay: 15, // 15 min after prayer time
+        interval: 15, // Every 15 minutes
+        maxReminders: 3, // Up to 3 reminders
+      },
+      gracePeriodWarning: {
+        enabled: true,
+        minutesBeforeNext: 15, // Warn 15 min before next prayer
+      },
+      snooze: {
+        allowedIntervals: [5, 10, 15, 30], // Available snooze options
+        defaultInterval: 10, // Default 10 min
+        maxSnoozesPerPrayer: 5,
+      },
+      quietHours: {
+        enabled: false, // Disabled by default
+        start: "22:00",
+        end: "04:00",
+      },
+    };
+  }
+
+  // Default Mosque Mode settings
+  private getDefaultMosqueModeSettings(): MosqueModeSettings {
+    return {
+      enabled: false, // Disabled by default - user must opt-in
+      iqamahOffsets: {
+        Fajr: 10,    // 10 minutes after Fajr adhan
+        Dhuhr: 10,   // 10 minutes after Dhuhr adhan
+        Asr: 10,     // 10 minutes after Asr adhan
+        Maghrib: 5,  // 5 minutes after Maghrib (usually quicker)
+        Isha: 10,    // 10 minutes after Isha adhan
+      },
+      silentDuration: 10, // 10 minutes of silent mode
+      autoRestore: true,  // Automatically restore ringer
+      promptBeforeEnable: true, // Ask "Heading to mosque?" before enabling
+      useVibrateInsteadOfSilent: false, // Use complete silence by default
     };
   }
 
@@ -757,6 +814,41 @@ class StorageService {
     });
     
     return allRecords;
+  }
+
+  // Prayer Reminder State Management
+  getReminderState(prayerId: string): PrayerReminderState | null {
+    const key = `reminder_state_${prayerId}`;
+    const data = this.storage.getString(key);
+    return data ? JSON.parse(data) : null;
+  }
+
+  setReminderState(prayerId: string, state: PrayerReminderState): void {
+    const key = `reminder_state_${prayerId}`;
+    this.storage.set(key, JSON.stringify(state));
+  }
+
+  getAllReminderStates(): PrayerReminderState[] {
+    const allStates: PrayerReminderState[] = [];
+    const keys = this.storage.getAllKeys();
+    
+    // Filter keys that match reminder state pattern
+    const stateKeys = keys.filter(key => key.startsWith('reminder_state_'));
+    
+    // Get all reminder states
+    stateKeys.forEach(key => {
+      const data = this.storage.getString(key);
+      if (data) {
+        allStates.push(JSON.parse(data));
+      }
+    });
+    
+    return allStates;
+  }
+
+  deleteReminderState(prayerId: string): void {
+    const key = `reminder_state_${prayerId}`;
+    this.storage.remove(key);
   }
 
   // Clear all data

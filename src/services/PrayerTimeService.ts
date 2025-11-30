@@ -107,6 +107,7 @@ export class PrayerTimeService {
           Sunrise: apiTimes.Sunrise || "",
           Dhuhr: apiTimes.Dhuhr || "",
           Asr: apiTimes.Asr || "",
+          Sunset: apiTimes.Sunset || "",
           Maghrib: apiTimes.Maghrib || "",
           Isha: apiTimes.Isha || "",
           Midnight: apiTimes.Midnight || "",
@@ -161,19 +162,24 @@ export class PrayerTimeService {
     coordinates: Coordinates,
     date: Date,
     method: CalculationMethod = "MWL",
-    adjustments?: Record<PrayerName, number>
-  ): Promise<PrayerTime[]> {
+    adjustments?: Record<PrayerName, number>,
+    asrJuristic: "Standard" | "Hanafi" = "Standard"
+  ): Promise<{ prayerTimes: PrayerTime[]; sunrise: Date; sunset: Date }> {
     // CENTRAL GUARD - Stop invalid calls immediately
     if (!PrayerTimeService.isValidCoordinates(coordinates)) {
       console.log(
         "🛑 BLOCKED: Invalid coordinates, returning empty prayer times"
       );
-      return []; // Return empty array instead of making API calls
+      return { prayerTimes: [], sunrise: new Date(), sunset: new Date() };
     }
 
     try {
-      const times = await this.fetchPrayerTimes(coordinates, date, method);
+      const times = await this.fetchPrayerTimes(coordinates, date, method, asrJuristic);
       const now = new Date();
+
+      // Parse sunrise and sunset
+      const sunrise = this.parseTimeToDate(times.Sunrise, date);
+      const sunset = this.parseTimeToDate(times.Sunset, date);
 
       const prayerNames: PrayerName[] = [
         "Fajr",
@@ -214,7 +220,8 @@ export class PrayerTimeService {
           const tomorrowTimes = await this.fetchPrayerTimes(
             coordinates,
             addDays(date, 1),
-            method
+            method,
+            asrJuristic
           );
           const tomorrowFajr = this.parseTimeToDate(
             tomorrowTimes.Fajr,
@@ -237,10 +244,17 @@ export class PrayerTimeService {
         prayerTimesList.length,
         "prayers"
       );
-      return prayerTimesList;
+      console.log("🌅 Sunrise:", sunrise.toISOString());
+      console.log("🌇 Sunset:", sunset.toISOString());
+      
+      return {
+        prayerTimes: prayerTimesList,
+        sunrise,
+        sunset,
+      };
     } catch (error) {
       console.error("❌ Error in getPrayerTimesList:", error);
-      return [];
+      return { prayerTimes: [], sunrise: new Date(), sunset: new Date() };
     }
   }
 
@@ -251,12 +265,12 @@ export class PrayerTimeService {
     coordinates: Coordinates,
     method: CalculationMethod = "MWL"
   ): Promise<PrayerTime | null> {
-    const prayers = await this.getPrayerTimesList(
+    const { prayerTimes } = await this.getPrayerTimesList(
       coordinates,
       new Date(),
       method
     );
-    return prayers.find((p) => p.isNext) || null;
+    return prayerTimes.find((p: PrayerTime) => p.isNext) || null;
   }
 
   /**
@@ -405,6 +419,7 @@ export class PrayerTimeService {
         Sunrise: this.formatTime(sunriseTime),
         Dhuhr: this.formatTime(dhuhrTime),
         Asr: this.formatTime(asrTime),
+        Sunset: this.formatTime(maghribTime), // Sunset is same as Maghrib start
         Maghrib: this.formatTime(maghribTime),
         Isha: this.formatTime(ishaTime),
         Midnight: this.formatTime(normalizedMidnight),
@@ -418,6 +433,7 @@ export class PrayerTimeService {
         Sunrise: "06:30",
         Dhuhr: "12:30",
         Asr: "15:45",
+        Sunset: "18:30",
         Maghrib: "18:30",
         Isha: "20:00",
         Midnight: "00:00",

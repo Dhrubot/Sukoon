@@ -9,6 +9,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { PrayerTime } from '../../types';
 import PrayerTimeService from '../../services/PrayerTimeService';
+import { useTheme } from '../../providers/ThemeProvider';
 
 interface NextPrayerCardProps {
   prayer: PrayerTime;
@@ -18,6 +19,7 @@ interface NextPrayerCardProps {
 const { width } = Dimensions.get('window');
 
 const NextPrayerCard: React.FC<NextPrayerCardProps> = ({ prayer, onPrepare }) => {
+  const { theme } = useTheme();
   const [timeRemaining, setTimeRemaining] = useState('');
   const [progress, setProgress] = useState(0);
 
@@ -53,34 +55,27 @@ const NextPrayerCard: React.FC<NextPrayerCardProps> = ({ prayer, onPrepare }) =>
     return () => clearInterval(timer);
   }, [prayer]);
 
-  const getPrayerGradient = (name: string): [string, string] => {
-    const gradients: Record<string, [string, string]> = {
-      fajr: ['#1a237e', '#3949ab'],
-      dhuhr: ['#f57c00', '#ffb74d'],
-      asr: ['#ff6f00', '#ffca28'],
-      maghrib: ['#c2185b', '#f06292'],
-      isha: ['#512da8', '#7e57c2'],
-    };
-    return gradients[name] || ['#1B5E3F', '#2E7D32'];
+  const getPrayerGradient = (): [string, string] => {
+    return [theme.colors.card.background, theme.colors.card.hover];
   };
 
   return (
     <LinearGradient
-      colors={getPrayerGradient(prayer.name)}
-      style={styles.container}
+      colors={getPrayerGradient()}
+      style={[styles.container, { borderColor: theme.colors.primary.DEFAULT, shadowColor: theme.colors.primary.DEFAULT }]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
     >
       <View style={styles.header}>
-        <Text style={styles.nextLabel}>NEXT PRAYER</Text>
-        <Text style={styles.timeRemaining}>{timeRemaining}</Text>
+        <Text style={[styles.nextLabel, { color: theme.colors.text.secondary }]}>NEXT PRAYER</Text>
+        <Text style={[styles.timeRemaining, { color: theme.colors.text.primary }]}>{timeRemaining}</Text>
       </View>
 
       <View style={styles.content}>
-        <Text style={styles.prayerName}>
+        <Text style={[styles.prayerName, { color: theme.colors.text.primary }]}>
           {PrayerTimeService.getPrayerDisplayName(prayer.name)}
         </Text>
-        <Text style={styles.prayerTime}>
+        <Text style={[styles.prayerTime, { color: theme.colors.text.secondary }]}>
           {PrayerTimeService.formatPrayerTime(prayer.time)}
         </Text>
       </View>
@@ -98,8 +93,8 @@ const NextPrayerCard: React.FC<NextPrayerCardProps> = ({ prayer, onPrepare }) =>
         ))}
       </View>
 
-      <TouchableOpacity style={styles.prepareButton} onPress={onPrepare}>
-        <Text style={styles.prepareButtonText}>Prepare Mindfully</Text>
+      <TouchableOpacity style={[styles.prepareButton, { backgroundColor: theme.colors.primary.DEFAULT, borderColor: theme.colors.primary.light }]} onPress={onPrepare}>
+        <Text style={[styles.prepareButtonText, { color: theme.colors.primary.contrast }]}>Prepare Mindfully</Text>
       </TouchableOpacity>
     </LinearGradient>
   );
@@ -107,13 +102,13 @@ const NextPrayerCard: React.FC<NextPrayerCardProps> = ({ prayer, onPrepare }) =>
 
 const styles = StyleSheet.create({
   container: {
-    marginHorizontal: 20,
-    marginVertical: 16,
-    borderRadius: 20,
-    padding: 20,
-    shadowColor: '#000',
+    marginHorizontal: 20,      // xl
+    marginVertical: 16,        // lg
+    borderRadius: 20,          // xl
+    padding: 20,               // xl
+    borderWidth: 2,
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.4,
     shadowRadius: 12,
     elevation: 8,
   },
@@ -121,38 +116,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 16,          // lg
   },
   nextLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 11,              // xs
+    fontWeight: '600',         // semibold
     letterSpacing: 1,
   },
   timeRemaining: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontSize: 14,              // md
+    fontWeight: '600',         // semibold
   },
   content: {
     alignItems: 'center',
-    marginBottom: 20,
+    marginBottom: 20,          // xl
   },
   prayerName: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: '#FFFFFF',
-    marginBottom: 8,
+    fontSize: 32,              // 5xl
+    fontWeight: '700',         // bold
+    marginBottom: 8,           // sm
   },
   prayerTime: {
-    fontSize: 20,
-    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 20,              // 2xl
   },
   progressContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 8,
-    marginBottom: 20,
+    gap: 8,                    // sm
+    marginBottom: 20,          // xl
   },
   progressDot: {
     width: 8,
@@ -164,18 +155,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
   prepareButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 12,
-    paddingVertical: 14,
+    borderRadius: 12,          // md
+    paddingVertical: 14,       // md+
     paddingHorizontal: 24,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
   },
   prepareButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#FFFFFF',
+    fontSize: 16,  // lg
+    fontWeight: '600',  // semibold
   },
 });
 
