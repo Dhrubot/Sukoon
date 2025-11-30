@@ -5,10 +5,10 @@ export default {
     slug: "sukoon",
     version: "1.0.0",
     orientation: "portrait",
-    icon: "./assets/icon.png",
+    icon: "./assets/icon.svg",
     userInterfaceStyle: "automatic",
     splash: {
-      image: "./assets/icon.png",
+      image: "./assets/icon.svg",
       resizeMode: "contain",
       backgroundColor: "#1A1F3A",  // Dark theme background
     },
@@ -32,7 +32,7 @@ export default {
     android: {
       appBundles: true,
       adaptiveIcon: {
-        foregroundImage: "./assets/icon.png",
+        foregroundImage: "./assets/icon.svg",
         backgroundColor: "#1A1F3A",  // Dark theme background
       },
       enableProguardInReleaseBuilds: true,
