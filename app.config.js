@@ -30,10 +30,13 @@ export default {
       jsEngine: "hermes"
     },
     android: {
+      appBundles: true,
       adaptiveIcon: {
         foregroundImage: "./assets/icon.png",
         backgroundColor: "#1A1F3A",  // Dark theme background
       },
+      enableProguardInReleaseBuilds: true,
+      enableShrinkResources: true,
       package: "com.talukders.sukoon",
       jsEngine: "hermes",
       permissions: [
