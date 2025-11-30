@@ -66,19 +66,19 @@ const MindfulnessFlow: React.FC = () => {
   const [selectedMood, setSelectedMood] = useState<number>(0);
   const [sessionStartTime] = useState(new Date());
   const [isBreathingActive, setIsBreathingActive] = useState(true);
-  const [isValidPrayer, setIsValidPrayer] = useState(true);
+  const [hasValidated, setHasValidated] = useState(false);
 
   // Animations
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
   const completeScale = useRef(new Animated.Value(0)).current;
 
-  // 🎯 NEW: Prayer validation effect
+  // 🎯 Prayer validation effect - run once on mount
   useEffect(() => {
     validatePrayerTiming();
-  }, [todayPrayerTimes, prayer.time, prayer.name]);
+  }, []); // Empty deps - only run once on mount
 
-  // 🎯 NEW: Validate that the prayer is still current/upcoming
+  // 🎯 Validate that the prayer is still current/upcoming
   const validatePrayerTiming = () => {
     const now = new Date();
     const prayerTime = prayer.time;
@@ -88,8 +88,6 @@ const MindfulnessFlow: React.FC = () => {
     
     // Check if prayer time has passed by more than 2 hours
     if (now > twoHoursAfterPrayer) {
-      setIsValidPrayer(false);
-      
       // Show alert and navigate back
       Alert.alert(
         "Prayer Time Passed",
@@ -102,24 +100,15 @@ const MindfulnessFlow: React.FC = () => {
           },
           {
             text: "Continue as Makeup",
-            onPress: () => setIsValidPrayer(true)
+            onPress: () => setHasValidated(true)
           }
         ]
       );
       return;
     }
 
-    // 🎯 NEW: Validate prayer exists in today's prayer times
-    const currentPrayerInSchedule = todayPrayerTimes.find(p => 
-      p.name === prayer.name
-    );
-
-    if (!currentPrayerInSchedule && hasValidLocation) {
-      console.warn(`Prayer ${prayer.name} not found in today's schedule`);
-      // Still allow it to continue, but log for debugging
-    }
-
-    setIsValidPrayer(true);
+    // Mark as validated to allow rendering
+    setHasValidated(true);
   };
 
   const getPrayerGradient = (): [string, string] => {
@@ -382,8 +371,8 @@ const MindfulnessFlow: React.FC = () => {
     </Animated.View>
   );
 
-  // 🎯 NEW: Don't render if prayer is invalid and user hasn't chosen to continue
-  if (!isValidPrayer) {
+  // Don't render until validation is complete
+  if (!hasValidated) {
     return null;
   }
 
@@ -458,7 +447,7 @@ const styles = StyleSheet.create({
   prayerName: {
     fontSize: 24,  // 3xl
     fontWeight: "700",
-    color: "theme.colors.text.primary",
+    color: "#FFFFFF",
   },
   closeButton: {
     width: 40,
@@ -470,7 +459,7 @@ const styles = StyleSheet.create({
   },
   closeText: {
     fontSize: 20,  // 2xl
-    color: "theme.colors.text.primary",
+    color: "#FFFFFF",
   },
   progressContainer: {
     flexDirection: "row",
@@ -485,7 +474,7 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255, 255, 255, 0.3)",
   },
   progressDotActive: {
-    backgroundColor: "theme.colors.text.primary",
+    backgroundColor: "#FFFFFF",
     width: 24,
   },
   content: {
@@ -502,7 +491,7 @@ const styles = StyleSheet.create({
   stepTitle: {
     fontSize: 28,  // 4xl
     fontWeight: "700",
-    color: "theme.colors.text.primary",
+    color: "#FFFFFF",
     textAlign: "center",
     marginBottom: 12,
   },
@@ -562,7 +551,7 @@ const styles = StyleSheet.create({
   completeButtonText: {
     fontSize: 18,  // xl
     fontWeight: "600",
-    color: "theme.colors.text.primary",
+    color: "#FFFFFF",
   },
   completeContainer: {
     flex: 1,
@@ -577,7 +566,7 @@ const styles = StyleSheet.create({
   completeTitle: {
     fontSize: 36,
     fontWeight: "700",
-    color: "theme.colors.text.primary",
+    color: "#FFFFFF",
     marginBottom: 16,
   },
   completeText: {

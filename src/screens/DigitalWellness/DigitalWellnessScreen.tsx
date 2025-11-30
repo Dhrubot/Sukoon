@@ -46,7 +46,7 @@ const DigitalWellnessScreen: React.FC = () => {
     if (hasPermission) {
       loadPrePrayerStats();
     }
-  }, [todayPrayerTimes, hasPermission]);
+  }, [todayPrayerTimes.length, hasPermission]); // Use length instead of full array
 
   const checkPermissionAndLoadData = async () => {
     setIsLoading(true);
@@ -474,7 +474,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,  // lg
-    color: 'theme.colors.text.secondary',
+    color: theme.colors.text.secondary,
   },
   header: {
     padding: 20,
@@ -483,12 +483,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   title: {
     fontSize: 32,  // 5xl
     fontWeight: '700',  // bold
-    color: 'theme.colors.text.primary',
+    color: theme.colors.text.primary,
     marginBottom: 16,
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: 'theme.colors.card.hover',
+    backgroundColor: theme.colors.card.hover,
     borderRadius: 12,
     padding: 4,
     marginBottom: 20,
@@ -501,8 +501,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     alignItems: 'center',
   },
   tabActive: {
-    backgroundColor: 'theme.colors.primary.DEFAULT', // Turquoise accent
-    shadowColor: 'theme.colors.primary.DEFAULT',
+    backgroundColor: theme.colors.primary.DEFAULT, // Turquoise accent
+    shadowColor: theme.colors.primary.DEFAULT,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.3,
     shadowRadius: 2,
@@ -510,11 +510,11 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   tabText: {
     fontSize: 14,  // md
-    color: 'theme.colors.text.secondary',
+    color: theme.colors.text.secondary,
     fontWeight: '500',  // medium
   },
   tabTextActive: {
-    color: 'theme.colors.text.primary',
+    color: theme.colors.text.primary,
     fontWeight: '600',  // semibold
   },
   permissionContainer: {
@@ -530,26 +530,26 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   permissionTitle: {
     fontSize: 24,  // 3xl
     fontWeight: '700',  // bold
-    color: 'theme.colors.text.primary',
+    color: theme.colors.text.primary,
     marginBottom: 16,
     textAlign: 'center',
   },
   permissionText: {
     fontSize: 16,  // lg
-    color: 'theme.colors.text.secondary',
+    color: theme.colors.text.secondary,
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 16,
   },
   permissionNote: {
     fontSize: 14,  // md
-    color: 'theme.colors.text.muted',
+    color: theme.colors.text.muted,
     textAlign: 'center',
     fontStyle: 'italic',
     marginBottom: 32,
   },
   enableButton: {
-    backgroundColor: 'theme.colors.primary.DEFAULT', // Turquoise accent
+    backgroundColor: theme.colors.primary.DEFAULT, // Turquoise accent
     paddingHorizontal: 32,
     paddingVertical: 16,
     borderRadius: 12,
@@ -557,7 +557,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   enableButtonText: {
     fontSize: 16,  // lg
     fontWeight: '600',  // semibold
-    color: 'theme.colors.text.primary',
+    color: theme.colors.text.primary,
   },
   focusCard: {
     margin: 20,
@@ -592,14 +592,14 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginBottom: 24,
   },
   metricCard: {
-    backgroundColor: 'theme.colors.card.background', // Dark card background
+    backgroundColor: theme.colors.card.background, // Dark card background
     padding: 20,
     borderRadius: 12,
     alignItems: 'center',
     flex: 1,
     marginHorizontal: 6,
     borderWidth: 1,
-    borderColor: 'theme.colors.card.hover',
+    borderColor: theme.colors.card.hover,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
@@ -613,12 +613,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   metricValue: {
     fontSize: 24,  // 3xl
     fontWeight: '700',  // bold
-    color: 'theme.colors.primary.DEFAULT', // Turquoise accent
+    color: theme.colors.primary.DEFAULT, // Turquoise accent
     marginBottom: 4,
   },
   metricLabel: {
     fontSize: 13,  // sm (adjusted up)
-    color: 'theme.colors.text.secondary',
+    color: theme.colors.text.secondary,
   },
   section: {
     paddingHorizontal: 20,
@@ -627,24 +627,24 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   sectionTitle: {
     fontSize: 20,  // 2xl
     fontWeight: '600',  // semibold
-    color: 'theme.colors.text.primary',
+    color: theme.colors.text.primary,
     marginBottom: 16,
   },
   sectionSubtext: {
     fontSize: 14,  // md
-    color: 'theme.colors.text.secondary',
+    color: theme.colors.text.secondary,
     marginBottom: 12,
   },
   appRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: 'theme.colors.card.background',
+    backgroundColor: theme.colors.card.background,
     padding: 16,
     borderRadius: 8,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: 'theme.colors.card.hover',
+    borderColor: theme.colors.card.hover,
   },
   appInfo: {
     flexDirection: 'row',
@@ -653,33 +653,33 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   appRank: {
     fontSize: 16,  // lg
     fontWeight: '600',  // semibold
-    color: 'theme.colors.text.muted',
+    color: theme.colors.text.muted,
     marginRight: 12,
   },
   appName: {
     fontSize: 16,  // lg
-    color: 'theme.colors.text.primary',
+    color: theme.colors.text.primary,
   },
   appTime: {
     fontSize: 16,  // lg
     fontWeight: '600',  // semibold
-    color: 'theme.colors.primary.DEFAULT', // Turquoise accent
+    color: theme.colors.primary.DEFAULT, // Turquoise accent
   },
   prayerStatRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: 'theme.colors.card.background',
+    backgroundColor: theme.colors.card.background,
     padding: 16,
     borderRadius: 8,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: 'theme.colors.card.hover',
+    borderColor: theme.colors.card.hover,
   },
   prayerName: {
     fontSize: 16,  // lg
     fontWeight: '500',  // medium
-    color: 'theme.colors.text.primary',
+    color: theme.colors.text.primary,
   },
   prayerStatValues: {
     flexDirection: 'row',
@@ -687,7 +687,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   prayerStatText: {
     fontSize: 14,  // md
-    color: 'theme.colors.text.secondary',
+    color: theme.colors.text.secondary,
   },
   weeklyStats: {
     flexDirection: 'row',
@@ -700,12 +700,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   weeklyStatValue: {
     fontSize: 32,  // 5xl
     fontWeight: '700',  // bold
-    color: 'theme.colors.primary.DEFAULT', // Turquoise accent
+    color: theme.colors.primary.DEFAULT, // Turquoise accent
     marginBottom: 4,
   },
   weeklyStatLabel: {
     fontSize: 14,  // md
-    color: 'theme.colors.text.secondary',
+    color: theme.colors.text.secondary,
   },
   chartSection: {
     paddingHorizontal: 20,
@@ -714,7 +714,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   chartTitle: {
     fontSize: 18,  // xl
     fontWeight: '600',  // semibold
-    color: 'theme.colors.text.primary',
+    color: theme.colors.text.primary,
     marginBottom: 16,
   },
   chart: {
@@ -726,22 +726,22 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   insightsTitle: {
     fontSize: 24,  // 3xl
     fontWeight: '700',  // bold
-    color: 'theme.colors.text.primary',
+    color: theme.colors.text.primary,
     marginBottom: 20,
   },
   insightCard: {
-    backgroundColor: 'theme.colors.card.background',
+    backgroundColor: theme.colors.card.background,
     padding: 20,
     borderRadius: 12,
     marginBottom: 12,
     borderLeftWidth: 4,
-    borderLeftColor: 'theme.colors.primary.DEFAULT', // Turquoise accent
+    borderLeftColor: theme.colors.primary.DEFAULT, // Turquoise accent
     borderWidth: 1,
-    borderColor: 'theme.colors.card.hover',
+    borderColor: theme.colors.card.hover,
   },
   insightText: {
     fontSize: 16,  // lg
-    color: 'theme.colors.text.secondary',
+    color: theme.colors.text.secondary,
     lineHeight: 24,
   },
   tipsSection: {
@@ -750,18 +750,18 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   tipsTitle: {
     fontSize: 20,  // 2xl
     fontWeight: '600',  // semibold
-    color: 'theme.colors.text.primary',
+    color: theme.colors.text.primary,
     marginBottom: 16,
   },
   tipCard: {
     flexDirection: 'row',
-    backgroundColor: 'theme.colors.card.background',
+    backgroundColor: theme.colors.card.background,
     padding: 16,
     borderRadius: 12,
     marginBottom: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'theme.colors.card.hover',
+    borderColor: theme.colors.card.hover,
   },
   tipEmoji: {
     fontSize: 24,  // 3xl
@@ -770,7 +770,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   tipText: {
     flex: 1,
     fontSize: 15,  // base
-    color: 'theme.colors.text.secondary',
+    color: theme.colors.text.secondary,
     lineHeight: 22,
   },
   iosMessage: {
@@ -786,12 +786,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   iosTitle: {
     fontSize: 24,  // 3xl
     fontWeight: '700',  // bold
-    color: 'theme.colors.text.primary',
+    color: theme.colors.text.primary,
     marginBottom: 16,
   },
   iosText: {
     fontSize: 16,  // lg
-    color: 'theme.colors.text.secondary',
+    color: theme.colors.text.secondary,
     textAlign: 'center',
     lineHeight: 24,
   },

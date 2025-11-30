@@ -62,7 +62,7 @@ const StatsScreen: React.FC = () => {
     if (hasValidLocation && todayPrayerTimes.length > 0) {
       loadStatistics();
     }
-  }, [timeRange, hasValidLocation, todayPrayerTimes]);
+  }, [timeRange, hasValidLocation, todayPrayerTimes.length]); // Use length instead of full array
 
   const loadStatistics = async () => {
     setIsLoading(true);
