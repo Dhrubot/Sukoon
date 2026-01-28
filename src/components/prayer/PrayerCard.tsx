@@ -12,6 +12,7 @@ import PrayerTimeService from '../../services/PrayerTimeService';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useStore } from '../../store/useStore';
 import StorageService from '../../services/StorageService';
+import NotificationService from '../../services/NotificationService';
 import { Icon } from '../common/Icon';
 import { NotificationToggleButton } from '../common/NotificationToggleButton';
 import { getPrayerIcon } from '../../assets/icons';
@@ -37,7 +38,7 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
   const { userSettings, setUserSettings, todaySunrise } = useStore();
 
   // Handle notification toggle
-  const handleNotificationToggle = (prayerName: PrayerName, newState: boolean) => {
+  const handleNotificationToggle = async (prayerName: PrayerName, newState: boolean) => {
     if (!userSettings) return;
 
     const updatedSettings = {
@@ -50,8 +51,18 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
 
     setUserSettings(updatedSettings);
     StorageService.setUserSettings(updatedSettings);
-    
-    // TODO: Reschedule notifications
+
+    if (!updatedSettings.notifications.enabled) {
+      console.log(`${prayerName} notifications ${newState ? 'enabled' : 'disabled'}`);
+      return;
+    }
+
+    if (newState) {
+      await NotificationService.scheduleAllPrayerNotifications();
+    } else {
+      await NotificationService.cancelPrayerNotifications(prayerName);
+    }
+
     console.log(`${prayerName} notifications ${newState ? 'enabled' : 'disabled'}`);
   };
 
