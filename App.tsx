@@ -8,21 +8,24 @@ import { AppInitializer } from './src/components/AppInitializer';
 import { NavigationProvider } from './src/providers/NavigationProvider';
 import { PrayerTimesProvider } from './src/providers/PrayerTimesProvider';
 import { ThemeProvider } from './src/providers/ThemeProvider';
+import ErrorBoundary from './src/components/ErrorBoundary';
 
 // Keep the splash screen visible
 SplashScreen.preventAutoHideAsync();
 
 export default function App() {
   return (
-    <SafeAreaProvider>
-      <ThemeProvider>
-        <NavigationProvider>
-          <PrayerTimesProvider>
-            <StatusBar style="auto" />
-            <AppInitializer />
-          </PrayerTimesProvider>
-        </NavigationProvider>
-      </ThemeProvider>
-    </SafeAreaProvider>
+    <ErrorBoundary>
+      <SafeAreaProvider>
+        <ThemeProvider>
+          <NavigationProvider>
+            <PrayerTimesProvider>
+              <StatusBar style="auto" />
+              <AppInitializer />
+            </PrayerTimesProvider>
+          </NavigationProvider>
+        </ThemeProvider>
+      </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }

@@ -7,6 +7,7 @@ import LocationService from "../services/LocationService";
 import { useStore } from "../store/useStore";
 import { Location as LocationType } from "../types";
 import { usePrayerTimeRefresh } from "./usePrayerTimeRefresh";
+import { initializeEncryptionKey } from "../utils/secureKeyManager";
 
 interface AppInitializationState {
   isLoading: boolean;
@@ -33,6 +34,9 @@ export const useAppInitialization = () => {
   const initializeApp = async () => {
     try {
       console.log("Initializing app...");
+
+      // 🔐 Initialize secure encryption key first (before any storage access)
+      await initializeEncryptionKey();
 
       // Check if first launch
       const firstLaunch = StorageService.isFirstLaunch();

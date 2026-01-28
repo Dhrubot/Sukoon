@@ -67,21 +67,6 @@ export class PrayerTimeService {
       return this.cachedTimes.get(cacheKey)!;
     }
 
-    // Validate coordinates - if invalid, use fallback
-    if (
-      !coordinates ||
-      (coordinates.latitude === 0 && coordinates.longitude === 0)
-    ) {
-      console.warn(
-        "Invalid coordinates provided to fetchPrayerTimes, using fallback calculation"
-      );
-      return this.calculatePrayerTimes(
-        coordinates || { latitude: 0, longitude: 0 },
-        date,
-        method
-      );
-    }
-
     try {
       const methodId = CALCULATION_METHOD_MAP[method];
       const school = asrJuristic === "Hanafi" ? 1 : 0;

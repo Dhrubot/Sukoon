@@ -58,6 +58,7 @@ class NotificationService {
 
   // 🎵 AudioPlayer from expo-audio
   private audioPlayer: AudioPlayer | null = null;
+  private audioPlayerListener: (() => void) | null = null;
 
   private prayerTimesSource: PrayerTimesSource | null = null;
 
@@ -442,18 +443,29 @@ class NotificationService {
       this.audioPlayer.play();
       console.log('🔊 Playing full Adhan in foreground');
 
-      // Optional: Cleanup when done
-      this.audioPlayer.addListener('playbackStatusUpdate', (status) => {
+      // Store listener subscription for cleanup
+      const subscription = this.audioPlayer.addListener('playbackStatusUpdate', (status) => {
         if (status.isLoaded && status.didJustFinish) {
           this.stopAdhan();
         }
       });
+      this.audioPlayerListener = () => subscription.remove();
     } catch (error) {
       console.error('❌ Error playing Adhan:', error);
     }
   }
 
   stopAdhan() {
+    // Remove listener first to prevent memory leak
+    if (this.audioPlayerListener) {
+      try {
+        this.audioPlayerListener();
+      } catch (e) {
+        // Ignore errors if already cleaned up
+      }
+      this.audioPlayerListener = null;
+    }
+
     if (this.audioPlayer) {
       try {
         this.audioPlayer.pause();
