@@ -8,7 +8,7 @@ import StorageService from './StorageService';
 import PrayerTimeService from './PrayerTimeService';
 import ReminderStateService from './ReminderStateService';
 import { format } from 'date-fns';
-import { CHANNELS, SOUNDS, NOTIFICATION_CHANNEL_VERSION } from '../constants/NotificationConstants';
+import { CHANNELS, SOUNDS, NOTIFICATION_CHANNEL_VERSION, NOTIFICATION_SCHEDULING_DAYS, NOTIFICATION_MAX_FUTURE_DAYS } from '../constants/NotificationConstants';
 import MosqueModeService from './MosqueModeService';
 
 // Notification categories for iOS (Prayer Habit Builder)
@@ -50,6 +50,14 @@ interface PrayerTimesSource {
   hasValidLocation: () => boolean;
 }
 
+type PrayerTimesFetcher = (params: {
+  location: UserSettings['location'];
+  date: Date;
+  calculationMethod: UserSettings['calculationMethod'];
+  adjustments?: UserSettings['adjustments'];
+  asrJuristic?: UserSettings['asrJuristic'];
+}) => Promise<{ prayerTimes: PrayerTime[]; sunrise: Date; sunset: Date }>;
+
 class NotificationService {
   private notificationListener: Notifications.Subscription | null = null;
   private responseListener: Notifications.Subscription | null = null;
@@ -61,11 +69,37 @@ class NotificationService {
   private audioPlayerListener: (() => void) | null = null;
 
   private prayerTimesSource: PrayerTimesSource | null = null;
+  private prayerTimesFetcher: PrayerTimesFetcher | null = null;
+
+  async maybeRescheduleExtendedNotifications(hoursThreshold: number = 24): Promise<boolean> {
+    try {
+      const lastRunStr = StorageService.getValue('last_batch_schedule_date');
+      const lastRun = lastRunStr ? new Date(lastRunStr) : new Date(0);
+      const now = new Date();
+      const hoursSinceLastRun = (now.getTime() - lastRun.getTime()) / (1000 * 60 * 60);
+
+      if (hoursSinceLastRun > hoursThreshold) {
+        await this.scheduleExtendedNotifications();
+        StorageService.setValue('last_batch_schedule_date', now.toISOString());
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('❌ Reschedule failed:', error);
+      return false;
+    }
+  }
 
   // Set the prayer times source
   setPrayerTimesSource(source: PrayerTimesSource) {
     this.prayerTimesSource = source;
     console.log('✅ Prayer times source connected to NotificationService');
+  }
+
+  setPrayerTimesFetcher(fetcher: PrayerTimesFetcher) {
+    this.prayerTimesFetcher = fetcher;
+    console.log('✅ Prayer times fetcher connected to NotificationService');
   }
 
   // Register a handler function that will be called when navigation is needed
@@ -147,12 +181,19 @@ class NotificationService {
     if (Platform.OS !== 'android') return;
     try {
       const channels = await Notifications.getNotificationChannelsAsync();
+
+      const currentVersion = NOTIFICATION_CHANNEL_VERSION;
+      const deletableIds = new Set<string>();
+      for (let v = 1; v < currentVersion; v++) {
+        deletableIds.add(`prayer-times-adhan-v${v}`);
+        deletableIds.add(`prayer-times-default-v${v}`);
+        deletableIds.add(`pre-prayer-v${v}`);
+        deletableIds.add(`mindfulness-v${v}`);
+        deletableIds.add(`grace-warning-v${v}`);
+      }
+
       for (const channel of channels) {
-        // If channel is from our app but has an old version number (or no version)
-        if (
-          (channel.id.includes('prayer-times') || channel.id.includes('adhan') || channel.id.includes('pre-prayer') || channel.id.includes('mindfulness') || channel.id.includes('grace-warning')) &&
-          !channel.id.includes(`v${NOTIFICATION_CHANNEL_VERSION}`)
-        ) {
+        if (deletableIds.has(channel.id)) {
           console.log(`🧹 Deleting old channel: ${channel.id}`);
           await Notifications.deleteNotificationChannelAsync(channel.id);
         }
@@ -526,7 +567,7 @@ class NotificationService {
 
     // Better validation of notification times
     const now = new Date();
-    const maxFutureTime = new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000); // 15 days
+    const maxFutureTime = new Date(now.getTime() + NOTIFICATION_MAX_FUTURE_DAYS * 24 * 60 * 60 * 1000);
 
     if (prayer.time > maxFutureTime) {
       console.log(`⏭️ Skipping ${prayer.name} - too far in future`);
@@ -765,7 +806,11 @@ class NotificationService {
 
   async cancelPrayerNotifications(prayerName: PrayerName) {
     const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-    const toCancel = scheduled.filter((notif) => notif.content.data?.prayer === prayerName);
+    const toCancel = scheduled.filter((notif) => {
+      const data = notif.content.data as any;
+      if (data?.type && typeof data.type === 'string' && data.type.startsWith('mosque_mode')) return false;
+      return data?.prayer === prayerName;
+    });
 
     for (const notif of toCancel) {
       await Notifications.cancelScheduledNotificationAsync(notif.identifier);
@@ -774,11 +819,22 @@ class NotificationService {
 
   async cancelAllPrayerNotifications() {
     const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-    const prayerNotifications = scheduled.filter(
-      (notif) =>
-        notif.content.data?.prayer ||
-        (typeof notif.content.data?.type === 'string' && notif.content.data.type.includes('prayer'))
-    );
+    const prayerNotificationTypes = new Set([
+      'pre-prayer',
+      'prayer-time',
+      'post-prayer-check',
+      'mindfulness-reminder',
+      'snoozed',
+      'tier2-reminder',
+      'tier3-warning',
+    ]);
+
+    const prayerNotifications = scheduled.filter((notif) => {
+      const data = notif.content.data as any;
+      if (data?.type && typeof data.type === 'string' && data.type.startsWith('mosque_mode')) return false;
+      if (data?.type && prayerNotificationTypes.has(data.type)) return true;
+      return false;
+    });
 
     for (const notif of prayerNotifications) {
       await Notifications.cancelScheduledNotificationAsync(notif.identifier);
@@ -1042,18 +1098,30 @@ private async scheduleTier3GracePeriodWarning(
       let totalScheduled = 0;
 
       // 2. Loop for 14 days
-      for (let i = 0; i < 14; i++) {
+      for (let i = 0; i < NOTIFICATION_SCHEDULING_DAYS; i++) {
         const date = new Date(today);
         date.setDate(date.getDate() + i);
 
         try {
           // Get times for this specific date
-          const prayerData = await PrayerTimeService.getPrayerTimesList(
-            settings.location,
+          const fetcher: PrayerTimesFetcher =
+            this.prayerTimesFetcher ||
+            ((params) =>
+              PrayerTimeService.getPrayerTimesList(
+                params.location as any,
+                params.date,
+                params.calculationMethod as any,
+                params.adjustments as any,
+                (params.asrJuristic as any) || 'Standard'
+              ));
+
+          const prayerData = await fetcher({
+            location: settings.location,
             date,
-            settings.calculationMethod,
-            settings.adjustments
-          );
+            calculationMethod: settings.calculationMethod,
+            adjustments: settings.adjustments,
+            asrJuristic: settings.asrJuristic,
+          });
 
           // Schedule them with next prayer info for Habit Builder
           const prayers = prayerData.prayerTimes;
