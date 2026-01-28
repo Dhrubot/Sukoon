@@ -66,7 +66,13 @@ export const useAppInitialization = () => {
       await NotificationService.initialize();
 
       // Check if prayer times need refreshing
-      if (settings.location.latitude && settings.location.longitude) {
+      if (
+        typeof settings.location.latitude === 'number' &&
+        typeof settings.location.longitude === 'number' &&
+        !Number.isNaN(settings.location.latitude) &&
+        !Number.isNaN(settings.location.longitude) &&
+        (settings.location.latitude !== 0 || settings.location.longitude !== 0)
+      ) {
         const needsRefresh = await shouldRefreshPrayerTimes(
           settings.location,
           settings.calculationMethod
@@ -90,7 +96,11 @@ export const useAppInitialization = () => {
 
       // If no location is set, show location modal
       const needsLocation =
-        !settings.location.latitude || !settings.location.longitude;
+        typeof settings.location.latitude !== 'number' ||
+        typeof settings.location.longitude !== 'number' ||
+        Number.isNaN(settings.location.latitude) ||
+        Number.isNaN(settings.location.longitude) ||
+        (settings.location.latitude === 0 && settings.location.longitude === 0);
 
       setState({
         isLoading: false,

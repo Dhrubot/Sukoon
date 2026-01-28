@@ -1,6 +1,6 @@
 // src/providers/PrayerTimesProvider.tsx
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import { useStore } from '../store/useStore';
 import PrayerTimeService from '../services/PrayerTimeService';
 import { PrayerTime, Location } from '../types';
@@ -44,10 +44,15 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
   const [error, setError] = useState<string | null>(null);
   const [tomorrowFajr, setTomorrowFajr] = useState<PrayerTime | null>(null);
 
+  const adjustmentsKey = useMemo(() => {
+    return JSON.stringify(userSettings?.adjustments ?? {});
+  }, [userSettings?.adjustments]);
+
   // Centralized location validation
   const isValidLocation = (loc: Location | null): loc is Location => {
     if (!loc) return false;
-    if (!loc.latitude || !loc.longitude) return false;
+    if (typeof loc.latitude !== 'number' || typeof loc.longitude !== 'number') return false;
+    if (Number.isNaN(loc.latitude) || Number.isNaN(loc.longitude)) return false;
     if (loc.latitude === 0 && loc.longitude === 0) return false;
     if (loc.latitude < -90 || loc.latitude > 90) return false;
     if (loc.longitude < -180 || loc.longitude > 180) return false;
@@ -146,7 +151,14 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
         hasSettings: !!userSettings,
       });
     }
-  }, [hasValidLocation, userSettings?.calculationMethod, userSettings?.asrJuristic]);
+  }, [
+    hasValidLocation,
+    location?.latitude,
+    location?.longitude,
+    userSettings?.calculationMethod,
+    userSettings?.asrJuristic,
+    adjustmentsKey,
+  ]);
 
   const refreshPrayerTimes = async () => {
     await loadPrayerTimes();

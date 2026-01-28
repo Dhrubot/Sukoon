@@ -487,7 +487,14 @@ class NotificationService {
         return;
       }
 
-      if (!settings.location?.latitude || !settings.location?.longitude) {
+      if (
+        !settings.location ||
+        typeof settings.location.latitude !== 'number' ||
+        typeof settings.location.longitude !== 'number' ||
+        Number.isNaN(settings.location.latitude) ||
+        Number.isNaN(settings.location.longitude) ||
+        (settings.location.latitude === 0 && settings.location.longitude === 0)
+      ) {
         console.log('❌ No valid location for notifications');
         return;
       }
@@ -519,7 +526,7 @@ class NotificationService {
 
     // Better validation of notification times
     const now = new Date();
-    const maxFutureTime = new Date(now.getTime() + 48 * 60 * 60 * 1000); // 48 hours
+    const maxFutureTime = new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000); // 15 days
 
     if (prayer.time > maxFutureTime) {
       console.log(`⏭️ Skipping ${prayer.name} - too far in future`);
@@ -527,8 +534,8 @@ class NotificationService {
     }
     // Initialize Prayer Habit Builder state
     if (settings.habitBuilder?.enabled) {
- ReminderStateService.initializePrayerReminder(prayer, nextPrayer || null);
- }
+      ReminderStateService.initializePrayerReminder(prayer, nextPrayer || null);
+    }
 
     // Schedule pre-prayer notification
     if (notifications.beforePrayer > 0) {
@@ -1018,7 +1025,15 @@ private async scheduleTier3GracePeriodWarning(
       await this.cancelAllPrayerNotifications();
 
       const settings = StorageService.getUserSettings();
-      if (!settings?.notifications.enabled || !settings.location) {
+      if (
+        !settings?.notifications.enabled ||
+        !settings.location ||
+        typeof settings.location.latitude !== 'number' ||
+        typeof settings.location.longitude !== 'number' ||
+        Number.isNaN(settings.location.latitude) ||
+        Number.isNaN(settings.location.longitude) ||
+        (settings.location.latitude === 0 && settings.location.longitude === 0)
+      ) {
         console.log('📵 Notifications disabled or no location');
         return;
       }
