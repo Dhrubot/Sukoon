@@ -64,12 +64,76 @@ class NotificationService {
   private notificationCache = new Map<string, string>();
   private navigationHandler: ((prayer: PrayerName, action: string) => void) | null = null;
 
+  private isScheduling = false;
+
   // 🎵 AudioPlayer from expo-audio
   private audioPlayer: AudioPlayer | null = null;
   private audioPlayerListener: (() => void) | null = null;
 
   private prayerTimesSource: PrayerTimesSource | null = null;
   private prayerTimesFetcher: PrayerTimesFetcher | null = null;
+
+  private getScheduleFingerprint(settings: UserSettings): string {
+    const roundCoord = (n: number) => Math.round(n * 10000) / 10000;
+    return JSON.stringify({
+      location: settings.location
+        ? {
+          latitude: roundCoord(settings.location.latitude),
+          longitude: roundCoord(settings.location.longitude),
+        }
+        : null,
+      calculationMethod: settings.calculationMethod,
+      adjustments: settings.adjustments || null,
+      asrJuristic: settings.asrJuristic || null,
+      notifications: settings.notifications,
+      prayerNotifications: settings.prayerNotifications || null,
+      habitBuilder: settings.habitBuilder || null,
+      schedulingDays: NOTIFICATION_SCHEDULING_DAYS,
+      channelVersion: NOTIFICATION_CHANNEL_VERSION,
+    });
+  }
+
+  private isPrayerNotificationType(type: unknown): boolean {
+    if (typeof type !== 'string') return false;
+    return (
+      type === 'pre-prayer' ||
+      type === 'prayer-time' ||
+      type === 'post-prayer-check' ||
+      type === 'mindfulness-reminder' ||
+      type === 'snoozed' ||
+      type === 'tier2-reminder' ||
+      type === 'tier3-warning'
+    );
+  }
+
+  private getTriggerDate(trigger: unknown): Date | null {
+    const t = trigger as unknown as { date?: unknown; value?: unknown } | null;
+    const raw = t?.date ?? t?.value;
+    if (!raw) return null;
+    const d = new Date(raw as string | number | Date);
+    if (Number.isNaN(d.getTime())) return null;
+    return d;
+  }
+
+  private async cleanupPastPrayerNotifications(cutoff: Date): Promise<number> {
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+    let cancelled = 0;
+
+    for (const notif of scheduled) {
+      const data = (notif.content?.data || {}) as Record<string, unknown>;
+      if (data?.type && typeof data.type === 'string' && data.type.startsWith('mosque_mode')) continue;
+      if (!this.isPrayerNotificationType(data?.type)) continue;
+
+      const triggerDate = this.getTriggerDate(notif.trigger);
+      if (!triggerDate) continue;
+      if (triggerDate.getTime() < cutoff.getTime()) {
+        await Notifications.cancelScheduledNotificationAsync(notif.identifier);
+        cancelled++;
+      }
+    }
+
+    return cancelled;
+  }
 
   async maybeRescheduleExtendedNotifications(hoursThreshold: number = 24): Promise<boolean> {
     try {
@@ -540,7 +604,7 @@ class NotificationService {
         return;
       }
 
-      console.log('🗓️ Scheduling prayer notifications via 14-day batch...');
+      console.log('🗓️ Scheduling prayer notifications...');
 
       // Simply call the extended scheduler - it handles everything
       await this.scheduleExtendedNotifications();
@@ -550,7 +614,12 @@ class NotificationService {
     }
   }
 
-  private async schedulePrayerNotification(prayer: PrayerTime, settings: UserSettings, nextPrayer?: PrayerTime | null) {
+  private async schedulePrayerNotification(
+    prayer: PrayerTime,
+    settings: UserSettings,
+    nextPrayer?: PrayerTime | null,
+    existingIdentifiers?: Set<string>
+  ) {
     const { notifications, prayerNotifications } = settings;
     const prayerName = PrayerTimeService.getPrayerDisplayName(prayer.name);
 
@@ -561,7 +630,7 @@ class NotificationService {
     }
 
     // Create unique identifiers to prevent duplicates
-    const dateStr = prayer.time.toISOString().split('T')[0];
+    const dateStr = format(prayer.time, 'yyyy-MM-dd');
     // Create unique prayer ID for Prayer Habit Builder tracking
     const prayerId = `${prayer.name}-${dateStr}`;
 
@@ -583,30 +652,34 @@ class NotificationService {
       const preNotificationTime = new Date(prayer.time.getTime() - notifications.beforePrayer * 60000);
 
       if (preNotificationTime > now) {
-        const content = this.getPrePrayerContent(prayerName, notifications.beforePrayer);
+        const preIdentifier = `pre-${prayer.name}-${dateStr}`;
+        if (!existingIdentifiers?.has(preIdentifier)) {
+          const content = this.getPrePrayerContent(prayerName, notifications.beforePrayer);
 
-        await Notifications.scheduleNotificationAsync({
-          content: {
-            ...content,
-            data: {
-              prayer: prayer.name,
-              prayerId,
-              type: 'pre-prayer',
-              time: prayer.time.toISOString(),
-              scheduledAt: new Date().toISOString(),
+          await Notifications.scheduleNotificationAsync({
+            content: {
+              ...content,
+              data: {
+                prayer: prayer.name,
+                prayerId,
+                type: 'pre-prayer',
+                time: prayer.time.toISOString(),
+                scheduledAt: new Date().toISOString(),
+              },
+              categoryIdentifier: NOTIFICATION_CATEGORIES.PRE_PRAYER,
+              ...(Platform.OS === 'android' && {
+                channelId: CHANNELS.PRE_PRAYER,
+              }),
             },
-            categoryIdentifier: NOTIFICATION_CATEGORIES.PRE_PRAYER,
-            ...(Platform.OS === 'android' && {
-              channelId: CHANNELS.PRE_PRAYER,
-            }),
-          },
-          trigger: {
-            type: 'timeInterval',
-            seconds: Math.max((preNotificationTime.getTime() - now.getTime()) / 1000, 1),
-            repeats: false,
-          } as Notifications.NotificationTriggerInput,
-          identifier: `pre-${prayer.name}-${dateStr}`,
-        });
+            trigger: {
+              type: 'date',
+              date: preNotificationTime,
+            } as Notifications.NotificationTriggerInput,
+            identifier: preIdentifier,
+          });
+
+          existingIdentifiers?.add(preIdentifier);
+        }
       }
     }
 
@@ -628,45 +701,54 @@ class NotificationService {
 
     const mainContent = this.getPrayerTimeContent(prayerName, prayer.name);
 
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        ...mainContent,
-        data: {
-          prayer: prayer.name,
-          prayerId,
-          type: 'prayer-time',
-          time: prayer.time.toISOString(),
-          scheduledAt: new Date().toISOString(),
+    const prayerIdentifier = `prayer-${prayer.name}-${dateStr}`;
+    if (!existingIdentifiers?.has(prayerIdentifier)) {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          ...mainContent,
+          data: {
+            prayer: prayer.name,
+            prayerId,
+            type: 'prayer-time',
+            time: prayer.time.toISOString(),
+            scheduledAt: new Date().toISOString(),
+          },
+          sound: soundAsset,
+          categoryIdentifier: NOTIFICATION_CATEGORIES.PRAYER_REMINDER,
+          ...(Platform.OS === 'android' && {
+            channelId: androidChannel,
+            priority: 'high',
+          }),
         },
-        sound: soundAsset,
-        categoryIdentifier: NOTIFICATION_CATEGORIES.PRAYER_REMINDER,
-        ...(Platform.OS === 'android' && {
-          channelId: androidChannel,
-          priority: 'high',
-        }),
-      },
-      trigger: {
-        type: 'timeInterval',
-        seconds: Math.max((prayer.time.getTime() - now.getTime()) / 1000, 1),
-        repeats: false,
-      } as Notifications.NotificationTriggerInput,
-      identifier: `prayer-${prayer.name}-${dateStr}`,
-    });
+        trigger: {
+          type: 'date',
+          date: prayer.time,
+        } as Notifications.NotificationTriggerInput,
+        identifier: prayerIdentifier,
+      });
+
+      existingIdentifiers?.add(prayerIdentifier);
+    }
 
     // PRAYER HABIT BUILDER: Schedule Tier 2 & Tier 3 reminders
     if (settings.habitBuilder?.enabled) {
       // TIER 2: Persistent "Have you prayed?" reminders
-      await this.scheduleTier2PersistentReminders(prayer, prayerId, settings);
+      await this.scheduleTier2PersistentReminders(prayer, prayerId, settings, existingIdentifiers);
 
       // TIER 3: Grace period warning (only if we have next prayer)
       if (nextPrayer) {
-        await this.scheduleTier3GracePeriodWarning(prayer, nextPrayer, prayerId, settings);
+        await this.scheduleTier3GracePeriodWarning(prayer, nextPrayer, prayerId, settings, existingIdentifiers);
       }
 
       console.log(`🏗️ Prayer Habit Builder scheduled for ${prayerName}`);
     } else if (notifications.postPrayerCheck) {
       // LEGACY: Old post-prayer check (single notification)
       const postCheckTime = new Date(prayer.time.getTime() + 15 * 60000);
+
+      const checkIdentifier = `check-${prayer.name}-${dateStr}`;
+      if (existingIdentifiers?.has(checkIdentifier)) {
+        return;
+      }
 
       await Notifications.scheduleNotificationAsync({
         content: {
@@ -685,12 +767,13 @@ class NotificationService {
           }),
         },
         trigger: {
-          type: 'timeInterval',
-          seconds: Math.max((postCheckTime.getTime() - now.getTime()) / 1000, 1),
-          repeats: false,
+          type: 'date',
+          date: postCheckTime,
         } as Notifications.NotificationTriggerInput,
-        identifier: `check-${prayer.name}-${dateStr}`,
+        identifier: checkIdentifier,
       });
+
+      existingIdentifiers?.add(checkIdentifier);
     }
   }
 
@@ -713,9 +796,8 @@ class NotificationService {
         }),
       },
       trigger: {
-        type: 'timeInterval',
-        seconds: Math.max((reminderTime.getTime() - Date.now()) / 1000, 1),
-        repeats: false,
+        type: 'date',
+        date: reminderTime,
       } as Notifications.NotificationTriggerInput,
       identifier: `mindfulness-${prayerName}-${Date.now()}`,
     });
@@ -795,9 +877,8 @@ class NotificationService {
         }),
       },
       trigger: {
-        type: 'timeInterval',
-        seconds: Math.max((snoozeTime.getTime() - Date.now()) / 1000, 1),
-        repeats: false,
+        type: 'date',
+        date: snoozeTime,
       } as Notifications.NotificationTriggerInput,
       identifier: `snooze-${prayerName}-${Date.now()}`,
     });
@@ -891,7 +972,8 @@ private isQuietHours(settings: UserSettings, time: Date = new Date()): boolean {
 private async scheduleTier2PersistentReminders(
   prayer: PrayerTime,
   prayerId: string,
-  settings: UserSettings
+  settings: UserSettings,
+  existingIdentifiers?: Set<string>
 ): Promise<void> {
   const habitSettings = settings.habitBuilder;
   
@@ -927,6 +1009,11 @@ private async scheduleTier2PersistentReminders(
     const message = messages[Math.floor(Math.random() * messages.length)]
       .replace('{prayer}', prayerDisplayName);
 
+    const tier2Identifier = `tier2-${prayerId}-${i}`;
+    if (existingIdentifiers?.has(tier2Identifier)) {
+      continue;
+    }
+
     await Notifications.scheduleNotificationAsync({
       content: {
         title: `${prayerDisplayName} Prayer Check-in 🤲`,
@@ -946,12 +1033,13 @@ private async scheduleTier2PersistentReminders(
         }),
       },
       trigger: {
-        type: 'timeInterval',
-        seconds: Math.max((reminderTime.getTime() - now.getTime()) / 1000, 1),
-        repeats: false,
+        type: 'date',
+        date: reminderTime,
       } as Notifications.NotificationTriggerInput,
-      identifier: `tier2-${prayerId}-${i}`,
+      identifier: tier2Identifier,
     });
+
+    existingIdentifiers?.add(tier2Identifier);
 
     console.log(`🔔 Tier 2 reminder #${i} scheduled for ${prayerDisplayName} at ${format(reminderTime, 'HH:mm')}`);
   }
@@ -989,7 +1077,8 @@ private async scheduleTier3GracePeriodWarning(
   prayer: PrayerTime,
   nextPrayer: PrayerTime,
   prayerId: string,
-  settings: UserSettings
+  settings: UserSettings,
+  existingIdentifiers?: Set<string>
 ): Promise<void> {
   const habitSettings = settings.habitBuilder;
   
@@ -1020,6 +1109,11 @@ private async scheduleTier3GracePeriodWarning(
   const prayerDisplayName = PrayerTimeService.getPrayerDisplayName(prayer.name);
   const nextPrayerDisplayName = PrayerTimeService.getPrayerDisplayName(nextPrayer.name);
 
+  const tier3Identifier = `tier3-${prayerId}`;
+  if (existingIdentifiers?.has(tier3Identifier)) {
+    return;
+  }
+
   await Notifications.scheduleNotificationAsync({
     content: {
       title: `⚠️ ${prayerDisplayName} Grace Period Ending`,
@@ -1039,12 +1133,13 @@ private async scheduleTier3GracePeriodWarning(
       }),
     },
     trigger: {
-      type: 'timeInterval',
-      seconds: Math.max((warningTime.getTime() - now.getTime()) / 1000, 1),
-      repeats: false,
+      type: 'date',
+      date: warningTime,
     } as Notifications.NotificationTriggerInput,
-    identifier: `tier3-${prayerId}`,
+    identifier: tier3Identifier,
   });
+
+  existingIdentifiers?.add(tier3Identifier);
 
   console.log(`⚠️ Tier 3 warning scheduled for ${prayerDisplayName} at ${format(warningTime, 'HH:mm')}`);
 }
@@ -1074,11 +1169,13 @@ private async scheduleTier3GracePeriodWarning(
   // 📅 EXTENDED 14-DAY BATCH SCHEDULING
   // This is called by your useNotificationRescheduler hook every 24 hours
   async scheduleExtendedNotifications() {
+    if (this.isScheduling) {
+      return;
+    }
+
+    this.isScheduling = true;
     try {
       console.log('🗓️ Starting 14-day batch scheduling...');
-
-      // 1. Cancel everything to start fresh
-      await this.cancelAllPrayerNotifications();
 
       const settings = StorageService.getUserSettings();
       if (
@@ -1094,16 +1191,33 @@ private async scheduleTier3GracePeriodWarning(
         return;
       }
 
-      const today = new Date();
-      let totalScheduled = 0;
+      const fingerprint = this.getScheduleFingerprint(settings);
+      const previousFingerprint = StorageService.getValue('notification_schedule_fingerprint');
+      const shouldRebuild = previousFingerprint !== fingerprint;
 
-      // 2. Loop for 14 days
+      if (shouldRebuild) {
+        await this.cancelAllPrayerNotifications();
+        StorageService.setValue('notification_schedule_fingerprint', fingerprint);
+      }
+
+      await this.cleanupPastPrayerNotifications(new Date());
+
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+      const existingIdentifiers = new Set<string>();
+      for (const notif of scheduled) {
+        const data = (notif.content?.data || {}) as Record<string, unknown>;
+        if (data?.type && typeof data.type === 'string' && data.type.startsWith('mosque_mode')) continue;
+        if (!this.isPrayerNotificationType(data?.type)) continue;
+        existingIdentifiers.add(notif.identifier);
+      }
+
+      const today = new Date();
+
       for (let i = 0; i < NOTIFICATION_SCHEDULING_DAYS; i++) {
         const date = new Date(today);
         date.setDate(date.getDate() + i);
 
         try {
-          // Get times for this specific date
           const fetcher: PrayerTimesFetcher =
             this.prayerTimesFetcher ||
             ((params) =>
@@ -1123,26 +1237,23 @@ private async scheduleTier3GracePeriodWarning(
             asrJuristic: settings.asrJuristic,
           });
 
-          // Schedule them with next prayer info for Habit Builder
           const prayers = prayerData.prayerTimes;
           for (let j = 0; j < prayers.length; j++) {
             const prayer = prayers[j];
-            const nextPrayer = prayers[j + 1] || null; // Get next prayer for Tier 3
-            
+            const nextPrayer = prayers[j + 1] || null;
+
             if (prayer.time > new Date()) {
-              await this.schedulePrayerNotification(prayer, settings, nextPrayer);
-              totalScheduled++;
+              await this.schedulePrayerNotification(prayer, settings, nextPrayer, existingIdentifiers);
             }
           }
         } catch (error) {
           console.error(`❌ Failed to schedule day ${i}:`, error);
-          // Continue with next day
         }
       }
-
-      console.log(`✅ Extended scheduling complete: ${totalScheduled} notifications scheduled`);
     } catch (error) {
       console.error('❌ Extended scheduling failed:', error);
+    } finally {
+      this.isScheduling = false;
     }
   }
 
