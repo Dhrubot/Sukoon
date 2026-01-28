@@ -27,7 +27,7 @@ export const MosqueModePrompt: React.FC<MosqueModePromptProps> = ({
   onCancel,
 }) => {
   const { theme } = useTheme();
-  const { getIqamahTime } = useMosqueMode();
+  const { getIqamahTime, settings } = useMosqueMode();
 
   const iqamahTime = getIqamahTime(prayer);
 
@@ -63,7 +63,7 @@ export const MosqueModePrompt: React.FC<MosqueModePromptProps> = ({
           {/* Description */}
           <Text style={[styles.description, { color: theme.colors.text.secondary }]}>
             {Platform.OS === 'android'
-              ? 'Your phone will automatically go silent at iqamah time and restore after 10 minutes.'
+              ? `Your phone will automatically go silent at iqamah time and restore after ${settings?.silentDuration ?? 10} minutes.`
               : 'You will receive a reminder to enable Do Not Disturb at iqamah time.'}
           </Text>
 

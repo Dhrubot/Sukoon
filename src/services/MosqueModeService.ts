@@ -196,7 +196,7 @@ class MosqueModeService {
           iqamahTime: iqamahTime.toISOString(),
           action: 'enable_focus_mode',
         },
-        categoryIdentifier: 'MOSQUE_REMINDER',
+        categoryIdentifier: 'mosque-reminder',
       },
       trigger: {
         type: 'date',

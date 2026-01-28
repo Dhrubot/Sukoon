@@ -589,7 +589,6 @@ class NotificationService {
         type: 'timeInterval',
         seconds: Math.max((prayer.time.getTime() - now.getTime()) / 1000, 1),
         repeats: false,
-        channelId: androidChannel
       } as Notifications.NotificationTriggerInput,
       identifier: `prayer-${prayer.name}-${dateStr}`,
     });
@@ -788,14 +787,13 @@ class NotificationService {
   /**
  * Check if current time is within quiet hours
  */
-private isQuietHours(settings: UserSettings): boolean {
-  if (!settings.habitBuilder.quietHours.enabled) {
+private isQuietHours(settings: UserSettings, time: Date = new Date()): boolean {
+  if (!settings.habitBuilder?.quietHours?.enabled) {
     return false;
   }
 
-  const now = new Date();
-  const currentHour = now.getHours();
-  const currentMinute = now.getMinutes();
+  const currentHour = time.getHours();
+  const currentMinute = time.getMinutes();
   const currentTime = currentHour * 60 + currentMinute;
 
   const [startHour, startMinute] = settings.habitBuilder.quietHours.start.split(':').map(Number);
@@ -842,7 +840,7 @@ private async scheduleTier2PersistentReminders(
     }
 
     // Skip if in quiet hours
-    if (this.isQuietHours(settings)) {
+    if (this.isQuietHours(settings, reminderTime)) {
       console.log(`⏰ Skipping Tier 2 reminder #${i} - quiet hours`);
       continue;
     }
@@ -939,7 +937,7 @@ private async scheduleTier3GracePeriodWarning(
   }
 
   // Skip if in quiet hours
-  if (this.isQuietHours(settings)) {
+  if (this.isQuietHours(settings, warningTime)) {
     console.log(`⏰ Skipping Tier 3 warning - quiet hours`);
     return;
   }
@@ -1005,7 +1003,7 @@ private async scheduleTier3GracePeriodWarning(
       console.log('🗓️ Starting 14-day batch scheduling...');
 
       // 1. Cancel everything to start fresh
-      await Notifications.cancelAllScheduledNotificationsAsync();
+      await this.cancelAllPrayerNotifications();
 
       const settings = StorageService.getUserSettings();
       if (!settings?.notifications.enabled || !settings.location) {
