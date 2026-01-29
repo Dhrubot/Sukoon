@@ -240,6 +240,15 @@ class NotificationService {
     return finalStatus === 'granted';
   }
 
+  async getPermissionStatus(): Promise<Notifications.PermissionStatus> {
+    try {
+      const { status } = await Notifications.getPermissionsAsync();
+      return status;
+    } catch {
+      return 'undetermined' as Notifications.PermissionStatus;
+    }
+  }
+
   // 🧹 Auto-delete old channels to keep Android settings clean and force sound updates
   private async cleanupOldChannels() {
     if (Platform.OS !== 'android') return;

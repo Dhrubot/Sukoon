@@ -15,6 +15,25 @@ const STORAGE_KEYS = {
 };
 
 class MosqueModeService {
+  private getRequestCodeBase(prayer: PrayerName, iqamahTime: Date): number {
+    const dateStr = format(iqamahTime, 'yyyy-MM-dd');
+    const input = `${prayer}-${dateStr}`;
+    let hash = 0;
+    for (let i = 0; i < input.length; i++) {
+      hash = (hash * 31 + input.charCodeAt(i)) | 0;
+    }
+    return Math.abs(hash || 1);
+  }
+
+  private getRequestCodeBaseForDate(prayer: PrayerName, dateStr: string): number {
+    const input = `${prayer}-${dateStr}`;
+    let hash = 0;
+    for (let i = 0; i < input.length; i++) {
+      hash = (hash * 31 + input.charCodeAt(i)) | 0;
+    }
+    return Math.abs(hash || 1);
+  }
+
   /**
    * Check if mosque mode is enabled for a specific prayer
    */
@@ -102,6 +121,53 @@ class MosqueModeService {
     }
   }
 
+  async scheduleTestMosqueMode(): Promise<boolean> {
+    try {
+      const settings = StorageService.getUserSettings();
+      if (!settings?.mosqueMode?.enabled) {
+        return false;
+      }
+
+      if (Platform.OS !== 'android') {
+        return false;
+      }
+
+      const now = new Date();
+      const enableAt = addMinutes(now, 1);
+      const restoreAt = addMinutes(enableAt, 1);
+      const targetMode = settings.mosqueMode.useVibrateInsteadOfSilent ? 'VIBRATE' : 'SILENT';
+      const restoreMode = (await RingerControlService.getRingerMode()) || 'NORMAL';
+      const requestCodeBase = this.getRequestCodeBase('Dhuhr', enableAt);
+
+      const scheduled = await RingerControlService.scheduleMosqueMode(
+        enableAt.getTime(),
+        settings.mosqueMode.autoRestore ? restoreAt.getTime() : 0,
+        targetMode as any,
+        restoreMode as any,
+        requestCodeBase
+      );
+
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: '🕌 Mosque Mode Test',
+          body: scheduled ? 'Test scheduled for 1 minute from now.' : 'Could not schedule. Please grant Do Not Disturb access.',
+          data: {
+            type: 'mosque_mode_test',
+            requestCodeBase,
+            scheduledAt: new Date().toISOString(),
+          },
+          sound: undefined,
+        },
+        trigger: null,
+      });
+
+      return scheduled;
+    } catch (error) {
+      console.error('❌ Failed to schedule mosque mode test:', error);
+      return false;
+    }
+  }
+
   /**
    * Android: Schedule notifications that trigger silent mode
    */
@@ -111,30 +177,51 @@ class MosqueModeService {
     restoreTime: Date,
     settings: any
   ): Promise<void> {
-    const now = new Date();
-
     // Save current ringer mode so we can restore it later
     const currentMode = await RingerControlService.getRingerMode();
     if (currentMode) {
       StorageService.setValue(STORAGE_KEYS.PREVIOUS_RINGER_MODE, currentMode);
     }
 
-    // Calculate mode to use
     const targetMode = settings.mosqueMode.useVibrateInsteadOfSilent ? 'VIBRATE' : 'SILENT';
+    const restoreMode = (currentMode || 'NORMAL') as any;
+    const requestCodeBase = this.getRequestCodeBase(prayer.name, iqamahTime);
 
-    // Schedule notification to enable silent mode at iqamah time
+    const enableAtMs = iqamahTime.getTime();
+    const restoreAtMs = settings.mosqueMode.autoRestore ? restoreTime.getTime() : 0;
+
+    const scheduled = await RingerControlService.scheduleMosqueMode(
+      enableAtMs,
+      restoreAtMs,
+      targetMode as any,
+      restoreMode,
+      requestCodeBase
+    );
+
+    if (!scheduled) {
+      console.warn('⚠️ Mosque mode could not be scheduled (missing DND access?)');
+    }
+
     const enableId = `mosque-enable-${prayer.name}-${format(iqamahTime, 'yyyy-MM-dd')}`;
+
+    try {
+      await Notifications.cancelScheduledNotificationAsync(enableId);
+    } catch {
+      // ignore
+    }
+
     await Notifications.scheduleNotificationAsync({
       content: {
         title: `🕌 ${prayer.name} Iqamah`,
-        body: `Phone is now in ${targetMode.toLowerCase()} mode`,
+        body: `Mosque Mode ${scheduled ? 'enabled' : 'could not auto-enable'} (${targetMode.toLowerCase()})`,
         data: {
           type: 'mosque_mode_enable',
           prayer: prayer.name,
           mode: targetMode,
           iqamahTime: iqamahTime.toISOString(),
+          requestCodeBase,
         },
-        sound: undefined, // Silent notification
+        sound: undefined,
       },
       trigger: {
         type: 'date',
@@ -143,17 +230,24 @@ class MosqueModeService {
       identifier: enableId,
     });
 
-    // Schedule notification to restore ringer mode
     if (settings.mosqueMode.autoRestore) {
       const restoreId = `mosque-restore-${prayer.name}-${format(iqamahTime, 'yyyy-MM-dd')}`;
+
+      try {
+        await Notifications.cancelScheduledNotificationAsync(restoreId);
+      } catch {
+        // ignore
+      }
+
       await Notifications.scheduleNotificationAsync({
         content: {
           title: '🔊 Ringer Restored',
-          body: 'Silent mode has ended',
+          body: 'Mosque Mode ended',
           data: {
             type: 'mosque_mode_restore',
             prayer: prayer.name,
             previousMode: currentMode || 'NORMAL',
+            requestCodeBase,
           },
           sound: undefined,
         },
@@ -166,7 +260,7 @@ class MosqueModeService {
     }
 
     console.log(
-      `📱 Android: Silent mode scheduled from ${format(iqamahTime, 'h:mm a')} to ${format(
+      `📱 Android: Mosque mode scheduled from ${format(iqamahTime, 'h:mm a')} to ${format(
         restoreTime,
         'h:mm a'
       )}`
@@ -221,6 +315,7 @@ class MosqueModeService {
       if (type === 'mosque_mode_enable') {
         // Enable silent/vibrate mode
         if (Platform.OS === 'android') {
+          // Best-effort fallback if alarms didn't run
           await RingerControlService.setRingerMode(mode || 'SILENT');
           console.log(`🔇 ${mode} mode enabled for ${prayer} iqamah`);
         }
@@ -255,6 +350,9 @@ class MosqueModeService {
     try {
       const dateStr = date ? format(date, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd');
 
+      const requestCodeBase = this.getRequestCodeBaseForDate(prayer, dateStr);
+      await RingerControlService.cancelMosqueMode(requestCodeBase);
+
       // Cancel all related notifications
       const identifiers = [
         `mosque-enable-${prayer}-${dateStr}`,
@@ -278,6 +376,24 @@ class MosqueModeService {
       console.log(`🚫 Mosque mode cancelled for ${prayer}`);
     } catch (error) {
       console.error('❌ Failed to cancel mosque mode:', error);
+    }
+  }
+
+  async scheduleUpcomingMosqueModes(prayers: PrayerTime[]): Promise<void> {
+    const settings = StorageService.getUserSettings();
+    if (!settings?.mosqueMode?.enabled) return;
+    if (settings.mosqueMode.promptBeforeEnable) return;
+    if (Platform.OS !== 'android') return;
+
+    const now = new Date();
+    for (const prayer of prayers) {
+      if (prayer.time <= now) continue;
+      if (!this.isEnabledForPrayer(prayer.name)) continue;
+      const iqamahTime = this.getIqamahTime(prayer);
+      if (!iqamahTime) continue;
+      if (iqamahTime <= now) continue;
+      const restoreTime = addMinutes(iqamahTime, settings.mosqueMode.silentDuration);
+      await this.scheduleAndroidSilentMode(prayer, iqamahTime, restoreTime, settings);
     }
   }
 

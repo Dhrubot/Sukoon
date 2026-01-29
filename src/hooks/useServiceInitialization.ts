@@ -154,4 +154,27 @@ export const useServiceInitialization = () => {
       console.log("🧹 LocationService callback unregistered");
     };
   }, [setLocation, updateUserSettings]);
+
+  useEffect(() => {
+    const shouldAutoScheduleMosqueMode =
+      Platform.OS === 'android' &&
+      hasValidLocation &&
+      !isLoading &&
+      userSettings?.mosqueMode?.enabled &&
+      userSettings?.mosqueMode?.promptBeforeEnable === false &&
+      todayPrayerTimes.length > 0;
+
+    if (shouldAutoScheduleMosqueMode) {
+      MosqueModeService.scheduleUpcomingMosqueModes(todayPrayerTimes);
+    }
+  }, [
+    hasValidLocation,
+    isLoading,
+    userSettings?.mosqueMode?.enabled,
+    userSettings?.mosqueMode?.promptBeforeEnable,
+    userSettings?.mosqueMode?.silentDuration,
+    userSettings?.mosqueMode?.autoRestore,
+    userSettings?.mosqueMode?.useVibrateInsteadOfSilent,
+    todayPrayerTimes.length,
+  ]);
 };

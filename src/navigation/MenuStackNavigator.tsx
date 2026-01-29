@@ -6,6 +6,7 @@ import SettingsScreen from '../screens/Settings/SettingsScreen';
 import AchievementsScreen from '../screens/Achievements/AchievementsScreen';
 import DigitalWellnessScreen from '../screens/DigitalWellness/DigitalWellnessScreen';
 import SupportScreen from '../screens/Support/SupportScreen';
+import SetupHealthScreen from '../screens/SetupHealth/SetupHealthScreen';
 
 export type MenuStackParamList = {
   MenuHome: undefined;
@@ -13,6 +14,7 @@ export type MenuStackParamList = {
   DigitalWellness: undefined;
   Support: undefined;
   Settings: undefined;
+  SetupHealth: undefined;
 };
 
 const Stack = createStackNavigator<MenuStackParamList>();
@@ -29,6 +31,7 @@ export const MenuStackNavigator: React.FC = () => {
       <Stack.Screen name="DigitalWellness" component={DigitalWellnessScreen} />
       <Stack.Screen name="Support" component={SupportScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen name="SetupHealth" component={SetupHealthScreen} />
     </Stack.Navigator>
   );
 };

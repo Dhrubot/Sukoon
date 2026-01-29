@@ -7,6 +7,15 @@ interface RingerModeModule {
   setRingerMode(mode: RingerMode): Promise<string>;
   getRingerMode(): Promise<RingerMode>;
   canModifyRingerMode(): Promise<boolean>;
+  scheduleMosqueMode(
+    enableAtMs: number,
+    restoreAtMs: number,
+    enableMode: RingerMode,
+    restoreMode: RingerMode,
+    requestCodeBase: number
+  ): Promise<boolean>;
+  cancelMosqueMode(requestCodeBase: number): Promise<boolean>;
+  openNotificationPolicyAccessSettings(): Promise<boolean>;
 }
 
 // Platform-specific implementation
@@ -61,6 +70,63 @@ class RingerControlService {
       return true;
     } catch (error) {
       console.error(`❌ Failed to set ringer mode to ${mode}:`, error);
+      return false;
+    }
+  }
+
+  async scheduleMosqueMode(
+    enableAtMs: number,
+    restoreAtMs: number,
+    enableMode: RingerMode,
+    restoreMode: RingerMode,
+    requestCodeBase: number
+  ): Promise<boolean> {
+    if (Platform.OS !== 'android' || !this.module) {
+      return false;
+    }
+
+    try {
+      const canModify = await this.canModify();
+      if (!canModify) {
+        console.warn('⚠️ App does not have permission to modify ringer mode');
+        return false;
+      }
+
+      return await this.module.scheduleMosqueMode(
+        enableAtMs,
+        restoreAtMs,
+        enableMode,
+        restoreMode,
+        requestCodeBase
+      );
+    } catch (error) {
+      console.error('❌ Failed to schedule mosque mode:', error);
+      return false;
+    }
+  }
+
+  async cancelMosqueMode(requestCodeBase: number): Promise<boolean> {
+    if (Platform.OS !== 'android' || !this.module) {
+      return false;
+    }
+
+    try {
+      return await this.module.cancelMosqueMode(requestCodeBase);
+    } catch (error) {
+      console.error('❌ Failed to cancel mosque mode:', error);
+      return false;
+    }
+  }
+
+  async openNotificationPolicyAccessSettings(): Promise<boolean> {
+    if (Platform.OS !== 'android' || !this.module) {
+      return false;
+    }
+
+    try {
+      return await this.module.openNotificationPolicyAccessSettings();
+    } catch (error) {
+      console.error('❌ Failed to open notification policy settings:', error);
       return false;
     }
   }

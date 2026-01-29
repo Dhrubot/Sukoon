@@ -1,5 +1,5 @@
 // src/components/mosque/MosqueModeStatus.tsx
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,8 @@ import {
 import { format } from 'date-fns';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useMosqueMode } from '../../hooks/useMosqueMode';
+import { usePrayerTimes } from '../../providers/PrayerTimesProvider';
+import { PrayerTime } from '../../types';
 
 /**
  * Shows a banner when mosque mode is currently active
@@ -18,9 +20,26 @@ import { useMosqueMode } from '../../hooks/useMosqueMode';
  */
 export const MosqueModeStatus: React.FC = () => {
   const { theme } = useTheme();
-  const { isActive, activeState, manuallyRestoreRinger } = useMosqueMode();
+  const { isActive, activeState, manuallyRestoreRinger, isEnabled, settings, getIqamahTime } = useMosqueMode();
+  const { todayPrayerTimes } = usePrayerTimes();
 
-  if (!isActive || !activeState) return null;
+  const nextScheduled = useMemo(() => {
+    if (!isEnabled || !settings) return null;
+    const now = new Date();
+
+    const candidates: Array<{ prayer: PrayerTime; iqamahTime: Date }> = [];
+    for (const p of todayPrayerTimes) {
+      const iqamah = getIqamahTime(p);
+      if (!iqamah) continue;
+      if (iqamah.getTime() <= now.getTime()) continue;
+      candidates.push({ prayer: p, iqamahTime: iqamah });
+    }
+
+    candidates.sort((a, b) => a.iqamahTime.getTime() - b.iqamahTime.getTime());
+    return candidates[0] || null;
+  }, [isEnabled, settings, todayPrayerTimes, getIqamahTime]);
+
+  if (!isActive && !nextScheduled) return null;
 
   const handleManualRestore = () => {
     if (Platform.OS !== 'android') {
@@ -63,6 +82,11 @@ export const MosqueModeStatus: React.FC = () => {
     );
   };
 
+  const title = isActive ? 'Mosque Mode Active' : 'Mosque Mode Scheduled';
+  const description = isActive
+    ? `${activeState!.prayer} • Silent until ${format(activeState!.restoreTime, 'h:mm a')}`
+    : `${nextScheduled!.prayer.name} • Iqamah at ${format(nextScheduled!.iqamahTime, 'h:mm a')}`;
+
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.primary.light }]}>
       <View style={styles.content}>
@@ -72,20 +96,21 @@ export const MosqueModeStatus: React.FC = () => {
         
         <View style={styles.textContainer}>
           <Text style={[styles.title, { color: theme.colors.text.primary }]}>
-            Mosque Mode Active
+            {title}
           </Text>
           <Text style={[styles.description, { color: theme.colors.text.secondary }]}>
-            {activeState.prayer} • Silent until {format(activeState.restoreTime, 'h:mm a')}
+            {description}
           </Text>
         </View>
 
-        {Platform.OS === 'android' && (
+        {Platform.OS === 'android' && isActive && (
           <TouchableOpacity
             style={[styles.button, { backgroundColor: theme.colors.card.background }]}
             onPress={handleManualRestore}
             activeOpacity={0.7}
           >
-            <Text style={[styles.buttonText, { color: theme.colors.primary.DEFAULT }]}>
+            <Text style={[styles.buttonText, { color: theme.colors.primary.DEFAULT }]}
+            >
               Restore
             </Text>
           </TouchableOpacity>
