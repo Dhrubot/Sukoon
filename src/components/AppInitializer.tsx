@@ -23,6 +23,10 @@ export const AppInitializer: React.FC = () => {
   // This activates the "Check every 24h" logic
   useNotificationRescheduler();
 
+  const [showSetupHealth, setShowSetupHealth] = useState(
+    StorageService.getValue('setup_health_shown') !== 'true'
+  );
+
   if (isLoading) {
     return <LoadingScreen message="Initializing Sukoon..." />;
   }
@@ -39,10 +43,6 @@ export const AppInitializer: React.FC = () => {
   if (isFirstLaunch) {
     return <OnboardingScreen onComplete={completeOnboarding} />;
   }
-
-  const [showSetupHealth, setShowSetupHealth] = useState(
-    StorageService.getValue('setup_health_shown') !== 'true'
-  );
 
   return (
     <ServiceProvider>
