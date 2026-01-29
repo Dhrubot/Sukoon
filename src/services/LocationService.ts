@@ -297,7 +297,12 @@ class LocationService {
     if (!settings || !settings.location) return false;
     
     const { latitude, longitude } = settings.location;
-    return Boolean(latitude && longitude && (latitude !== 0 || longitude !== 0));
+    if (typeof latitude !== 'number' || typeof longitude !== 'number') return false;
+    if (Number.isNaN(latitude) || Number.isNaN(longitude)) return false;
+    if (latitude === 0 && longitude === 0) return false;
+    if (latitude < -90 || latitude > 90) return false;
+    if (longitude < -180 || longitude > 180) return false;
+    return true;
   }
 
   // 🎯 NEW: Get current saved location
@@ -306,9 +311,17 @@ class LocationService {
     if (!settings || !settings.location) return null;
     
     const { latitude, longitude } = settings.location;
-    if (!latitude || !longitude || (latitude === 0 && longitude === 0)) {
+    if (typeof latitude !== 'number' || typeof longitude !== 'number') {
       return null;
     }
+    if (Number.isNaN(latitude) || Number.isNaN(longitude)) {
+      return null;
+    }
+    if (latitude === 0 && longitude === 0) {
+      return null;
+    }
+    if (latitude < -90 || latitude > 90) return null;
+    if (longitude < -180 || longitude > 180) return null;
     
     return settings.location;
   }

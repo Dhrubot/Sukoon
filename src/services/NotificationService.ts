@@ -8,7 +8,7 @@ import StorageService from './StorageService';
 import PrayerTimeService from './PrayerTimeService';
 import ReminderStateService from './ReminderStateService';
 import { format } from 'date-fns';
-import { CHANNELS, SOUNDS, NOTIFICATION_CHANNEL_VERSION } from '../constants/NotificationConstants';
+import { CHANNELS, SOUNDS, NOTIFICATION_CHANNEL_VERSION, NOTIFICATION_SCHEDULING_DAYS, NOTIFICATION_MAX_FUTURE_DAYS } from '../constants/NotificationConstants';
 import MosqueModeService from './MosqueModeService';
 
 // Notification categories for iOS (Prayer Habit Builder)
@@ -50,6 +50,14 @@ interface PrayerTimesSource {
   hasValidLocation: () => boolean;
 }
 
+type PrayerTimesFetcher = (params: {
+  location: UserSettings['location'];
+  date: Date;
+  calculationMethod: UserSettings['calculationMethod'];
+  adjustments?: UserSettings['adjustments'];
+  asrJuristic?: UserSettings['asrJuristic'];
+}) => Promise<{ prayerTimes: PrayerTime[]; sunrise: Date; sunset: Date }>;
+
 class NotificationService {
   private notificationListener: Notifications.Subscription | null = null;
   private responseListener: Notifications.Subscription | null = null;
@@ -58,13 +66,40 @@ class NotificationService {
 
   // 🎵 AudioPlayer from expo-audio
   private audioPlayer: AudioPlayer | null = null;
+  private audioPlayerListener: (() => void) | null = null;
 
   private prayerTimesSource: PrayerTimesSource | null = null;
+  private prayerTimesFetcher: PrayerTimesFetcher | null = null;
+
+  async maybeRescheduleExtendedNotifications(hoursThreshold: number = 24): Promise<boolean> {
+    try {
+      const lastRunStr = StorageService.getValue('last_batch_schedule_date');
+      const lastRun = lastRunStr ? new Date(lastRunStr) : new Date(0);
+      const now = new Date();
+      const hoursSinceLastRun = (now.getTime() - lastRun.getTime()) / (1000 * 60 * 60);
+
+      if (hoursSinceLastRun > hoursThreshold) {
+        await this.scheduleExtendedNotifications();
+        StorageService.setValue('last_batch_schedule_date', now.toISOString());
+        return true;
+      }
+
+      return false;
+    } catch (error) {
+      console.error('❌ Reschedule failed:', error);
+      return false;
+    }
+  }
 
   // Set the prayer times source
   setPrayerTimesSource(source: PrayerTimesSource) {
     this.prayerTimesSource = source;
     console.log('✅ Prayer times source connected to NotificationService');
+  }
+
+  setPrayerTimesFetcher(fetcher: PrayerTimesFetcher) {
+    this.prayerTimesFetcher = fetcher;
+    console.log('✅ Prayer times fetcher connected to NotificationService');
   }
 
   // Register a handler function that will be called when navigation is needed
@@ -146,12 +181,19 @@ class NotificationService {
     if (Platform.OS !== 'android') return;
     try {
       const channels = await Notifications.getNotificationChannelsAsync();
+
+      const currentVersion = NOTIFICATION_CHANNEL_VERSION;
+      const deletableIds = new Set<string>();
+      for (let v = 1; v < currentVersion; v++) {
+        deletableIds.add(`prayer-times-adhan-v${v}`);
+        deletableIds.add(`prayer-times-default-v${v}`);
+        deletableIds.add(`pre-prayer-v${v}`);
+        deletableIds.add(`mindfulness-v${v}`);
+        deletableIds.add(`grace-warning-v${v}`);
+      }
+
       for (const channel of channels) {
-        // If channel is from our app but has an old version number (or no version)
-        if (
-          (channel.id.includes('prayer-times') || channel.id.includes('adhan') || channel.id.includes('pre-prayer') || channel.id.includes('mindfulness') || channel.id.includes('grace-warning')) &&
-          !channel.id.includes(`v${NOTIFICATION_CHANNEL_VERSION}`)
-        ) {
+        if (deletableIds.has(channel.id)) {
           console.log(`🧹 Deleting old channel: ${channel.id}`);
           await Notifications.deleteNotificationChannelAsync(channel.id);
         }
@@ -442,18 +484,29 @@ class NotificationService {
       this.audioPlayer.play();
       console.log('🔊 Playing full Adhan in foreground');
 
-      // Optional: Cleanup when done
-      this.audioPlayer.addListener('playbackStatusUpdate', (status) => {
+      // Store listener subscription for cleanup
+      const subscription = this.audioPlayer.addListener('playbackStatusUpdate', (status) => {
         if (status.isLoaded && status.didJustFinish) {
           this.stopAdhan();
         }
       });
+      this.audioPlayerListener = () => subscription.remove();
     } catch (error) {
       console.error('❌ Error playing Adhan:', error);
     }
   }
 
   stopAdhan() {
+    // Remove listener first to prevent memory leak
+    if (this.audioPlayerListener) {
+      try {
+        this.audioPlayerListener();
+      } catch (e) {
+        // Ignore errors if already cleaned up
+      }
+      this.audioPlayerListener = null;
+    }
+
     if (this.audioPlayer) {
       try {
         this.audioPlayer.pause();
@@ -475,7 +528,14 @@ class NotificationService {
         return;
       }
 
-      if (!settings.location?.latitude || !settings.location?.longitude) {
+      if (
+        !settings.location ||
+        typeof settings.location.latitude !== 'number' ||
+        typeof settings.location.longitude !== 'number' ||
+        Number.isNaN(settings.location.latitude) ||
+        Number.isNaN(settings.location.longitude) ||
+        (settings.location.latitude === 0 && settings.location.longitude === 0)
+      ) {
         console.log('❌ No valid location for notifications');
         return;
       }
@@ -507,7 +567,7 @@ class NotificationService {
 
     // Better validation of notification times
     const now = new Date();
-    const maxFutureTime = new Date(now.getTime() + 48 * 60 * 60 * 1000); // 48 hours
+    const maxFutureTime = new Date(now.getTime() + NOTIFICATION_MAX_FUTURE_DAYS * 24 * 60 * 60 * 1000);
 
     if (prayer.time > maxFutureTime) {
       console.log(`⏭️ Skipping ${prayer.name} - too far in future`);
@@ -515,8 +575,8 @@ class NotificationService {
     }
     // Initialize Prayer Habit Builder state
     if (settings.habitBuilder?.enabled) {
- ReminderStateService.initializePrayerReminder(prayer, nextPrayer || null);
- }
+      ReminderStateService.initializePrayerReminder(prayer, nextPrayer || null);
+    }
 
     // Schedule pre-prayer notification
     if (notifications.beforePrayer > 0) {
@@ -589,7 +649,6 @@ class NotificationService {
         type: 'timeInterval',
         seconds: Math.max((prayer.time.getTime() - now.getTime()) / 1000, 1),
         repeats: false,
-        channelId: androidChannel
       } as Notifications.NotificationTriggerInput,
       identifier: `prayer-${prayer.name}-${dateStr}`,
     });
@@ -747,7 +806,11 @@ class NotificationService {
 
   async cancelPrayerNotifications(prayerName: PrayerName) {
     const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-    const toCancel = scheduled.filter((notif) => notif.content.data?.prayer === prayerName);
+    const toCancel = scheduled.filter((notif) => {
+      const data = notif.content.data as any;
+      if (data?.type && typeof data.type === 'string' && data.type.startsWith('mosque_mode')) return false;
+      return data?.prayer === prayerName;
+    });
 
     for (const notif of toCancel) {
       await Notifications.cancelScheduledNotificationAsync(notif.identifier);
@@ -756,11 +819,22 @@ class NotificationService {
 
   async cancelAllPrayerNotifications() {
     const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-    const prayerNotifications = scheduled.filter(
-      (notif) =>
-        notif.content.data?.prayer ||
-        (typeof notif.content.data?.type === 'string' && notif.content.data.type.includes('prayer'))
-    );
+    const prayerNotificationTypes = new Set([
+      'pre-prayer',
+      'prayer-time',
+      'post-prayer-check',
+      'mindfulness-reminder',
+      'snoozed',
+      'tier2-reminder',
+      'tier3-warning',
+    ]);
+
+    const prayerNotifications = scheduled.filter((notif) => {
+      const data = notif.content.data as any;
+      if (data?.type && typeof data.type === 'string' && data.type.startsWith('mosque_mode')) return false;
+      if (data?.type && prayerNotificationTypes.has(data.type)) return true;
+      return false;
+    });
 
     for (const notif of prayerNotifications) {
       await Notifications.cancelScheduledNotificationAsync(notif.identifier);
@@ -788,14 +862,13 @@ class NotificationService {
   /**
  * Check if current time is within quiet hours
  */
-private isQuietHours(settings: UserSettings): boolean {
-  if (!settings.habitBuilder.quietHours.enabled) {
+private isQuietHours(settings: UserSettings, time: Date = new Date()): boolean {
+  if (!settings.habitBuilder?.quietHours?.enabled) {
     return false;
   }
 
-  const now = new Date();
-  const currentHour = now.getHours();
-  const currentMinute = now.getMinutes();
+  const currentHour = time.getHours();
+  const currentMinute = time.getMinutes();
   const currentTime = currentHour * 60 + currentMinute;
 
   const [startHour, startMinute] = settings.habitBuilder.quietHours.start.split(':').map(Number);
@@ -842,7 +915,7 @@ private async scheduleTier2PersistentReminders(
     }
 
     // Skip if in quiet hours
-    if (this.isQuietHours(settings)) {
+    if (this.isQuietHours(settings, reminderTime)) {
       console.log(`⏰ Skipping Tier 2 reminder #${i} - quiet hours`);
       continue;
     }
@@ -939,7 +1012,7 @@ private async scheduleTier3GracePeriodWarning(
   }
 
   // Skip if in quiet hours
-  if (this.isQuietHours(settings)) {
+  if (this.isQuietHours(settings, warningTime)) {
     console.log(`⏰ Skipping Tier 3 warning - quiet hours`);
     return;
   }
@@ -1005,10 +1078,18 @@ private async scheduleTier3GracePeriodWarning(
       console.log('🗓️ Starting 14-day batch scheduling...');
 
       // 1. Cancel everything to start fresh
-      await Notifications.cancelAllScheduledNotificationsAsync();
+      await this.cancelAllPrayerNotifications();
 
       const settings = StorageService.getUserSettings();
-      if (!settings?.notifications.enabled || !settings.location) {
+      if (
+        !settings?.notifications.enabled ||
+        !settings.location ||
+        typeof settings.location.latitude !== 'number' ||
+        typeof settings.location.longitude !== 'number' ||
+        Number.isNaN(settings.location.latitude) ||
+        Number.isNaN(settings.location.longitude) ||
+        (settings.location.latitude === 0 && settings.location.longitude === 0)
+      ) {
         console.log('📵 Notifications disabled or no location');
         return;
       }
@@ -1017,18 +1098,30 @@ private async scheduleTier3GracePeriodWarning(
       let totalScheduled = 0;
 
       // 2. Loop for 14 days
-      for (let i = 0; i < 14; i++) {
+      for (let i = 0; i < NOTIFICATION_SCHEDULING_DAYS; i++) {
         const date = new Date(today);
         date.setDate(date.getDate() + i);
 
         try {
           // Get times for this specific date
-          const prayerData = await PrayerTimeService.getPrayerTimesList(
-            settings.location,
+          const fetcher: PrayerTimesFetcher =
+            this.prayerTimesFetcher ||
+            ((params) =>
+              PrayerTimeService.getPrayerTimesList(
+                params.location as any,
+                params.date,
+                params.calculationMethod as any,
+                params.adjustments as any,
+                (params.asrJuristic as any) || 'Standard'
+              ));
+
+          const prayerData = await fetcher({
+            location: settings.location,
             date,
-            settings.calculationMethod,
-            settings.adjustments
-          );
+            calculationMethod: settings.calculationMethod,
+            adjustments: settings.adjustments,
+            asrJuristic: settings.asrJuristic,
+          });
 
           // Schedule them with next prayer info for Habit Builder
           const prayers = prayerData.prayerTimes;

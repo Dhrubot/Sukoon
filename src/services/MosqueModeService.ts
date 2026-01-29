@@ -4,6 +4,7 @@ import * as Notifications from 'expo-notifications';
 import { format, addMinutes } from 'date-fns';
 import StorageService from './StorageService';
 import RingerControlService from './RingerControlService';
+import IOSRingerControlService from './RingerControlService.ios';
 import { PrayerName, PrayerTime } from '../types';
 
 // Storage keys for mosque mode state
@@ -196,7 +197,7 @@ class MosqueModeService {
           iqamahTime: iqamahTime.toISOString(),
           action: 'enable_focus_mode',
         },
-        categoryIdentifier: 'MOSQUE_REMINDER',
+        categoryIdentifier: 'mosque-reminder',
       },
       trigger: {
         type: 'date',
@@ -235,8 +236,12 @@ class MosqueModeService {
         StorageService.setValue(STORAGE_KEYS.ACTIVE_MOSQUE_MODE, '');
       } else if (type === 'mosque_mode_reminder' && data.action === 'enable_focus_mode') {
         // iOS: User tapped reminder to enable Focus Mode
-        // This will be handled by the UI layer (show shortcut trigger)
-        console.log('📱 iOS: User should enable Focus Mode');
+        if (Platform.OS === 'ios') {
+          const success = await IOSRingerControlService.enableFocusMode();
+          if (!success) {
+            console.log('⚠️ iOS: Focus Mode shortcut could not be triggered');
+          }
+        }
       }
     } catch (error) {
       console.error('❌ Failed to handle mosque mode notification:', error);

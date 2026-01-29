@@ -1,6 +1,7 @@
 // src/services/StorageAdapter.ts
 import { Platform } from 'react-native';
 import { createMMKV, MMKV } from 'react-native-mmkv';
+import { getCachedEncryptionKey } from '../utils/secureKeyManager';
 
 // 1. Simple In-Memory Storage for fallback (Data is lost on app restart, but app won't crash)
 class MemoryStorage {
@@ -95,13 +96,17 @@ export function createStorage(options: { id: string; encryptionKey?: string }): 
   }
 
   try {
+    // 🔐 Use secure encryption key from device keychain/keystore
+    // Falls back to cached key if SecureStore hasn't been initialized yet
+    const secureKey = options.encryptionKey || getCachedEncryptionKey();
+    
     // 🎯 NEW v4.x API: Use createMMKV() instead of new MMKV()
     const storage = createMMKV({
       id: options.id,
-      ...(options.encryptionKey && { encryptionKey: options.encryptionKey }),
+      encryptionKey: secureKey,
     });
     
-    console.log('✅ MMKV initialized successfully');
+    console.log('✅ MMKV initialized with secure encryption key');
     return storage;
   } catch (error) {
     // 3. Safe Fallback

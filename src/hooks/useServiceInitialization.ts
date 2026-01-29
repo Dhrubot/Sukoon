@@ -1,11 +1,16 @@
 // src/hooks/useServiceInitialization.ts (FINAL MERGED VERSION)
 import { useEffect } from "react";
 import { Platform } from "react-native";
+import * as BackgroundFetch from 'expo-background-fetch';
+import * as TaskManager from 'expo-task-manager';
 import { usePrayerTimes } from "../providers/PrayerTimesProvider";
-import { useStore } from "../store/useStore";
-import NotificationService from "../services/NotificationService";
-import LocationService from "../services/LocationService";
+import { useStore } from '../store/useStore';
+import NotificationService from '../services/NotificationService';
+import LocationService from '../services/LocationService';
+import PrayerTimeService from '../services/PrayerTimeService';
+import MosqueModeService from '../services/MosqueModeService';
 import { Location } from "../types";
+import { NOTIFICATION_RESCHEDULE_TASK } from '../tasks/notificationRescheduleTask';
 
 // Platform-specific imports
 const SubscriptionService = Platform.select({
@@ -48,6 +53,19 @@ export const useServiceInitialization = () => {
           LocationService.initialize(),
         ]);
 
+        try {
+          const isRegistered = await TaskManager.isTaskRegisteredAsync(NOTIFICATION_RESCHEDULE_TASK);
+          if (!isRegistered) {
+            await BackgroundFetch.registerTaskAsync(NOTIFICATION_RESCHEDULE_TASK, {
+              minimumInterval: 24 * 60 * 60,
+              stopOnTerminate: false,
+              startOnBoot: true,
+            });
+          }
+        } catch (error) {
+          console.warn('⚠️ Failed to register background notification rescheduler:', error);
+        }
+
         console.log("✅ All core services initialized");
       } catch (error) {
         console.error("❌ Error initializing services:", error);
@@ -76,6 +94,15 @@ export const useServiceInitialization = () => {
     };
 
     NotificationService.setPrayerTimesSource(prayerTimesSource);
+    NotificationService.setPrayerTimesFetcher(async ({ location, date, calculationMethod, adjustments, asrJuristic }) => {
+      return PrayerTimeService.getPrayerTimesList(
+        location as any,
+        date,
+        calculationMethod as any,
+        adjustments as any,
+        (asrJuristic as any) || 'Standard'
+      );
+    });
     console.log("🔗 NotificationService connected to centralized prayer times");
   }, [todayPrayerTimes, nextPrayer, isLoading, hasValidLocation]);
 

@@ -34,6 +34,8 @@ export const useLocationSetup = () => {
           city: location.city,
           country: location.country
         });
+
+        await LocationService.saveLocation(location);
         
         // 🎯 AUTOMATIC: Location saves and triggers prayer time refresh
         // through your existing architecture (store → PrayerTimesProvider)

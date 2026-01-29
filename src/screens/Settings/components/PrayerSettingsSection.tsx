@@ -3,11 +3,12 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { format } from 'date-fns';
 import { SettingSection } from '../../../components/settings/SettingSection';
 import { SettingRow } from '../../../components/settings/SettingRow';
-import { SegmentedControl } from '../../../components/settings/SegmentedControl';
 import StorageService from '../../../services/StorageService';
+import NotificationService from '../../../services/NotificationService';
 import { UserSettings, CalculationMethodType, PrayerTime, PrayerName } from '../../../types';
 import { useTheme } from '../../../providers/ThemeProvider';
 import { NotificationToggleButton } from '../../../components/common/NotificationToggleButton';
+import { SegmentedControl } from '../../../components/settings/SegmentedControl';
 
 interface PrayerSettingsSectionProps {
   userSettings: UserSettings;
@@ -57,7 +58,7 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
 
   // 🔧 FIXED: Immediate refresh when Asr method changes
   // Handle notification toggle for individual prayers
-  const handleNotificationToggle = (prayerName: PrayerName, newState: boolean) => {
+  const handleNotificationToggle = async (prayerName: PrayerName, newState: boolean) => {
     const updatedSettings = {
       ...userSettings,
       prayerNotifications: {
@@ -68,7 +69,18 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
 
     StorageService.setUserSettings(updatedSettings);
     setUserSettings(updatedSettings);
-    
+
+    if (!updatedSettings.notifications.enabled) {
+      console.log(`${prayerName} notifications ${newState ? 'enabled' : 'disabled'}`);
+      return;
+    }
+
+    if (newState) {
+      await NotificationService.scheduleAllPrayerNotifications();
+    } else {
+      await NotificationService.cancelPrayerNotifications(prayerName);
+    }
+
     console.log(`${prayerName} notifications ${newState ? 'enabled' : 'disabled'}`);
   };
 

@@ -61,7 +61,7 @@ export const MosqueModeToggle: React.FC = () => {
         '🕌 Mosque Mode Enabled',
         Platform.OS === 'android'
           ? 'Your phone will automatically go silent at iqamah time for each prayer.'
-          : 'You will receive reminders to enable Do Not Disturb at iqamah time.',
+          : 'You will receive a reminder notification at iqamah time. Tap it to run the Shortcut and enable Do Not Disturb.',
         [{ text: 'Great!' }]
       );
     } else {

@@ -11,7 +11,12 @@ export const useValidLocation = (): Location | null => {
       return null;
     }
     
-    if (!location.latitude || !location.longitude) {
+    if (typeof location.latitude !== 'number' || typeof location.longitude !== 'number') {
+      console.log('⏳ useValidLocation: Missing latitude/longitude');
+      return null;
+    }
+
+    if (Number.isNaN(location.latitude) || Number.isNaN(location.longitude)) {
       console.log('⏳ useValidLocation: Missing latitude/longitude');
       return null;
     }

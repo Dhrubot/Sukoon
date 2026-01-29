@@ -61,6 +61,7 @@ export default {
       "./plugins/withRingerMode.js",
       "expo-location",
       "expo-audio",
+      "expo-secure-store",
       [
         "expo-notifications",
         {

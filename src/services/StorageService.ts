@@ -23,9 +23,10 @@ class StorageService {
   private storage;
 
   constructor() {
+    // 🔐 Encryption key is now managed by secureKeyManager
+    // The key is stored in device Keychain (iOS) / Keystore (Android)
     this.storage = createStorage({
       id: "prayer-buddy-storage",
-      encryptionKey: "prayer-buddy-encryption-key", // In production, generate secure key
     });
   }
 
@@ -146,7 +147,14 @@ class StorageService {
   }
 
   getDayPrayerRecords(date: string): PrayerRecord[] {
-    const prayers = ["fajr", "dhuhr", "asr", "maghrib", "isha"];
+    // Use capitalized prayer names to match PrayerName type
+    const prayers = [
+      PrayerName.fajr,
+      PrayerName.dhuhr,
+      PrayerName.asr,
+      PrayerName.maghrib,
+      PrayerName.isha,
+    ];
     const records: PrayerRecord[] = [];
 
     prayers.forEach((prayer) => {

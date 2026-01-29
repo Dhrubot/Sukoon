@@ -43,8 +43,6 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
   }, [userSettings]);
 
   const handleToggleNotifications = async (value: boolean) => {
-    setLocalSettings({ ...localSettings, enabled: value });
-    
     if (value) {
       // Check permissions
       const hasPermission = await NotificationService.initialize();
@@ -54,22 +52,26 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
           'Please enable notifications in your device settings to receive prayer reminders.',
           [
             { text: 'Cancel', style: 'cancel' },
-            { text: 'Open Settings', onPress: () => {
-              if (Platform.OS === 'ios') {
-                // @ts-ignore
-                Linking.openURL('app-settings:');
-              } else {
-                // @ts-ignore
-                Linking.openSettings();
-              }
-            }},
+            {
+              text: 'Open Settings',
+              onPress: () => {
+                if (Platform.OS === 'ios') {
+                  // @ts-ignore
+                  Linking.openURL('app-settings:');
+                } else {
+                  // @ts-ignore
+                  Linking.openSettings();
+                }
+              },
+            },
           ]
         );
-        setLocalSettings({ ...localSettings, enabled: false });
+        setLocalSettings((prev) => ({ ...prev, enabled: false }));
         return;
       }
     }
 
+    setLocalSettings((prev) => ({ ...prev, enabled: value }));
     await updateSettings({ enabled: value });
   };
 

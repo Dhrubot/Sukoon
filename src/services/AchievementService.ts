@@ -394,73 +394,25 @@ class AchievementService {
     }
   }
 
-  // Helper methods for counting
+  // Helper methods for counting - use cached counters for performance
   private async getTotalPrayersCount(): Promise<number> {
-    let count = 0;
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - 365); // Last year
-
-    const currentDate = new Date(startDate);
-    while (currentDate <= endDate) {
-      const dateStr = currentDate.toISOString().split('T')[0];
-      const records = StorageService.getDayPrayerRecords(dateStr);
-      count += records.filter(r => r.status === 'prayed').length;
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    return count;
+    // Use cached counter instead of iterating through 365 days
+    return StorageService.getTotalPrayersCount();
   }
 
   private async getMindfulnessCount(): Promise<number> {
-    let count = 0;
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - 365);
-
-    const currentDate = new Date(startDate);
-    while (currentDate <= endDate) {
-      const dateStr = currentDate.toISOString().split('T')[0];
-      const records = StorageService.getDayPrayerRecords(dateStr);
-      count += records.filter(r => r.mindfulnessCompleted).length;
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    return count;
+    // Use cached counter instead of iterating through 365 days
+    return StorageService.getTotalMindfulnessCount();
   }
 
   private async getReflectionCount(): Promise<number> {
-    let count = 0;
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - 365);
-
-    const currentDate = new Date(startDate);
-    while (currentDate <= endDate) {
-      const dateStr = currentDate.toISOString().split('T')[0];
-      const records = StorageService.getDayPrayerRecords(dateStr);
-      count += records.filter(r => r.reflectionAdded).length;
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    return count;
+    // Use cached counter instead of iterating through 365 days
+    return StorageService.getTotalReflectionsCount();
   }
 
   private async getHighFocusCount(): Promise<number> {
-    let count = 0;
-    const endDate = new Date();
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - 30); // Last 30 days
-
-    const currentDate = new Date(startDate);
-    while (currentDate <= endDate) {
-      const dateStr = currentDate.toISOString().split('T')[0];
-      const records = StorageService.getDayPrayerRecords(dateStr);
-      count += records.filter(r => r.focusScore && r.focusScore >= 90).length;
-      currentDate.setDate(currentDate.getDate() + 1);
-    }
-
-    return count;
+    // Use cached counter instead of iterating through 30 days
+    return StorageService.getHighFocusCount();
   }
 
   private async getWeeklyAverageFocus(): Promise<number> {

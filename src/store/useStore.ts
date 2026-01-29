@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { useShallow } from 'zustand/react/shallow';
 import { 
   UserSettings, 
   PrayerTime, 
@@ -120,3 +121,86 @@ export const useStore = create<AppState>((set) => ({
   activeTab: 'Home',
   setActiveTab: (tab) => set({ activeTab: tab }),
 }));
+
+// 🎯 SELECTIVE HOOKS - Prevent unnecessary re-renders by subscribing to specific state slices
+
+/**
+ * Hook for user settings only - use when you only need settings
+ */
+export const useUserSettings = () => useStore((state) => state.userSettings);
+
+/**
+ * Hook for location only
+ */
+export const useLocation = () => useStore((state) => state.location);
+
+/**
+ * Hook for prayer times data
+ */
+export const usePrayerTimesState = () => useStore(
+  useShallow((state) => ({
+    todayPrayerTimes: state.todayPrayerTimes,
+    nextPrayer: state.nextPrayer,
+    setTodayPrayerTimes: state.setTodayPrayerTimes,
+    setNextPrayer: state.setNextPrayer,
+  }))
+);
+
+/**
+ * Hook for sun times only
+ */
+export const useSunTimes = () => useStore(
+  useShallow((state) => ({
+    todaySunrise: state.todaySunrise,
+    todaySunset: state.todaySunset,
+    setTodaySunrise: state.setTodaySunrise,
+    setTodaySunset: state.setTodaySunset,
+  }))
+);
+
+/**
+ * Hook for prayer records
+ */
+export const usePrayerRecords = () => useStore(
+  useShallow((state) => ({
+    todayPrayerRecords: state.todayPrayerRecords,
+    setTodayPrayerRecords: state.setTodayPrayerRecords,
+    addPrayerRecord: state.addPrayerRecord,
+  }))
+);
+
+/**
+ * Hook for stats and streaks
+ */
+export const useStats = () => useStore(
+  useShallow((state) => ({
+    currentStreak: state.currentStreak,
+    setCurrentStreak: state.setCurrentStreak,
+    todayStats: state.todayStats,
+    setTodayStats: state.setTodayStats,
+  }))
+);
+
+/**
+ * Hook for achievements
+ */
+export const useAchievements = () => useStore(
+  useShallow((state) => ({
+    achievements: state.achievements,
+    setAchievements: state.setAchievements,
+    celebratingAchievement: state.celebratingAchievement,
+    setCelebratingAchievement: state.setCelebratingAchievement,
+  }))
+);
+
+/**
+ * Hook for UI state
+ */
+export const useUIState = () => useStore(
+  useShallow((state) => ({
+    isRefreshing: state.isRefreshing,
+    setIsRefreshing: state.setIsRefreshing,
+    activeTab: state.activeTab,
+    setActiveTab: state.setActiveTab,
+  }))
+);

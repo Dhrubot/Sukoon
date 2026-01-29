@@ -7,6 +7,7 @@ import LocationService from "../services/LocationService";
 import { useStore } from "../store/useStore";
 import { Location as LocationType } from "../types";
 import { usePrayerTimeRefresh } from "./usePrayerTimeRefresh";
+import { initializeEncryptionKey } from "../utils/secureKeyManager";
 
 interface AppInitializationState {
   isLoading: boolean;
@@ -33,6 +34,9 @@ export const useAppInitialization = () => {
   const initializeApp = async () => {
     try {
       console.log("Initializing app...");
+
+      // 🔐 Initialize secure encryption key first (before any storage access)
+      await initializeEncryptionKey();
 
       // Check if first launch
       const firstLaunch = StorageService.isFirstLaunch();
@@ -62,7 +66,13 @@ export const useAppInitialization = () => {
       await NotificationService.initialize();
 
       // Check if prayer times need refreshing
-      if (settings.location.latitude && settings.location.longitude) {
+      if (
+        typeof settings.location.latitude === 'number' &&
+        typeof settings.location.longitude === 'number' &&
+        !Number.isNaN(settings.location.latitude) &&
+        !Number.isNaN(settings.location.longitude) &&
+        (settings.location.latitude !== 0 || settings.location.longitude !== 0)
+      ) {
         const needsRefresh = await shouldRefreshPrayerTimes(
           settings.location,
           settings.calculationMethod
@@ -86,7 +96,11 @@ export const useAppInitialization = () => {
 
       // If no location is set, show location modal
       const needsLocation =
-        !settings.location.latitude || !settings.location.longitude;
+        typeof settings.location.latitude !== 'number' ||
+        typeof settings.location.longitude !== 'number' ||
+        Number.isNaN(settings.location.latitude) ||
+        Number.isNaN(settings.location.longitude) ||
+        (settings.location.latitude === 0 && settings.location.longitude === 0);
 
       setState({
         isLoading: false,
