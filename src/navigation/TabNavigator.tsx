@@ -68,7 +68,7 @@ export const TabNavigator: React.FC = () => {
         options={{
           tabBarLabel: 'Prayer Times',
           tabBarIcon: ({ color }) => (
-            <Icon source={HomeTabIcon} size={36} color={color} />
+            <Icon source={HomeTabIcon} size={26} color={color} />
           ),
         }}
       />
@@ -78,7 +78,7 @@ export const TabNavigator: React.FC = () => {
         options={{
           tabBarLabel: 'Qibla',
           tabBarIcon: ({ color }) => (
-            <Icon source={QiblaTabIcon} size={28} color={color} />
+            <Icon source={QiblaTabIcon} size={22} color={color} />
           ),
         }}
       />
@@ -88,7 +88,7 @@ export const TabNavigator: React.FC = () => {
         options={{
           tabBarLabel: 'Progress',
           tabBarIcon: ({ color }) => (
-            <Icon source={ProgressTabIcon} size={28} color={color} />
+            <Icon source={ProgressTabIcon} size={20} color={color} />
           ),
         }}
       />
@@ -98,7 +98,7 @@ export const TabNavigator: React.FC = () => {
         options={{
           tabBarLabel: 'More',
           tabBarIcon: ({ color }) => (
-            <MoreIcon color={color} size={28} />
+            <MoreIcon color={color} size={22} />
           ),
           headerShown: false,
         }}
