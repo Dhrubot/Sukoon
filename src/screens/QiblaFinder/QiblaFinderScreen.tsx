@@ -208,6 +208,13 @@ const QiblaFinderScreen: React.FC = () => {
     return bearing;
   };
 
+  const turnText = useMemo(() => {
+    const abs = Math.abs(directionOffset);
+    if (abs <= 3) return '✅ Aligned with Qibla';
+    const dir = directionOffset > 0 ? 'Turn right' : 'Turn left';
+    return `${dir} • ${Math.round(abs)}°`;
+  }, [directionOffset]);
+
   if (isLoading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
@@ -245,13 +252,6 @@ const QiblaFinderScreen: React.FC = () => {
       </SafeAreaView>
     );
   }
-
-  const turnText = useMemo(() => {
-    const abs = Math.abs(directionOffset);
-    if (abs <= 3) return '✅ Aligned with Qibla';
-    const dir = directionOffset > 0 ? 'Turn right' : 'Turn left';
-    return `${dir} • ${Math.round(abs)}°`;
-  }, [directionOffset]);
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]} edges={['top']}>
