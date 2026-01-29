@@ -11,7 +11,12 @@ const fs = require('fs');
 const RINGER_MODE_MODULE_JAVA = `package com.talukders.sukoon;
 
 import android.content.Context;
+import android.content.Intent;
 import android.media.AudioManager;
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.os.Build;
+import android.provider.Settings;
 import com.facebook.react.bridge.*;
 
 public class RingerModeModule extends ReactContextBaseJavaModule {
@@ -94,6 +99,162 @@ public class RingerModeModule extends ReactContextBaseJavaModule {
             promise.reject("ERROR", "Failed to check permission: " + e.getMessage());
         }
     }
+
+    @ReactMethod
+    public void openNotificationPolicyAccessSettings(Promise promise) {
+        try {
+            Intent intent = new Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS);
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            getReactApplicationContext().startActivity(intent);
+            promise.resolve(true);
+        } catch (Exception e) {
+            promise.reject("ERROR", "Failed to open notification policy settings: " + e.getMessage());
+        }
+    }
+
+    private int toRingerMode(String mode) {
+        if (mode == null) {
+            return AudioManager.RINGER_MODE_NORMAL;
+        }
+        switch (mode) {
+            case "SILENT":
+                return AudioManager.RINGER_MODE_SILENT;
+            case "VIBRATE":
+                return AudioManager.RINGER_MODE_VIBRATE;
+            case "NORMAL":
+            default:
+                return AudioManager.RINGER_MODE_NORMAL;
+        }
+    }
+
+    @ReactMethod
+    public void scheduleMosqueMode(double enableAtMs, double restoreAtMs, String enableMode, String restoreMode, double requestCodeBase, Promise promise) {
+        try {
+            Context context = getReactApplicationContext();
+            AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+            if (alarmManager == null) {
+                promise.resolve(false);
+                return;
+            }
+
+            int base = (int) requestCodeBase;
+
+            Intent enableIntent = new Intent(context, MosqueModeReceiver.class);
+            enableIntent.setAction("com.talukders.sukoon.MOSQUE_MODE_ENABLE");
+            enableIntent.putExtra("mode", enableMode);
+
+            Intent restoreIntent = new Intent(context, MosqueModeReceiver.class);
+            restoreIntent.setAction("com.talukders.sukoon.MOSQUE_MODE_RESTORE");
+            restoreIntent.putExtra("mode", restoreMode);
+
+            int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                flags |= PendingIntent.FLAG_IMMUTABLE;
+            }
+
+            PendingIntent enablePi = PendingIntent.getBroadcast(context, base, enableIntent, flags);
+            PendingIntent restorePi = PendingIntent.getBroadcast(context, base + 1, restoreIntent, flags);
+
+            long enableAt = (long) enableAtMs;
+            long restoreAt = (long) restoreAtMs;
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, enableAt, enablePi);
+                if (restoreAt > 0 && restoreAt > enableAt) {
+                    alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, restoreAt, restorePi);
+                }
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                alarmManager.setExact(AlarmManager.RTC_WAKEUP, enableAt, enablePi);
+                if (restoreAt > 0 && restoreAt > enableAt) {
+                    alarmManager.setExact(AlarmManager.RTC_WAKEUP, restoreAt, restorePi);
+                }
+            } else {
+                alarmManager.set(AlarmManager.RTC_WAKEUP, enableAt, enablePi);
+                if (restoreAt > 0 && restoreAt > enableAt) {
+                    alarmManager.set(AlarmManager.RTC_WAKEUP, restoreAt, restorePi);
+                }
+            }
+
+            promise.resolve(true);
+        } catch (Exception e) {
+            promise.reject("ERROR", "Failed to schedule mosque mode: " + e.getMessage());
+        }
+    }
+
+    @ReactMethod
+    public void cancelMosqueMode(double requestCodeBase, Promise promise) {
+        try {
+            Context context = getReactApplicationContext();
+            AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+            if (alarmManager == null) {
+                promise.resolve(false);
+                return;
+            }
+
+            int base = (int) requestCodeBase;
+            int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                flags |= PendingIntent.FLAG_IMMUTABLE;
+            }
+
+            Intent enableIntent = new Intent(context, MosqueModeReceiver.class);
+            enableIntent.setAction("com.talukders.sukoon.MOSQUE_MODE_ENABLE");
+            PendingIntent enablePi = PendingIntent.getBroadcast(context, base, enableIntent, flags);
+
+            Intent restoreIntent = new Intent(context, MosqueModeReceiver.class);
+            restoreIntent.setAction("com.talukders.sukoon.MOSQUE_MODE_RESTORE");
+            PendingIntent restorePi = PendingIntent.getBroadcast(context, base + 1, restoreIntent, flags);
+
+            alarmManager.cancel(enablePi);
+            alarmManager.cancel(restorePi);
+            enablePi.cancel();
+            restorePi.cancel();
+
+            promise.resolve(true);
+        } catch (Exception e) {
+            promise.reject("ERROR", "Failed to cancel mosque mode: " + e.getMessage());
+        }
+    }
+}
+`;
+
+const MOSQUE_MODE_RECEIVER_JAVA = `package com.talukders.sukoon;
+
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.media.AudioManager;
+
+public class MosqueModeReceiver extends BroadcastReceiver {
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        try {
+            if (context == null || intent == null) return;
+
+            String mode = intent.getStringExtra("mode");
+            int ringerMode = AudioManager.RINGER_MODE_NORMAL;
+            if (mode != null) {
+                switch (mode) {
+                    case "SILENT":
+                        ringerMode = AudioManager.RINGER_MODE_SILENT;
+                        break;
+                    case "VIBRATE":
+                        ringerMode = AudioManager.RINGER_MODE_VIBRATE;
+                        break;
+                    case "NORMAL":
+                    default:
+                        ringerMode = AudioManager.RINGER_MODE_NORMAL;
+                        break;
+                }
+            }
+
+            AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+            if (audioManager != null) {
+                audioManager.setRingerMode(ringerMode);
+            }
+        } catch (Exception ignored) {
+        }
+    }
 }
 `;
 
@@ -159,6 +320,21 @@ const withRingerModePermission = (config) => {
     }
 
     androidManifest.manifest['uses-permission'] = permissions;
+
+    const mainApplication = androidManifest.manifest.application?.[0];
+    if (mainApplication) {
+      const receivers = mainApplication.receiver || [];
+      const hasReceiver = receivers.some((r) => r?.$?.['android:name'] === '.MosqueModeReceiver');
+      if (!hasReceiver) {
+        receivers.push({
+          $: {
+            'android:name': '.MosqueModeReceiver',
+            'android:exported': 'false',
+          },
+        });
+      }
+      mainApplication.receiver = receivers;
+    }
     
     return config;
   });
@@ -196,6 +372,10 @@ const withRingerModeFiles = (config) => {
       const packagePath = path.join(androidPath, 'RingerModePackage.java');
       fs.writeFileSync(packagePath, RINGER_MODE_PACKAGE_JAVA, 'utf-8');
       console.log('✅ Created RingerModePackage.java');
+
+      const receiverPath = path.join(androidPath, 'MosqueModeReceiver.java');
+      fs.writeFileSync(receiverPath, MOSQUE_MODE_RECEIVER_JAVA, 'utf-8');
+      console.log('✅ Created MosqueModeReceiver.java');
 
       return config;
     },

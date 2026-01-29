@@ -2,9 +2,9 @@
 
 // 🛠 BUMP THIS VERSION whenever change sound files or channel settings
 // This forces Android to create a new channel with the fresh config.
-export const NOTIFICATION_CHANNEL_VERSION = 5; 
+export const NOTIFICATION_CHANNEL_VERSION = 5;
 
-export const NOTIFICATION_SCHEDULING_DAYS = 14;
+export const NOTIFICATION_SCHEDULING_DAYS = 7;
 export const NOTIFICATION_MAX_FUTURE_DAYS = NOTIFICATION_SCHEDULING_DAYS + 1;
 
 export const CHANNELS = {

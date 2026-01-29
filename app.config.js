@@ -45,6 +45,8 @@ export default {
         "VIBRATE",
         "RECEIVE_BOOT_COMPLETED",
         "WAKE_LOCK",
+        "ACCESS_NOTIFICATION_POLICY",
+        "MODIFY_AUDIO_SETTINGS",
         "android.permission.PACKAGE_USAGE_STATS",
       ],
       config: {

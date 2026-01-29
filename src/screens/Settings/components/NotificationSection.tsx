@@ -1,6 +1,6 @@
 // src/screens/Settings/components/NotificationSection.tsx
-import React from 'react';
-import { Switch, View, Text, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { Switch, View, Text, StyleSheet, Alert, Platform, Linking } from 'react-native';
 import { SettingSection } from '../../../components/settings/SettingSection';
 import { SettingRow } from '../../../components/settings/SettingRow';
 import { UserSettings } from '../../../types';
@@ -17,8 +17,28 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
   onNotificationPress,
 }) => {
   const { updateUserSettings } = useStore();
+  const [permissionStatus, setPermissionStatus] = useState<'granted' | 'denied' | 'undetermined'>('undetermined');
+
+  useEffect(() => {
+    let mounted = true;
+    NotificationService.getPermissionStatus().then((status) => {
+      if (mounted) setPermissionStatus(status);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const openAppSettings = () => {
+    if (Platform.OS === 'ios') {
+      Linking.openURL('app-settings:');
+      return;
+    }
+    Linking.openSettings();
+  };
 
   const getNotificationSubtitle = () => {
+    if (permissionStatus !== 'granted') return 'Blocked in system settings';
     if (!userSettings.notifications.enabled) return 'Disabled';
     
     let subtitle = 'Enabled';
@@ -26,6 +46,22 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
       subtitle += ` • ${userSettings.notifications.beforePrayer} min before`;
     }
     return subtitle;
+  };
+
+  const handlePressRow = () => {
+    if (permissionStatus === 'granted') {
+      onNotificationPress();
+      return;
+    }
+
+    Alert.alert(
+      'Notifications Blocked',
+      'Enable notifications in your device settings to receive prayer reminders.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Open Settings', onPress: openAppSettings },
+      ]
+    );
   };
 
   // Logic for the Adhan toggle
@@ -50,7 +86,7 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
       <SettingRow
         label="Prayer Reminders"
         subtitle={getNotificationSubtitle()}
-        onPress={onNotificationPress}
+        onPress={handlePressRow}
       />
       {/* The Adhan Switch Row */}
       <View style={styles.row}>
@@ -62,7 +98,7 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
           value={userSettings.notifications.adhanEnabled}
           onValueChange={toggleAdhan}
           // Only allow toggling if master notifications are enabled
-          disabled={!userSettings.notifications.enabled}
+          disabled={!userSettings.notifications.enabled || permissionStatus !== 'granted'}
           trackColor={{ false: '#E0E0E0', true: '#1B5E3F' }}
         />
       </View>

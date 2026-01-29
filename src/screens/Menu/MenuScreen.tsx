@@ -58,6 +58,13 @@ interface MenuItem {
 
 const menuItems: MenuItem[] = [
   {
+    icon: SettingsIcon,
+    title: 'Setup & Health',
+    subtitle: 'Verify location, reminders, and mosque mode',
+    screen: 'SetupHealth',
+    iconType: 'component',
+  },
+  {
     icon: AchievementIcon,
     title: 'Achievements',
     subtitle: 'Track your spiritual milestones',

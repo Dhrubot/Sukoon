@@ -1,8 +1,9 @@
 // src/screens/Settings/components/LocationSection.tsx - FIXED VERSION
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Platform, Linking } from 'react-native';
 import { SettingSection } from '../../../components/settings/SettingSection';
 import { UserSettings } from '../../../types';
+import LocationService from '../../../services/LocationService';
 
 interface LocationSectionProps {
   userSettings: UserSettings;
@@ -19,6 +20,26 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
   onSelectManually,
   hasValidLocation = true,
 }) => {
+  const [locationStatus, setLocationStatus] = useState<{ hasPermission: boolean; servicesEnabled: boolean } | null>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    LocationService.getLocationAccuracy().then((status) => {
+      if (mounted) setLocationStatus(status);
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const openAppSettings = () => {
+    if (Platform.OS === 'ios') {
+      Linking.openURL('app-settings:');
+      return;
+    }
+    Linking.openSettings();
+  };
+
   // 🔧 FIX: Check if location is actually valid
   const isLocationSet = hasValidLocation && 
     userSettings.location.latitude !== 0 && 
@@ -76,6 +97,19 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
           <Text style={styles.warningText}>
             ⚠️ Prayer times cannot be calculated without a valid location
           </Text>
+        </View>
+      )}
+
+      {!!locationStatus && (!locationStatus.hasPermission || !locationStatus.servicesEnabled) && (
+        <View style={styles.warningBox}>
+          <Text style={styles.warningText}>
+            {!locationStatus.hasPermission
+              ? '⚠️ Location permission is blocked in system settings'
+              : '⚠️ Location services are disabled on your device'}
+          </Text>
+          <TouchableOpacity style={styles.settingsLink} onPress={openAppSettings}>
+            <Text style={styles.settingsLinkText}>Open Settings</Text>
+          </TouchableOpacity>
         </View>
       )}
     </SettingSection>
@@ -146,5 +180,14 @@ const styles = StyleSheet.create({
     color: '#856404',
     textAlign: 'center',
     lineHeight: 18,
+  },
+  settingsLink: {
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  settingsLinkText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1B5E3F',
   },
 });

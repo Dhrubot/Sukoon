@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useAppInitialization } from '../hooks/useAppInitialization';
 import OnboardingScreen from '../screens/Onboarding/OnboardingScreen';
 import { LoadingScreen } from './LoadingScreen';
@@ -6,6 +6,8 @@ import { LocationModal } from './LocationModal';
 import { AppNavigator } from '../navigation/AppNavigator';
 import { ServiceProvider } from '../providers/ServiceProvider';
 import { useNotificationRescheduler } from '../hooks/useNotificationRescheduler';
+import StorageService from '../services/StorageService';
+import SetupHealthScreen from '../screens/SetupHealth/SetupHealthScreen';
 
 export const AppInitializer: React.FC = () => {
   const {
@@ -38,9 +40,22 @@ export const AppInitializer: React.FC = () => {
     return <OnboardingScreen onComplete={completeOnboarding} />;
   }
 
+  const [showSetupHealth, setShowSetupHealth] = useState(
+    StorageService.getValue('setup_health_shown') !== 'true'
+  );
+
   return (
     <ServiceProvider>
-      <AppNavigator />
+      {showSetupHealth ? (
+        <SetupHealthScreen
+          onDone={() => {
+            StorageService.setValue('setup_health_shown', 'true');
+            setShowSetupHealth(false);
+          }}
+        />
+      ) : (
+        <AppNavigator />
+      )}
       <LocationModal 
         visible={showLocationModal} 
         onClose={closeLocationModal} 

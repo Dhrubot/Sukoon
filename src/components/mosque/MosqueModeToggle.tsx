@@ -11,6 +11,8 @@ import {
 import { useTheme } from '../../providers/ThemeProvider';
 import { useMosqueMode } from '../../hooks/useMosqueMode';
 import IOSRingerControlService from '../../services/RingerControlService.ios';
+import RingerControlService from '../../services/RingerControlService';
+import MosqueModeService from '../../services/MosqueModeService';
 
 export const MosqueModeToggle: React.FC = () => {
   const { theme } = useTheme();
@@ -53,6 +55,25 @@ export const MosqueModeToggle: React.FC = () => {
         }
       }
 
+      if (Platform.OS === 'android') {
+        const canModify = await RingerControlService.canModify();
+        if (!canModify) {
+          Alert.alert(
+            '🛑 Permission Required',
+            'To auto-silence your phone at iqamah time, Sukoon needs Do Not Disturb access.\n\nOpen settings to grant access?',
+            [
+              { text: 'Not Now', style: 'cancel' },
+              {
+                text: 'Open Settings',
+                onPress: async () => {
+                  await RingerControlService.openNotificationPolicyAccessSettings();
+                },
+              },
+            ]
+          );
+        }
+      }
+
       // Enable mosque mode
       await enableMosqueMode(true);
 
@@ -60,9 +81,19 @@ export const MosqueModeToggle: React.FC = () => {
       Alert.alert(
         '🕌 Mosque Mode Enabled',
         Platform.OS === 'android'
-          ? 'Your phone will automatically go silent at iqamah time for each prayer.'
+          ? 'Your phone will automatically go silent at iqamah time for each prayer (if Do Not Disturb access is granted).'
           : 'You will receive a reminder notification at iqamah time. Tap it to run the Shortcut and enable Do Not Disturb.',
-        [{ text: 'Great!' }]
+        Platform.OS === 'android'
+          ? [
+              { text: 'Great!' },
+              {
+                text: 'Test Now',
+                onPress: async () => {
+                  await MosqueModeService.scheduleTestMosqueMode();
+                },
+              },
+            ]
+          : [{ text: 'Great!' }]
       );
     } else {
       // Disabling mosque mode
