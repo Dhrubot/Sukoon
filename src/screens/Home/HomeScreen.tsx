@@ -451,6 +451,22 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     color: theme.colors.status.warning,
     fontWeight: '500',
   },
+  offlineBanner: {
+    backgroundColor: 'rgba(255, 152, 0, 0.15)',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginHorizontal: 20,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 152, 0, 0.3)',
+    alignItems: 'center',
+  },
+  offlineBannerText: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontWeight: '500',
+  },
 });
 
 export default HomeScreen;
