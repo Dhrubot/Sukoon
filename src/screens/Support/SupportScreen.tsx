@@ -18,9 +18,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 
 // Services
-import SubscriptionService from '../../services/SubscriptionService';
-import AdService from '../../services/AdService';
-import DonationService, { DONATION_TIERS } from '../../services/DonationService';
+import SubscriptionService from '../../services/monetization/SubscriptionService';
+import AdService from '../../services/monetization/AdService';
+import DonationService, { DONATION_TIERS } from '../../services/monetization/DonationService';
 import StorageService from '../../services/StorageService';
 
 // Types
