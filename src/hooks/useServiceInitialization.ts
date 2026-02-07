@@ -1,6 +1,5 @@
 // src/hooks/useServiceInitialization.ts (FINAL MERGED VERSION)
 import { useEffect } from "react";
-import { Platform } from "react-native";
 import * as BackgroundFetch from 'expo-background-fetch';
 import * as TaskManager from 'expo-task-manager';
 import { usePrayerTimes } from "../providers/PrayerTimesProvider";
@@ -12,26 +11,9 @@ import MosqueModeService from '../services/MosqueModeService';
 import { Location } from "../types";
 import { NOTIFICATION_RESCHEDULE_TASK } from '../tasks/notificationRescheduleTask';
 
-// Platform-specific imports
-const SubscriptionService = Platform.select({
-  web: () => require("../services/SubscriptionService.web").default,
-  default: () => require("../services/SubscriptionService").default,
-})();
-
-const AdService = Platform.select({
-  web: () => require("../services/AdService.web").default,
-  default: () => require("../services/AdService").default,
-})();
-
-const DonationService = Platform.select({
-  web: () => require("../services/DonationService.web").default,
-  default: () => require("../services/DonationService").default,
-})();
-
-const FamilySharingService = Platform.select({
-  web: () => require("../services/FamilySharingService.web").default,
-  default: () => require("../services/FamilySharingService").default,
-})();
+import SubscriptionService from '../services/monetization/SubscriptionService';
+import AdService from '../services/monetization/AdService';
+import DonationService from '../services/monetization/DonationService';
 
 export const useServiceInitialization = () => {
   const { todayPrayerTimes, nextPrayer, isLoading, hasValidLocation } =
@@ -49,7 +31,6 @@ export const useServiceInitialization = () => {
           SubscriptionService.initialize(),
           AdService.initialize(),
           DonationService.initialize(),
-          FamilySharingService.initialize(),
           LocationService.initialize(),
         ]);
 
@@ -79,7 +60,6 @@ export const useServiceInitialization = () => {
       SubscriptionService.cleanup();
       AdService.cleanup();
       DonationService.cleanup();
-      FamilySharingService.cleanup();
       LocationService.cleanup();
     };
   }, []);
