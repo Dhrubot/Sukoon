@@ -98,7 +98,7 @@ export const MosqueModeStatus: React.FC = () => {
           <Text style={[styles.title, { color: theme.colors.text.primary }]}>
             {title}
           </Text>
-          <Text style={[styles.description, { color: theme.colors.text.secondary }]}>
+          <Text style={[styles.description, { color: theme.colors.text.primary }]}>
             {description}
           </Text>
         </View>
