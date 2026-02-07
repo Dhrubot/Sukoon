@@ -372,67 +372,6 @@ export interface TemporaryPremium {
   source: "ad_reward" | "promotion" | "trial";
 }
 
-// Family Sharing Types
-export interface FamilyMember {
-  id: string;
-  name: string;
-  role: "parent" | "child";
-  joinedAt: Date;
-  avatar: string;
-  lastSeen?: Date;
-}
-
-export interface FamilyGroup {
-  id: string;
-  name: string;
-  createdBy: string;
-  createdAt: Date;
-  members: FamilyMember[];
-  inviteCode: string;
-  settings: {
-    shareLocation: boolean;
-    sharePrayerTimes: boolean;
-    shareAchievements: boolean;
-    allowChallenges: boolean;
-  };
-}
-
-export interface FamilyPrayerStatus {
-  userId: string;
-  date: string; // YYYY-MM-DD
-  prayers: {
-    [key in PrayerName]?: {
-      status: "prayed" | "missed";
-      time: Date;
-      location?: {
-        lat: number;
-        lng: number;
-      };
-    };
-  };
-}
-
-export interface FamilyChallenge {
-  id: string;
-  title: string;
-  description: string;
-  type: "prayer_streak" | "perfect_days" | "mindfulness" | "quran_reading";
-  target: number;
-  startDate: Date;
-  endDate: Date;
-  createdBy: string;
-  createdAt: Date;
-  participants: string[]; // User IDs
-  progress: {
-    [userId: string]: {
-      current: number;
-      completed: boolean;
-      completedAt?: Date;
-    };
-  };
-  reward?: string; // Badge or achievement
-}
-
 // Update StorageService methods for monetization
 export interface StorageServiceMonetization {
   // Subscription
@@ -456,31 +395,6 @@ export interface StorageServiceMonetization {
   // Ad Tracking
   setLastAdWatchTime(time: Date): void;
   getLastAdWatchTime(): Date | null;
-}
-
-// Authentication Types
-export interface UserProfile {
-  id: string;
-  email?: string;
-  name?: string;
-  photoURL?: string;
-  isAnonymous: boolean;
-  createdAt: Date;
-  lastSeen?: Date;
-  settings: UserSettings;
-  preferences?: {
-    notifications: boolean;
-    shareAnalytics: boolean;
-    language: string;
-  };
-  subscription?: SubscriptionPlan;
-  familyGroupId?: string;
-}
-
-export interface AuthState {
-  isAuthenticated: boolean;
-  isAnonymous: boolean;
-  user: UserProfile | null;
 }
 
 export interface OnboardingProgress {
