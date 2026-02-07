@@ -1,13 +1,6 @@
 // src/services/AnalyticsService.ts
-//
-// Firebase Analytics scaffolding for Sukoon.
-// To activate: install @react-native-firebase/app and @react-native-firebase/analytics,
-// then uncomment the firebase imports and replace the stub implementations.
-//
+import analytics from '@react-native-firebase/analytics';
 import logger from '../utils/logger';
-
-// TODO: Uncomment when firebase is installed
-// import analytics from '@react-native-firebase/analytics';
 
 type AnalyticsEvent =
   | 'app_open'
@@ -19,28 +12,31 @@ type AnalyticsEvent =
   | 'premium_card_tapped'
   | 'premium_purchased'
   | 'ad_watched'
+  | 'ad_failed'
   | 'donation_made'
   | 'streak_milestone'
   | 'qibla_opened'
   | 'mosque_mode_activated'
-  | 'settings_changed';
+  | 'mosque_mode_deactivated'
+  | 'settings_changed'
+  | 'onboarding_completed';
 
 interface AnalyticsParams {
   [key: string]: string | number | boolean | undefined;
 }
 
 class AnalyticsService {
-  private enabled = !__DEV__; // Only track in production
+  private enabled = true;
 
   async logEvent(event: AnalyticsEvent, params?: AnalyticsParams): Promise<void> {
-    if (!this.enabled) {
+    if (__DEV__) {
       logger.log(`[Analytics] ${event}`, params);
-      return;
     }
 
+    if (!this.enabled) return;
+
     try {
-      // TODO: Uncomment when firebase is installed
-      // await analytics().logEvent(event, params);
+      await analytics().logEvent(event, params);
     } catch (error) {
       logger.error('[Analytics] Failed to log event:', error);
     }
@@ -48,10 +44,8 @@ class AnalyticsService {
 
   async setUserProperty(name: string, value: string): Promise<void> {
     if (!this.enabled) return;
-
     try {
-      // TODO: Uncomment when firebase is installed
-      // await analytics().setUserProperty(name, value);
+      await analytics().setUserProperty(name, value);
     } catch (error) {
       logger.error('[Analytics] Failed to set user property:', error);
     }
@@ -59,20 +53,26 @@ class AnalyticsService {
 
   async logScreenView(screenName: string): Promise<void> {
     if (!this.enabled) return;
-
     try {
-      // TODO: Uncomment when firebase is installed
-      // await analytics().logScreenView({ screen_name: screenName, screen_class: screenName });
+      await analytics().logScreenView({
+        screen_name: screenName,
+        screen_class: screenName,
+      });
     } catch (error) {
       logger.error('[Analytics] Failed to log screen view:', error);
     }
   }
 
-  // Convenience methods for common events
+  // Convenience: prayer
   async logPrayerCompleted(prayer: string, mindful: boolean): Promise<void> {
     await this.logEvent('prayer_completed', { prayer, mindful });
   }
 
+  async logPrayerMissed(prayer: string): Promise<void> {
+    await this.logEvent('prayer_missed', { prayer });
+  }
+
+  // Convenience: monetization
   async logPremiumPurchased(plan: string): Promise<void> {
     await this.logEvent('premium_purchased', { plan });
   }
@@ -81,8 +81,25 @@ class AnalyticsService {
     await this.logEvent('ad_watched');
   }
 
+  async logAdFailed(reason: string): Promise<void> {
+    await this.logEvent('ad_failed', { reason });
+  }
+
+  async logDonationMade(tier: string, amount: number): Promise<void> {
+    await this.logEvent('donation_made', { tier, amount });
+  }
+
+  // Convenience: engagement
   async logStreakMilestone(days: number): Promise<void> {
     await this.logEvent('streak_milestone', { days });
+  }
+
+  async logMosqueModeActivated(): Promise<void> {
+    await this.logEvent('mosque_mode_activated');
+  }
+
+  async logOnboardingCompleted(): Promise<void> {
+    await this.logEvent('onboarding_completed');
   }
 }
 

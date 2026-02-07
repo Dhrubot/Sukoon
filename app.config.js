@@ -56,6 +56,7 @@ export default {
       }
     },
     plugins: [
+      "@react-native-firebase/app",
       "./plugins/withUsageStats.js",
       "./plugins/withModularHeaders.js",
       "./plugins/withAndroidIapFlavor.js",

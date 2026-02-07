@@ -64,9 +64,9 @@ const SupportScreen: React.FC = () => {
         setCurrentPlan(SubscriptionService.getCurrentSubscription());
       }
 
-      const canShow = await AdService.checkCanShowAd();
+      const canShow = await AdService.canShowAd();
       setCanWatchAd(canShow);
-      setHoursUntilNextAd(AdService.getTimeUntilNextAd());
+      setHoursUntilNextAd(AdService.getHoursUntilNextAd());
     } catch (error) {
       logger.error('Failed to initialize support services:', error);
     } finally {
