@@ -744,14 +744,21 @@ class NotificationService {
     }
   }
 
+  // Scheduling progress (0-1) for UI progress indicators
+  schedulingProgress: number = 0;
+
   // 📅 EXTENDED 14-DAY BATCH SCHEDULING
   // This is called by your useNotificationRescheduler hook every 24 hours
-  async scheduleExtendedNotifications() {
+  // onProgress(day, total) is called after each day is scheduled
+  async scheduleExtendedNotifications(
+    onProgress?: (day: number, total: number) => void
+  ) {
     if (this.isScheduling) {
       return;
     }
 
     this.isScheduling = true;
+    this.schedulingProgress = 0;
     try {
       logger.log('🗓️ Starting 14-day batch scheduling...');
 
@@ -819,11 +826,16 @@ class NotificationService {
         } catch (error) {
           logger.error(`❌ Failed to schedule day ${i}:`, error);
         }
+
+        // Report progress after each day
+        this.schedulingProgress = (i + 1) / NOTIFICATION_SCHEDULING_DAYS;
+        onProgress?.(i + 1, NOTIFICATION_SCHEDULING_DAYS);
       }
     } catch (error) {
       logger.error('❌ Extended scheduling failed:', error);
     } finally {
       this.isScheduling = false;
+      this.schedulingProgress = 0;
     }
   }
 

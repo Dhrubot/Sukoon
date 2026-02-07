@@ -243,6 +243,10 @@ class StorageService {
     return this.storage.getNumber("current_streak") || 0;
   }
 
+  setStreak(value: number): void {
+    this.storage.set("current_streak", value);
+  }
+
   updateStreak(): void {
     const today = new Date().toISOString().split("T")[0];
     const yesterday = new Date(Date.now() - 86400000)
@@ -825,16 +829,18 @@ class StorageService {
     this.storage.set('data_migrated', migrated);
   }
 
-  // Get all prayer records
-  getAllPrayerRecords(): PrayerRecord[] {
+  // Get all prayer records (with optional limit to avoid full key scan)
+  getAllPrayerRecords(limit?: number): PrayerRecord[] {
     const allRecords: PrayerRecord[] = [];
     const keys = this.storage.getAllKeys();
     
     // Filter keys that match prayer record pattern
     const recordKeys = keys.filter(key => key.startsWith('prayer_'));
     
-    // Get all prayer records
-    recordKeys.forEach(key => {
+    // Apply limit to avoid scanning thousands of keys
+    const keysToScan = limit ? recordKeys.slice(-limit) : recordKeys;
+    
+    keysToScan.forEach(key => {
       const data = this.storage.getString(key);
       if (data) {
         allRecords.push(JSON.parse(data));
@@ -842,6 +848,22 @@ class StorageService {
     });
     
     return allRecords;
+  }
+
+  // Get prayer records for a recent number of days (bounded query)
+  getPrayerRecordsSince(days: number): PrayerRecord[] {
+    const records: PrayerRecord[] = [];
+    const now = new Date();
+    
+    for (let i = 0; i < days; i++) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+      const dayRecords = this.getDayPrayerRecords(dateStr);
+      records.push(...dayRecords);
+    }
+    
+    return records;
   }
 
   // Prayer Reminder State Management

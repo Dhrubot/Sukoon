@@ -9,6 +9,7 @@ import {
   Achievement,
   MindfulnessSession
 } from '../types';
+import StorageService from '../services/StorageService';
 
 interface AppState {
   // User settings
@@ -61,9 +62,12 @@ interface AppState {
 }
 
 export const useStore = create<AppState>((set) => ({
-  // User settings
+  // User settings — write-through: Zustand + StorageService stay in sync
   userSettings: null,
-  setUserSettings: (settings) => set({ userSettings: settings }),
+  setUserSettings: (settings) => {
+    StorageService.setUserSettings(settings);
+    set({ userSettings: settings });
+  },
   updateUserSettings: (updates) => 
     set((state) => {
       if (!state.userSettings) return { userSettings: null };
@@ -84,12 +88,20 @@ export const useStore = create<AppState>((set) => ({
           updated[key] = val;
         }
       }
+      StorageService.setUserSettings(updated);
       return { userSettings: updated };
     }),
   
-  // Location
+  // Location — write-through to StorageService
   location: null,
-  setLocation: (location) => set({ location }),
+  setLocation: (location) => {
+    // Persist location inside userSettings
+    const settings = StorageService.getUserSettings();
+    if (settings) {
+      StorageService.setUserSettings({ ...settings, location });
+    }
+    set({ location });
+  },
   
   // Prayer times
   todayPrayerTimes: [],
@@ -119,9 +131,12 @@ export const useStore = create<AppState>((set) => ({
   setCurrentMindfulnessSession: (session) => 
     set({ currentMindfulnessSession: session }),
   
-  // Stats
+  // Stats — write-through to StorageService
   currentStreak: 0,
-  setCurrentStreak: (streak) => set({ currentStreak: streak }),
+  setCurrentStreak: (streak) => {
+    StorageService.setStreak(streak);
+    set({ currentStreak: streak });
+  },
   todayStats: null,
   setTodayStats: (stats) => set({ todayStats: stats }),
   
