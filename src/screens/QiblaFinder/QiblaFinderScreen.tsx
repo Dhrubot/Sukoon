@@ -24,6 +24,57 @@ const COMPASS_SIZE = Math.min(SCREEN_WIDTH - 64, 300);
 const KAABA_LAT = 21.4225;
 const KAABA_LNG = 39.8262;
 
+// Pure utility functions (outside component to avoid re-creation)
+const normalizeAngle = (deg: number) => {
+  const n = deg % 360;
+  return n < 0 ? n + 360 : n;
+};
+
+const shortestAngleDelta = (fromDeg: number, toDeg: number) => {
+  let diff = normalizeAngle(toDeg) - normalizeAngle(fromDeg);
+  while (diff < -180) diff += 360;
+  while (diff > 180) diff -= 360;
+  return diff;
+};
+
+const smoothAngle = (prevDeg: number, nextDeg: number, alpha: number) => {
+  const delta = shortestAngleDelta(prevDeg, nextDeg);
+  return normalizeAngle(prevDeg + delta * alpha);
+};
+
+const calculateQiblaDirection = (lat: number, lng: number): number => {
+  const latRad = (lat * Math.PI) / 180;
+  const lngRad = (lng * Math.PI) / 180;
+  const kaabaLatRad = (KAABA_LAT * Math.PI) / 180;
+  const kaabaLngRad = (KAABA_LNG * Math.PI) / 180;
+
+  const dLng = kaabaLngRad - lngRad;
+
+  const y = Math.sin(dLng) * Math.cos(kaabaLatRad);
+  const x =
+    Math.cos(latRad) * Math.sin(kaabaLatRad) -
+    Math.sin(latRad) * Math.cos(kaabaLatRad) * Math.cos(dLng);
+
+  let bearing = Math.atan2(y, x) * (180 / Math.PI);
+  bearing = (bearing + 360) % 360;
+
+  return bearing;
+};
+
+const calculateDistanceToKaaba = (lat: number, lng: number): number => {
+  const R = 6371; // Earth's radius in km
+  const dLat = ((KAABA_LAT - lat) * Math.PI) / 180;
+  const dLng = ((KAABA_LNG - lng) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos((lat * Math.PI) / 180) *
+      Math.cos((KAABA_LAT * Math.PI) / 180) *
+      Math.sin(dLng / 2) *
+      Math.sin(dLng / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return R * c;
+};
+
 // Configuration constants
 const CONFIG = {
   // Smoothing
@@ -77,23 +128,10 @@ const QiblaFinderScreen: React.FC = () => {
   const lastHeadingRef = useRef<number>(0);
   const lastHeadingTimeRef = useRef<number>(0);
   const velocityRef = useRef<number>(0);
-
-  const normalizeAngle = (deg: number) => {
-    const n = deg % 360;
-    return n < 0 ? n + 360 : n;
-  };
-
-  const shortestAngleDelta = (fromDeg: number, toDeg: number) => {
-    let diff = normalizeAngle(toDeg) - normalizeAngle(fromDeg);
-    while (diff < -180) diff += 360;
-    while (diff > 180) diff -= 360;
-    return diff;
-  };
-
-  const smoothAngle = (prevDeg: number, nextDeg: number, alpha: number) => {
-    const delta = shortestAngleDelta(prevDeg, nextDeg);
-    return normalizeAngle(prevDeg + delta * alpha);
-  };
+  // Ref for qibla direction so heading callback always has latest without restarting subscription
+  const qiblaDirectionRef = useRef<number>(0);
+  // Ref to track calibration status and avoid unnecessary setState calls
+  const calibrationStatusRef = useRef<'good' | 'fair' | 'poor'>('good');
 
   const openAppSettings = () => {
     if (Platform.OS === 'ios') {
@@ -103,21 +141,6 @@ const QiblaFinderScreen: React.FC = () => {
     Linking.openSettings();
   };
 
-  // Calculate distance to Kaaba using Haversine formula
-  const calculateDistanceToKaaba = useCallback((lat: number, lng: number): number => {
-    const R = 6371; // Earth's radius in km
-    const dLat = ((KAABA_LAT - lat) * Math.PI) / 180;
-    const dLng = ((KAABA_LNG - lng) * Math.PI) / 180;
-    const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos((lat * Math.PI) / 180) *
-        Math.cos((KAABA_LAT * Math.PI) / 180) *
-        Math.sin(dLng / 2) *
-        Math.sin(dLng / 2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
-  }, []);
-
   const stopHeading = useCallback(() => {
     if (headingSubscription.current) {
       headingSubscription.current.remove();
@@ -126,9 +149,10 @@ const QiblaFinderScreen: React.FC = () => {
   }, []);
 
   // Phase 1: Spring animation for smoother needle movement
+  // Uses qiblaDirectionRef so this callback is stable and doesn't restart subscription
   const updateNeedle = useCallback(
     (heading: number) => {
-      const diff = shortestAngleDelta(heading, qiblaDirection);
+      const diff = shortestAngleDelta(heading, qiblaDirectionRef.current);
 
       // Use spring animation instead of timing for natural feel
       Animated.spring(rotateAnim, {
@@ -153,25 +177,24 @@ const QiblaFinderScreen: React.FC = () => {
         alignedRef.current = true;
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         
-        // Phase 4: Alignment glow animation
-        Animated.parallel([
-          Animated.timing(alignGlowAnim, {
-            toValue: 1,
-            duration: 300,
-            useNativeDriver: false,
+        // Glow animation (opacity only — can use native driver)
+        Animated.timing(alignGlowAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }).start();
+        // Pulse animation (scale — native driver)
+        Animated.sequence([
+          Animated.timing(alignPulseAnim, {
+            toValue: 1.05,
+            duration: 150,
+            useNativeDriver: true,
           }),
-          Animated.sequence([
-            Animated.timing(alignPulseAnim, {
-              toValue: 1.05,
-              duration: 150,
-              useNativeDriver: true,
-            }),
-            Animated.timing(alignPulseAnim, {
-              toValue: 1,
-              duration: 150,
-              useNativeDriver: true,
-            }),
-          ]),
+          Animated.timing(alignPulseAnim, {
+            toValue: 1,
+            duration: 150,
+            useNativeDriver: true,
+          }),
         ]).start();
       }
       if (!aligned && alignedRef.current) {
@@ -179,11 +202,11 @@ const QiblaFinderScreen: React.FC = () => {
         Animated.timing(alignGlowAnim, {
           toValue: 0,
           duration: 200,
-          useNativeDriver: false,
+          useNativeDriver: true,
         }).start();
       }
     },
-    [qiblaDirection, rotateAnim, alignGlowAnim, alignPulseAnim]
+    [rotateAnim, alignGlowAnim, alignPulseAnim]
   );
 
   // Phase 2 & 3: Adaptive smoothing and throttling
@@ -202,14 +225,14 @@ const QiblaFinderScreen: React.FC = () => {
         const rawHeading = newHeading.trueHeading >= 0 ? newHeading.trueHeading : newHeading.magHeading;
         const accuracy = newHeading.accuracy;
 
-        // Phase 4: Update calibration status based on accuracy
+        // Update calibration status only when it actually changes (avoids unnecessary re-renders)
         if (accuracy !== undefined && accuracy >= 0) {
-          if (accuracy <= CONFIG.ACCURACY_GOOD) {
-            setCalibrationStatus('good');
-          } else if (accuracy <= CONFIG.ACCURACY_FAIR) {
-            setCalibrationStatus('fair');
-          } else {
-            setCalibrationStatus('poor');
+          const newStatus: 'good' | 'fair' | 'poor' =
+            accuracy <= CONFIG.ACCURACY_GOOD ? 'good' :
+            accuracy <= CONFIG.ACCURACY_FAIR ? 'fair' : 'poor';
+          if (newStatus !== calibrationStatusRef.current) {
+            calibrationStatusRef.current = newStatus;
+            setCalibrationStatus(newStatus);
           }
         }
 
@@ -305,40 +328,30 @@ const QiblaFinderScreen: React.FC = () => {
     if (location) {
       const direction = calculateQiblaDirection(location.latitude, location.longitude);
       setQiblaDirection(direction);
+      qiblaDirectionRef.current = direction;
       const distance = calculateDistanceToKaaba(location.latitude, location.longitude);
       setDistanceToKaaba(distance);
     }
-  }, [location, calculateDistanceToKaaba]);
+  }, [location]);
 
   useEffect(() => {
     if (!isFocused) {
       stopHeading();
       return;
     }
+    // Reset sensor refs on re-focus to prevent stale catch-up animation
+    smoothedHeadingRef.current = null;
+    lastUpdateMsRef.current = 0;
+    lastUiUpdateMsRef.current = 0;
+    lastHeadingRef.current = 0;
+    lastHeadingTimeRef.current = 0;
+    velocityRef.current = 0;
+
     startHeading();
     return () => {
       stopHeading();
     };
   }, [isFocused, startHeading, stopHeading]);
-
-  const calculateQiblaDirection = (lat: number, lng: number): number => {
-    const latRad = (lat * Math.PI) / 180;
-    const lngRad = (lng * Math.PI) / 180;
-    const kaabaLatRad = (KAABA_LAT * Math.PI) / 180;
-    const kaabaLngRad = (KAABA_LNG * Math.PI) / 180;
-
-    const dLng = kaabaLngRad - lngRad;
-
-    const y = Math.sin(dLng) * Math.cos(kaabaLatRad);
-    const x =
-      Math.cos(latRad) * Math.sin(kaabaLatRad) -
-      Math.sin(latRad) * Math.cos(kaabaLatRad) * Math.cos(dLng);
-
-    let bearing = Math.atan2(y, x) * (180 / Math.PI);
-    bearing = (bearing + 360) % 360;
-
-    return bearing;
-  };
 
   const turnText = useMemo(() => {
     const abs = Math.abs(directionOffset);
