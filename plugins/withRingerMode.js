@@ -104,11 +104,16 @@ public class RingerModeModule extends ReactContextBaseJavaModule {
     public void openNotificationPolicyAccessSettings(Promise promise) {
         try {
             Intent intent = new Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            getReactApplicationContext().startActivity(intent);
+            android.app.Activity activity = getCurrentActivity();
+            if (activity != null) {
+                activity.startActivity(intent);
+            } else {
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                getReactApplicationContext().startActivity(intent);
+            }
             promise.resolve(true);
         } catch (Exception e) {
-            promise.reject("ERROR", "Failed to open notification policy settings: " + e.getMessage());
+            promise.reject("OPEN_SETTINGS_FAILED", "Failed to open DND settings: " + e.getMessage());
         }
     }
 
@@ -443,41 +448,60 @@ const withRingerModeFiles = (config) => {
   ]);
 };
 
-// Register the package in MainApplication.java
+// Register the package in MainApplication (supports both Kotlin and Java)
 const withRingerModePackage = (config) => {
   return withMainApplication(config, (config) => {
     const { modResults } = config;
     let contents = modResults.contents;
 
-    // Add import for RingerModePackage
-    const importStatement = 'import com.talukders.sukoon.RingerModePackage;';
-    if (!contents.includes(importStatement)) {
-      // Add import after other imports
-      contents = contents.replace(
-        /(import com\.facebook\.react\.defaults\.DefaultReactNativeHost;)/,
-        `$1\n${importStatement}`
-      );
-    }
+    const isKotlin = contents.includes('fun getPackages()');
 
-    // Add package to getPackages()
-    const packageAddition = 'packages.add(new RingerModePackage());';
-    if (!contents.includes(packageAddition)) {
-      // Add to getPackages() method
-      contents = contents.replace(
-        /(protected List<ReactPackage> getPackages\(\) {[\s\S]*?return packages;)/,
-        (match) => {
-          // Add before the return statement
-          return match.replace(
+    if (isKotlin) {
+      // --- Kotlin MainApplication (Expo 51+) ---
+      const ktImport = 'import com.talukders.sukoon.RingerModePackage';
+      if (!contents.includes(ktImport)) {
+        // Add import after the last existing import line
+        contents = contents.replace(
+          /(import expo\.modules\.ReactNativeHostWrapper)/,
+          `$1\n${ktImport}`
+        );
+      }
+
+      const ktPackageAdd = 'packages.add(RingerModePackage())';
+      if (!contents.includes(ktPackageAdd)) {
+        // Insert before "return packages" inside getPackages()
+        contents = contents.replace(
+          /(val packages = PackageList\(this\)\.packages)/,
+          `$1\n            ${ktPackageAdd}`
+        );
+      }
+
+      console.log('✅ Registered RingerModePackage in MainApplication.kt (Kotlin)');
+    } else {
+      // --- Java MainApplication (legacy Expo) ---
+      const javaImport = 'import com.talukders.sukoon.RingerModePackage;';
+      if (!contents.includes(javaImport)) {
+        contents = contents.replace(
+          /(import com\.facebook\.react\.defaults\.DefaultReactNativeHost;)/,
+          `$1\n${javaImport}`
+        );
+      }
+
+      const javaPackageAdd = 'packages.add(new RingerModePackage());';
+      if (!contents.includes(javaPackageAdd)) {
+        contents = contents.replace(
+          /(protected List<ReactPackage> getPackages\(\) {[\s\S]*?return packages;)/,
+          (match) => match.replace(
             'return packages;',
-            `          ${packageAddition}\n          return packages;`
-          );
-        }
-      );
+            `          ${javaPackageAdd}\n          return packages;`
+          )
+        );
+      }
+
+      console.log('✅ Registered RingerModePackage in MainApplication.java (Java)');
     }
 
     modResults.contents = contents;
-    console.log('✅ Registered RingerModePackage in MainApplication.java');
-    
     return config;
   });
 };
