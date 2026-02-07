@@ -2,7 +2,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useStore } from '../store/useStore';
 import MosqueModeService from '../services/MosqueModeService';
-import StorageService from '../services/StorageService';
 import { PrayerTime, PrayerName, MosqueModeSettings } from '../types';
 
 export const useMosqueMode = () => {
@@ -42,7 +41,6 @@ export const useMosqueMode = () => {
     };
 
     setUserSettings(updated);
-    StorageService.setUserSettings(updated);
   }, [userSettings, setUserSettings]);
 
   // Update iqamah offset for a prayer
@@ -62,7 +60,6 @@ export const useMosqueMode = () => {
       };
 
       setUserSettings(updated);
-      StorageService.setUserSettings(updated);
     },
     [userSettings, setUserSettings]
   );
@@ -81,7 +78,6 @@ export const useMosqueMode = () => {
       };
 
       setUserSettings(updated);
-      StorageService.setUserSettings(updated);
     },
     [userSettings, setUserSettings]
   );

@@ -1,5 +1,5 @@
 // src/components/mosque/MosqueModeToggle.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Platform,
   Alert,
+  AppState,
 } from 'react-native';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useMosqueMode } from '../../hooks/useMosqueMode';
@@ -17,6 +18,43 @@ export const MosqueModeToggle: React.FC = () => {
   const { theme } = useTheme();
   const { isEnabled, enableMosqueMode } = useMosqueMode();
   const [isLoading, setIsLoading] = useState(false);
+  const pendingEnable = useRef(false);
+
+  // When user returns from Android DND settings, re-check and auto-enable
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+
+    const subscription = AppState.addEventListener('change', async (nextState) => {
+      if (nextState === 'active' && pendingEnable.current) {
+        pendingEnable.current = false;
+        const canModify = await RingerControlService.canModify();
+        if (canModify) {
+          await enableMosqueMode(true);
+          Alert.alert(
+            '🕌 Mosque Mode Enabled',
+            'Your phone will automatically go silent at iqamah time for each prayer.',
+            [
+              { text: 'Great!' },
+              {
+                text: 'Test Now',
+                onPress: async () => {
+                  await MosqueModeService.scheduleTestMosqueMode();
+                },
+              },
+            ]
+          );
+        } else {
+          Alert.alert(
+            'Permission Not Granted',
+            'Do Not Disturb access was not granted. Mosque Mode needs this permission to silence your phone automatically.',
+            [{ text: 'OK' }]
+          );
+        }
+      }
+    });
+
+    return () => subscription.remove();
+  }, [enableMosqueMode]);
 
   const handleToggle = async (value: boolean) => {
     if (isLoading) return;
@@ -28,18 +66,18 @@ export const MosqueModeToggle: React.FC = () => {
         if (!canModify) {
           Alert.alert(
             '🛑 Permission Required',
-            'To auto-silence your phone at iqamah time, Sukoon needs Do Not Disturb access.\n\nGrant access and then enable Mosque Mode again.',
+            'To auto-silence your phone at iqamah time, Sukoon needs Do Not Disturb access.\n\nYou will be taken to Android settings. Find Sukoon and toggle it ON, then come back.',
             [
               { text: 'Not Now', style: 'cancel' },
               {
                 text: 'Grant Access',
                 onPress: async () => {
+                  pendingEnable.current = true;
                   await RingerControlService.openNotificationPolicyAccessSettings();
                 },
               },
             ]
           );
-          // Don't enable mosque mode without permission
           return;
         }
       }
