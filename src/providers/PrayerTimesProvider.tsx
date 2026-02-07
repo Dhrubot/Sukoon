@@ -5,6 +5,7 @@ import { useStore } from '../store/useStore';
 import PrayerTimeService from '../services/PrayerTimeService';
 import { PrayerTime, Location } from '../types';
 import { isValidCoordinates } from '../utils/locationValidation';
+import logger from '../utils/logger';
 
 interface PrayerTimesContextType {
   todayPrayerTimes: PrayerTime[];
@@ -57,19 +58,19 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
     if (todayPrayers.length === 0) return null;
 
     const now = new Date();
-    console.log('🔍 Calculating next prayer...');
+    logger.log('🔍 Calculating next prayer...');
 
     // Check today's remaining prayers
     for (const prayer of todayPrayers) {
       if (prayer.time > now) {
-        console.log('✅ Next prayer today:', prayer.name);
+        logger.log('✅ Next prayer today:', prayer.name);
         return { ...prayer, isNext: true };
       }
     }
 
     // If no more prayers today, return tomorrow's Fajr
     if (tomorrowFajr) {
-      console.log('✅ Next prayer is tomorrow\'s Fajr');
+      logger.log('✅ Next prayer is tomorrow\'s Fajr');
       return { ...tomorrowFajr, isNext: true };
     }
 
@@ -78,11 +79,11 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
 
   const loadPrayerTimes = async () => {
     if (!hasValidLocation || !userSettings) {
-      console.log('⏳ PrayerTimesProvider: Waiting for prerequisites');
+      logger.log('⏳ PrayerTimesProvider: Waiting for prerequisites');
       return;
     }
 
-    console.log('🔄 Loading prayer times...');
+    logger.log('🔄 Loading prayer times...');
     setIsLoading(true);
     setError(null);
 
@@ -121,10 +122,10 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
       const nextPrayer = calculateNextPrayer(todayResult.prayerTimes, tomorrowFajrPrayer);
       setNextPrayer(nextPrayer);
 
-      console.log('✅ Prayer times loaded successfully');
+      logger.log('✅ Prayer times loaded successfully');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load prayer times';
-      console.error('❌ Error loading prayer times:', err);
+      logger.error('❌ Error loading prayer times:', err);
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -136,7 +137,7 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
     if (hasValidLocation && userSettings) {
       loadPrayerTimes();
     } else {
-      console.log('⏳ PrayerTimesProvider: Prerequisites not met', {
+      logger.log('⏳ PrayerTimesProvider: Prerequisites not met', {
         hasValidLocation,
         hasSettings: !!userSettings,
       });

@@ -9,6 +9,7 @@ import { Location as LocationType } from "../types";
 import { usePrayerTimeRefresh } from "./usePrayerTimeRefresh";
 import { initializeEncryptionKey } from "../utils/secureKeyManager";
 import { isValidCoordinates } from "../utils/locationValidation";
+import logger from "../utils/logger";
 
 interface AppInitializationState {
   isLoading: boolean;
@@ -34,7 +35,7 @@ export const useAppInitialization = () => {
 
   const initializeApp = async () => {
     try {
-      console.log("Initializing app...");
+      logger.log("Initializing app...");
 
       // 🔐 Initialize secure encryption key first (before any storage access)
       await initializeEncryptionKey();
@@ -59,10 +60,10 @@ export const useAppInitialization = () => {
       const isValidLocation = isValidCoordinates(settings.location);
 
       if (isValidLocation) {
-        console.log("📍 Setting valid location in store");
+        logger.log("📍 Setting valid location in store");
         setLocation(settings.location);
       } else {
-        console.log("⏳ No valid location yet, store location remains null");
+        logger.log("⏳ No valid location yet, store location remains null");
         // Don't set location - let it remain null until user provides real location
       }
 
@@ -77,7 +78,7 @@ export const useAppInitialization = () => {
         );
 
         if (needsRefresh) {
-          console.log("Refreshing prayer times...");
+          logger.log("Refreshing prayer times...");
           try {
             await PrayerTimeService.fetchPrayerTimes(
               settings.location,
@@ -86,7 +87,7 @@ export const useAppInitialization = () => {
               settings.asrJuristic
             );
           } catch (error) {
-            console.error("Failed to refresh prayer times:", error);
+            logger.error("Failed to refresh prayer times:", error);
             // Continue anyway, use cached times
           }
         }
@@ -104,9 +105,9 @@ export const useAppInitialization = () => {
 
       // Hide splash screen
       await SplashScreen.hideAsync();
-      console.log("App initialization complete");
+      logger.log("App initialization complete");
     } catch (error) {
-      console.error("App initialization failed:", error);
+      logger.error("App initialization failed:", error);
       setState((prev) => ({
         ...prev,
         isLoading: false,
@@ -127,7 +128,7 @@ export const useAppInitialization = () => {
 
     // Update Zustand store with the new location
     if (hasValidLocation && settings) {
-      console.log('✅ Onboarding complete - updating store with location:', {
+      logger.log('✅ Onboarding complete - updating store with location:', {
         city: settings.location.city,
         country: settings.location.country,
         lat: settings.location.latitude,
@@ -140,7 +141,7 @@ export const useAppInitialization = () => {
       // Update location in store (triggers prayer time refresh)
       setLocation(settings.location);
     } else {
-      console.log('⚠️ Onboarding complete but no valid location set');
+      logger.log('⚠️ Onboarding complete but no valid location set');
     }
 
     setState((prev) => ({
