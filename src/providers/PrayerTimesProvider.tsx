@@ -104,16 +104,21 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
         userSettings.asrJuristic
       );
 
-      // Load tomorrow's Fajr
-      const tomorrowResult = await PrayerTimeService.getPrayerTimesList(
-        location,
-        tomorrow,
-        userSettings.calculationMethod,
-        userSettings.adjustments,
-        userSettings.asrJuristic
-      );
+      // Only fetch tomorrow's Fajr after Isha (last prayer) to avoid unnecessary API calls
+      const ishaToday = todayResult.prayerTimes.find(p => p.name === 'Isha');
+      const isAfterIsha = ishaToday && today > ishaToday.time;
+      let tomorrowFajrPrayer: PrayerTime | null = null;
 
-      const tomorrowFajrPrayer = tomorrowResult.prayerTimes.find(p => p.name === 'Fajr') || null;
+      if (isAfterIsha) {
+        const tomorrowResult = await PrayerTimeService.getPrayerTimesList(
+          location,
+          tomorrow,
+          userSettings.calculationMethod,
+          userSettings.adjustments,
+          userSettings.asrJuristic
+        );
+        tomorrowFajrPrayer = tomorrowResult.prayerTimes.find(p => p.name === 'Fajr') || null;
+      }
 
       // Update state with prayer times and sun times
       setTodayPrayerTimes(todayResult.prayerTimes);
