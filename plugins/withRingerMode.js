@@ -179,10 +179,10 @@ public class RingerModeModule extends ReactContextBaseJavaModule {
                     alarmManager.setExact(AlarmManager.RTC_WAKEUP, restoreAt, restorePi);
                 }
             } else {
-                // Inexact fallback — may be batched by system but still fires
-                alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, enableAt, enablePi);
+                // Pre-KitKat fallback — setAndAllowWhileIdle requires API 23+
+                alarmManager.set(AlarmManager.RTC_WAKEUP, enableAt, enablePi);
                 if (restoreAt > 0 && restoreAt > enableAt) {
-                    alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, restoreAt, restorePi);
+                    alarmManager.set(AlarmManager.RTC_WAKEUP, restoreAt, restorePi);
                 }
             }
 
