@@ -56,7 +56,8 @@ export default {
       }
     },
     plugins: [
-      "@react-native-firebase/app",
+      // NOTE: Add "@react-native-firebase/app" here once google-services.json
+      // and GoogleService-Info.plist are placed in the project root.
       "./plugins/withUsageStats.js",
       "./plugins/withModularHeaders.js",
       "./plugins/withAndroidIapFlavor.js",
