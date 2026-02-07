@@ -157,7 +157,6 @@ export const useServiceInitialization = () => {
 
   useEffect(() => {
     const shouldAutoScheduleMosqueMode =
-      Platform.OS === 'android' &&
       hasValidLocation &&
       !isLoading &&
       userSettings?.mosqueMode?.enabled &&

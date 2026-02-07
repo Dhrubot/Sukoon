@@ -137,6 +137,14 @@ public class RingerModeModule extends ReactContextBaseJavaModule {
                 return;
             }
 
+            // Check exact alarm permission on Android 12+ (API 31+)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (!alarmManager.canScheduleExactAlarms()) {
+                    // Fall back to inexact alarm which may be delayed by up to ~10 min
+                    android.util.Log.w(MODULE_NAME, "Exact alarm permission not granted, using inexact alarm");
+                }
+            }
+
             int base = (int) requestCodeBase;
 
             Intent enableIntent = new Intent(context, MosqueModeReceiver.class);
@@ -158,20 +166,23 @@ public class RingerModeModule extends ReactContextBaseJavaModule {
             long enableAt = (long) enableAtMs;
             long restoreAt = (long) restoreAtMs;
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            boolean canExact = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms();
+
+            if (canExact && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, enableAt, enablePi);
                 if (restoreAt > 0 && restoreAt > enableAt) {
                     alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, restoreAt, restorePi);
                 }
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            } else if (canExact && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 alarmManager.setExact(AlarmManager.RTC_WAKEUP, enableAt, enablePi);
                 if (restoreAt > 0 && restoreAt > enableAt) {
                     alarmManager.setExact(AlarmManager.RTC_WAKEUP, restoreAt, restorePi);
                 }
             } else {
-                alarmManager.set(AlarmManager.RTC_WAKEUP, enableAt, enablePi);
+                // Inexact fallback — may be batched by system but still fires
+                alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, enableAt, enablePi);
                 if (restoreAt > 0 && restoreAt > enableAt) {
-                    alarmManager.set(AlarmManager.RTC_WAKEUP, restoreAt, restorePi);
+                    alarmManager.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, restoreAt, restorePi);
                 }
             }
 
@@ -220,18 +231,36 @@ public class RingerModeModule extends ReactContextBaseJavaModule {
 
 const MOSQUE_MODE_RECEIVER_JAVA = `package com.talukders.sukoon;
 
+import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.media.AudioManager;
+import android.os.Build;
+import android.util.Log;
 
 public class MosqueModeReceiver extends BroadcastReceiver {
+    private static final String TAG = "MosqueModeReceiver";
+
     @Override
     public void onReceive(Context context, Intent intent) {
+        if (context == null || intent == null) return;
+
         try {
-            if (context == null || intent == null) return;
+            // Check DND permission on Android 6+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                NotificationManager nm = (NotificationManager)
+                    context.getSystemService(Context.NOTIFICATION_SERVICE);
+                if (nm != null && !nm.isNotificationPolicyAccessGranted()) {
+                    Log.w(TAG, "DND policy access not granted, cannot change ringer mode");
+                    return;
+                }
+            }
 
             String mode = intent.getStringExtra("mode");
+            String action = intent.getAction();
+            Log.d(TAG, "Received action=" + action + " mode=" + mode);
+
             int ringerMode = AudioManager.RINGER_MODE_NORMAL;
             if (mode != null) {
                 switch (mode) {
@@ -251,8 +280,12 @@ public class MosqueModeReceiver extends BroadcastReceiver {
             AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
             if (audioManager != null) {
                 audioManager.setRingerMode(ringerMode);
+                Log.d(TAG, "Ringer mode set to " + mode);
             }
-        } catch (Exception ignored) {
+        } catch (SecurityException se) {
+            Log.e(TAG, "SecurityException - missing DND permission: " + se.getMessage());
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to set ringer mode: " + e.getMessage());
         }
     }
 }
@@ -315,6 +348,34 @@ const withRingerModePermission = (config) => {
       permissions.push({
         $: {
           'android:name': 'android.permission.ACCESS_NOTIFICATION_POLICY',
+        },
+      });
+    }
+
+    // Add SCHEDULE_EXACT_ALARM permission for Android 12+ (API 31+)
+    const hasExactAlarmPermission = permissions.some(
+      (permission) =>
+        permission.$['android:name'] === 'android.permission.SCHEDULE_EXACT_ALARM'
+    );
+
+    if (!hasExactAlarmPermission) {
+      permissions.push({
+        $: {
+          'android:name': 'android.permission.SCHEDULE_EXACT_ALARM',
+        },
+      });
+    }
+
+    // Add USE_EXACT_ALARM permission for Android 13+ (API 33+)
+    const hasUseExactAlarmPermission = permissions.some(
+      (permission) =>
+        permission.$['android:name'] === 'android.permission.USE_EXACT_ALARM'
+    );
+
+    if (!hasUseExactAlarmPermission) {
+      permissions.push({
+        $: {
+          'android:name': 'android.permission.USE_EXACT_ALARM',
         },
       });
     }

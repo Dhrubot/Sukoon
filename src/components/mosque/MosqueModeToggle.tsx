@@ -60,17 +60,19 @@ export const MosqueModeToggle: React.FC = () => {
         if (!canModify) {
           Alert.alert(
             '🛑 Permission Required',
-            'To auto-silence your phone at iqamah time, Sukoon needs Do Not Disturb access.\n\nOpen settings to grant access?',
+            'To auto-silence your phone at iqamah time, Sukoon needs Do Not Disturb access.\n\nGrant access and then enable Mosque Mode again.',
             [
               { text: 'Not Now', style: 'cancel' },
               {
-                text: 'Open Settings',
+                text: 'Grant Access',
                 onPress: async () => {
                   await RingerControlService.openNotificationPolicyAccessSettings();
                 },
               },
             ]
           );
+          // Don't enable mosque mode without permission
+          return;
         }
       }
 
@@ -81,8 +83,8 @@ export const MosqueModeToggle: React.FC = () => {
       Alert.alert(
         '🕌 Mosque Mode Enabled',
         Platform.OS === 'android'
-          ? 'Your phone will automatically go silent at iqamah time for each prayer (if Do Not Disturb access is granted).'
-          : 'You will receive a reminder notification at iqamah time. Tap it to run the Shortcut and enable Do Not Disturb.',
+          ? 'Your phone will automatically go silent at iqamah time for each prayer.'
+          : 'You will receive a reminder before each iqamah to silence your phone.',
         Platform.OS === 'android'
           ? [
               { text: 'Great!' },
