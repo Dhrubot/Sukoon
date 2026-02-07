@@ -1,7 +1,8 @@
 import { Linking, Platform } from 'react-native';
 import * as InAppPurchases from 'react-native-iap';
-import StorageService from './StorageService';
-import { SubscriptionPlan, PremiumFeatures } from '../types';
+import StorageService from '../StorageService';
+import { SubscriptionPlan, PremiumFeatures } from '../../types';
+import logger from '../../utils/logger';
 
 const PRODUCTS = {
   MONTHLY: Platform.select({
@@ -28,7 +29,7 @@ class SubscriptionService {
     try {
       // Initialize IAP
       const result = await InAppPurchases.initConnection();
-      console.log('IAP initialized:', result);
+      logger.log('IAP initialized:', result);
 
       // Get products
       await this.loadProducts();
@@ -41,7 +42,7 @@ class SubscriptionService {
 
       return true;
     } catch (error) {
-      console.error('Failed to initialize IAP:', error);
+      logger.error('Failed to initialize IAP:', error);
       return false;
     }
   }
@@ -52,16 +53,16 @@ class SubscriptionService {
         skus: Object.values(PRODUCTS),
       });
       this.products = products;
-      console.log('Products loaded:', products);
+      logger.log('Products loaded:', products);
     } catch (error) {
-      console.error('Failed to load products:', error);
+      logger.error('Failed to load products:', error);
     }
   }
 
   private setupPurchaseListeners() {
     this.purchaseUpdateSubscription = InAppPurchases.purchaseUpdatedListener(
       async (purchase) => {
-        console.log('Purchase updated:', purchase);
+        logger.log('Purchase updated:', purchase);
         const receipt = purchase.transactionReceipt;
         
         if (receipt) {
@@ -79,7 +80,7 @@ class SubscriptionService {
 
     this.purchaseErrorSubscription = InAppPurchases.purchaseErrorListener(
       (error) => {
-        console.error('Purchase error:', error);
+        logger.error('Purchase error:', error);
       }
     );
   }
@@ -151,9 +152,9 @@ class SubscriptionService {
       return purchase;
     } catch (error: any) {
       if (error.code === 'E_USER_CANCELLED') {
-        console.log('User cancelled purchase');
+        logger.log('User cancelled purchase');
       } else {
-        console.error('Purchase error:', error);
+        logger.error('Purchase error:', error);
       }
       throw error;
     }
@@ -172,7 +173,7 @@ class SubscriptionService {
         }
       }
     } catch (error) {
-      console.error('Failed to restore purchases:', error);
+      logger.error('Failed to restore purchases:', error);
     }
   }
 

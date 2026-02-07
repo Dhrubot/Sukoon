@@ -1,7 +1,7 @@
 import { Platform, Linking } from 'react-native';
 import * as InAppPurchases from 'react-native-iap';
-import StorageService from './StorageService';
-import { Donation } from '../types';
+import StorageService from '../StorageService';
+import { Donation } from '../../types';
 
 // Donation product IDs
 const DONATION_PRODUCTS = {

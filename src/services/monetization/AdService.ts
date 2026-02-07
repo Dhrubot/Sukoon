@@ -8,7 +8,7 @@ import {
   MobileAds,
   MaxAdContentRating,
 } from 'react-native-google-mobile-ads';
-import StorageService from './StorageService';
+import StorageService from '../StorageService';
 
 // Ad Unit IDs (use test IDs for development)
 const AD_UNITS = {
