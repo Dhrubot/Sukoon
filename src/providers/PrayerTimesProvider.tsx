@@ -13,6 +13,7 @@ interface PrayerTimesContextType {
   isLoading: boolean;
   error: string | null;
   hasValidLocation: boolean;
+  isOffline: boolean;
   refreshPrayerTimes: () => Promise<void>;
 }
 
@@ -22,6 +23,7 @@ const PrayerTimesContext = createContext<PrayerTimesContextType>({
   isLoading: false,
   error: null,
   hasValidLocation: false,
+  isOffline: false,
   refreshPrayerTimes: async () => {},
 });
 
@@ -45,6 +47,7 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tomorrowFajr, setTomorrowFajr] = useState<PrayerTime | null>(null);
+  const [isOffline, setIsOffline] = useState(false);
 
   const adjustmentsKey = useMemo(() => {
     return JSON.stringify(userSettings?.adjustments ?? {});
@@ -122,6 +125,7 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
       const nextPrayer = calculateNextPrayer(todayResult.prayerTimes, tomorrowFajrPrayer);
       setNextPrayer(nextPrayer);
 
+      setIsOffline(PrayerTimeService.lastFetchWasFallback);
       logger.log('✅ Prayer times loaded successfully');
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load prayer times';
@@ -161,6 +165,7 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
     isLoading,
     error,
     hasValidLocation,
+    isOffline,
     refreshPrayerTimes,
   };
 

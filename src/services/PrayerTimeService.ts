@@ -36,6 +36,11 @@ export class PrayerTimeService {
   private static instance: PrayerTimeService;
   private cachedTimes: Map<string, PrayerTimes> = new Map();
   private cachedLocations: Map<string, Coordinates> = new Map();
+  private _lastFetchWasFallback: boolean = false;
+
+  get lastFetchWasFallback(): boolean {
+    return this._lastFetchWasFallback;
+  }
 
   static getInstance(): PrayerTimeService {
     if (!PrayerTimeService.instance) {
@@ -128,6 +133,7 @@ export class PrayerTimeService {
           );
         }
 
+        this._lastFetchWasFallback = false;
         this.cachedTimes.set(cacheKey, times);
         this.evictCacheIfNeeded();
 
@@ -153,6 +159,7 @@ export class PrayerTimeService {
     } catch (error) {
       logger.error("Error fetching prayer times:", error);
       // Return calculated times as fallback
+      this._lastFetchWasFallback = true;
       return this.calculatePrayerTimes(coordinates, date, method);
     }
   }

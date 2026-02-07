@@ -49,6 +49,7 @@ const HomeScreen = ({ navigation }: any) => {
     nextPrayer, 
     isLoading: prayerTimesLoading, 
     hasValidLocation, 
+    isOffline,
     error: prayerTimesError,
     refreshPrayerTimes 
   } = usePrayerTimes();
@@ -247,6 +248,15 @@ const HomeScreen = ({ navigation }: any) => {
             />
           )}
 
+          {/* Offline Banner */}
+          {isOffline && (
+            <View style={styles.offlineBanner}>
+              <Text style={styles.offlineBannerText}>
+                ✈️ Offline — times are estimated
+              </Text>
+            </View>
+          )}
+
           {/* Today's Prayer Times */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Today's Prayers</Text>
@@ -422,6 +432,22 @@ const styles = StyleSheet.create({
     fontSize: 15,          // theme.typography.fontSize.base
     fontWeight: '600',     // theme.typography.fontWeight.semibold
     color: '#FFFFFF',
+  },
+  offlineBanner: {
+    backgroundColor: 'rgba(255, 152, 0, 0.15)',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginHorizontal: 20,
+    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 152, 0, 0.3)',
+    alignItems: 'center',
+  },
+  offlineBannerText: {
+    fontSize: 13,
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontWeight: '500',
   },
 });
 
