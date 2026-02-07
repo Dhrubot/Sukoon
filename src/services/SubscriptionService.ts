@@ -5,16 +5,16 @@ import { SubscriptionPlan, PremiumFeatures } from '../types';
 
 const PRODUCTS = {
   MONTHLY: Platform.select({
-    ios: 'com.prayerbuddy.premium.monthly',
-    android: 'com.prayerbuddy.premium.monthly',
+    ios: 'com.talukders.sukoon.premium.monthly',
+    android: 'com.talukders.sukoon.premium.monthly',
   }) as string,
   YEARLY: Platform.select({
-    ios: 'com.prayerbuddy.premium.yearly',
-    android: 'com.prayerbuddy.premium.yearly',
+    ios: 'com.talukders.sukoon.premium.yearly',
+    android: 'com.talukders.sukoon.premium.yearly',
   }) as string,
   LIFETIME: Platform.select({
-    ios: 'com.prayerbuddy.premium.lifetime',
-    android: 'com.prayerbuddy.premium.lifetime',
+    ios: 'com.talukders.sukoon.premium.lifetime',
+    android: 'com.talukders.sukoon.premium.lifetime',
   }) as string,
 };
 
