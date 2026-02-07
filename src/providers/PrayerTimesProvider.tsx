@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 import { useStore } from '../store/useStore';
 import PrayerTimeService from '../services/PrayerTimeService';
 import { PrayerTime, Location } from '../types';
+import { isValidCoordinates } from '../utils/locationValidation';
 
 interface PrayerTimesContextType {
   todayPrayerTimes: PrayerTime[];
@@ -48,18 +49,7 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
     return JSON.stringify(userSettings?.adjustments ?? {});
   }, [userSettings?.adjustments]);
 
-  // Centralized location validation
-  const isValidLocation = (loc: Location | null): loc is Location => {
-    if (!loc) return false;
-    if (typeof loc.latitude !== 'number' || typeof loc.longitude !== 'number') return false;
-    if (Number.isNaN(loc.latitude) || Number.isNaN(loc.longitude)) return false;
-    if (loc.latitude === 0 && loc.longitude === 0) return false;
-    if (loc.latitude < -90 || loc.latitude > 90) return false;
-    if (loc.longitude < -180 || loc.longitude > 180) return false;
-    return true;
-  };
-
-  const hasValidLocation = isValidLocation(location);
+  const hasValidLocation = isValidCoordinates(location);
 
   // Centralized prayer times loading
   // Enhanced next prayer calculation with tomorrow's Fajr

@@ -15,6 +15,7 @@ import {
   CalculationMethod,
   AladhanResponse,
 } from "../types";
+import { isValidCoordinates } from "../utils/locationValidation";
 
 const ALADHAN_API_BASE = "https://api.aladhan.com/v1";
 
@@ -64,7 +65,7 @@ export class PrayerTimeService {
     asrJuristic: "Standard" | "Hanafi" = "Standard"
   ): Promise<PrayerTimes> {
     // Use central validation
-    if (!PrayerTimeService.isValidCoordinates(coordinates)) {
+    if (!isValidCoordinates(coordinates)) {
       console.log("🛑 fetchPrayerTimes: Invalid coordinates, using fallback");
       return this.calculatePrayerTimes(
         coordinates || { latitude: 0, longitude: 0 },
@@ -166,7 +167,7 @@ export class PrayerTimeService {
     asrJuristic: "Standard" | "Hanafi" = "Standard"
   ): Promise<{ prayerTimes: PrayerTime[]; sunrise: Date; sunset: Date }> {
     // CENTRAL GUARD - Stop invalid calls immediately
-    if (!PrayerTimeService.isValidCoordinates(coordinates)) {
+    if (!isValidCoordinates(coordinates)) {
       console.log(
         "🛑 BLOCKED: Invalid coordinates, returning empty prayer times"
       );
@@ -699,47 +700,7 @@ export class PrayerTimeService {
     return coords || null;
   }
 
-  // Central validation method
-  private static isValidCoordinates(
-    coordinates: any
-  ): coordinates is Coordinates {
-    if (!coordinates) {
-      console.log("❌ Coordinate validation: null/undefined");
-      return false;
-    }
-    if (typeof coordinates !== "object") {
-      console.log("❌ Coordinate validation: not an object");
-      return false;
-    }
-    if (!("latitude" in coordinates) || !("longitude" in coordinates)) {
-      console.log("❌ Coordinate validation: missing lat/lng properties");
-      return false;
-    }
-    if (
-      typeof coordinates.latitude !== "number" ||
-      typeof coordinates.longitude !== "number"
-    ) {
-      console.log("❌ Coordinate validation: lat/lng not numbers");
-      return false;
-    }
-    if (isNaN(coordinates.latitude) || isNaN(coordinates.longitude)) {
-      console.log("❌ Coordinate validation: lat/lng are NaN");
-      return false;
-    }
-    if (coordinates.latitude === 0 && coordinates.longitude === 0) {
-      console.log("❌ Coordinate validation: 0,0 coordinates");
-      return false;
-    }
-    if (coordinates.latitude < -90 || coordinates.latitude > 90) {
-      console.log("❌ Coordinate validation: invalid latitude range");
-      return false;
-    }
-    if (coordinates.longitude < -180 || coordinates.longitude > 180) {
-      console.log("❌ Coordinate validation: invalid longitude range");
-      return false;
-    }
-    return true;
-  }
+  // Validation delegated to shared utils/locationValidation.ts
 }
 
 export default PrayerTimeService.getInstance();

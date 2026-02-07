@@ -8,6 +8,7 @@ import { useStore } from "../store/useStore";
 import { Location as LocationType } from "../types";
 import { usePrayerTimeRefresh } from "./usePrayerTimeRefresh";
 import { initializeEncryptionKey } from "../utils/secureKeyManager";
+import { isValidCoordinates } from "../utils/locationValidation";
 
 interface AppInitializationState {
   isLoading: boolean;
@@ -55,8 +56,7 @@ export const useAppInitialization = () => {
       setCurrentStreak(StorageService.getCurrentStreak());
 
       // ONLY SET LOCATION IF IT'S ACTUALLY VALID
-      const isValidLocation =
-        settings.location.latitude !== 0 || settings.location.longitude !== 0;
+      const isValidLocation = isValidCoordinates(settings.location);
 
       if (isValidLocation) {
         console.log("📍 Setting valid location in store");
@@ -70,13 +70,7 @@ export const useAppInitialization = () => {
       await NotificationService.initialize();
 
       // Check if prayer times need refreshing
-      if (
-        typeof settings.location.latitude === 'number' &&
-        typeof settings.location.longitude === 'number' &&
-        !Number.isNaN(settings.location.latitude) &&
-        !Number.isNaN(settings.location.longitude) &&
-        (settings.location.latitude !== 0 || settings.location.longitude !== 0)
-      ) {
+      if (isValidCoordinates(settings.location)) {
         const needsRefresh = await shouldRefreshPrayerTimes(
           settings.location,
           settings.calculationMethod
@@ -99,12 +93,7 @@ export const useAppInitialization = () => {
       }
 
       // If no location is set, show location modal
-      const needsLocation =
-        typeof settings.location.latitude !== 'number' ||
-        typeof settings.location.longitude !== 'number' ||
-        Number.isNaN(settings.location.latitude) ||
-        Number.isNaN(settings.location.longitude) ||
-        (settings.location.latitude === 0 && settings.location.longitude === 0);
+      const needsLocation = !isValidCoordinates(settings.location);
 
       setState({
         isLoading: false,
