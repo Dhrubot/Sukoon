@@ -57,8 +57,18 @@ const AchievementsScreen: React.FC = () => {
       // Check for new achievements
       const newlyUnlocked = await AchievementService.checkAchievements();
       if (newlyUnlocked.length > 0) {
-        // Reload to show newly unlocked
-        loadAchievements();
+        // Re-read updated achievements and merge (no recursive call)
+        const refreshed = StorageService.getAchievements();
+        setAchievements(refreshed);
+        const refreshedMerged = definitions.map(def => {
+          const u = refreshed.find(a => a.id === def.id);
+          return {
+            ...def,
+            unlockedAt: u?.unlockedAt,
+            progress: u?.progress || 0,
+          };
+        });
+        setAllAchievements(refreshedMerged);
       }
     } catch (error) {
       console.error('Error loading achievements:', error);

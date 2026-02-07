@@ -65,11 +65,27 @@ export const useStore = create<AppState>((set) => ({
   userSettings: null,
   setUserSettings: (settings) => set({ userSettings: settings }),
   updateUserSettings: (updates) => 
-    set((state) => ({
-      userSettings: state.userSettings 
-        ? { ...state.userSettings, ...updates }
-        : null
-    })),
+    set((state) => {
+      if (!state.userSettings) return { userSettings: null };
+      const current = state.userSettings;
+      const updated = { ...current } as any;
+      for (const key of Object.keys(updates) as Array<keyof typeof updates>) {
+        const val = updates[key];
+        if (
+          val !== null &&
+          val !== undefined &&
+          typeof val === 'object' &&
+          !Array.isArray(val) &&
+          typeof (current as any)[key] === 'object' &&
+          (current as any)[key] !== null
+        ) {
+          updated[key] = { ...(current as any)[key], ...val };
+        } else {
+          updated[key] = val;
+        }
+      }
+      return { userSettings: updated };
+    }),
   
   // Location
   location: null,

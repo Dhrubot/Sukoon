@@ -42,8 +42,28 @@ class StorageService {
 
   updateUserSettings(updates: Partial<UserSettings>): void {
     const current = this.getUserSettings();
-    const updated = { ...current, ...updates };
-    this.setUserSettings(updated as UserSettings);
+    if (!current) {
+      this.setUserSettings(updates as UserSettings);
+      return;
+    }
+    // Deep merge nested objects to avoid overwriting sibling keys
+    const updated: UserSettings = { ...current };
+    for (const key of Object.keys(updates) as Array<keyof UserSettings>) {
+      const val = updates[key];
+      if (
+        val !== null &&
+        val !== undefined &&
+        typeof val === 'object' &&
+        !Array.isArray(val) &&
+        typeof (current as any)[key] === 'object' &&
+        (current as any)[key] !== null
+      ) {
+        (updated as any)[key] = { ...(current as any)[key], ...val };
+      } else {
+        (updated as any)[key] = val;
+      }
+    }
+    this.setUserSettings(updated);
   }
 
   // Default settings for new users

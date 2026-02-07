@@ -208,15 +208,7 @@ export interface PrayerReminderState {
   createdAt: Date;
 }
 
-// Stats types
-export interface DailyStats {
-  date: string; // YYYY-MM-DD
-  prayersCompleted: number;
-  totalPrayers: number;
-  mindfulnessSessions: number;
-  averageFocusScore: number;
-  screenTimeBeforePrayer?: number; // Android only
-}
+// Stats types — see full DailyStats definition below (with digital wellness fields)
 
 export interface Achievement {
   id: string;

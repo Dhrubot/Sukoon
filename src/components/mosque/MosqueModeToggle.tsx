@@ -10,7 +10,6 @@ import {
 } from 'react-native';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useMosqueMode } from '../../hooks/useMosqueMode';
-import IOSRingerControlService from '../../services/RingerControlService.ios';
 import RingerControlService from '../../services/RingerControlService';
 import MosqueModeService from '../../services/MosqueModeService';
 
@@ -24,37 +23,6 @@ export const MosqueModeToggle: React.FC = () => {
 
     if (value) {
       // Enabling mosque mode
-      if (Platform.OS === 'ios') {
-        // Check if iOS setup is complete
-        const hasSetup = IOSRingerControlService.hasCompletedSetup();
-        if (!hasSetup) {
-          // Guide user through setup
-          Alert.alert(
-            '🕌 Setup Required',
-            'Mosque Mode on iPhone requires a one-time setup using the Shortcuts app.\n\nWould you like to set it up now?',
-            [
-              {
-                text: 'Not Now',
-                style: 'cancel',
-              },
-              {
-                text: 'Setup Now',
-                onPress: async () => {
-                  setIsLoading(true);
-                  const success = await IOSRingerControlService.guideShortcutSetup();
-                  setIsLoading(false);
-                  
-                  if (success) {
-                    await enableMosqueMode(true);
-                  }
-                },
-              },
-            ]
-          );
-          return;
-        }
-      }
-
       if (Platform.OS === 'android') {
         const canModify = await RingerControlService.canModify();
         if (!canModify) {

@@ -28,6 +28,8 @@ const CALCULATION_METHOD_MAP: Record<CalculationMethod, number> = {
   Jafari: 0,
 };
 
+const MAX_CACHE_SIZE = 30;
+
 export class PrayerTimeService {
   private static instance: PrayerTimeService;
   private cachedTimes: Map<string, PrayerTimes> = new Map();
@@ -38,6 +40,18 @@ export class PrayerTimeService {
       PrayerTimeService.instance = new PrayerTimeService();
     }
     return PrayerTimeService.instance;
+  }
+
+  private evictCacheIfNeeded(): void {
+    if (this.cachedTimes.size > MAX_CACHE_SIZE) {
+      const keysToDelete = Array.from(this.cachedTimes.keys()).slice(
+        0,
+        this.cachedTimes.size - MAX_CACHE_SIZE
+      );
+      for (const key of keysToDelete) {
+        this.cachedTimes.delete(key);
+      }
+    }
   }
 
   /**
@@ -113,6 +127,7 @@ export class PrayerTimeService {
         }
 
         this.cachedTimes.set(cacheKey, times);
+        this.evictCacheIfNeeded();
 
         // Cache for tomorrow as well if it's after Asr
         const now = new Date();

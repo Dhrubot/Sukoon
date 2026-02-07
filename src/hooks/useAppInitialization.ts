@@ -24,7 +24,7 @@ export const useAppInitialization = () => {
     error: null,
   });
 
-  const { setUserSettings, setLocation } = useStore();
+  const { setUserSettings, setLocation, setCurrentStreak } = useStore();
   const { shouldRefreshPrayerTimes } = usePrayerTimeRefresh();
 
   useEffect(() => {
@@ -49,6 +49,10 @@ export const useAppInitialization = () => {
       }
 
       setUserSettings(settings);
+
+      // Check and update streak on every boot (breaks streak if yesterday was missed)
+      StorageService.updateStreak();
+      setCurrentStreak(StorageService.getCurrentStreak());
 
       // ONLY SET LOCATION IF IT'S ACTUALLY VALID
       const isValidLocation =
