@@ -9,9 +9,11 @@ import {
   Platform,
   Linking,
   Dimensions,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
+import { Magnetometer, Accelerometer } from 'expo-sensors';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useIsFocused } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
@@ -133,6 +135,12 @@ const QiblaFinderScreen: React.FC = () => {
   // Ref to track calibration status and avoid unnecessary setState calls
   const calibrationStatusRef = useRef<'good' | 'fair' | 'poor'>('good');
 
+  // Sensor refs for tilt-compensated compass
+  const magSubscription = useRef<ReturnType<typeof Magnetometer.addListener> | null>(null);
+  const accelSubscription = useRef<ReturnType<typeof Accelerometer.addListener> | null>(null);
+  const latestMag = useRef({ x: 0, y: 0, z: 0 });
+  const latestAccel = useRef({ x: 0, y: 0, z: 0 });
+
   const openAppSettings = () => {
     if (Platform.OS === 'ios') {
       Linking.openURL('app-settings:');
@@ -145,6 +153,14 @@ const QiblaFinderScreen: React.FC = () => {
     if (headingSubscription.current) {
       headingSubscription.current.remove();
       headingSubscription.current = null;
+    }
+    if (magSubscription.current) {
+      magSubscription.current.remove();
+      magSubscription.current = null;
+    }
+    if (accelSubscription.current) {
+      accelSubscription.current.remove();
+      accelSubscription.current = null;
     }
   }, []);
 
@@ -209,7 +225,85 @@ const QiblaFinderScreen: React.FC = () => {
     [rotateAnim, alignGlowAnim, alignPulseAnim]
   );
 
-  // Phase 2 & 3: Adaptive smoothing and throttling
+  /**
+   * Tilt-compensated heading from raw magnetometer + accelerometer.
+   * Works in any phone orientation (held upright, tilted, or flat).
+   */
+  const computeTiltCompensatedHeading = useCallback(
+    (mag: { x: number; y: number; z: number }, accel: { x: number; y: number; z: number }): number => {
+      const { x: ax, y: ay, z: az } = accel;
+      const { x: mx, y: my, z: mz } = mag;
+
+      // Normalize accelerometer
+      const aNorm = Math.sqrt(ax * ax + ay * ay + az * az) || 1;
+      const nax = ax / aNorm;
+      const nay = ay / aNorm;
+      const naz = az / aNorm;
+
+      // East = Mag x Gravity (cross product)
+      const ex = my * naz - mz * nay;
+      const ey = mz * nax - mx * naz;
+      const ez = mx * nay - my * nax;
+
+      // Normalize East
+      const eNorm = Math.sqrt(ex * ex + ey * ey + ez * ez) || 1;
+      const nex = ex / eNorm;
+      const ney = ey / eNorm;
+
+      // North = Gravity x East (cross product)
+      const nx = nay * ez - naz * ey;
+      const ny = naz * ex - nax * ez;
+
+      // Heading = atan2(East.y, North.y) gives compass bearing
+      let heading = Math.atan2(nex, nx) * (180 / Math.PI);
+
+      // On iOS the sensor axes are different — adjust
+      if (Platform.OS === 'ios') {
+        heading = -heading;
+      }
+
+      return normalizeAngle(heading);
+    },
+    []
+  );
+
+  // Process a new heading sample with smoothing + throttling
+  const processHeading = useCallback(
+    (rawHeading: number) => {
+      const now = Date.now();
+      const timeDelta = now - lastHeadingTimeRef.current;
+
+      if (lastHeadingTimeRef.current > 0 && timeDelta > 0) {
+        const angleDelta = Math.abs(shortestAngleDelta(lastHeadingRef.current, rawHeading));
+        velocityRef.current = (angleDelta / timeDelta) * 1000;
+      }
+      lastHeadingRef.current = rawHeading;
+      lastHeadingTimeRef.current = now;
+
+      const isMovingFast = velocityRef.current > CONFIG.VELOCITY_THRESHOLD;
+      const updateInterval = isMovingFast
+        ? CONFIG.UPDATE_INTERVAL_MOVING
+        : CONFIG.UPDATE_INTERVAL_STABLE;
+
+      if (now - lastUpdateMsRef.current < updateInterval) return;
+      lastUpdateMsRef.current = now;
+
+      const smoothAlpha = isMovingFast
+        ? CONFIG.SMOOTH_ALPHA_MOVING
+        : CONFIG.SMOOTH_ALPHA_STABLE;
+
+      const prev = smoothedHeadingRef.current;
+      const next = prev == null ? rawHeading : smoothAngle(prev, rawHeading, smoothAlpha);
+
+      if (prev != null && Math.abs(shortestAngleDelta(prev, next)) < CONFIG.DEAD_ZONE) return;
+
+      smoothedHeadingRef.current = next;
+      updateNeedle(next);
+    },
+    [updateNeedle]
+  );
+
+  // Phase 2 & 3: Start heading — try tilt-compensated sensors first, fall back to Location heading
   const startHeading = useCallback(async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -219,64 +313,57 @@ const QiblaFinderScreen: React.FC = () => {
         return;
       }
 
-      if (headingSubscription.current) return;
+      if (headingSubscription.current || magSubscription.current) return;
 
-      headingSubscription.current = await Location.watchHeadingAsync((newHeading) => {
-        const rawHeading = newHeading.trueHeading >= 0 ? newHeading.trueHeading : newHeading.magHeading;
-        const accuracy = newHeading.accuracy;
+      // Try tilt-compensated approach first (Magnetometer + Accelerometer)
+      const magAvailable = await Magnetometer.isAvailableAsync();
+      const accelAvailable = await Accelerometer.isAvailableAsync();
 
-        // Update calibration status only when it actually changes (avoids unnecessary re-renders)
-        if (accuracy !== undefined && accuracy >= 0) {
-          const newStatus: 'good' | 'fair' | 'poor' =
-            accuracy <= CONFIG.ACCURACY_GOOD ? 'good' :
-            accuracy <= CONFIG.ACCURACY_FAIR ? 'fair' : 'poor';
-          if (newStatus !== calibrationStatusRef.current) {
-            calibrationStatusRef.current = newStatus;
-            setCalibrationStatus(newStatus);
+      if (magAvailable && accelAvailable) {
+        Magnetometer.setUpdateInterval(CONFIG.UPDATE_INTERVAL_MOVING);
+        Accelerometer.setUpdateInterval(CONFIG.UPDATE_INTERVAL_MOVING);
+
+        accelSubscription.current = Accelerometer.addListener((data) => {
+          latestAccel.current = data;
+        });
+
+        magSubscription.current = Magnetometer.addListener((data) => {
+          latestMag.current = data;
+          const heading = computeTiltCompensatedHeading(data, latestAccel.current);
+          processHeading(heading);
+        });
+
+        // Sensors don't give accuracy, assume good when available
+        if (calibrationStatusRef.current !== 'good') {
+          calibrationStatusRef.current = 'good';
+          setCalibrationStatus('good');
+        }
+      } else {
+        // Fallback: expo-location heading (requires phone flat)
+        headingSubscription.current = await Location.watchHeadingAsync((newHeading) => {
+          const rawHeading = newHeading.trueHeading >= 0 ? newHeading.trueHeading : newHeading.magHeading;
+          const accuracy = newHeading.accuracy;
+
+          if (accuracy !== undefined && accuracy >= 0) {
+            const newStatus: 'good' | 'fair' | 'poor' =
+              accuracy <= CONFIG.ACCURACY_GOOD ? 'good' :
+              accuracy <= CONFIG.ACCURACY_FAIR ? 'fair' : 'poor';
+            if (newStatus !== calibrationStatusRef.current) {
+              calibrationStatusRef.current = newStatus;
+              setCalibrationStatus(newStatus);
+            }
           }
-        }
 
-        const now = Date.now();
-        const timeDelta = now - lastHeadingTimeRef.current;
-
-        // Phase 2: Calculate velocity for adaptive smoothing
-        if (lastHeadingTimeRef.current > 0 && timeDelta > 0) {
-          const angleDelta = Math.abs(shortestAngleDelta(lastHeadingRef.current, rawHeading));
-          velocityRef.current = (angleDelta / timeDelta) * 1000; // deg/sec
-        }
-        lastHeadingRef.current = rawHeading;
-        lastHeadingTimeRef.current = now;
-
-        // Phase 3: Adaptive throttling based on movement
-        const isMovingFast = velocityRef.current > CONFIG.VELOCITY_THRESHOLD;
-        const updateInterval = isMovingFast
-          ? CONFIG.UPDATE_INTERVAL_MOVING
-          : CONFIG.UPDATE_INTERVAL_STABLE;
-
-        if (now - lastUpdateMsRef.current < updateInterval) return;
-        lastUpdateMsRef.current = now;
-
-        // Phase 2: Adaptive smoothing - less smoothing when moving fast for responsiveness
-        const smoothAlpha = isMovingFast
-          ? CONFIG.SMOOTH_ALPHA_MOVING
-          : CONFIG.SMOOTH_ALPHA_STABLE;
-
-        const prev = smoothedHeadingRef.current;
-        const next = prev == null ? rawHeading : smoothAngle(prev, rawHeading, smoothAlpha);
-
-        // Phase 2: Dead-zone filter - ignore tiny changes
-        if (prev != null && Math.abs(shortestAngleDelta(prev, next)) < CONFIG.DEAD_ZONE) return;
-
-        smoothedHeadingRef.current = next;
-        updateNeedle(next);
-      });
+          processHeading(rawHeading);
+        });
+      }
 
       setIsLoading(false);
     } catch {
       setError('Unable to get location or compass data. Please check settings.');
       setIsLoading(false);
     }
-  }, [updateNeedle]);
+  }, [computeTiltCompensatedHeading, processHeading]);
 
   const resolveLocation = useCallback(async () => {
     try {
@@ -440,6 +527,11 @@ const QiblaFinderScreen: React.FC = () => {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]} edges={['top']}>
       <View style={styles.header}>
         <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>Qibla Finder</Text>
+        {distanceText && (
+          <Text style={[styles.headerDistance, { color: theme.colors.text.secondary }]}>
+            🕋 {distanceText} to Kaaba
+          </Text>
+        )}
       </View>
 
       {/* Phase 4: Calibration warning banner */}
@@ -451,155 +543,141 @@ const QiblaFinderScreen: React.FC = () => {
         </View>
       )}
 
-      <View style={styles.compassContainer}>
-        {/* Kaaba icon with distance */}
-        <View style={styles.kaabaIconContainer}>
-          <Text style={styles.kaabaIcon}>🕋</Text>
-          <Text style={[styles.kaabaText, { color: theme.colors.text.secondary }]}>Kaaba</Text>
-          {distanceText && (
-            <Text style={[styles.distanceText, { color: theme.colors.text.muted }]}>
-              {distanceText} away
-            </Text>
-          )}
-        </View>
-
-        {/* Phase 4: Animated compass with glow effect */}
-        <Animated.View
-          style={[
-            styles.compassWrapper,
-            {
-              transform: [{ scale: alignPulseAnim }],
-            },
-          ]}
-        >
-          {/* Glow effect when aligned */}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
+        <View style={styles.compassContainer}>
+          {/* Phase 4: Animated compass with glow effect */}
           <Animated.View
             style={[
-              styles.compassGlow,
+              styles.compassWrapper,
               {
-                opacity: alignGlowAnim,
-                backgroundColor: theme.colors.primary.DEFAULT,
-                shadowColor: theme.colors.primary.DEFAULT,
-              },
-            ]}
-          />
-
-          <View
-            style={[
-              styles.compassCircle,
-              {
-                borderColor: isAligned ? theme.colors.primary.DEFAULT : theme.colors.border.primary,
-                borderWidth: isAligned ? 3 : 2,
+                transform: [{ scale: alignPulseAnim }],
               },
             ]}
           >
-            {/* Phase 4: Degree tick marks */}
-            {degreeMarks.map((mark) => (
-              <View
-                key={mark.angle}
-                style={[
-                  styles.tickMark,
-                  {
-                    width: mark.isCardinal ? 3 : 1,
-                    height: mark.isCardinal ? 12 : 8,
-                    backgroundColor: mark.isCardinal
-                      ? theme.colors.text.secondary
-                      : theme.colors.border.primary,
-                    transform: [
-                      { translateX: mark.x2 },
-                      { translateY: mark.y2 },
-                      { rotate: `${mark.angle}deg` },
-                    ],
-                  },
-                ]}
-              />
-            ))}
-
-            {/* Cardinal directions */}
-            <Text style={[styles.cardinal, styles.cardinalN, { color: theme.colors.text.primary, fontWeight: '700' }]}>
-              N
-            </Text>
-            <Text style={[styles.cardinal, styles.cardinalE, { color: theme.colors.text.muted }]}>E</Text>
-            <Text style={[styles.cardinal, styles.cardinalS, { color: theme.colors.text.muted }]}>S</Text>
-            <Text style={[styles.cardinal, styles.cardinalW, { color: theme.colors.text.muted }]}>W</Text>
-
-            {/* Animated needle */}
+            {/* Glow effect when aligned */}
             <Animated.View
               style={[
-                styles.needleContainer,
+                styles.compassGlow,
                 {
-                  transform: [
-                    {
-                      rotate: rotateAnim.interpolate({
-                        inputRange: [-360, 360],
-                        outputRange: ['-360deg', '360deg'],
-                      }),
-                    },
-                  ],
-                },
-              ]}
-            >
-              <View style={[styles.needle, { backgroundColor: theme.colors.primary.DEFAULT }]} />
-              <View style={[styles.needleBase, { backgroundColor: theme.colors.primary.light }]} />
-            </Animated.View>
-
-            {/* Center dot */}
-            <View
-              style={[
-                styles.centerDot,
-                {
-                  backgroundColor: isAligned ? theme.colors.primary.DEFAULT : theme.colors.text.muted,
+                  opacity: alignGlowAnim,
+                  backgroundColor: theme.colors.primary.DEFAULT,
+                  shadowColor: theme.colors.primary.DEFAULT,
                 },
               ]}
             />
-          </View>
-        </Animated.View>
 
-        {/* Direction info */}
-        <View style={styles.directionInfo}>
-          <Text style={[styles.directionLabel, { color: theme.colors.text.secondary }]}>
-            Qibla Direction
-          </Text>
-          <Text style={[styles.directionValue, { color: theme.colors.primary.DEFAULT }]}>
-            {Math.round(qiblaDirection)}°
-          </Text>
-          <View style={styles.turnHintContainer}>
-            {isAligned && <Text style={styles.alignedIcon}>✓</Text>}
-            <Text
+            <View
               style={[
-                styles.turnHint,
+                styles.compassCircle,
                 {
-                  color: isAligned ? theme.colors.primary.DEFAULT : theme.colors.text.secondary,
-                  fontWeight: isAligned ? '700' : '500',
+                  borderColor: isAligned ? theme.colors.primary.DEFAULT : theme.colors.border.primary,
+                  borderWidth: isAligned ? 3 : 2,
                 },
               ]}
             >
-              {turnText}
+              {/* Phase 4: Degree tick marks */}
+              {degreeMarks.map((mark) => (
+                <View
+                  key={mark.angle}
+                  style={[
+                    styles.tickMark,
+                    {
+                      width: mark.isCardinal ? 3 : 1,
+                      height: mark.isCardinal ? 12 : 8,
+                      backgroundColor: mark.isCardinal
+                        ? theme.colors.text.secondary
+                        : theme.colors.border.primary,
+                      transform: [
+                        { translateX: mark.x2 },
+                        { translateY: mark.y2 },
+                        { rotate: `${mark.angle}deg` },
+                      ],
+                    },
+                  ]}
+                />
+              ))}
+
+              {/* Cardinal directions */}
+              <Text style={[styles.cardinal, styles.cardinalN, { color: theme.colors.text.primary, fontWeight: '700' }]}>
+                N
+              </Text>
+              <Text style={[styles.cardinal, styles.cardinalE, { color: theme.colors.text.muted }]}>E</Text>
+              <Text style={[styles.cardinal, styles.cardinalS, { color: theme.colors.text.muted }]}>S</Text>
+              <Text style={[styles.cardinal, styles.cardinalW, { color: theme.colors.text.muted }]}>W</Text>
+
+              {/* Animated needle */}
+              <Animated.View
+                style={[
+                  styles.needleContainer,
+                  {
+                    transform: [
+                      {
+                        rotate: rotateAnim.interpolate({
+                          inputRange: [-360, 360],
+                          outputRange: ['-360deg', '360deg'],
+                        }),
+                      },
+                    ],
+                  },
+                ]}
+              >
+                <View style={[styles.needle, { backgroundColor: theme.colors.primary.DEFAULT }]} />
+                <View style={[styles.needleBase, { backgroundColor: theme.colors.primary.light }]} />
+              </Animated.View>
+
+              {/* Center dot */}
+              <View
+                style={[
+                  styles.centerDot,
+                  {
+                    backgroundColor: isAligned ? theme.colors.primary.DEFAULT : theme.colors.text.muted,
+                  },
+                ]}
+              />
+            </View>
+          </Animated.View>
+
+          {/* Direction info */}
+          <View style={styles.directionInfo}>
+            <Text style={[styles.directionLabel, { color: theme.colors.text.secondary }]}>
+              Qibla Direction
+            </Text>
+            <Text style={[styles.directionValue, { color: theme.colors.primary.DEFAULT }]}>
+              {Math.round(qiblaDirection)}°
+            </Text>
+            <View style={styles.turnHintContainer}>
+              {isAligned && <Text style={styles.alignedIcon}>✓</Text>}
+              <Text
+                style={[
+                  styles.turnHint,
+                  {
+                    color: isAligned ? theme.colors.primary.DEFAULT : theme.colors.text.secondary,
+                    fontWeight: isAligned ? '700' : '500',
+                  },
+                ]}
+              >
+                {turnText}
+              </Text>
+            </View>
+          </View>
+
+          {/* Instructions */}
+          <View
+            style={[
+              styles.instructions,
+              { backgroundColor: theme.colors.card.background, borderColor: theme.colors.border.primary },
+            ]}
+          >
+            <Text style={[styles.instructionText, { color: theme.colors.text.secondary }]}>
+              Point your phone in any direction and rotate slowly until the needle aligns
             </Text>
           </View>
         </View>
-
-        {/* Location coordinates */}
-        {location && (
-          <View style={styles.locationInfo}>
-            <Text style={[styles.locationText, { color: theme.colors.text.muted }]}>
-              📍 {location.latitude.toFixed(4)}°, {location.longitude.toFixed(4)}°
-            </Text>
-          </View>
-        )}
-
-        {/* Instructions */}
-        <View
-          style={[
-            styles.instructions,
-            { backgroundColor: theme.colors.card.background, borderColor: theme.colors.border.primary },
-          ]}
-        >
-          <Text style={[styles.instructionText, { color: theme.colors.text.secondary }]}>
-            Hold your phone flat and rotate slowly until aligned
-          </Text>
-        </View>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -615,6 +693,15 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 28,
     fontWeight: '700',
+  },
+  headerDistance: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginTop: 4,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 32,
   },
   content: {
     flex: 1,
@@ -660,19 +747,8 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 40,
-  },
-  kaabaIconContainer: {
-    alignItems: 'center',
-    marginBottom: 40,
-  },
-  kaabaIcon: {
-    fontSize: 48,
-    marginBottom: 8,
-  },
-  kaabaText: {
-    fontSize: 14,
-    fontWeight: '500',
+    paddingVertical: 32,
+    paddingHorizontal: 24,
   },
   compassCircle: {
     width: COMPASS_SIZE,
@@ -744,15 +820,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '600',
   },
-  locationInfo: {
-    marginTop: 16,
-  },
-  locationText: {
-    fontSize: 13,
-  },
   instructions: {
     marginTop: 32,
-    marginHorizontal: 32,
+    marginHorizontal: 0,
     padding: 16,
     borderRadius: 12,
     borderWidth: 1,

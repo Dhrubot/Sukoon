@@ -172,21 +172,21 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   changePrompt: {
-    fontSize: 14,  // md
-    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 14,
+    color: '#00C9A7',
     textAlign: 'center',
     marginTop: 8,
   },
   reflectionInput: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: 'rgba(255, 255, 255, 0.08)',
     borderRadius: 16,
     padding: 16,
-    fontSize: 16,  // lg
+    fontSize: 16,
     color: '#FFFFFF',
     minHeight: 120,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: 'rgba(0, 201, 167, 0.25)',
   },
   quickOptionsContainer: {
     marginTop: 20,
@@ -198,15 +198,15 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   quickOption: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(0, 201, 167, 0.08)',
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: 'rgba(0, 201, 167, 0.2)',
   },
   quickOptionText: {
-    fontSize: 14,  // md
+    fontSize: 14,
     color: 'rgba(255, 255, 255, 0.9)',
     textAlign: 'center',
   },
