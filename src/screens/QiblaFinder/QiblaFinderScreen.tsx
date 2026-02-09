@@ -463,9 +463,9 @@ const QiblaFinderScreen: React.FC = () => {
   const calibrationBanner = useMemo(() => {
     if (calibrationStatus === 'good') return null;
     if (calibrationStatus === 'fair') {
-      return { text: 'Compass accuracy is fair', color: '#F59E0B' };
+      return { text: 'Compass accuracy is fair', color: theme.colors.status.warning };
     }
-    return { text: 'Calibration needed - Move phone in figure 8', color: '#EF4444' };
+    return { text: 'Calibration needed - Move phone in figure 8', color: theme.colors.status.error };
   }, [calibrationStatus]);
 
   // Phase 4: Generate degree tick marks

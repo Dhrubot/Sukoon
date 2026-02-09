@@ -7,6 +7,8 @@ import {
   Animated,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 
 interface MoodSelectorProps {
   selectedMood: number;
@@ -25,6 +27,7 @@ const MoodSelector: React.FC<MoodSelectorProps> = ({
   selectedMood,
   onMoodSelect,
 }) => {
+  const styles = useThemedStyles(createStyles);
   const scaleAnims = moods.map(() => React.useRef(new Animated.Value(1)).current);
 
   const handleMoodPress = (mood: number, index: number) => {
@@ -106,14 +109,14 @@ const MoodSelector: React.FC<MoodSelectorProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     alignItems: 'center',
   },
   title: {
-    fontSize: 18,  // xl
-    fontWeight: '600',  // semibold
-    color: '#FFFFFF',
+    fontSize: 18,
+    fontWeight: '600',
+    color: theme.colors.mindfulness.textPrimary,
     textAlign: 'center',
     marginBottom: 24,
   },
@@ -130,41 +133,41 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: theme.colors.mindfulness.inputBg,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.15)',
+    borderColor: theme.colors.mindfulness.dotInactive,
     marginBottom: 8,
   },
   moodButtonActive: {
-    backgroundColor: 'rgba(0, 201, 167, 0.15)',
-    borderColor: '#00C9A7',
-    shadowColor: '#00C9A7',
+    backgroundColor: theme.colors.mindfulness.timingInfoBg,
+    borderColor: theme.colors.mindfulness.accent,
+    shadowColor: theme.colors.mindfulness.circleShadow,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.35,
     shadowRadius: 10,
     elevation: 5,
   },
   moodEmoji: {
-    fontSize: 32,  // 5xl
+    fontSize: 32,
   },
   moodLabel: {
-    fontSize: 13,  // sm (adjusted up)
-    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 13,
+    color: theme.colors.mindfulness.textMuted,
     textAlign: 'center',
   },
   moodLabelActive: {
-    color: '#FFFFFF',
-    fontWeight: '600',  // semibold
+    color: theme.colors.mindfulness.textPrimary,
+    fontWeight: '600',
   },
   feedbackContainer: {
     marginTop: 16,
     paddingHorizontal: 32,
   },
   feedbackText: {
-    fontSize: 16,  // lg
-    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 16,
+    color: theme.colors.mindfulness.textSecondary,
     textAlign: 'center',
     fontStyle: 'italic',
   },

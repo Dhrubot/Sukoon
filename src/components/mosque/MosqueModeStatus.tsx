@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 import { format } from 'date-fns';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 import { useMosqueMode } from '../../hooks/useMosqueMode';
 import { usePrayerTimes } from '../../providers/PrayerTimesProvider';
 import { PrayerTime } from '../../types';
@@ -20,6 +22,7 @@ import { PrayerTime } from '../../types';
  */
 export const MosqueModeStatus: React.FC = () => {
   const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const { isActive, activeState, manuallyRestoreRinger, isEnabled, settings, getIqamahTime } = useMosqueMode();
   const { todayPrayerTimes } = usePrayerTimes();
 
@@ -120,13 +123,13 @@ export const MosqueModeStatus: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     marginHorizontal: 20,
     marginVertical: 12,
     borderRadius: 16,
     padding: 16,
-    shadowColor: '#000',
+    shadowColor: theme.colors.achievement.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,

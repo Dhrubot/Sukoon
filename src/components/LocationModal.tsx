@@ -11,6 +11,8 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useLocationSetup } from '../hooks/useLocationSetup';
+import { useThemedStyles } from '../hooks/useThemedStyles';
+import { AppTheme } from '../theme';
 
 interface LocationModalProps {
   visible: boolean;
@@ -18,6 +20,7 @@ interface LocationModalProps {
 }
 
 export const LocationModal: React.FC<LocationModalProps> = ({ visible, onClose }) => {
+  const styles = useThemedStyles(createStyles);
   const {
     formData,
     error,
@@ -117,12 +120,12 @@ export const LocationModal: React.FC<LocationModalProps> = ({ visible, onClose }
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   modalContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.colors.settings.modalOverlay,
     padding: 20,
   },
   keyboardView: {
@@ -131,29 +134,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContent: {
-    backgroundColor: '#252B47', // Dark card background
+    backgroundColor: theme.colors.card.background,
     borderRadius: 10,
     padding: 20,
     width: '90%',
     maxWidth: 500,
     borderWidth: 1,
-    borderColor: '#2D3454',
-    shadowColor: '#000',
+    borderColor: theme.colors.border.primary,
+    shadowColor: theme.colors.achievement.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.4,
     shadowRadius: 3.84,
     elevation: 5,
   },
   modalTitle: {
-    fontSize: 20,  // 2xl (adjusted)
-    fontWeight: '700',  // bold
+    fontSize: 20,
+    fontWeight: '700',
     marginBottom: 8,
-    color: '#00C9A7', // Turquoise accent
+    color: theme.colors.primary.DEFAULT,
     textAlign: 'center',
   },
   modalSubtitle: {
-    fontSize: 14,  // md
-    color: '#A0AEC0',
+    fontSize: 14,
+    color: theme.colors.text.secondary,
     marginBottom: 20,
     textAlign: 'center',
   },
@@ -161,18 +164,18 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   label: {
-    fontSize: 16,  // lg
+    fontSize: 16,
     marginBottom: 5,
-    color: '#FFFFFF',
+    color: theme.colors.text.primary,
   },
   input: {
     borderWidth: 1,
-    borderColor: '#2D3454',
+    borderColor: theme.colors.border.primary,
     borderRadius: 5,
     padding: 10,
-    fontSize: 16,  // lg
-    backgroundColor: '#1A1F3A',
-    color: '#FFFFFF',
+    fontSize: 16,
+    backgroundColor: theme.colors.background.secondary,
+    color: theme.colors.text.primary,
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -186,21 +189,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   submitButton: {
-    backgroundColor: '#00C9A7', // Turquoise accent
+    backgroundColor: theme.colors.primary.DEFAULT,
   },
   buttonText: {
-    color: 'white',
-    fontSize: 16,  // lg
-    fontWeight: '600',  // semibold
+    color: theme.colors.primary.contrast,
+    fontSize: 16,
+    fontWeight: '600',
   },
   errorText: {
-    color: '#F44336',
+    color: theme.colors.status.error,
     marginBottom: 10,
     textAlign: 'center',
   },
   noteText: {
-    fontSize: 13,  // sm (adjusted up)
-    color: '#6C7A89',
+    fontSize: 13,
+    color: theme.colors.text.muted,
     marginTop: 15,
     textAlign: 'center',
     fontStyle: 'italic',

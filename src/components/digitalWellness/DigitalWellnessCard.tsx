@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 import { Icon } from '../common/Icon';
 import { DigitalWellnessIcon } from '../../assets/icons';
 
@@ -14,6 +16,7 @@ interface DigitalWellnessCardProps {
 
 const DigitalWellnessCard: React.FC<DigitalWellnessCardProps> = ({ screenTime }) => {
   const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const navigation = useNavigation();
   
   return (
@@ -33,7 +36,7 @@ const DigitalWellnessCard: React.FC<DigitalWellnessCardProps> = ({ screenTime })
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     marginHorizontal: 20,
     marginVertical: 10,
@@ -44,7 +47,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
-    shadowColor: '#000',
+    shadowColor: theme.colors.achievement.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,

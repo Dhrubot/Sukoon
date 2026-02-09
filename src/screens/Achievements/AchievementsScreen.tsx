@@ -14,6 +14,7 @@ import { useStore } from '../../store/useStore';
 import StorageService from '../../services/StorageService';
 import AchievementService from '../../services/AchievementService';
 import { Achievement } from '../../types';
+import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 
@@ -22,6 +23,7 @@ const { width } = Dimensions.get('window');
 type CategoryFilter = 'all' | 'prayer' | 'streak' | 'mindfulness' | 'focus' | 'special';
 
 const AchievementsScreen: React.FC = () => {
+  const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const { achievements, setAchievements } = useStore();
   const [isLoading, setIsLoading] = useState(true);
@@ -85,23 +87,15 @@ const AchievementsScreen: React.FC = () => {
   };
 
   const getTierColor = (tier: string): string => {
-    switch (tier) {
-      case 'bronze': return '#CD7F32';
-      case 'silver': return '#C0C0C0';
-      case 'gold': return '#FFD700';
-      case 'platinum': return '#E5E4E2';
-      default: return '#1B5E3F';
-    }
+    const tiers = theme.colors.achievement.tiers;
+    const t = (tiers[tier as keyof typeof tiers]) || tiers.default;
+    return t.from;
   };
 
   const getTierGradient = (tier: string): [string, string] => {
-    switch (tier) {
-      case 'bronze': return ['#CD7F32', '#8B4513'];
-      case 'silver': return ['#C0C0C0', '#808080'];
-      case 'gold': return ['#FFD700', '#FFA500'];
-      case 'platinum': return ['#E5E4E2', '#BCC6CC'];
-      default: return ['#1B5E3F', '#2E7D32'];
-    }
+    const tiers = theme.colors.achievement.tiers;
+    const t = (tiers[tier as keyof typeof tiers]) || tiers.default;
+    return [t.from, t.to];
   };
 
   const getCompletionStats = () => {
@@ -125,7 +119,7 @@ const AchievementsScreen: React.FC = () => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#1B5E3F" />
+          <ActivityIndicator size="large" color={theme.colors.primary.DEFAULT} />
           <Text style={styles.loadingText}>Loading achievements...</Text>
         </View>
       </SafeAreaView>
@@ -310,7 +304,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     padding: 20,
     borderWidth: 1,
     borderColor: theme.colors.border.primary,
-    shadowColor: '#000',
+    shadowColor: theme.colors.achievement.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -406,7 +400,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     padding: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
+    shadowColor: theme.colors.achievement.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -463,7 +457,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    backgroundColor: theme.colors.achievement.badgeBg,
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,

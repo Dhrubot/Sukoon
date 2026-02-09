@@ -1,6 +1,8 @@
 // src/components/settings/SegmentedControl.tsx
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 
 interface SegmentedControlOption {
   value: string;
@@ -20,7 +22,9 @@ export const SegmentedControl: React.FC<SegmentedControlProps> = ({
   selectedValue,
   onValueChange,
   style,
-}) => (
+}) => {
+  const styles = useThemedStyles(createStyles);
+  return (
   <View style={[styles.container, style]}>
     {options.map((option, index) => (
       <TouchableOpacity
@@ -47,13 +51,14 @@ export const SegmentedControl: React.FC<SegmentedControlProps> = ({
       </TouchableOpacity>
     ))}
   </View>
-);
+  );
+};
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flexDirection: 'row',
     borderRadius: 12,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: theme.colors.settings.optionBg,
     padding: 3,
     overflow: 'hidden',
   },
@@ -73,26 +78,26 @@ const styles = StyleSheet.create({
     marginLeft: 1,
   },
   segmentActive: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
+    backgroundColor: theme.colors.settings.sectionBg,
+    shadowColor: theme.colors.settings.modalShadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
   segmentText: {
-    fontSize: 15,  // base
-    fontWeight: '600',  // semibold
-    color: '#6B7280',
+    fontSize: 15,
+    fontWeight: '600',
+    color: theme.colors.text.secondary,
     textAlign: 'center',
     marginBottom: 4,
   },
   segmentTextActive: {
-    color: '#1B5E3F',
+    color: theme.colors.primary.DEFAULT,
   },
   segmentDesc: {
-    fontSize: 13,  // sm (adjusted up)
-    color: '#9CA3AF',
+    fontSize: 13,
+    color: theme.colors.text.muted,
     textAlign: 'center',
     lineHeight: 16,
   },

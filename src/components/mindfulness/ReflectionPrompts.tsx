@@ -10,6 +10,9 @@ import {
   Animated,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { useTheme } from '../../providers/ThemeProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 
 interface ReflectionPromptsProps {
   prayerName: string;
@@ -63,6 +66,8 @@ const ReflectionPrompts: React.FC<ReflectionPromptsProps> = ({
   onReflectionChange,
   reflectionText,
 }) => {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [currentPrompt, setCurrentPrompt] = useState('');
   const [showQuickOptions, setShowQuickOptions] = useState(true);
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
@@ -122,7 +127,7 @@ const ReflectionPrompts: React.FC<ReflectionPromptsProps> = ({
         style={styles.reflectionInput}
         multiline
         placeholder="Share your thoughts... (optional)"
-        placeholderTextColor="rgba(255, 255, 255, 0.5)"
+        placeholderTextColor={theme.colors.mindfulness.textHint}
         value={reflectionText}
         onChangeText={handleTextChange}
         numberOfLines={4}
@@ -156,7 +161,7 @@ const ReflectionPrompts: React.FC<ReflectionPromptsProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     width: '100%',
   },
@@ -164,50 +169,50 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   promptText: {
-    fontSize: 20,  // 2xl
-    fontWeight: '500',  // medium
-    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '500',
+    color: theme.colors.mindfulness.textPrimary,
     textAlign: 'center',
     lineHeight: 28,
     marginBottom: 8,
   },
   changePrompt: {
     fontSize: 14,
-    color: '#00C9A7',
+    color: theme.colors.mindfulness.accent,
     textAlign: 'center',
     marginTop: 8,
   },
   reflectionInput: {
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: theme.colors.mindfulness.inputBg,
     borderRadius: 16,
     padding: 16,
     fontSize: 16,
-    color: '#FFFFFF',
+    color: theme.colors.mindfulness.textPrimary,
     minHeight: 120,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: 'rgba(0, 201, 167, 0.25)',
+    borderColor: theme.colors.mindfulness.inputBorder,
   },
   quickOptionsContainer: {
     marginTop: 20,
   },
   quickOptionsTitle: {
-    fontSize: 14,  // md
-    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 14,
+    color: theme.colors.mindfulness.textSecondary,
     textAlign: 'center',
     marginBottom: 12,
   },
   quickOption: {
-    backgroundColor: 'rgba(0, 201, 167, 0.08)',
+    backgroundColor: theme.colors.mindfulness.quickOptionBg,
     borderRadius: 12,
     padding: 12,
     marginBottom: 8,
     borderWidth: 1,
-    borderColor: 'rgba(0, 201, 167, 0.2)',
+    borderColor: theme.colors.mindfulness.quickOptionBorder,
   },
   quickOptionText: {
     fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.9)',
+    color: theme.colors.mindfulness.textSecondary,
     textAlign: 'center',
   },
   characterCount: {
@@ -215,8 +220,8 @@ const styles = StyleSheet.create({
     marginTop: -12,
   },
   characterCountText: {
-    fontSize: 13,  // sm (adjusted up)
-    color: 'rgba(255, 255, 255, 0.6)',
+    fontSize: 13,
+    color: theme.colors.mindfulness.textSubtle,
   },
 });
 

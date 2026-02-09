@@ -24,6 +24,9 @@ import ReflectionPrompts from "../../components/mindfulness/ReflectionPrompts";
 
 // Store and Services
 import { useStore } from "../../store/useStore";
+import { useTheme } from "../../providers/ThemeProvider";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
+import { AppTheme } from "../../theme";
 import StorageService from "../../services/StorageService";
 import PrayerTimeService from "../../services/PrayerTimeService";
 
@@ -43,6 +46,8 @@ type FlowStep = "breathing" | "reflection" | "complete";
 
 const MindfulnessFlow: React.FC = () => {
   const navigation = useNavigation();
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const route = useRoute<RouteProp<RootStackParamList, "MindfulnessFlow">>();
   
   // 🎯 NEW: Access centralized prayer times for validation
@@ -118,20 +123,9 @@ const MindfulnessFlow: React.FC = () => {
     setHasValidated(true);
   };
 
-  const getPrayerGradient = (): [string, string, string] => {
-    const gradients: Record<string, [string, string, string]> = {
-      // Pre-dawn stillness: deep indigo → dark teal (night yielding to first light)
-      Fajr: ['#0D1B4C', '#152E4A', '#1A3D5C'],
-      // Midday vitality: warm dark teal → rich green (mosque garden at noon)
-      Dhuhr: ['#1A2F38', '#153A35', '#0D4F35'],
-      // Golden hour reflection: warm olive → deep forest (afternoon light through trees)
-      Asr: ['#2A2A1A', '#1F3222', '#1B3A2A'],
-      // Sunset gratitude: soft plum → app navy (the beautiful transition)
-      Maghrib: ['#2D1530', '#231A3A', '#1A1F3A'],
-      // Night contemplation: deep violet → midnight (stillness of isha)
-      Isha: ['#12103A', '#0F1430', '#0A0D2E'],
-    };
-    return gradients[prayer.name] || ['#1A2F3A', '#153530', '#0D4F35'];
+  const getPrayerGradient = (): readonly [string, string, string] => {
+    const gradients = theme.colors.prayerGradients;
+    return (gradients as any)[prayer.name] || gradients.default;
   };
 
   const handleBreathComplete = () => {
@@ -308,7 +302,7 @@ const MindfulnessFlow: React.FC = () => {
 
       {/* 🎯 NEW: Show prayer timing context */}
       {nextPrayer?.name === prayer.name && (
-        <View style={styles.timingInfo}>
+        <View style={styles.timingInfoContainer}>
           <Text style={styles.timingText}>
             ✨ Perfect timing! This is your next prayer
           </Text>
@@ -452,7 +446,7 @@ const MindfulnessFlow: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -470,21 +464,21 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   prayerName: {
-    fontSize: 24,  // 3xl
+    fontSize: 24,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: theme.colors.mindfulness.textPrimary,
   },
   closeButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.12)",
+    backgroundColor: theme.colors.mindfulness.inputBg,
     justifyContent: "center",
     alignItems: "center",
   },
   closeText: {
-    fontSize: 20,  // 2xl
-    color: "#FFFFFF",
+    fontSize: 20,
+    color: theme.colors.mindfulness.textPrimary,
   },
   progressContainer: {
     flexDirection: "row",
@@ -496,10 +490,10 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "rgba(255, 255, 255, 0.25)",
+    backgroundColor: theme.colors.mindfulness.dotInactive,
   },
   progressDotActive: {
-    backgroundColor: "#00C9A7",
+    backgroundColor: theme.colors.mindfulness.dotActive,
     width: 24,
   },
   content: {
@@ -514,33 +508,32 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   stepTitle: {
-    fontSize: 28,  // 4xl
+    fontSize: 28,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: theme.colors.mindfulness.textPrimary,
     textAlign: "center",
     marginBottom: 12,
   },
   instruction: {
-    fontSize: 16,  // lg
-    color: "rgba(255, 255, 255, 0.9)",
+    fontSize: 16,
+    color: theme.colors.mindfulness.textSecondary,
     textAlign: "center",
     marginBottom: 40,
     lineHeight: 22,
   },
-  // 🎯 NEW: Timing info styles
-  timingInfo: {
-    backgroundColor: "rgba(0, 201, 167, 0.15)",
+  timingInfoContainer: {
+    backgroundColor: theme.colors.mindfulness.timingInfoBg,
     borderRadius: 12,
     paddingVertical: 8,
     paddingHorizontal: 16,
     marginBottom: 24,
     alignSelf: "center",
     borderWidth: 1,
-    borderColor: "rgba(0, 201, 167, 0.25)",
+    borderColor: theme.colors.mindfulness.timingInfoBorder,
   },
   timingText: {
     fontSize: 14,
-    color: "#00C9A7",
+    color: theme.colors.mindfulness.accent,
     textAlign: "center",
     fontWeight: "500",
   },
@@ -556,20 +549,20 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   skipText: {
-    fontSize: 16,  // lg
-    color: "rgba(255, 255, 255, 0.7)",
+    fontSize: 16,
+    color: theme.colors.mindfulness.textMuted,
   },
   moodSection: {
     marginTop: 32,
     marginBottom: 32,
   },
   completeButton: {
-    backgroundColor: "rgba(0, 201, 167, 0.2)",
+    backgroundColor: theme.colors.mindfulness.buttonBg,
     borderRadius: 16,
     paddingVertical: 18,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(0, 201, 167, 0.4)",
+    borderColor: theme.colors.mindfulness.buttonBorder,
     marginTop: 20,
   },
   completeButtonDisabled: {
@@ -578,7 +571,7 @@ const styles = StyleSheet.create({
   completeButtonText: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: theme.colors.mindfulness.textPrimary,
   },
   completeContainer: {
     flex: 1,
@@ -593,12 +586,12 @@ const styles = StyleSheet.create({
   completeTitle: {
     fontSize: 36,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: theme.colors.mindfulness.textPrimary,
     marginBottom: 16,
   },
   completeText: {
-    fontSize: 18,  // xl
-    color: "rgba(255, 255, 255, 0.9)",
+    fontSize: 18,
+    color: theme.colors.mindfulness.textSecondary,
     textAlign: "center",
     lineHeight: 26,
   },

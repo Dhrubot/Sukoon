@@ -11,6 +11,9 @@ import {
 } from 'react-native';
 import { format } from 'date-fns';
 import { CalculationMethodType, PrayerTime } from '../../../types';
+import { useTheme } from '../../../providers/ThemeProvider';
+import { useThemedStyles } from '../../../hooks/useThemedStyles';
+import { AppTheme } from '../../../theme';
 
 interface CalculationMethodModalProps {
   visible: boolean;
@@ -38,6 +41,8 @@ export const CalculationMethodModal: React.FC<CalculationMethodModalProps> = ({
   onPreviewMethod,
   isUpdatingMethod = false,
 }) => {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [previewingMethod, setPreviewingMethod] = useState<string | null>(null);
 
   const handlePreview = async (method: CalculationMethodType) => {
@@ -148,7 +153,7 @@ export const CalculationMethodModal: React.FC<CalculationMethodModalProps> = ({
                           disabled={previewingMethod === method.value || isUpdatingMethod}
                         >
                           {previewingMethod === method.value ? (
-                            <ActivityIndicator size="small" color="#1B5E3F" />
+                            <ActivityIndicator size="small" color={theme.colors.primary.DEFAULT} />
                           ) : (
                             <Text style={styles.previewButtonText}>Preview</Text>
                           )}
@@ -192,14 +197,14 @@ const getMethodDescription = (method: string): string => {
   return descriptions[method] || 'Standard calculation method';
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.colors.settings.modalOverlay,
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.settings.modalBg,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     maxHeight: '85%',
@@ -212,38 +217,36 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#E9ECEF',
+    borderBottomColor: theme.colors.settings.modalBorder,
   },
   modalTitle: {
-    fontSize: 18,  // xl
-    fontWeight: '700',  // bold
-    color: '#1B5E3F',
+    fontSize: 18,
+    fontWeight: '700',
+    color: theme.colors.settings.modalTitle,
   },
   modalClose: {
-    fontSize: 16,  // lg
-    fontWeight: '600',  // semibold
-    color: '#1B5E3F',
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.settings.modalClose,
   },
   modalCloseDisabled: {
-    color: '#ADB5BD',
+    color: theme.colors.settings.modalCloseDisabled,
   },
   methodList: {
     paddingHorizontal: 20,
   },
-  
-  // 🎯 NEW: Preview styles
   previewContainer: {
-    backgroundColor: '#F8F9FA',
+    backgroundColor: theme.colors.settings.previewBg,
     borderRadius: 12,
     padding: 16,
     marginVertical: 16,
     borderWidth: 2,
-    borderColor: '#1B5E3F',
+    borderColor: theme.colors.settings.previewBorder,
   },
   previewTitle: {
-    fontSize: 16,  // lg
-    fontWeight: '700',  // bold
-    color: '#1B5E3F',
+    fontSize: 16,
+    fontWeight: '700',
+    color: theme.colors.primary.DEFAULT,
     marginBottom: 12,
     textAlign: 'center',
   },
@@ -258,30 +261,28 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
   },
   previewPrayerName: {
-    fontSize: 14,  // md
-    fontWeight: '600',  // semibold
-    color: '#495057',
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.settings.labelPrimary,
   },
   previewPrayerTime: {
-    fontSize: 14,  // md
-    fontWeight: '500',  // medium
-    color: '#1B5E3F',
+    fontSize: 14,
+    fontWeight: '500',
+    color: theme.colors.primary.DEFAULT,
   },
   previewNote: {
-    fontSize: 13,  // sm (adjusted up)
-    color: '#6C757D',
+    fontSize: 13,
+    color: theme.colors.settings.labelMuted,
     textAlign: 'center',
     fontStyle: 'italic',
   },
-  
-  // Methods container
   methodsContainer: {
     marginTop: 8,
   },
   sectionTitle: {
-    fontSize: 16,  // lg
-    fontWeight: '600',  // semibold
-    color: '#495057',
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.settings.labelPrimary,
     marginBottom: 12,
   },
   methodWrapper: {
@@ -293,13 +294,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 16,
     borderRadius: 12,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: theme.colors.settings.optionBg,
     borderWidth: 1,
-    borderColor: '#E9ECEF',
+    borderColor: theme.colors.settings.optionBorder,
   },
   methodOptionSelected: {
-    backgroundColor: '#E8F5E9',
-    borderColor: '#1B5E3F',
+    backgroundColor: theme.colors.settings.optionActiveBg,
+    borderColor: theme.colors.primary.DEFAULT,
   },
   methodOptionDisabled: {
     opacity: 0.5,
@@ -308,19 +309,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   methodText: {
-    fontSize: 16,  // lg
-    fontWeight: '600',  // semibold
-    color: '#495057',
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.settings.labelPrimary,
   },
   methodTextSelected: {
-    color: '#1B5E3F',
+    color: theme.colors.primary.DEFAULT,
   },
   methodTextDisabled: {
-    color: '#ADB5BD',
+    color: theme.colors.settings.modalCloseDisabled,
   },
   methodDescription: {
-    fontSize: 13,  // sm (adjusted up)
-    color: '#6C757D',
+    fontSize: 13,
+    color: theme.colors.settings.labelMuted,
     marginTop: 2,
   },
   methodActions: {
@@ -329,46 +330,42 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   checkmark: {
-    fontSize: 18,  // xl
-    color: '#1B5E3F',
-    fontWeight: '700',  // bold
+    fontSize: 18,
+    color: theme.colors.primary.DEFAULT,
+    fontWeight: '700',
   },
-  
-  // 🎯 NEW: Preview button styles
   previewButton: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.settings.sectionBg,
     borderRadius: 6,
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderWidth: 1,
-    borderColor: '#1B5E3F',
+    borderColor: theme.colors.primary.DEFAULT,
     minWidth: 70,
     alignItems: 'center',
   },
   previewButtonText: {
-    fontSize: 13,  // sm (adjusted up)
-    fontWeight: '600',  // semibold
-    color: '#1B5E3F',
+    fontSize: 13,
+    fontWeight: '600',
+    color: theme.colors.primary.DEFAULT,
   },
-  
-  // Info section
   infoSection: {
     marginTop: 24,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: theme.colors.settings.previewBg,
     borderRadius: 12,
     padding: 16,
     borderWidth: 1,
-    borderColor: '#E9ECEF',
+    borderColor: theme.colors.settings.optionBorder,
   },
   infoTitle: {
-    fontSize: 14,  // md
-    fontWeight: '600',  // semibold
-    color: '#495057',
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.settings.labelPrimary,
     marginBottom: 8,
   },
   infoText: {
-    fontSize: 13,  // sm (adjusted up)
-    color: '#6C757D',
+    fontSize: 13,
+    color: theme.colors.settings.labelMuted,
     lineHeight: 16,
     marginBottom: 6,
   },

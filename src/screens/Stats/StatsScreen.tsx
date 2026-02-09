@@ -21,6 +21,7 @@ import { PrayerRecord, DailyStats } from '../../types';
 
 // NEW: Use our centralized prayer times hook
 import { usePrayerTimes } from '../../providers/PrayerTimesProvider';
+import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { usePremium } from '../../hooks/usePremium';
 import { AppTheme } from '../../theme';
@@ -31,6 +32,7 @@ const { width } = Dimensions.get('window');
 type TimeRange = 'week' | 'month' | 'all';
 
 const StatsScreen: React.FC = ({ navigation }: any) => {
+  const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const { isPremium } = usePremium();
   
@@ -195,30 +197,24 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
   };
 
   const getPrayerColor = (prayer: string): string => {
-    const colors = {
-      fajr: '#3949ab',
-      dhuhr: '#ffeb3b',
-      asr: '#ff9800',
-      maghrib: '#e91e63',
-      isha: '#1a237e',
-    };
-    return colors[prayer.toLowerCase() as keyof typeof colors] || '#1B5E3F';
+    const colors = theme.colors.prayer;
+    return colors[prayer.toLowerCase() as keyof typeof colors] || theme.colors.primary.DEFAULT;
   };
 
   const chartConfig = {
-    backgroundColor: '#ffffff',
-    backgroundGradientFrom: '#ffffff',
-    backgroundGradientTo: '#ffffff',
+    backgroundColor: theme.colors.chart.background,
+    backgroundGradientFrom: theme.colors.chart.gradientFrom,
+    backgroundGradientTo: theme.colors.chart.gradientTo,
     decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(27, 94, 63, ${opacity})`,
-    labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+    color: (opacity = 1) => `rgba(45, 139, 111, ${opacity})`,
+    labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
     style: {
       borderRadius: 16,
     },
     propsForDots: {
       r: '6',
       strokeWidth: '2',
-      stroke: '#1B5E3F',
+      stroke: theme.colors.chart.dot,
     },
   };
 
@@ -245,7 +241,7 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#1B5E3F" />
+          <ActivityIndicator size="large" color={theme.colors.primary.DEFAULT} />
           <Text style={styles.loadingText}>Loading prayer times...</Text>
         </View>
       </SafeAreaView>
@@ -273,7 +269,7 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#1B5E3F" />
+          <ActivityIndicator size="large" color={theme.colors.primary.DEFAULT} />
           <Text style={styles.loadingText}>Calculating your statistics...</Text>
         </View>
       </SafeAreaView>
@@ -420,7 +416,7 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
                 name: item.name,
                 population: item.count,
                 color: item.color,
-                legendFontColor: '#333',
+                legendFontColor: theme.colors.chart.legendFont,
                 legendFontSize: 14,
               }))}
               width={width - 40}
@@ -572,7 +568,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: theme.colors.border.primary,
-    shadowColor: '#000',
+    shadowColor: theme.colors.achievement.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -651,7 +647,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderColor: theme.colors.border.primary,
   },
   achievementCard: {
-    borderLeftColor: '#FFD700',
+    borderLeftColor: theme.colors.gold,
     backgroundColor: theme.colors.card.hover,
   },
   insightTitle: {

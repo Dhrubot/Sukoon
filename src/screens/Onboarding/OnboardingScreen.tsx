@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import AnalyticsService from '../../services/AnalyticsService';
+import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import * as Location from 'expo-location';
@@ -32,6 +33,7 @@ interface OnboardingScreenProps {
 type OnboardingStep = 'welcome' | 'name' | 'location' | 'notifications' | 'method';
 
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
+  const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome');
   const [name, setName] = useState('');
@@ -148,7 +150,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
             <TextInput
               style={styles.input}
               placeholder="Your name"
-              placeholderTextColor="rgba(255, 255, 255, 0.5)"
+              placeholderTextColor={theme.colors.onboarding.placeholder}
               value={name}
               onChangeText={setName}
               autoFocus
@@ -203,8 +205,8 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
                 <Switch
                   value={enableAdhan}
                   onValueChange={setEnableAdhan}
-                  trackColor={{ false: '#767577', true: '#D4AF37' }}
-                  thumbColor={'#f4f3f4'}
+                  trackColor={{ false: theme.colors.switch.trackFalse, true: theme.colors.switch.trackTrue }}
+                  thumbColor={theme.colors.switch.thumb}
                 />
               </View>
               <Text style={styles.toggleDescription}>
@@ -263,7 +265,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
 
   return (
     <LinearGradient 
-      colors={['#1A1F3A', '#252B47', '#2D3454']}  // Dark theme gradient
+      colors={theme.colors.onboarding.gradient as unknown as [string, string, string]}
       style={styles.container}
     >
       <SafeAreaView style={styles.safeArea}>
@@ -303,7 +305,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   progressBar: {
     height: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: theme.colors.onboarding.progressBg,
     borderRadius: 2,
     overflow: 'hidden',
   },
@@ -330,38 +332,38 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginBottom: 16,
   },
   subtitle: {
-    fontSize: 18,  // xl
-    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 18,
+    color: theme.colors.onboarding.textSubtle,
     textAlign: 'center',
     marginBottom: 16,
     lineHeight: 26,
   },
   description: {
-    fontSize: 16,  // lg
-    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 16,
+    color: theme.colors.onboarding.textMuted,
     textAlign: 'center',
     marginBottom: 40,
     lineHeight: 24,
   },
   input: {
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+    backgroundColor: theme.colors.onboarding.inputBg,
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 20,
-    fontSize: 18,  // xl
+    fontSize: 18,
     color: theme.colors.text.primary,
     width: '100%',
     marginBottom: 32,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: theme.colors.onboarding.inputBorder,
   },
   button: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: theme.colors.onboarding.buttonBg,
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 48,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: theme.colors.onboarding.buttonBorder,
   },
   buttonDisabled: {
     opacity: 0.5,
@@ -372,8 +374,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     color: theme.colors.text.primary,
   },
   skipText: {
-    fontSize: 16,  // lg
-    color: 'rgba(255, 255, 255, 0.6)',
+    fontSize: 16,
+    color: theme.colors.onboarding.textHint,
     marginTop: 20,
   },
   methodList: {
@@ -381,21 +383,21 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginBottom: 32,
   },
   methodOption: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: theme.colors.onboarding.optionBg,
     borderRadius: 12,
     paddingVertical: 16,
     paddingHorizontal: 20,
     marginBottom: 12,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: theme.colors.onboarding.optionBorder,
   },
   methodOptionSelected: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: theme.colors.onboarding.optionActiveBg,
     borderColor: theme.colors.primary.DEFAULT,
   },
   methodText: {
-    fontSize: 16,  // lg
-    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 16,
+    color: theme.colors.onboarding.textBody,
   },
   methodTextSelected: {
     color: theme.colors.primary.DEFAULT,
@@ -403,7 +405,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   toggleContainer: {
     width: '100%',
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    backgroundColor: theme.colors.onboarding.toggleBg,
     borderRadius: 12,
     padding: 16,
     marginBottom: 24,
@@ -420,8 +422,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontWeight: '600',  // semibold
   },
   toggleDescription: {
-    fontSize: 14,  // md
-    color: 'rgba(255,255,255,0.7)',
+    fontSize: 14,
+    color: theme.colors.onboarding.textMuted,
   },
 });
 

@@ -7,6 +7,8 @@ import {
   Dimensions,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 
 interface BreathingCircleProps {
   isActive: boolean;
@@ -22,6 +24,8 @@ const BreathingCircle: React.FC<BreathingCircleProps> = ({
   breathCount,
   onBreathComplete,
 }) => {
+  const styles = useThemedStyles(createStyles);
+
   // Animation values
   const scaleAnim = useRef(new Animated.Value(0.8)).current;
   const opacityAnim = useRef(new Animated.Value(0.8)).current;
@@ -274,7 +278,7 @@ const BreathingCircle: React.FC<BreathingCircleProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     width: CIRCLE_SIZE,
     height: CIRCLE_SIZE,
@@ -287,7 +291,7 @@ const styles = StyleSheet.create({
     height: CIRCLE_SIZE * 1.2,
     borderRadius: CIRCLE_SIZE * 0.6,
     borderWidth: 2,
-    borderColor: 'rgba(0, 201, 167, 0.2)',
+    borderColor: theme.colors.mindfulness.outerRingBorder,
     borderStyle: 'dashed',
   },
   progressRing: {
@@ -295,7 +299,7 @@ const styles = StyleSheet.create({
     width: CIRCLE_SIZE + 20,
     height: CIRCLE_SIZE + 20,
     borderRadius: (CIRCLE_SIZE + 20) / 2,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: theme.colors.mindfulness.progressRingBg,
     overflow: 'hidden',
   },
   progressFill: {
@@ -303,19 +307,19 @@ const styles = StyleSheet.create({
     top: 0,
     left: 0,
     height: '100%',
-    backgroundColor: 'rgba(0, 201, 167, 0.2)',
+    backgroundColor: theme.colors.mindfulness.progressFill,
   },
   breathingCircle: {
     width: CIRCLE_SIZE,
     height: CIRCLE_SIZE,
     borderRadius: CIRCLE_SIZE / 2,
-    backgroundColor: 'rgba(0, 201, 167, 0.08)',
+    backgroundColor: theme.colors.mindfulness.circleBg,
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: 'rgba(0, 201, 167, 0.3)',
+    borderColor: theme.colors.mindfulness.circleBorder,
     elevation: 5,
-    shadowColor: '#00C9A7',
+    shadowColor: theme.colors.mindfulness.circleShadow,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.15,
     shadowRadius: 16,
@@ -324,26 +328,26 @@ const styles = StyleSheet.create({
     width: CIRCLE_SIZE * 0.4,
     height: CIRCLE_SIZE * 0.4,
     borderRadius: CIRCLE_SIZE * 0.2,
-    backgroundColor: 'rgba(0, 201, 167, 0.12)',
+    backgroundColor: theme.colors.mindfulness.innerCircleBg,
     justifyContent: 'center',
     alignItems: 'center',
   },
   breathNumber: {
-    fontSize: 48,  // icon 4xl
+    fontSize: 48,
     fontWeight: '300',
-    color: '#FFFFFF',
+    color: theme.colors.mindfulness.textPrimary,
   },
   breathLabel: {
-    fontSize: 16,  // lg
-    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: 16,
+    color: theme.colors.mindfulness.textSecondary,
     marginTop: -4,
   },
   phaseText: {
     position: 'absolute',
     bottom: -50,
-    fontSize: 20,  // 2xl
-    fontWeight: '500',  // medium
-    color: '#FFFFFF',
+    fontSize: 20,
+    fontWeight: '500',
+    color: theme.colors.mindfulness.textPrimary,
     textAlign: 'center',
   },
 });

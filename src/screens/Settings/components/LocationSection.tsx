@@ -4,6 +4,8 @@ import { View, Text, TouchableOpacity, StyleSheet, Platform, Linking } from 'rea
 import { SettingSection } from '../../../components/settings/SettingSection';
 import { UserSettings } from '../../../types';
 import LocationService from '../../../services/LocationService';
+import { useThemedStyles } from '../../../hooks/useThemedStyles';
+import { AppTheme } from '../../../theme';
 
 interface LocationSectionProps {
   userSettings: UserSettings;
@@ -20,6 +22,7 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
   onSelectManually,
   hasValidLocation = true,
 }) => {
+  const styles = useThemedStyles(createStyles);
   const [locationStatus, setLocationStatus] = useState<{ hasPermission: boolean; servicesEnabled: boolean } | null>(null);
 
   useEffect(() => {
@@ -116,31 +119,31 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   locationInfo: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: theme.colors.settings.optionBg,
     padding: 16,
     borderRadius: 8,
     marginBottom: 16,
   },
   locationText: {
-    fontSize: 16,  // lg
-    color: '#212121',
-    fontWeight: '500',  // medium
+    fontSize: 16,
+    color: theme.colors.settings.labelPrimary,
+    fontWeight: '500',
     marginBottom: 4,
   },
   coordinatesText: {
-    fontSize: 14,  // md
-    color: '#757575',
+    fontSize: 14,
+    color: theme.colors.settings.labelSecondary,
   },
   invalidText: {
-    fontSize: 14,  // md
-    color: '#DC3545',
+    fontSize: 14,
+    color: theme.colors.status.error,
     fontStyle: 'italic',
     marginTop: 4,
   },
   button: {
-    backgroundColor: '#1B5E3F',
+    backgroundColor: theme.colors.settings.buttonPrimaryBg,
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
@@ -150,34 +153,34 @@ const styles = StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    fontSize: 16,  // lg
-    fontWeight: '600',  // semibold
-    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.settings.buttonPrimaryText,
   },
   manualButton: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.settings.sectionBg,
     borderWidth: 1,
-    borderColor: '#1B5E3F',
+    borderColor: theme.colors.settings.buttonSecondaryBorder,
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
   },
   manualButtonText: {
-    fontSize: 16,  // lg
-    fontWeight: '600',  // semibold
-    color: '#1B5E3F',
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.settings.buttonSecondaryText,
   },
   warningBox: {
-    backgroundColor: '#FFF3CD',
+    backgroundColor: theme.colors.settings.warningBg,
     borderRadius: 8,
     padding: 12,
     marginTop: 12,
     borderWidth: 1,
-    borderColor: '#FFEAA7',
+    borderColor: theme.colors.settings.warningBorder,
   },
   warningText: {
-    fontSize: 13,  // sm
-    color: '#856404',
+    fontSize: 13,
+    color: theme.colors.settings.warningText,
     textAlign: 'center',
     lineHeight: 18,
   },
@@ -188,6 +191,6 @@ const styles = StyleSheet.create({
   settingsLinkText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1B5E3F',
+    color: theme.colors.primary.DEFAULT,
   },
 });
