@@ -6,6 +6,8 @@ import PrayerTimeService from '../services/PrayerTimeService';
 import { PrayerTime, Location } from '../types';
 import { isValidCoordinates } from '../utils/locationValidation';
 import logger from '../utils/logger';
+import WidgetService from '../services/WidgetService';
+import StorageService from '../services/StorageService';
 
 interface PrayerTimesContextType {
   todayPrayerTimes: PrayerTime[];
@@ -132,6 +134,17 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
 
       setIsOffline(PrayerTimeService.lastFetchWasFallback);
       logger.log('✅ Prayer times loaded successfully');
+
+      // Push data to iOS widget
+      const todayStr = new Date().toISOString().split('T')[0];
+      const todayRecords = StorageService.getDayPrayerRecords(todayStr);
+      const streak = StorageService.getCurrentStreak();
+      WidgetService.updateWidgetData(
+        todayResult.prayerTimes,
+        todayRecords,
+        nextPrayer,
+        streak
+      );
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load prayer times';
       logger.error('❌ Error loading prayer times:', err);

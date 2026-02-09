@@ -35,6 +35,7 @@ import { PrayerTime, MindfulnessSession, PrayerRecord } from "../../types";
 import { RootStackParamList } from "../../types/navigation";
 import AchievementService from "../../services/AchievementService";
 import AnalyticsService from "../../services/AnalyticsService";
+import WidgetService from "../../services/WidgetService";
 
 const { width, height } = Dimensions.get("window");
 
@@ -231,6 +232,9 @@ const MindfulnessFlow: React.FC = () => {
     // Save prayer record
     StorageService.savePrayerRecordWithTracking(prayerRecord);
     addPrayerRecord(prayerRecord);
+
+    // Refresh widget to show updated prayer status
+    WidgetService.reloadWidgets();
 
     // Analytics
     AnalyticsService.logPrayerCompleted(prayer.name, true);
