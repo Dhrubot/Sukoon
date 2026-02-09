@@ -68,7 +68,8 @@ export async function scheduleTier2PersistentReminders(
   prayer: PrayerTime,
   prayerId: string,
   settings: UserSettings,
-  existingIdentifiers?: Set<string>
+  existingIdentifiers?: Set<string>,
+  deadline?: Date
 ): Promise<void> {
   const habitSettings = settings.habitBuilder;
 
@@ -87,6 +88,13 @@ export async function scheduleTier2PersistentReminders(
     );
 
     if (reminderTime <= now) continue;
+
+    // Don't schedule reminders past the prayer deadline
+    // (sunrise for Fajr, next prayer time for others)
+    if (deadline && reminderTime >= deadline) {
+      logger.log(`⏰ Skipping Tier 2 reminder #${i} - past prayer deadline`);
+      break;
+    }
 
     if (isQuietHours(settings, reminderTime)) {
       logger.log(`⏰ Skipping Tier 2 reminder #${i} - quiet hours`);
@@ -140,7 +148,8 @@ export async function scheduleTier3GracePeriodWarning(
   nextPrayer: PrayerTime,
   prayerId: string,
   settings: UserSettings,
-  existingIdentifiers?: Set<string>
+  existingIdentifiers?: Set<string>,
+  deadline?: Date
 ): Promise<void> {
   const habitSettings = settings.habitBuilder;
 
@@ -149,7 +158,9 @@ export async function scheduleTier3GracePeriodWarning(
   }
 
   const { minutesBeforeNext } = habitSettings.gracePeriodWarning;
-  const warningTime = new Date(nextPrayer.time.getTime() - minutesBeforeNext * 60000);
+  // Use deadline (e.g. sunrise for Fajr) if it's earlier than nextPrayer
+  const effectiveEnd = deadline && deadline < nextPrayer.time ? deadline : nextPrayer.time;
+  const warningTime = new Date(effectiveEnd.getTime() - minutesBeforeNext * 60000);
   const now = new Date();
 
   if (warningTime <= now || warningTime <= prayer.time) return;
@@ -160,7 +171,9 @@ export async function scheduleTier3GracePeriodWarning(
   }
 
   const prayerDisplayName = PrayerTimeService.getPrayerDisplayName(prayer.name);
-  const nextPrayerDisplayName = PrayerTimeService.getPrayerDisplayName(nextPrayer.name);
+  const deadlineLabel = deadline && deadline < nextPrayer.time
+    ? 'Sunrise'
+    : PrayerTimeService.getPrayerDisplayName(nextPrayer.name);
 
   const tier3Identifier = `tier3-${prayerId}`;
   if (existingIdentifiers?.has(tier3Identifier)) return;
@@ -168,7 +181,7 @@ export async function scheduleTier3GracePeriodWarning(
   await Notifications.scheduleNotificationAsync({
     content: {
       title: `⚠️ ${prayerDisplayName} Grace Period Ending`,
-      body: `${nextPrayerDisplayName} prayer starts in ${minutesBeforeNext} minutes. Don't miss ${prayerDisplayName}!`,
+      body: `${deadlineLabel} ${deadline && deadline < nextPrayer.time ? 'is' : 'prayer starts'} in ${minutesBeforeNext} minutes. Don't miss ${prayerDisplayName}!`,
       data: {
         prayerId,
         prayer: prayer.name,

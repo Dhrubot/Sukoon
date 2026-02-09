@@ -398,7 +398,8 @@ class NotificationService {
     prayer: PrayerTime,
     settings: UserSettings,
     nextPrayer?: PrayerTime | null,
-    existingIdentifiers?: Set<string>
+    existingIdentifiers?: Set<string>,
+    sunrise?: Date
   ) {
     const { notifications, prayerNotifications } = settings;
     const prayerName = PrayerTimeService.getPrayerDisplayName(prayer.name);
@@ -510,20 +511,30 @@ class NotificationService {
       existingIdentifiers?.add(prayerIdentifier);
     }
 
+    // Compute effective deadline for this prayer's reminders:
+    // Fajr ends at sunrise; all others end at the next prayer time
+    const deadline = prayer.name === 'Fajr' && sunrise
+      ? sunrise
+      : nextPrayer?.time || undefined;
+
     // PRAYER HABIT BUILDER: Schedule Tier 2 & Tier 3 reminders
     if (settings.habitBuilder?.enabled) {
       // TIER 2: Persistent "Have you prayed?" reminders
-      await scheduleTier2PersistentReminders(prayer, prayerId, settings, existingIdentifiers);
+      await scheduleTier2PersistentReminders(prayer, prayerId, settings, existingIdentifiers, deadline);
 
       // TIER 3: Grace period warning (only if we have next prayer)
       if (nextPrayer) {
-        await scheduleTier3GracePeriodWarning(prayer, nextPrayer, prayerId, settings, existingIdentifiers);
+        await scheduleTier3GracePeriodWarning(prayer, nextPrayer, prayerId, settings, existingIdentifiers, deadline);
       }
 
       logger.log(`🏗️ Prayer Habit Builder scheduled for ${prayerName}`);
     } else if (notifications.postPrayerCheck) {
-      // LEGACY: Old post-prayer check (single notification)
-      const postCheckTime = new Date(prayer.time.getTime() + 15 * 60000);
+      // LEGACY: Old post-prayer check — clamp to before the deadline
+      let postCheckTime = new Date(prayer.time.getTime() + 15 * 60000);
+      if (deadline && postCheckTime >= deadline) {
+        // Schedule 5 min before deadline instead of after it
+        postCheckTime = new Date(deadline.getTime() - 5 * 60000);
+      }
 
       const checkIdentifier = `check-${prayer.name}-${dateStr}`;
       if (existingIdentifiers?.has(checkIdentifier)) {
@@ -815,12 +826,13 @@ class NotificationService {
           });
 
           const prayers = prayerData.prayerTimes;
+          const sunrise = prayerData.sunrise;
           for (let j = 0; j < prayers.length; j++) {
             const prayer = prayers[j];
             const nextPrayer = prayers[j + 1] || null;
 
             if (prayer.time > new Date()) {
-              await this.schedulePrayerNotification(prayer, settings, nextPrayer, existingIdentifiers);
+              await this.schedulePrayerNotification(prayer, settings, nextPrayer, existingIdentifiers, sunrise);
             }
           }
         } catch (error) {

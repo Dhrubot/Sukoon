@@ -234,36 +234,36 @@ const SupportScreen: React.FC = () => {
             Watch a short ad when YOU choose to support the app and unlock premium features for 24 hours
           </Text>
 
+          <Text style={styles.adNote}>
+            • Completely voluntary{'\n'}
+            • No forced or popup ads{'\n'}
+            • All ads are halal content only{'\n'}
+            • Support development costs
+          </Text>
+
           {canWatchAd ? (
-            <>
-              <Text style={styles.adNote}>
-                • Completely voluntary{'\n'}
-                • No forced or popup ads{'\n'}
-                • All ads are halal content only{'\n'}
-                • Support development costs
-              </Text>
-              
-              <TouchableOpacity
-                style={styles.watchAdButton}
-                onPress={handleWatchAd}
-                disabled={isProcessing}
+            <TouchableOpacity
+              style={styles.watchAdButton}
+              onPress={handleWatchAd}
+              disabled={isProcessing}
+            >
+              <LinearGradient
+                colors={[theme.colors.status.success, theme.colors.primary.dark]}
+                style={styles.watchAdGradient}
               >
-                <LinearGradient
-                  colors={[theme.colors.status.success, theme.colors.primary.dark]}
-                  style={styles.watchAdGradient}
-                >
-                  <Text style={styles.watchAdButtonText}>
-                    {isProcessing ? 'Loading...' : 'Watch Ad & Support'}
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </>
+                <Text style={styles.watchAdButtonText}>
+                  {isProcessing ? 'Loading...' : 'Watch Ad & Support'}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
           ) : (
             <View style={styles.adUnavailable}>
               <Text style={styles.adUnavailableText}>
                 {hoursUntilNextAd > 0
                   ? `You can watch another ad in ${hoursUntilNextAd} hours`
-                  : 'Premium features already active!'}
+                  : AdService.isAdReady()
+                    ? 'Premium features already active!'
+                    : 'Ad is loading... please wait a moment'}
               </Text>
             </View>
           )}
