@@ -13,6 +13,7 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
+import { DUAS } from '../../constants';
 
 interface ReflectionPromptsProps {
   prayerName: string;
@@ -72,6 +73,24 @@ const ReflectionPrompts: React.FC<ReflectionPromptsProps> = ({
   const [showQuickOptions, setShowQuickOptions] = useState(true);
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
+  // Map prayer name to relevant dua occasions
+  const getContextualDua = () => {
+    const occasionMap: Record<string, string[]> = {
+      Fajr: ['fajr', 'before_prayer', 'morning'],
+      Dhuhr: ['before_prayer'],
+      Asr: ['before_prayer'],
+      Maghrib: ['before_prayer', 'evening'],
+      Isha: ['before_prayer', 'evening'],
+    };
+    const occasions = occasionMap[prayerName] || ['before_prayer'];
+    const matching = DUAS.filter(d => occasions.includes(d.occasion));
+    if (matching.length === 0) return null;
+    const index = new Date().getDate() % matching.length;
+    return matching[index];
+  };
+
+  const contextualDua = getContextualDua();
+
   useEffect(() => {
     // Get prayer-specific prompts or use general ones
     const prompts = reflectionPrompts[prayerName as keyof typeof reflectionPrompts] || [
@@ -109,6 +128,15 @@ const ReflectionPrompts: React.FC<ReflectionPromptsProps> = ({
 
   return (
     <Animated.View style={[styles.container, { opacity: fadeAnim }]}>
+      {/* Contextual dua card */}
+      {contextualDua && (
+        <View style={styles.duaCard}>
+          <Text style={styles.duaTitle}>{contextualDua.title}</Text>
+          <Text style={styles.duaArabic}>{contextualDua.arabic}</Text>
+          <Text style={styles.duaTranslation}>{contextualDua.translation}</Text>
+        </View>
+      )}
+
       <View style={styles.promptContainer}>
         <Text style={styles.promptText}>{currentPrompt}</Text>
         <TouchableOpacity
@@ -222,6 +250,38 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   characterCountText: {
     fontSize: 13,
     color: theme.colors.mindfulness.textSubtle,
+  },
+  duaCard: {
+    backgroundColor: theme.colors.mindfulness.inputBg,
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: theme.colors.mindfulness.inputBorder,
+    alignItems: 'center',
+  },
+  duaTitle: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: theme.colors.mindfulness.textSecondary,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+    marginBottom: 12,
+  },
+  duaArabic: {
+    fontSize: 22,
+    color: theme.colors.mindfulness.textPrimary,
+    textAlign: 'center',
+    lineHeight: 34,
+    marginBottom: 10,
+    fontFamily: Platform.OS === 'ios' ? 'Damascus' : 'serif',
+  },
+  duaTranslation: {
+    fontSize: 14,
+    fontStyle: 'italic',
+    color: theme.colors.mindfulness.textSecondary,
+    textAlign: 'center',
+    lineHeight: 20,
   },
 });
 

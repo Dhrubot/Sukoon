@@ -579,7 +579,20 @@ export const lightTheme = {
   },
 };
 
+// ─── Type Utilities ────────────────────────────────────────────────
+// Widen literal string types so both darkTheme and lightTheme satisfy Theme.
+type DeepStringify<T> =
+  T extends readonly (infer U)[]
+    ? readonly DeepStringify<U>[]
+    : T extends object
+      ? { [K in keyof T]: DeepStringify<T[K]> }
+      : T extends string
+        ? string
+        : T extends number
+          ? number
+          : T;
+
 // ─── Exports ───────────────────────────────────────────────────────
 export { palette, prayerGradients, achievementTiers, celebrationColors };
-export type Theme = typeof darkTheme;
+export type Theme = DeepStringify<typeof darkTheme>;
 export type ThemeColors = keyof Theme;
