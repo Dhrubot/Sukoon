@@ -22,14 +22,17 @@ import { PrayerRecord, DailyStats } from '../../types';
 // NEW: Use our centralized prayer times hook
 import { usePrayerTimes } from '../../providers/PrayerTimesProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { usePremium } from '../../hooks/usePremium';
 import { AppTheme } from '../../theme';
+import GoPremiumCard from '../../components/monetization/GoPremiumCard';
 
 const { width } = Dimensions.get('window');
 
 type TimeRange = 'week' | 'month' | 'all';
 
-const StatsScreen: React.FC = () => {
+const StatsScreen: React.FC = ({ navigation }: any) => {
   const styles = useThemedStyles(createStyles);
+  const { isPremium } = usePremium();
   
   // 🎯 NEW: Use centralized prayer times hook
   const { 
@@ -333,6 +336,11 @@ const StatsScreen: React.FC = () => {
             <Text style={styles.statSubtext}>average rating</Text>
           </View>
         </View>
+
+        {/* Go Premium Card — only for free users */}
+        {!isPremium && (
+          <GoPremiumCard onPress={() => navigation.navigate('Menu', { screen: 'Support' })} />
+        )}
 
         {/* Today's Progress */}
         <View style={styles.section}>

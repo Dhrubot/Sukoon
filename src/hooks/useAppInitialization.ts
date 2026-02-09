@@ -8,6 +8,8 @@ import { useStore } from "../store/useStore";
 import { Location as LocationType } from "../types";
 import { usePrayerTimeRefresh } from "./usePrayerTimeRefresh";
 import { initializeEncryptionKey } from "../utils/secureKeyManager";
+import { isValidCoordinates } from "../utils/locationValidation";
+import logger from "../utils/logger";
 
 interface AppInitializationState {
   isLoading: boolean;
@@ -24,7 +26,7 @@ export const useAppInitialization = () => {
     error: null,
   });
 
-  const { setUserSettings, setLocation } = useStore();
+  const { setUserSettings, setLocation, setCurrentStreak } = useStore();
   const { shouldRefreshPrayerTimes } = usePrayerTimeRefresh();
 
   useEffect(() => {
@@ -33,7 +35,7 @@ export const useAppInitialization = () => {
 
   const initializeApp = async () => {
     try {
-      console.log("Initializing app...");
+      logger.log("Initializing app...");
 
       // 🔐 Initialize secure encryption key first (before any storage access)
       await initializeEncryptionKey();
@@ -50,15 +52,18 @@ export const useAppInitialization = () => {
 
       setUserSettings(settings);
 
+      // Check and update streak on every boot (breaks streak if yesterday was missed)
+      StorageService.updateStreak();
+      setCurrentStreak(StorageService.getCurrentStreak());
+
       // ONLY SET LOCATION IF IT'S ACTUALLY VALID
-      const isValidLocation =
-        settings.location.latitude !== 0 || settings.location.longitude !== 0;
+      const isValidLocation = isValidCoordinates(settings.location);
 
       if (isValidLocation) {
-        console.log("📍 Setting valid location in store");
+        logger.log("📍 Setting valid location in store");
         setLocation(settings.location);
       } else {
-        console.log("⏳ No valid location yet, store location remains null");
+        logger.log("⏳ No valid location yet, store location remains null");
         // Don't set location - let it remain null until user provides real location
       }
 
@@ -66,20 +71,14 @@ export const useAppInitialization = () => {
       await NotificationService.initialize();
 
       // Check if prayer times need refreshing
-      if (
-        typeof settings.location.latitude === 'number' &&
-        typeof settings.location.longitude === 'number' &&
-        !Number.isNaN(settings.location.latitude) &&
-        !Number.isNaN(settings.location.longitude) &&
-        (settings.location.latitude !== 0 || settings.location.longitude !== 0)
-      ) {
+      if (isValidCoordinates(settings.location)) {
         const needsRefresh = await shouldRefreshPrayerTimes(
           settings.location,
           settings.calculationMethod
         );
 
         if (needsRefresh) {
-          console.log("Refreshing prayer times...");
+          logger.log("Refreshing prayer times...");
           try {
             await PrayerTimeService.fetchPrayerTimes(
               settings.location,
@@ -88,19 +87,14 @@ export const useAppInitialization = () => {
               settings.asrJuristic
             );
           } catch (error) {
-            console.error("Failed to refresh prayer times:", error);
+            logger.error("Failed to refresh prayer times:", error);
             // Continue anyway, use cached times
           }
         }
       }
 
       // If no location is set, show location modal
-      const needsLocation =
-        typeof settings.location.latitude !== 'number' ||
-        typeof settings.location.longitude !== 'number' ||
-        Number.isNaN(settings.location.latitude) ||
-        Number.isNaN(settings.location.longitude) ||
-        (settings.location.latitude === 0 && settings.location.longitude === 0);
+      const needsLocation = !isValidCoordinates(settings.location);
 
       setState({
         isLoading: false,
@@ -111,9 +105,9 @@ export const useAppInitialization = () => {
 
       // Hide splash screen
       await SplashScreen.hideAsync();
-      console.log("App initialization complete");
+      logger.log("App initialization complete");
     } catch (error) {
-      console.error("App initialization failed:", error);
+      logger.error("App initialization failed:", error);
       setState((prev) => ({
         ...prev,
         isLoading: false,
@@ -134,7 +128,7 @@ export const useAppInitialization = () => {
 
     // Update Zustand store with the new location
     if (hasValidLocation && settings) {
-      console.log('✅ Onboarding complete - updating store with location:', {
+      logger.log('✅ Onboarding complete - updating store with location:', {
         city: settings.location.city,
         country: settings.location.country,
         lat: settings.location.latitude,
@@ -147,7 +141,7 @@ export const useAppInitialization = () => {
       // Update location in store (triggers prayer time refresh)
       setLocation(settings.location);
     } else {
-      console.log('⚠️ Onboarding complete but no valid location set');
+      logger.log('⚠️ Onboarding complete but no valid location set');
     }
 
     setState((prev) => ({

@@ -27,7 +27,8 @@ export default {
           app_id: "ca-app-pub-5474984690525462~1671116769",
         },
       },
-      jsEngine: "hermes"
+      jsEngine: "hermes",
+      googleServicesFile: "./GoogleService-Info.plist",
     },
     android: {
       appBundles: true,
@@ -53,14 +54,18 @@ export default {
         googleMobileAds: {
           app_id: "ca-app-pub-5474984690525462~6816196886",
         },
-      }
+      },
+      googleServicesFile: "./google-services.json",
     },
     plugins: [
+      "@react-native-firebase/app" ,
       "./plugins/withUsageStats.js",
       "./plugins/withModularHeaders.js",
       "./plugins/withAndroidIapFlavor.js",
       "./plugins/withNodePath.js",
       "./plugins/withRingerMode.js",
+      "./plugins/withWidget.js",
+      "./plugins/withAndroidWidget.js",
       "expo-location",
       "expo-audio",
       "expo-secure-store",

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -13,28 +13,40 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { useTheme } from '../../providers/ThemeProvider';
 import { AppTheme } from '../../theme';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
+import logger from '../../utils/logger';
 
 // Services
-import SubscriptionService from '../../services/SubscriptionService';
-import AdService from '../../services/AdService';
-import DonationService, { DONATION_TIERS } from '../../services/DonationService';
+import SubscriptionService from '../../services/monetization/SubscriptionService';
+import AdService from '../../services/monetization/AdService';
+import DonationService, { DONATION_TIERS } from '../../services/monetization/DonationService';
 import StorageService from '../../services/StorageService';
+import AnalyticsService from '../../services/AnalyticsService';
 
 // Types
 import { SubscriptionPlan } from '../../types';
 
 const { width } = Dimensions.get('window');
 
+// Module-level flag: services only need to be initialized once per app session
+let servicesInitialized = false;
+
 const SupportScreen: React.FC = () => {
+  const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(!servicesInitialized);
   const [currentPlan, setCurrentPlan] = useState<SubscriptionPlan | null>(null);
   const [canWatchAd, setCanWatchAd] = useState(false);
   const [hoursUntilNextAd, setHoursUntilNextAd] = useState(0);
   const [selectedTab, setSelectedTab] = useState<'subscription' | 'watch' | 'donate'>('subscription');
+
+  const handleTabChange = (tab: 'subscription' | 'watch' | 'donate') => {
+    setSelectedTab(tab);
+    AnalyticsService.logEvent('premium_card_tapped', { tab });
+  };
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
@@ -42,25 +54,27 @@ const SupportScreen: React.FC = () => {
   }, []);
 
   const initializeServices = async () => {
-    setIsLoading(true);
     try {
-      // Initialize services
-      await SubscriptionService.initialize();
-      await AdService.initialize();
-      await DonationService.initialize();
+      // Only run heavy initialization once per app session
+      if (!servicesInitialized) {
+        setIsLoading(true);
+        await SubscriptionService.initialize();
+        await AdService.initialize();
+        await DonationService.initialize();
+        servicesInitialized = true;
+      }
 
-      // Check current subscription
+      // Always refresh status on mount (lightweight)
       const hasSubscription = await SubscriptionService.checkSubscriptionStatus();
       if (hasSubscription) {
         setCurrentPlan(SubscriptionService.getCurrentSubscription());
       }
 
-      // Check ad availability
-      const canShow = await AdService.checkCanShowAd();
+      const canShow = await AdService.canShowAd();
       setCanWatchAd(canShow);
-      setHoursUntilNextAd(AdService.getTimeUntilNextAd());
+      setHoursUntilNextAd(AdService.getHoursUntilNextAd());
     } catch (error) {
-      console.error('Failed to initialize support services:', error);
+      logger.error('Failed to initialize support services:', error);
     } finally {
       setIsLoading(false);
     }
@@ -114,7 +128,7 @@ const SupportScreen: React.FC = () => {
         );
       }
     } catch (error) {
-      console.error('Donation error:', error);
+      logger.error('Donation error:', error);
     } finally {
       setIsProcessing(false);
     }
@@ -226,36 +240,36 @@ const SupportScreen: React.FC = () => {
             Watch a short ad when YOU choose to support the app and unlock premium features for 24 hours
           </Text>
 
+          <Text style={styles.adNote}>
+            • Completely voluntary{'\n'}
+            • No forced or popup ads{'\n'}
+            • All ads are halal content only{'\n'}
+            • Support development costs
+          </Text>
+
           {canWatchAd ? (
-            <>
-              <Text style={styles.adNote}>
-                • Completely voluntary{'\n'}
-                • No forced or popup ads{'\n'}
-                • All ads are halal content only{'\n'}
-                • Support development costs
-              </Text>
-              
-              <TouchableOpacity
-                style={styles.watchAdButton}
-                onPress={handleWatchAd}
-                disabled={isProcessing}
+            <TouchableOpacity
+              style={styles.watchAdButton}
+              onPress={handleWatchAd}
+              disabled={isProcessing}
+            >
+              <LinearGradient
+                colors={[theme.colors.status.success, theme.colors.primary.dark]}
+                style={styles.watchAdGradient}
               >
-                <LinearGradient
-                  colors={['#4CAF50', '#45A049']}
-                  style={styles.watchAdGradient}
-                >
-                  <Text style={styles.watchAdButtonText}>
-                    {isProcessing ? 'Loading...' : 'Watch Ad & Support'}
-                  </Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </>
+                <Text style={styles.watchAdButtonText}>
+                  {isProcessing ? 'Loading...' : 'Watch Ad & Support'}
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
           ) : (
             <View style={styles.adUnavailable}>
               <Text style={styles.adUnavailableText}>
                 {hoursUntilNextAd > 0
                   ? `You can watch another ad in ${hoursUntilNextAd} hours`
-                  : 'Premium features already active!'}
+                  : AdService.isAdReady()
+                    ? 'Premium features already active!'
+                    : 'Ad is loading... please wait a moment'}
               </Text>
             </View>
           )}
@@ -335,7 +349,7 @@ const SupportScreen: React.FC = () => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#1B5E3F" />
+          <ActivityIndicator size="large" color={theme.colors.primary.DEFAULT} />
           <Text style={styles.loadingText}>Loading support options...</Text>
         </View>
       </SafeAreaView>
@@ -359,7 +373,7 @@ const SupportScreen: React.FC = () => {
               key={tab}
               style={[styles.tab, selectedTab === tab && styles.tabActive]}
               onPress={() => {
-                setSelectedTab(tab);
+                handleTabChange(tab);
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               }}
             >
@@ -394,7 +408,7 @@ const SupportScreen: React.FC = () => {
 const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'theme.colors.background.primary', // Dark navy background
+    backgroundColor: theme.colors.background.primary,
   },
   loadingContainer: {
     flex: 1,
@@ -404,7 +418,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,  // lg
-    color: 'theme.colors.text.secondary',
+    color: theme.colors.text.secondary,
   },
   header: {
     padding: 20,
@@ -413,18 +427,18 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   title: {
     fontSize: 32,  // 5xl
     fontWeight: '700',  // bold
-    color: 'theme.colors.text.primary',
+    color: theme.colors.text.primary,
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,  // lg
-    color: 'theme.colors.text.secondary',
+    color: theme.colors.text.secondary,
     textAlign: 'center',
   },
   tabContainer: {
     flexDirection: 'row',
     marginHorizontal: 20,
-    backgroundColor: 'theme.colors.card.hover',
+    backgroundColor: theme.colors.card.hover,
     borderRadius: 12,
     padding: 4,
     marginBottom: 20,
@@ -440,8 +454,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     gap: 6,
   },
   tabActive: {
-    backgroundColor: 'theme.colors.primary.DEFAULT', // Turquoise accent
-    shadowColor: 'theme.colors.primary.DEFAULT',
+    backgroundColor: theme.colors.primary.DEFAULT,
+    shadowColor: theme.colors.primary.DEFAULT,
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.3,
     shadowRadius: 2,
@@ -455,11 +469,11 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   tabText: {
     fontSize: 14,  // md
-    color: 'theme.colors.text.secondary',
+    color: theme.colors.text.secondary,
     fontWeight: '500',  // medium
   },
   tabTextActive: {
-    color: 'theme.colors.text.primary',
+    color: theme.colors.text.primary,
     fontWeight: '600',  // semibold
   },
   tabContent: {
@@ -467,23 +481,23 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   // Subscription Tab Styles
   introCard: {
-    backgroundColor: 'theme.colors.card.background',
+    backgroundColor: theme.colors.card.background,
     marginHorizontal: 20,
     padding: 20,
     borderRadius: 12,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: 'theme.colors.card.hover',
+    borderColor: theme.colors.card.hover,
   },
   introTitle: {
     fontSize: 20,  // 2xl
     fontWeight: '600',  // semibold
-    color: 'theme.colors.primary.DEFAULT', // Turquoise accent
+    color: theme.colors.primary.DEFAULT,
     marginBottom: 8,
   },
   introText: {
     fontSize: 16,  // lg
-    color: 'theme.colors.text.secondary',
+    color: theme.colors.text.secondary,
     lineHeight: 22,
   },
   featuresContainer: {
@@ -493,7 +507,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   featuresTitle: {
     fontSize: 18,  // xl
     fontWeight: '600',  // semibold
-    color: 'theme.colors.text.primary',
+    color: theme.colors.text.primary,
     marginBottom: 16,
   },
   featureRow: {
@@ -507,7 +521,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   featureText: {
     fontSize: 16,  // lg
-    color: 'theme.colors.text.secondary',
+    color: theme.colors.text.secondary,
     flex: 1,
   },
   plansContainer: {
@@ -515,25 +529,25 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginBottom: 24,
   },
   planCard: {
-    backgroundColor: 'theme.colors.card.background',
+    backgroundColor: theme.colors.card.background,
     borderRadius: 12,
     padding: 20,
     marginBottom: 16,
     borderWidth: 2,
-    borderColor: 'theme.colors.card.hover',
+    borderColor: theme.colors.card.hover,
   },
   recommendedPlan: {
-    borderColor: 'theme.colors.primary.DEFAULT', // Turquoise accent
+    borderColor: theme.colors.primary.DEFAULT,
   },
   activePlan: {
-    backgroundColor: 'theme.colors.card.hover',
-    borderColor: 'theme.colors.primary.DEFAULT',
+    backgroundColor: theme.colors.card.hover,
+    borderColor: theme.colors.primary.DEFAULT,
   },
   recommendedBadge: {
     position: 'absolute',
     top: -12,
     right: 16,
-    backgroundColor: 'theme.colors.primary.DEFAULT', // Turquoise accent
+    backgroundColor: theme.colors.primary.DEFAULT,
     paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: 12,
@@ -541,7 +555,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   recommendedText: {
     fontSize: 13,  // sm (adjusted up)
     fontWeight: '700',  // bold
-    color: 'theme.colors.text.primary',
+    color: theme.colors.text.primary,
   },
   planHeader: {
     flexDirection: 'row',
@@ -552,20 +566,20 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   planName: {
     fontSize: 20,  // 2xl
     fontWeight: '600',  // semibold
-    color: 'theme.colors.text.primary',
+    color: theme.colors.text.primary,
   },
   planPrice: {
     fontSize: 24,  // 3xl
     fontWeight: '700',  // bold
-    color: 'theme.colors.primary.DEFAULT', // Turquoise accent
+    color: theme.colors.primary.DEFAULT,
   },
   planDescription: {
     fontSize: 16,  // lg
-    color: 'theme.colors.text.secondary',
+    color: theme.colors.text.secondary,
   },
   currentPlanBadge: {
     fontSize: 14,  // md
-    color: 'theme.colors.primary.DEFAULT', // Turquoise accent
+    color: theme.colors.primary.DEFAULT,
     fontWeight: '600',  // semibold
     marginTop: 8,
   },
@@ -576,7 +590,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   manageButtonText: {
     fontSize: 16,  // lg
-    color: 'theme.colors.primary.DEFAULT', // Turquoise accent
+    color: theme.colors.primary.DEFAULT,
     textDecorationLine: 'underline',
   },
   // Watch Ad Tab Styles
@@ -584,12 +598,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     padding: 20,
   },
   adCard: {
-    backgroundColor: 'theme.colors.card.background',
+    backgroundColor: theme.colors.card.background,
     borderRadius: 16,
     padding: 24,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'theme.colors.card.hover',
+    borderColor: theme.colors.card.hover,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
@@ -603,19 +617,19 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   adTitle: {
     fontSize: 24,  // 3xl
     fontWeight: '700',  // bold
-    color: 'theme.colors.text.primary',
+    color: theme.colors.text.primary,
     marginBottom: 12,
   },
   adDescription: {
     fontSize: 16,  // lg
-    color: 'theme.colors.text.secondary',
+    color: theme.colors.text.secondary,
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 20,
   },
   adNote: {
     fontSize: 15,  // base
-    color: 'theme.colors.text.secondary',
+    color: theme.colors.text.secondary,
     lineHeight: 22,
     marginBottom: 24,
   },
@@ -631,36 +645,36 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   watchAdButtonText: {
     fontSize: 18,  // xl
     fontWeight: '600',  // semibold
-    color: 'theme.colors.text.primary',
+    color: theme.colors.text.primary,
   },
   adUnavailable: {
-    backgroundColor: 'theme.colors.card.hover',
+    backgroundColor: theme.colors.card.hover,
     padding: 16,
     borderRadius: 8,
     marginTop: 16,
   },
   adUnavailableText: {
     fontSize: 16,  // lg
-    color: '#FFB74D',
+    color: theme.colors.status.warning,
     textAlign: 'center',
   },
   privacyNote: {
-    backgroundColor: 'theme.colors.card.background',
+    backgroundColor: theme.colors.card.background,
     padding: 20,
     borderRadius: 12,
     marginTop: 24,
     borderWidth: 1,
-    borderColor: 'theme.colors.card.hover',
+    borderColor: theme.colors.card.hover,
   },
   privacyTitle: {
     fontSize: 18,  // xl
     fontWeight: '600',  // semibold
-    color: 'theme.colors.primary.DEFAULT', // Turquoise accent
+    color: theme.colors.primary.DEFAULT,
     marginBottom: 12,
   },
   privacyText: {
     fontSize: 15,  // base
-    color: 'theme.colors.text.secondary',
+    color: theme.colors.text.secondary,
     lineHeight: 22,
   },
   // Donate Tab Styles
@@ -672,12 +686,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   donateTitle: {
     fontSize: 24,  // 3xl
     fontWeight: '700',  // bold
-    color: 'theme.colors.text.primary',
+    color: theme.colors.text.primary,
     marginBottom: 8,
   },
   donateSubtitle: {
     fontSize: 16,  // lg
-    color: 'theme.colors.text.secondary',
+    color: theme.colors.text.secondary,
     textAlign: 'center',
     lineHeight: 22,
   },
@@ -686,13 +700,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginBottom: 24,
   },
   donationCard: {
-    backgroundColor: 'theme.colors.card.background',
+    backgroundColor: theme.colors.card.background,
     borderRadius: 12,
     padding: 20,
     marginBottom: 16,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'theme.colors.card.hover',
+    borderColor: theme.colors.card.hover,
   },
   donationEmoji: {
     fontSize: 48,  // icon 4xl
@@ -701,19 +715,19 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   donationTitle: {
     fontSize: 18,  // xl
     fontWeight: '600',  // semibold
-    color: 'theme.colors.text.primary',
+    color: theme.colors.text.primary,
     marginBottom: 8,
   },
   donationDescription: {
     fontSize: 14,  // md
-    color: 'theme.colors.text.secondary',
+    color: theme.colors.text.secondary,
     textAlign: 'center',
     marginBottom: 12,
   },
   donationAmount: {
     fontSize: 20,  // 2xl
     fontWeight: '700',  // bold
-    color: 'theme.colors.primary.DEFAULT', // Turquoise accent
+    color: theme.colors.primary.DEFAULT,
   },
   alternativeMethods: {
     paddingHorizontal: 20,
@@ -722,13 +736,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   alternativeTitle: {
     fontSize: 18,  // xl
     fontWeight: '600',  // semibold
-    color: 'theme.colors.text.primary',
+    color: theme.colors.text.primary,
     marginBottom: 16,
   },
   alternativeButton: {
-    backgroundColor: 'theme.colors.card.background',
+    backgroundColor: theme.colors.card.background,
     borderWidth: 1,
-    borderColor: 'theme.colors.primary.DEFAULT', // Turquoise accent
+    borderColor: theme.colors.primary.DEFAULT,
     borderRadius: 8,
     paddingVertical: 12,
     alignItems: 'center',
@@ -736,27 +750,27 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   alternativeButtonText: {
     fontSize: 16,  // lg
-    color: 'theme.colors.primary.DEFAULT', // Turquoise accent
+    color: theme.colors.primary.DEFAULT,
     fontWeight: '500',  // medium
   },
   zakatNote: {
-    backgroundColor: 'theme.colors.card.hover',
+    backgroundColor: theme.colors.card.hover,
     marginHorizontal: 20,
     padding: 20,
     borderRadius: 12,
     marginBottom: 24,
     borderWidth: 1,
-    borderColor: 'theme.colors.primary.DEFAULT',
+    borderColor: theme.colors.primary.DEFAULT,
   },
   zakatTitle: {
     fontSize: 18,  // xl
     fontWeight: '600',  // semibold
-    color: '#FFB74D',
+    color: theme.colors.status.warning,
     marginBottom: 8,
   },
   zakatText: {
     fontSize: 15,  // base
-    color: 'theme.colors.text.secondary',
+    color: theme.colors.text.secondary,
     lineHeight: 22,
   },
   footer: {
@@ -765,7 +779,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   footerText: {
     fontSize: 16,  // lg
-    color: 'theme.colors.text.secondary',
+    color: theme.colors.text.secondary,
     textAlign: 'center',
     fontStyle: 'italic',
   },

@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "789690382818",
+    "project_id": "sukoon-d513f",
+    "storage_bucket": "sukoon-d513f.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:789690382818:android:2f93c4416acbae58aa21bb",
+        "android_client_info": {
+          "package_name": "com.talukders.sukoon"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "789690382818-dht67hjr7t97nk9rrknv22kmf5rkriop.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAlYmoud8POd2g-BBzku9eHLYzqtz6UFXU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "789690382818-dht67hjr7t97nk9rrknv22kmf5rkriop.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "789690382818-71r2rtpqu429ec2nglgsegojm4lif93q.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.talukders.sukoon"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

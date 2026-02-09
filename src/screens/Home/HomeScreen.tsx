@@ -19,6 +19,8 @@ import { format } from "date-fns";
 import { useStore } from "../../store/useStore";
 import StorageService from "../../services/StorageService";
 import { useTheme } from "../../providers/ThemeProvider";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
+import { AppTheme } from "../../theme";
 
 // NEW: Use our centralized prayer times hook
 import { usePrayerTimes } from "../../providers/PrayerTimesProvider";
@@ -42,6 +44,7 @@ const { width } = Dimensions.get("window");
 
 const HomeScreen = ({ navigation }: any) => {
   const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   
   // 🎯 NEW: Replace complex prayer time logic with simple hook
   const { 
@@ -49,6 +52,7 @@ const HomeScreen = ({ navigation }: any) => {
     nextPrayer, 
     isLoading: prayerTimesLoading, 
     hasValidLocation, 
+    isOffline,
     error: prayerTimesError,
     refreshPrayerTimes 
   } = usePrayerTimes();
@@ -189,7 +193,7 @@ const HomeScreen = ({ navigation }: any) => {
       <SafeAreaView style={styles.container}>
         <LinearGradient colors={getBackgroundGradient()} style={styles.container}>
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#FFFFFF" />
+            <ActivityIndicator size="large" color={theme.colors.primary.DEFAULT} />
             <Text style={styles.loadingText}>Loading your prayer times...</Text>
           </View>
         </LinearGradient>
@@ -245,6 +249,15 @@ const HomeScreen = ({ navigation }: any) => {
               prayer={nextPrayer}
               onPrepare={() => handlePrayerComplete(nextPrayer)}
             />
+          )}
+
+          {/* Offline Banner */}
+          {isOffline && (
+            <View style={styles.offlineBanner}>
+              <Text style={styles.offlineBannerText}>
+                ✈️ Offline — times are estimated
+              </Text>
+            </View>
           )}
 
           {/* Today's Prayer Times */}
@@ -306,7 +319,7 @@ const HomeScreen = ({ navigation }: any) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -314,65 +327,64 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    padding: 20,           // theme.spacing.xl
+    padding: theme.spacing.xl,
     alignItems: 'center',
   },
   greeting: {
-    fontSize: 24,          // theme.typography.fontSize['3xl']
-    fontWeight: '700',     // theme.typography.fontWeight.bold
-    color: '#FFFFFF',
+    fontSize: theme.typography.fontSize['3xl'],
+    fontWeight: '700',
+    color: theme.colors.text.primary,
     textAlign: 'center',
-    marginBottom: 8,       // theme.spacing.sm
+    marginBottom: theme.spacing.sm,
   },
   date: {
-    fontSize: 14,          // theme.typography.fontSize.md
-    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.secondary,
     textAlign: 'center',
   },
   section: {
-    padding: 20,           // theme.spacing.xl
+    padding: theme.spacing.xl,
   },
   sectionTitle: {
-    fontSize: 20,          // theme.typography.fontSize['2xl']
-    fontWeight: '600',     // theme.typography.fontWeight.semibold
-    color: '#FFFFFF',
-    marginBottom: 16,      // theme.spacing.lg
+    fontSize: theme.typography.fontSize['2xl'],
+    fontWeight: '600',
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.lg,
   },
   prayerGrid: {
-    gap: 12,               // theme.spacing.md
+    gap: theme.spacing.md,
   },
   
-  // 🎯 NEW: Styles for improved state handling
   locationSetupContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,           // theme.spacing['4xl']
+    padding: 40,
   },
   setupTitle: {
-    fontSize: 28,          // theme.typography.fontSize['4xl']
-    fontWeight: '700',     // theme.typography.fontWeight.bold
-    color: '#FFFFFF',
+    fontSize: 28,
+    fontWeight: '700',
+    color: theme.colors.text.primary,
     textAlign: 'center',
-    marginBottom: 16,      // theme.spacing.lg
+    marginBottom: theme.spacing.lg,
   },
   setupSubtitle: {
-    fontSize: 16,          // theme.typography.fontSize.lg
-    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: theme.typography.fontSize.lg,
+    color: theme.colors.text.secondary,
     textAlign: 'center',
-    marginBottom: 24,      // theme.spacing['2xl']
+    marginBottom: theme.spacing['2xl'],
     lineHeight: 24,
   },
   setupHelpBox: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderRadius: 12,      // theme.borderRadius.md
-    padding: 20,           // theme.spacing.xl
+    backgroundColor: theme.colors.card.background,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.xl,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+    borderColor: theme.colors.border.primary,
   },
   setupHelpText: {
-    fontSize: 15,          // theme.typography.fontSize.base
-    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: theme.typography.fontSize.base,
+    color: theme.colors.text.secondary,
     textAlign: 'center',
     lineHeight: 22,
   },
@@ -381,12 +393,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,           // theme.spacing['4xl']
+    padding: 40,
   },
   loadingText: {
-    fontSize: 16,          // theme.typography.fontSize.lg
-    color: '#FFFFFF',
-    marginTop: 16,         // theme.spacing.lg
+    fontSize: theme.typography.fontSize.lg,
+    color: theme.colors.text.primary,
+    marginTop: theme.spacing.lg,
     textAlign: 'center',
   },
   
@@ -394,34 +406,50 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,           // theme.spacing['4xl']
+    padding: 40,
   },
   errorTitle: {
-    fontSize: 24,          // theme.typography.fontSize['3xl']
-    fontWeight: '700',     // theme.typography.fontWeight.bold
-    color: '#FFFFFF',
+    fontSize: theme.typography.fontSize['3xl'],
+    fontWeight: '700',
+    color: theme.colors.text.primary,
     textAlign: 'center',
-    marginBottom: 16,      // theme.spacing.lg
+    marginBottom: theme.spacing.lg,
   },
   errorText: {
-    fontSize: 15,          // theme.typography.fontSize.base
-    color: 'rgba(255, 255, 255, 0.8)',
+    fontSize: theme.typography.fontSize.base,
+    color: theme.colors.text.secondary,
     textAlign: 'center',
-    marginBottom: 24,      // theme.spacing['2xl']
+    marginBottom: theme.spacing['2xl'],
     lineHeight: 22,
   },
   retryButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 12,      // theme.borderRadius.md
-    paddingVertical: 12,   // theme.spacing.md
-    paddingHorizontal: 24, // theme.spacing['2xl']
+    backgroundColor: theme.colors.card.background,
+    borderRadius: theme.borderRadius.md,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing['2xl'],
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: theme.colors.border.primary,
   },
   retryButtonText: {
-    fontSize: 15,          // theme.typography.fontSize.base
-    fontWeight: '600',     // theme.typography.fontWeight.semibold
-    color: '#FFFFFF',
+    fontSize: theme.typography.fontSize.base,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
+  },
+  offlineBanner: {
+    backgroundColor: 'rgba(255, 152, 0, 0.15)',
+    borderRadius: theme.borderRadius.sm,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.lg,
+    marginHorizontal: theme.spacing.xl,
+    marginBottom: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 152, 0, 0.3)',
+    alignItems: 'center',
+  },
+  offlineBannerText: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.status.warning,
+    fontWeight: '500',
   },
 });
 

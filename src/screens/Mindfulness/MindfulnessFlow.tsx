@@ -34,6 +34,8 @@ import { usePrayerTimes } from "../../providers/PrayerTimesProvider";
 import { PrayerTime, MindfulnessSession, PrayerRecord } from "../../types";
 import { RootStackParamList } from "../../types/navigation";
 import AchievementService from "../../services/AchievementService";
+import AnalyticsService from "../../services/AnalyticsService";
+import WidgetService from "../../services/WidgetService";
 
 const { width, height } = Dimensions.get("window");
 
@@ -67,6 +69,11 @@ const MindfulnessFlow: React.FC = () => {
   const [sessionStartTime] = useState(new Date());
   const [isBreathingActive, setIsBreathingActive] = useState(true);
   const [hasValidated, setHasValidated] = useState(false);
+
+  // Analytics: log mindfulness started
+  useEffect(() => {
+    AnalyticsService.logEvent('mindfulness_started', { prayer: prayer.name });
+  }, []);
 
   // Animations
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -111,15 +118,20 @@ const MindfulnessFlow: React.FC = () => {
     setHasValidated(true);
   };
 
-  const getPrayerGradient = (): [string, string] => {
-    const gradients: Record<string, [string, string]> = {
-      Fajr: ["#1a237e", "#273384ff"],
-      Dhuhr: ["#BCAAA4", "#8D6E63"],
-      Asr: ["#E65100", "#BF360C"],
-      Maghrib: ["#e91e63", "#880e4f"],
-      Isha: ["#1a237e", "#000051"],
+  const getPrayerGradient = (): [string, string, string] => {
+    const gradients: Record<string, [string, string, string]> = {
+      // Pre-dawn stillness: deep indigo → dark teal (night yielding to first light)
+      Fajr: ['#0D1B4C', '#152E4A', '#1A3D5C'],
+      // Midday vitality: warm dark teal → rich green (mosque garden at noon)
+      Dhuhr: ['#1A2F38', '#153A35', '#0D4F35'],
+      // Golden hour reflection: warm olive → deep forest (afternoon light through trees)
+      Asr: ['#2A2A1A', '#1F3222', '#1B3A2A'],
+      // Sunset gratitude: soft plum → app navy (the beautiful transition)
+      Maghrib: ['#2D1530', '#231A3A', '#1A1F3A'],
+      // Night contemplation: deep violet → midnight (stillness of isha)
+      Isha: ['#12103A', '#0F1430', '#0A0D2E'],
     };
-    return gradients[prayer.name] || ["#1B5E3F", "#0d4f35"];
+    return gradients[prayer.name] || ['#1A2F3A', '#153530', '#0D4F35'];
   };
 
   const handleBreathComplete = () => {
@@ -220,6 +232,19 @@ const MindfulnessFlow: React.FC = () => {
     // Save prayer record
     StorageService.savePrayerRecordWithTracking(prayerRecord);
     addPrayerRecord(prayerRecord);
+
+    // Refresh widget to show updated prayer status
+    WidgetService.reloadWidgets();
+
+    // Analytics
+    AnalyticsService.logPrayerCompleted(prayer.name, true);
+    AnalyticsService.logEvent('mindfulness_completed', {
+      prayer: prayer.name,
+      duration: session.duration,
+      mood: selectedMood,
+      breathing_completed: session.breathingCompleted,
+      reflection_added: session.reflectionCompleted,
+    });
 
     // Check for unlocked achievements
     const unlockedAchievements = await AchievementService.checkAchievements();
@@ -453,7 +478,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
+    backgroundColor: "rgba(255, 255, 255, 0.12)",
     justifyContent: "center",
     alignItems: "center",
   },
@@ -471,10 +496,10 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "rgba(255, 255, 255, 0.3)",
+    backgroundColor: "rgba(255, 255, 255, 0.25)",
   },
   progressDotActive: {
-    backgroundColor: "#FFFFFF",
+    backgroundColor: "#00C9A7",
     width: 24,
   },
   content: {
@@ -504,16 +529,18 @@ const styles = StyleSheet.create({
   },
   // 🎯 NEW: Timing info styles
   timingInfo: {
-    backgroundColor: "rgba(255, 255, 255, 0.15)",
+    backgroundColor: "rgba(0, 201, 167, 0.15)",
     borderRadius: 12,
     paddingVertical: 8,
     paddingHorizontal: 16,
     marginBottom: 24,
     alignSelf: "center",
+    borderWidth: 1,
+    borderColor: "rgba(0, 201, 167, 0.25)",
   },
   timingText: {
-    fontSize: 14,  // md
-    color: "rgba(255, 255, 255, 0.9)",
+    fontSize: 14,
+    color: "#00C9A7",
     textAlign: "center",
     fontWeight: "500",
   },
@@ -537,19 +564,19 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   completeButton: {
-    backgroundColor: "rgba(255, 255, 255, 0.25)",
+    backgroundColor: "rgba(0, 201, 167, 0.2)",
     borderRadius: 16,
     paddingVertical: 18,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(255, 255, 255, 0.4)",
+    borderColor: "rgba(0, 201, 167, 0.4)",
     marginTop: 20,
   },
   completeButtonDisabled: {
-    opacity: 0.5,
+    opacity: 0.4,
   },
   completeButtonText: {
-    fontSize: 18,  // xl
+    fontSize: 18,
     fontWeight: "600",
     color: "#FFFFFF",
   },

@@ -4,6 +4,10 @@ import React, { createContext, useContext, useEffect, useMemo, useState } from '
 import { useStore } from '../store/useStore';
 import PrayerTimeService from '../services/PrayerTimeService';
 import { PrayerTime, Location } from '../types';
+import { isValidCoordinates } from '../utils/locationValidation';
+import logger from '../utils/logger';
+import WidgetService from '../services/WidgetService';
+import StorageService from '../services/StorageService';
 
 interface PrayerTimesContextType {
   todayPrayerTimes: PrayerTime[];
@@ -11,6 +15,7 @@ interface PrayerTimesContextType {
   isLoading: boolean;
   error: string | null;
   hasValidLocation: boolean;
+  isOffline: boolean;
   refreshPrayerTimes: () => Promise<void>;
 }
 
@@ -20,6 +25,7 @@ const PrayerTimesContext = createContext<PrayerTimesContextType>({
   isLoading: false,
   error: null,
   hasValidLocation: false,
+  isOffline: false,
   refreshPrayerTimes: async () => {},
 });
 
@@ -43,23 +49,13 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tomorrowFajr, setTomorrowFajr] = useState<PrayerTime | null>(null);
+  const [isOffline, setIsOffline] = useState(false);
 
   const adjustmentsKey = useMemo(() => {
     return JSON.stringify(userSettings?.adjustments ?? {});
   }, [userSettings?.adjustments]);
 
-  // Centralized location validation
-  const isValidLocation = (loc: Location | null): loc is Location => {
-    if (!loc) return false;
-    if (typeof loc.latitude !== 'number' || typeof loc.longitude !== 'number') return false;
-    if (Number.isNaN(loc.latitude) || Number.isNaN(loc.longitude)) return false;
-    if (loc.latitude === 0 && loc.longitude === 0) return false;
-    if (loc.latitude < -90 || loc.latitude > 90) return false;
-    if (loc.longitude < -180 || loc.longitude > 180) return false;
-    return true;
-  };
-
-  const hasValidLocation = isValidLocation(location);
+  const hasValidLocation = isValidCoordinates(location);
 
   // Centralized prayer times loading
   // Enhanced next prayer calculation with tomorrow's Fajr
@@ -67,19 +63,19 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
     if (todayPrayers.length === 0) return null;
 
     const now = new Date();
-    console.log('🔍 Calculating next prayer...');
+    logger.log('🔍 Calculating next prayer...');
 
     // Check today's remaining prayers
     for (const prayer of todayPrayers) {
       if (prayer.time > now) {
-        console.log('✅ Next prayer today:', prayer.name);
+        logger.log('✅ Next prayer today:', prayer.name);
         return { ...prayer, isNext: true };
       }
     }
 
     // If no more prayers today, return tomorrow's Fajr
     if (tomorrowFajr) {
-      console.log('✅ Next prayer is tomorrow\'s Fajr');
+      logger.log('✅ Next prayer is tomorrow\'s Fajr');
       return { ...tomorrowFajr, isNext: true };
     }
 
@@ -88,11 +84,11 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
 
   const loadPrayerTimes = async () => {
     if (!hasValidLocation || !userSettings) {
-      console.log('⏳ PrayerTimesProvider: Waiting for prerequisites');
+      logger.log('⏳ PrayerTimesProvider: Waiting for prerequisites');
       return;
     }
 
-    console.log('🔄 Loading prayer times...');
+    logger.log('🔄 Loading prayer times...');
     setIsLoading(true);
     setError(null);
 
@@ -110,16 +106,21 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
         userSettings.asrJuristic
       );
 
-      // Load tomorrow's Fajr
-      const tomorrowResult = await PrayerTimeService.getPrayerTimesList(
-        location,
-        tomorrow,
-        userSettings.calculationMethod,
-        userSettings.adjustments,
-        userSettings.asrJuristic
-      );
+      // Only fetch tomorrow's Fajr after Isha (last prayer) to avoid unnecessary API calls
+      const ishaToday = todayResult.prayerTimes.find(p => p.name === 'Isha');
+      const isAfterIsha = ishaToday && today > ishaToday.time;
+      let tomorrowFajrPrayer: PrayerTime | null = null;
 
-      const tomorrowFajrPrayer = tomorrowResult.prayerTimes.find(p => p.name === 'Fajr') || null;
+      if (isAfterIsha) {
+        const tomorrowResult = await PrayerTimeService.getPrayerTimesList(
+          location,
+          tomorrow,
+          userSettings.calculationMethod,
+          userSettings.adjustments,
+          userSettings.asrJuristic
+        );
+        tomorrowFajrPrayer = tomorrowResult.prayerTimes.find(p => p.name === 'Fajr') || null;
+      }
 
       // Update state with prayer times and sun times
       setTodayPrayerTimes(todayResult.prayerTimes);
@@ -131,10 +132,22 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
       const nextPrayer = calculateNextPrayer(todayResult.prayerTimes, tomorrowFajrPrayer);
       setNextPrayer(nextPrayer);
 
-      console.log('✅ Prayer times loaded successfully');
+      setIsOffline(PrayerTimeService.lastFetchWasFallback);
+      logger.log('✅ Prayer times loaded successfully');
+
+      // Push data to iOS widget
+      const todayStr = new Date().toISOString().split('T')[0];
+      const todayRecords = StorageService.getDayPrayerRecords(todayStr);
+      const streak = StorageService.getCurrentStreak();
+      WidgetService.updateWidgetData(
+        todayResult.prayerTimes,
+        todayRecords,
+        nextPrayer,
+        streak
+      );
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load prayer times';
-      console.error('❌ Error loading prayer times:', err);
+      logger.error('❌ Error loading prayer times:', err);
       setError(errorMessage);
     } finally {
       setIsLoading(false);
@@ -146,7 +159,7 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
     if (hasValidLocation && userSettings) {
       loadPrayerTimes();
     } else {
-      console.log('⏳ PrayerTimesProvider: Prerequisites not met', {
+      logger.log('⏳ PrayerTimesProvider: Prerequisites not met', {
         hasValidLocation,
         hasSettings: !!userSettings,
       });
@@ -170,6 +183,7 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
     isLoading,
     error,
     hasValidLocation,
+    isOffline,
     refreshPrayerTimes,
   };
 

@@ -15,6 +15,8 @@ import {
   CalculationMethod,
   AladhanResponse,
 } from "../types";
+import { isValidCoordinates } from "../utils/locationValidation";
+import logger from "../utils/logger";
 
 const ALADHAN_API_BASE = "https://api.aladhan.com/v1";
 
@@ -28,16 +30,35 @@ const CALCULATION_METHOD_MAP: Record<CalculationMethod, number> = {
   Jafari: 0,
 };
 
+const MAX_CACHE_SIZE = 30;
+
 export class PrayerTimeService {
   private static instance: PrayerTimeService;
   private cachedTimes: Map<string, PrayerTimes> = new Map();
   private cachedLocations: Map<string, Coordinates> = new Map();
+  private _lastFetchWasFallback: boolean = false;
+
+  get lastFetchWasFallback(): boolean {
+    return this._lastFetchWasFallback;
+  }
 
   static getInstance(): PrayerTimeService {
     if (!PrayerTimeService.instance) {
       PrayerTimeService.instance = new PrayerTimeService();
     }
     return PrayerTimeService.instance;
+  }
+
+  private evictCacheIfNeeded(): void {
+    if (this.cachedTimes.size > MAX_CACHE_SIZE) {
+      const keysToDelete = Array.from(this.cachedTimes.keys()).slice(
+        0,
+        this.cachedTimes.size - MAX_CACHE_SIZE
+      );
+      for (const key of keysToDelete) {
+        this.cachedTimes.delete(key);
+      }
+    }
   }
 
   /**
@@ -50,8 +71,8 @@ export class PrayerTimeService {
     asrJuristic: "Standard" | "Hanafi" = "Standard"
   ): Promise<PrayerTimes> {
     // Use central validation
-    if (!PrayerTimeService.isValidCoordinates(coordinates)) {
-      console.log("🛑 fetchPrayerTimes: Invalid coordinates, using fallback");
+    if (!isValidCoordinates(coordinates)) {
+      logger.log("🛑 fetchPrayerTimes: Invalid coordinates, using fallback");
       return this.calculatePrayerTimes(
         coordinates || { latitude: 0, longitude: 0 },
         date,
@@ -73,7 +94,7 @@ export class PrayerTimeService {
 
       const url = `${ALADHAN_API_BASE}/timings/${dateStr}?latitude=${coordinates.latitude}&longitude=${coordinates.longitude}&method=${methodId}&school=${school}`;
 
-      console.log(`Fetching prayer times from: ${url}`);
+      logger.log(`Fetching prayer times from: ${url}`);
       const response = await fetch(url);
 
       if (!response.ok) {
@@ -84,7 +105,7 @@ export class PrayerTimeService {
 
       if (data.code === 200 && data.data && data.data.timings) {
         const apiTimes = data.data.timings;
-        console.log("Prayer times received:", apiTimes);
+        logger.log("Prayer times received:", apiTimes);
 
         // Create normalized version with lowercase keys to match our internal format
         const times: PrayerTimes = {
@@ -105,14 +126,16 @@ export class PrayerTimeService {
         );
 
         if (missingTimes.length > 0) {
-          console.warn(
+          logger.warn(
             `Missing prayer times after normalization: ${missingTimes.join(
               ", "
             )}`
           );
         }
 
+        this._lastFetchWasFallback = false;
         this.cachedTimes.set(cacheKey, times);
+        this.evictCacheIfNeeded();
 
         // Cache for tomorrow as well if it's after Asr
         const now = new Date();
@@ -124,18 +147,19 @@ export class PrayerTimeService {
             method,
             asrJuristic
           ).catch((err) =>
-            console.warn("Failed to pre-cache tomorrow prayer times:", err)
+            logger.warn("Failed to pre-cache tomorrow prayer times:", err)
           );
         }
 
         return times;
       } else {
-        console.error("Invalid API response format:", data);
+        logger.error("Invalid API response format:", data);
         throw new Error("Invalid API response format");
       }
     } catch (error) {
-      console.error("Error fetching prayer times:", error);
+      logger.error("Error fetching prayer times:", error);
       // Return calculated times as fallback
+      this._lastFetchWasFallback = true;
       return this.calculatePrayerTimes(coordinates, date, method);
     }
   }
@@ -151,8 +175,8 @@ export class PrayerTimeService {
     asrJuristic: "Standard" | "Hanafi" = "Standard"
   ): Promise<{ prayerTimes: PrayerTime[]; sunrise: Date; sunset: Date }> {
     // CENTRAL GUARD - Stop invalid calls immediately
-    if (!PrayerTimeService.isValidCoordinates(coordinates)) {
-      console.log(
+    if (!isValidCoordinates(coordinates)) {
+      logger.log(
         "🛑 BLOCKED: Invalid coordinates, returning empty prayer times"
       );
       return { prayerTimes: [], sunrise: new Date(), sunset: new Date() };
@@ -220,17 +244,17 @@ export class PrayerTimeService {
             isNext: true,
           };
         } catch (error) {
-          console.error("❌ Error fetching tomorrow's Fajr:", error);
+          logger.error("❌ Error fetching tomorrow's Fajr:", error);
         }
       }
 
-      console.log(
+      logger.log(
         "✅ Prayer list created successfully:",
         prayerTimesList.length,
         "prayers"
       );
-      console.log("🌅 Sunrise:", sunrise.toISOString());
-      console.log("🌇 Sunset:", sunset.toISOString());
+      logger.log("🌅 Sunrise:", sunrise.toISOString());
+      logger.log("🌇 Sunset:", sunset.toISOString());
       
       return {
         prayerTimes: prayerTimesList,
@@ -238,7 +262,7 @@ export class PrayerTimeService {
         sunset,
       };
     } catch (error) {
-      console.error("❌ Error in getPrayerTimesList:", error);
+      logger.error("❌ Error in getPrayerTimesList:", error);
       return { prayerTimes: [], sunrise: new Date(), sunset: new Date() };
     }
   }
@@ -264,7 +288,7 @@ export class PrayerTimeService {
   private parseTimeToDate(timeStr: string | undefined, date: Date): Date {
     // Handle undefined or invalid time strings
     if (!timeStr) {
-      console.warn("Received undefined time string in parseTimeToDate");
+      logger.warn("Received undefined time string in parseTimeToDate");
       return new Date(date); // Return the date with default time (midnight)
     }
 
@@ -285,7 +309,7 @@ export class PrayerTimeService {
     asrJuristic: "Standard" | "Hanafi" = "Standard"
   ): PrayerTimes {
     try {
-      console.log("Using fallback prayer time calculation");
+      logger.log("Using fallback prayer time calculation");
       const { latitude, longitude } = coordinates;
 
       // Convert date to Julian date
@@ -410,7 +434,7 @@ export class PrayerTimeService {
         Midnight: this.formatTime(normalizedMidnight),
       };
     } catch (error) {
-      console.error("Error in fallback prayer time calculation:", error);
+      logger.error("Error in fallback prayer time calculation:", error);
 
       // Return default times if calculation fails
       return {
@@ -563,7 +587,7 @@ export class PrayerTimeService {
    */
   private formatTime(time: number): string {
     if (isNaN(time)) {
-      console.warn("Invalid time value in formatTime:", time);
+      logger.warn("Invalid time value in formatTime:", time);
       return "00:00";
     }
 
@@ -684,47 +708,7 @@ export class PrayerTimeService {
     return coords || null;
   }
 
-  // Central validation method
-  private static isValidCoordinates(
-    coordinates: any
-  ): coordinates is Coordinates {
-    if (!coordinates) {
-      console.log("❌ Coordinate validation: null/undefined");
-      return false;
-    }
-    if (typeof coordinates !== "object") {
-      console.log("❌ Coordinate validation: not an object");
-      return false;
-    }
-    if (!("latitude" in coordinates) || !("longitude" in coordinates)) {
-      console.log("❌ Coordinate validation: missing lat/lng properties");
-      return false;
-    }
-    if (
-      typeof coordinates.latitude !== "number" ||
-      typeof coordinates.longitude !== "number"
-    ) {
-      console.log("❌ Coordinate validation: lat/lng not numbers");
-      return false;
-    }
-    if (isNaN(coordinates.latitude) || isNaN(coordinates.longitude)) {
-      console.log("❌ Coordinate validation: lat/lng are NaN");
-      return false;
-    }
-    if (coordinates.latitude === 0 && coordinates.longitude === 0) {
-      console.log("❌ Coordinate validation: 0,0 coordinates");
-      return false;
-    }
-    if (coordinates.latitude < -90 || coordinates.latitude > 90) {
-      console.log("❌ Coordinate validation: invalid latitude range");
-      return false;
-    }
-    if (coordinates.longitude < -180 || coordinates.longitude > 180) {
-      console.log("❌ Coordinate validation: invalid longitude range");
-      return false;
-    }
-    return true;
-  }
+  // Validation delegated to shared utils/locationValidation.ts
 }
 
 export default PrayerTimeService.getInstance();

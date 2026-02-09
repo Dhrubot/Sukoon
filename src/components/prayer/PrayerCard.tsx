@@ -16,6 +16,7 @@ import NotificationService from '../../services/NotificationService';
 import { Icon } from '../common/Icon';
 import { NotificationToggleButton } from '../common/NotificationToggleButton';
 import { getPrayerIcon } from '../../assets/icons';
+import logger from '../../utils/logger';
 
 interface PrayerCardProps {
   prayer: PrayerTime;
@@ -53,7 +54,7 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
     StorageService.setUserSettings(updatedSettings);
 
     if (!updatedSettings.notifications.enabled) {
-      console.log(`${prayerName} notifications ${newState ? 'enabled' : 'disabled'}`);
+      logger.log(`${prayerName} notifications ${newState ? 'enabled' : 'disabled'}`);
       return;
     }
 
@@ -63,7 +64,7 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
       await NotificationService.cancelPrayerNotifications(prayerName);
     }
 
-    console.log(`${prayerName} notifications ${newState ? 'enabled' : 'disabled'}`);
+    logger.log(`${prayerName} notifications ${newState ? 'enabled' : 'disabled'}`);
   };
 
   const getStatusColor = (): string => {
@@ -250,4 +251,15 @@ const styles = StyleSheet.create({
   },
 });
 
-export default PrayerCard;
+export default React.memo(PrayerCard, (prev, next) => {
+  return (
+    prev.prayer.name === next.prayer.name &&
+    prev.prayer.time.getTime() === next.prayer.time.getTime() &&
+    prev.prayer.isNext === next.prayer.isNext &&
+    prev.record?.status === next.record?.status &&
+    prev.record?.mindfulnessCompleted === next.record?.mindfulnessCompleted &&
+    prev.record?.reflectionAdded === next.record?.reflectionAdded &&
+    prev.currentTime.getMinutes() === next.currentTime.getMinutes() &&
+    prev.nextPrayer?.time?.getTime() === next.nextPrayer?.time?.getTime()
+  );
+});

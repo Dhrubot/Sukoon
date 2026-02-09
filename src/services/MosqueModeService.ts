@@ -4,7 +4,6 @@ import * as Notifications from 'expo-notifications';
 import { format, addMinutes } from 'date-fns';
 import StorageService from './StorageService';
 import RingerControlService from './RingerControlService';
-import IOSRingerControlService from './RingerControlService.ios';
 import { PrayerName, PrayerTime } from '../types';
 
 // Storage keys for mosque mode state
@@ -268,41 +267,62 @@ class MosqueModeService {
   }
 
   /**
-   * iOS: Schedule reminder notification (can't directly control silent mode)
+   * iOS: Schedule reminder notifications (can't directly control silent mode)
+   * Sends a reminder 2 minutes before iqamah so the user can manually enable DND.
    */
   private async scheduleIOSReminder(prayer: PrayerTime, iqamahTime: Date): Promise<void> {
-    // Remind 2 minutes before iqamah
-    const reminderTime = addMinutes(iqamahTime, -2);
     const now = new Date();
 
-    if (reminderTime <= now) {
-      console.log('⏰ Reminder time has already passed, skipping');
-      return;
+    // Schedule a reminder 2 minutes before iqamah
+    const reminderTime = addMinutes(iqamahTime, -2);
+    if (reminderTime > now) {
+      const reminderId = `mosque-reminder-${prayer.name}-${format(iqamahTime, 'yyyy-MM-dd')}`;
+      try { await Notifications.cancelScheduledNotificationAsync(reminderId); } catch { /* ignore */ }
+
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: `🕌 ${prayer.name} Iqamah in 2 minutes`,
+          body: 'Silence your phone — swipe down from top-right to enable Do Not Disturb.',
+          data: {
+            type: 'mosque_mode_reminder',
+            prayer: prayer.name,
+            iqamahTime: iqamahTime.toISOString(),
+          },
+          sound: 'default',
+        },
+        trigger: {
+          type: 'date',
+          date: reminderTime,
+        } as Notifications.NotificationTriggerInput,
+        identifier: reminderId,
+      });
+
+      console.log(`📱 iOS: Reminder scheduled for ${format(reminderTime, 'h:mm a')}`);
     }
 
-    const reminderId = `mosque-reminder-${prayer.name}-${format(iqamahTime, 'yyyy-MM-dd')}`;
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: `🕌 ${prayer.name} Iqamah in 2 minutes`,
-        body: 'Tap to enable Do Not Disturb',
-        data: {
-          type: 'mosque_mode_reminder',
-          prayer: prayer.name,
-          iqamahTime: iqamahTime.toISOString(),
-          action: 'enable_focus_mode',
-        },
-        categoryIdentifier: 'mosque-reminder',
-      },
-      trigger: {
-        type: 'date',
-        date: reminderTime,
-      } as Notifications.NotificationTriggerInput,
-      identifier: reminderId,
-    });
+    // Also schedule a notification at iqamah time as a last-chance reminder
+    const iqamahId = `mosque-iqamah-${prayer.name}-${format(iqamahTime, 'yyyy-MM-dd')}`;
+    if (iqamahTime > now) {
+      try { await Notifications.cancelScheduledNotificationAsync(iqamahId); } catch { /* ignore */ }
 
-    console.log(
-      `📱 iOS: Reminder scheduled for ${format(reminderTime, 'h:mm a')}`
-    );
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: `🔇 ${prayer.name} Iqamah Now`,
+          body: 'Please silence your phone for prayer.',
+          data: {
+            type: 'mosque_mode_iqamah',
+            prayer: prayer.name,
+            iqamahTime: iqamahTime.toISOString(),
+          },
+          sound: undefined, // Silent notification
+        },
+        trigger: {
+          type: 'date',
+          date: iqamahTime,
+        } as Notifications.NotificationTriggerInput,
+        identifier: iqamahId,
+      });
+    }
   }
 
   /**
@@ -313,14 +333,13 @@ class MosqueModeService {
       const { type, mode, previousMode, prayer } = data;
 
       if (type === 'mosque_mode_enable') {
-        // Enable silent/vibrate mode
+        // Android: Best-effort fallback if alarms didn't run
         if (Platform.OS === 'android') {
-          // Best-effort fallback if alarms didn't run
           await RingerControlService.setRingerMode(mode || 'SILENT');
           console.log(`🔇 ${mode} mode enabled for ${prayer} iqamah`);
         }
       } else if (type === 'mosque_mode_restore') {
-        // Restore previous ringer mode
+        // Android: Restore previous ringer mode
         if (Platform.OS === 'android') {
           const modeToRestore = previousMode || 'NORMAL';
           await RingerControlService.setRingerMode(modeToRestore);
@@ -329,15 +348,9 @@ class MosqueModeService {
 
         // Clear active mosque mode
         StorageService.setValue(STORAGE_KEYS.ACTIVE_MOSQUE_MODE, '');
-      } else if (type === 'mosque_mode_reminder' && data.action === 'enable_focus_mode') {
-        // iOS: User tapped reminder to enable Focus Mode
-        if (Platform.OS === 'ios') {
-          const success = await IOSRingerControlService.enableFocusMode();
-          if (!success) {
-            console.log('⚠️ iOS: Focus Mode shortcut could not be triggered');
-          }
-        }
       }
+      // iOS mosque_mode_reminder / mosque_mode_iqamah — no programmatic action,
+      // the notification itself is the reminder for the user to silence their phone.
     } catch (error) {
       console.error('❌ Failed to handle mosque mode notification:', error);
     }
@@ -358,6 +371,7 @@ class MosqueModeService {
         `mosque-enable-${prayer}-${dateStr}`,
         `mosque-restore-${prayer}-${dateStr}`,
         `mosque-reminder-${prayer}-${dateStr}`,
+        `mosque-iqamah-${prayer}-${dateStr}`,
       ];
 
       for (const id of identifiers) {
@@ -383,7 +397,6 @@ class MosqueModeService {
     const settings = StorageService.getUserSettings();
     if (!settings?.mosqueMode?.enabled) return;
     if (settings.mosqueMode.promptBeforeEnable) return;
-    if (Platform.OS !== 'android') return;
 
     const now = new Date();
     for (const prayer of prayers) {
@@ -392,8 +405,13 @@ class MosqueModeService {
       const iqamahTime = this.getIqamahTime(prayer);
       if (!iqamahTime) continue;
       if (iqamahTime <= now) continue;
-      const restoreTime = addMinutes(iqamahTime, settings.mosqueMode.silentDuration);
-      await this.scheduleAndroidSilentMode(prayer, iqamahTime, restoreTime, settings);
+
+      if (Platform.OS === 'android') {
+        const restoreTime = addMinutes(iqamahTime, settings.mosqueMode.silentDuration);
+        await this.scheduleAndroidSilentMode(prayer, iqamahTime, restoreTime, settings);
+      } else if (Platform.OS === 'ios') {
+        await this.scheduleIOSReminder(prayer, iqamahTime);
+      }
     }
   }
 

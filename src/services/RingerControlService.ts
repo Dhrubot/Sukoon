@@ -1,5 +1,6 @@
 // src/services/RingerControlService.ts
-import { NativeModules, Platform } from 'react-native';
+import { NativeModules, Platform, Linking } from 'react-native';
+import logger from '../utils/logger';
 
 type RingerMode = 'SILENT' | 'VIBRATE' | 'NORMAL';
 
@@ -18,58 +19,55 @@ interface RingerModeModule {
   openNotificationPolicyAccessSettings(): Promise<boolean>;
 }
 
-// Platform-specific implementation
 class RingerControlService {
   private module: RingerModeModule | null = null;
 
   constructor() {
     if (Platform.OS === 'android') {
-      this.module = NativeModules.RingerModeModule;
+      this.module = NativeModules.RingerModeModule ?? null;
       if (!this.module) {
-        console.warn('⚠️ RingerModeModule not available. Did you run expo prebuild?');
+        logger.warn('RingerModeModule not available — native module not registered. Run expo prebuild --clean.');
       }
     }
   }
 
   /**
-   * Check if ringer mode can be modified
-   * Android 6.0+ requires special permission
+   * Whether the native ringer module is loaded and usable.
+   * UI should check this before offering DND-dependent features.
+   */
+  isAvailable(): boolean {
+    return Platform.OS === 'android' && this.module !== null;
+  }
+
+  /**
+   * Check if the app has DND policy access (Android 6.0+).
    */
   async canModify(): Promise<boolean> {
-    if (Platform.OS !== 'android' || !this.module) {
-      return false;
-    }
-
+    if (!this.isAvailable()) return false;
     try {
-      return await this.module.canModifyRingerMode();
+      return await this.module!.canModifyRingerMode();
     } catch (error) {
-      console.error('❌ Failed to check ringer permissions:', error);
+      logger.error('Failed to check DND permission:', error);
       return false;
     }
   }
 
   /**
-   * Set the device ringer mode
-   * Android only - iOS will use Focus Mode workaround
+   * Set the device ringer mode.
    */
   async setRingerMode(mode: RingerMode): Promise<boolean> {
-    if (Platform.OS !== 'android' || !this.module) {
-      console.log('📱 Ringer mode control only available on Android');
-      return false;
-    }
-
+    if (!this.isAvailable()) return false;
     try {
       const canModify = await this.canModify();
       if (!canModify) {
-        console.warn('⚠️ App does not have permission to modify ringer mode');
+        logger.warn('No DND permission — cannot set ringer mode');
         return false;
       }
-
-      await this.module.setRingerMode(mode);
-      console.log(`🔊 Ringer mode set to: ${mode}`);
+      await this.module!.setRingerMode(mode);
+      logger.log(`Ringer mode set to: ${mode}`);
       return true;
     } catch (error) {
-      console.error(`❌ Failed to set ringer mode to ${mode}:`, error);
+      logger.error(`Failed to set ringer mode to ${mode}:`, error);
       return false;
     }
   }
@@ -81,112 +79,84 @@ class RingerControlService {
     restoreMode: RingerMode,
     requestCodeBase: number
   ): Promise<boolean> {
-    if (Platform.OS !== 'android' || !this.module) {
-      return false;
-    }
-
+    if (!this.isAvailable()) return false;
     try {
       const canModify = await this.canModify();
       if (!canModify) {
-        console.warn('⚠️ App does not have permission to modify ringer mode');
+        logger.warn('No DND permission — cannot schedule mosque mode');
         return false;
       }
-
-      return await this.module.scheduleMosqueMode(
-        enableAtMs,
-        restoreAtMs,
-        enableMode,
-        restoreMode,
-        requestCodeBase
+      return await this.module!.scheduleMosqueMode(
+        enableAtMs, restoreAtMs, enableMode, restoreMode, requestCodeBase
       );
     } catch (error) {
-      console.error('❌ Failed to schedule mosque mode:', error);
+      logger.error('Failed to schedule mosque mode:', error);
       return false;
     }
   }
 
   async cancelMosqueMode(requestCodeBase: number): Promise<boolean> {
-    if (Platform.OS !== 'android' || !this.module) {
-      return false;
-    }
-
+    if (!this.isAvailable()) return false;
     try {
-      return await this.module.cancelMosqueMode(requestCodeBase);
+      return await this.module!.cancelMosqueMode(requestCodeBase);
     } catch (error) {
-      console.error('❌ Failed to cancel mosque mode:', error);
+      logger.error('Failed to cancel mosque mode:', error);
       return false;
     }
   }
 
+  /**
+   * Open Android DND permission settings.
+   * Uses native module (getCurrentActivity) with Linking.openSettings fallback.
+   * Throws on total failure so the caller can inform the user.
+   */
   async openNotificationPolicyAccessSettings(): Promise<boolean> {
-    if (Platform.OS !== 'android' || !this.module) {
-      return false;
+    if (Platform.OS !== 'android') return false;
+
+    // Try native module first (uses getCurrentActivity — most reliable)
+    if (this.module) {
+      try {
+        return await this.module.openNotificationPolicyAccessSettings();
+      } catch (error) {
+        logger.warn('Native openNotificationPolicyAccessSettings failed, trying Linking fallback:', error);
+      }
     }
 
+    // Fallback: open general app settings via Linking
     try {
-      return await this.module.openNotificationPolicyAccessSettings();
+      await Linking.openSettings();
+      return true;
     } catch (error) {
-      console.error('❌ Failed to open notification policy settings:', error);
-      return false;
+      logger.error('All methods to open DND settings failed:', error);
+      throw new Error('Could not open DND settings. Please open Android Settings > Apps > Sukoon > Notifications manually.');
     }
   }
 
-  /**
-   * Get current ringer mode
-   */
   async getRingerMode(): Promise<RingerMode | null> {
-    if (Platform.OS !== 'android' || !this.module) {
-      return null;
-    }
-
+    if (!this.isAvailable()) return null;
     try {
-      const mode = await this.module.getRingerMode();
-      return mode;
+      return await this.module!.getRingerMode();
     } catch (error) {
-      console.error('❌ Failed to get ringer mode:', error);
+      logger.error('Failed to get ringer mode:', error);
       return null;
     }
   }
 
-  /**
-   * Enable silent mode (convenience method)
-   */
   async enableSilentMode(): Promise<boolean> {
     return this.setRingerMode('SILENT');
   }
 
-  /**
-   * Enable vibrate mode (convenience method)
-   */
   async enableVibrateMode(): Promise<boolean> {
     return this.setRingerMode('VIBRATE');
   }
 
-  /**
-   * Restore normal mode (convenience method)
-   */
   async restoreNormalMode(): Promise<boolean> {
     return this.setRingerMode('NORMAL');
   }
 
-  /**
-   * Check if device is currently in silent mode
-   */
   async isSilent(): Promise<boolean> {
     const mode = await this.getRingerMode();
     return mode === 'SILENT';
-  }
-
-  /**
-   * iOS-specific: Guide user to setup Focus Mode shortcut
-   */
-  async setupIOSShortcut(): Promise<void> {
-    if (Platform.OS !== 'ios') {
-      return;
-    }
-
-    // This will be implemented in Phase 4
-    console.log('📱 iOS Focus Mode setup will be implemented in Phase 4');
   }
 }
 

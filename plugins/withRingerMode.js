@@ -104,11 +104,16 @@ public class RingerModeModule extends ReactContextBaseJavaModule {
     public void openNotificationPolicyAccessSettings(Promise promise) {
         try {
             Intent intent = new Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS);
-            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-            getReactApplicationContext().startActivity(intent);
+            android.app.Activity activity = getCurrentActivity();
+            if (activity != null) {
+                activity.startActivity(intent);
+            } else {
+                intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                getReactApplicationContext().startActivity(intent);
+            }
             promise.resolve(true);
         } catch (Exception e) {
-            promise.reject("ERROR", "Failed to open notification policy settings: " + e.getMessage());
+            promise.reject("OPEN_SETTINGS_FAILED", "Failed to open DND settings: " + e.getMessage());
         }
     }
 
@@ -137,6 +142,14 @@ public class RingerModeModule extends ReactContextBaseJavaModule {
                 return;
             }
 
+            // Check exact alarm permission on Android 12+ (API 31+)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                if (!alarmManager.canScheduleExactAlarms()) {
+                    // Fall back to inexact alarm which may be delayed by up to ~10 min
+                    android.util.Log.w(MODULE_NAME, "Exact alarm permission not granted, using inexact alarm");
+                }
+            }
+
             int base = (int) requestCodeBase;
 
             Intent enableIntent = new Intent(context, MosqueModeReceiver.class);
@@ -158,17 +171,20 @@ public class RingerModeModule extends ReactContextBaseJavaModule {
             long enableAt = (long) enableAtMs;
             long restoreAt = (long) restoreAtMs;
 
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            boolean canExact = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || alarmManager.canScheduleExactAlarms();
+
+            if (canExact && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, enableAt, enablePi);
                 if (restoreAt > 0 && restoreAt > enableAt) {
                     alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, restoreAt, restorePi);
                 }
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            } else if (canExact && Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 alarmManager.setExact(AlarmManager.RTC_WAKEUP, enableAt, enablePi);
                 if (restoreAt > 0 && restoreAt > enableAt) {
                     alarmManager.setExact(AlarmManager.RTC_WAKEUP, restoreAt, restorePi);
                 }
             } else {
+                // Pre-KitKat fallback — setAndAllowWhileIdle requires API 23+
                 alarmManager.set(AlarmManager.RTC_WAKEUP, enableAt, enablePi);
                 if (restoreAt > 0 && restoreAt > enableAt) {
                     alarmManager.set(AlarmManager.RTC_WAKEUP, restoreAt, restorePi);
@@ -220,18 +236,36 @@ public class RingerModeModule extends ReactContextBaseJavaModule {
 
 const MOSQUE_MODE_RECEIVER_JAVA = `package com.talukders.sukoon;
 
+import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.media.AudioManager;
+import android.os.Build;
+import android.util.Log;
 
 public class MosqueModeReceiver extends BroadcastReceiver {
+    private static final String TAG = "MosqueModeReceiver";
+
     @Override
     public void onReceive(Context context, Intent intent) {
+        if (context == null || intent == null) return;
+
         try {
-            if (context == null || intent == null) return;
+            // Check DND permission on Android 6+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                NotificationManager nm = (NotificationManager)
+                    context.getSystemService(Context.NOTIFICATION_SERVICE);
+                if (nm != null && !nm.isNotificationPolicyAccessGranted()) {
+                    Log.w(TAG, "DND policy access not granted, cannot change ringer mode");
+                    return;
+                }
+            }
 
             String mode = intent.getStringExtra("mode");
+            String action = intent.getAction();
+            Log.d(TAG, "Received action=" + action + " mode=" + mode);
+
             int ringerMode = AudioManager.RINGER_MODE_NORMAL;
             if (mode != null) {
                 switch (mode) {
@@ -251,8 +285,12 @@ public class MosqueModeReceiver extends BroadcastReceiver {
             AudioManager audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
             if (audioManager != null) {
                 audioManager.setRingerMode(ringerMode);
+                Log.d(TAG, "Ringer mode set to " + mode);
             }
-        } catch (Exception ignored) {
+        } catch (SecurityException se) {
+            Log.e(TAG, "SecurityException - missing DND permission: " + se.getMessage());
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to set ringer mode: " + e.getMessage());
         }
     }
 }
@@ -315,6 +353,34 @@ const withRingerModePermission = (config) => {
       permissions.push({
         $: {
           'android:name': 'android.permission.ACCESS_NOTIFICATION_POLICY',
+        },
+      });
+    }
+
+    // Add SCHEDULE_EXACT_ALARM permission for Android 12+ (API 31+)
+    const hasExactAlarmPermission = permissions.some(
+      (permission) =>
+        permission.$['android:name'] === 'android.permission.SCHEDULE_EXACT_ALARM'
+    );
+
+    if (!hasExactAlarmPermission) {
+      permissions.push({
+        $: {
+          'android:name': 'android.permission.SCHEDULE_EXACT_ALARM',
+        },
+      });
+    }
+
+    // Add USE_EXACT_ALARM permission for Android 13+ (API 33+)
+    const hasUseExactAlarmPermission = permissions.some(
+      (permission) =>
+        permission.$['android:name'] === 'android.permission.USE_EXACT_ALARM'
+    );
+
+    if (!hasUseExactAlarmPermission) {
+      permissions.push({
+        $: {
+          'android:name': 'android.permission.USE_EXACT_ALARM',
         },
       });
     }
@@ -382,41 +448,60 @@ const withRingerModeFiles = (config) => {
   ]);
 };
 
-// Register the package in MainApplication.java
+// Register the package in MainApplication (supports both Kotlin and Java)
 const withRingerModePackage = (config) => {
   return withMainApplication(config, (config) => {
     const { modResults } = config;
     let contents = modResults.contents;
 
-    // Add import for RingerModePackage
-    const importStatement = 'import com.talukders.sukoon.RingerModePackage;';
-    if (!contents.includes(importStatement)) {
-      // Add import after other imports
-      contents = contents.replace(
-        /(import com\.facebook\.react\.defaults\.DefaultReactNativeHost;)/,
-        `$1\n${importStatement}`
-      );
-    }
+    const isKotlin = contents.includes('fun getPackages()');
 
-    // Add package to getPackages()
-    const packageAddition = 'packages.add(new RingerModePackage());';
-    if (!contents.includes(packageAddition)) {
-      // Add to getPackages() method
-      contents = contents.replace(
-        /(protected List<ReactPackage> getPackages\(\) {[\s\S]*?return packages;)/,
-        (match) => {
-          // Add before the return statement
-          return match.replace(
+    if (isKotlin) {
+      // --- Kotlin MainApplication (Expo 51+) ---
+      const ktImport = 'import com.talukders.sukoon.RingerModePackage';
+      if (!contents.includes(ktImport)) {
+        // Add import after the last existing import line
+        contents = contents.replace(
+          /(import expo\.modules\.ReactNativeHostWrapper)/,
+          `$1\n${ktImport}`
+        );
+      }
+
+      const ktPackageAdd = 'packages.add(RingerModePackage())';
+      if (!contents.includes(ktPackageAdd)) {
+        // Insert before "return packages" inside getPackages()
+        contents = contents.replace(
+          /(val packages = PackageList\(this\)\.packages)/,
+          `$1\n            ${ktPackageAdd}`
+        );
+      }
+
+      console.log('✅ Registered RingerModePackage in MainApplication.kt (Kotlin)');
+    } else {
+      // --- Java MainApplication (legacy Expo) ---
+      const javaImport = 'import com.talukders.sukoon.RingerModePackage;';
+      if (!contents.includes(javaImport)) {
+        contents = contents.replace(
+          /(import com\.facebook\.react\.defaults\.DefaultReactNativeHost;)/,
+          `$1\n${javaImport}`
+        );
+      }
+
+      const javaPackageAdd = 'packages.add(new RingerModePackage());';
+      if (!contents.includes(javaPackageAdd)) {
+        contents = contents.replace(
+          /(protected List<ReactPackage> getPackages\(\) {[\s\S]*?return packages;)/,
+          (match) => match.replace(
             'return packages;',
-            `          ${packageAddition}\n          return packages;`
-          );
-        }
-      );
+            `          ${javaPackageAdd}\n          return packages;`
+          )
+        );
+      }
+
+      console.log('✅ Registered RingerModePackage in MainApplication.java (Java)');
     }
 
     modResults.contents = contents;
-    console.log('✅ Registered RingerModePackage in MainApplication.java');
-    
     return config;
   });
 };

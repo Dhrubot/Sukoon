@@ -1,25 +1,25 @@
 import { Platform, Linking } from 'react-native';
 import * as InAppPurchases from 'react-native-iap';
-import StorageService from './StorageService';
-import { Donation } from '../types';
+import StorageService from '../StorageService';
+import { Donation } from '../../types';
 
 // Donation product IDs
 const DONATION_PRODUCTS = {
   COFFEE: Platform.select({
-    ios: 'com.prayerbuddy.donate.coffee',
-    android: 'com.prayerbuddy.donate.coffee',
+    ios: 'com.talukders.sukoon.donate.coffee',
+    android: 'com.talukders.sukoon.donate.coffee',
   }) as string,
   MEAL: Platform.select({
-    ios: 'com.prayerbuddy.donate.meal',
-    android: 'com.prayerbuddy.donate.meal',
+    ios: 'com.talukders.sukoon.donate.meal',
+    android: 'com.talukders.sukoon.donate.meal',
   }) as string,
   GENEROUS: Platform.select({
-    ios: 'com.prayerbuddy.donate.generous',
-    android: 'com.prayerbuddy.donate.generous',
+    ios: 'com.talukders.sukoon.donate.generous',
+    android: 'com.talukders.sukoon.donate.generous',
   }) as string,
   CUSTOM: Platform.select({
-    ios: 'com.prayerbuddy.donate.custom',
-    android: 'com.prayerbuddy.donate.custom',
+    ios: 'com.talukders.sukoon.donate.custom',
+    android: 'com.talukders.sukoon.donate.custom',
   }) as string,
 };
 
