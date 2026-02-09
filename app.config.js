@@ -27,7 +27,8 @@ export default {
           app_id: "ca-app-pub-5474984690525462~1671116769",
         },
       },
-      jsEngine: "hermes"
+      jsEngine: "hermes",
+      googleServicesFile: "./GoogleService-Info.plist",
     },
     android: {
       appBundles: true,
@@ -53,11 +54,11 @@ export default {
         googleMobileAds: {
           app_id: "ca-app-pub-5474984690525462~6816196886",
         },
-      }
+      },
+      googleServicesFile: "./google-services.json",
     },
     plugins: [
-      // NOTE: Add "@react-native-firebase/app" here once google-services.json
-      // and GoogleService-Info.plist are placed in the project root.
+      "@react-native-firebase/app" ,
       "./plugins/withUsageStats.js",
       "./plugins/withModularHeaders.js",
       "./plugins/withAndroidIapFlavor.js",
