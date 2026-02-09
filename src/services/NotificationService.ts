@@ -14,6 +14,7 @@ import AdhanPlayer from './notifications/AdhanPlayer';
 import { scheduleTier2PersistentReminders, scheduleTier3GracePeriodWarning } from './notifications/HabitBuilderNotifications';
 import { isValidCoordinates } from '../utils/locationValidation';
 import logger from '../utils/logger';
+import AnalyticsService from './AnalyticsService';
 
 // NOTIFICATION_CATEGORIES now imported from ./notifications/NotificationChannels
 
@@ -249,6 +250,13 @@ class NotificationService {
       const { notification, actionIdentifier } = response;
       const data = notification.request.content.data;
 
+      // Log notification tap
+      AnalyticsService.logEvent('notification_tapped', {
+        action: actionIdentifier,
+        prayer: (data?.prayer as string) || 'unknown',
+        type: (data?.type as string) || 'unknown',
+      });
+
       // If user taps the notification itself, play full Adhan
       if (actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER) {
         // Play adhan for both prayer-time and test notifications
@@ -330,6 +338,7 @@ class NotificationService {
             // Cancel all future reminders for this prayer
             await this.cancelPrayerReminderFlow(data.prayerId as string);
             
+            AnalyticsService.logPrayerMissed(data.prayer as string);
             logger.log('⏭️ Prayer skipped:', data.prayerId);
           }
           break;

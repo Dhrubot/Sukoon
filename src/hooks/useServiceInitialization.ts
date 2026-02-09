@@ -14,6 +14,7 @@ import { NOTIFICATION_RESCHEDULE_TASK } from '../tasks/notificationRescheduleTas
 import SubscriptionService from '../services/monetization/SubscriptionService';
 import AdService from '../services/monetization/AdService';
 import DonationService from '../services/monetization/DonationService';
+import AnalyticsService from '../services/AnalyticsService';
 
 export const useServiceInitialization = () => {
   const { todayPrayerTimes, nextPrayer, isLoading, hasValidLocation } =
@@ -47,6 +48,7 @@ export const useServiceInitialization = () => {
           console.warn('⚠️ Failed to register background notification rescheduler:', error);
         }
 
+        AnalyticsService.logEvent('app_open');
         console.log("✅ All core services initialized");
       } catch (error) {
         console.error("❌ Error initializing services:", error);

@@ -34,6 +34,7 @@ import { usePrayerTimes } from "../../providers/PrayerTimesProvider";
 import { PrayerTime, MindfulnessSession, PrayerRecord } from "../../types";
 import { RootStackParamList } from "../../types/navigation";
 import AchievementService from "../../services/AchievementService";
+import AnalyticsService from "../../services/AnalyticsService";
 
 const { width, height } = Dimensions.get("window");
 
@@ -67,6 +68,11 @@ const MindfulnessFlow: React.FC = () => {
   const [sessionStartTime] = useState(new Date());
   const [isBreathingActive, setIsBreathingActive] = useState(true);
   const [hasValidated, setHasValidated] = useState(false);
+
+  // Analytics: log mindfulness started
+  useEffect(() => {
+    AnalyticsService.logEvent('mindfulness_started', { prayer: prayer.name });
+  }, []);
 
   // Animations
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -225,6 +231,16 @@ const MindfulnessFlow: React.FC = () => {
     // Save prayer record
     StorageService.savePrayerRecordWithTracking(prayerRecord);
     addPrayerRecord(prayerRecord);
+
+    // Analytics
+    AnalyticsService.logPrayerCompleted(prayer.name, true);
+    AnalyticsService.logEvent('mindfulness_completed', {
+      prayer: prayer.name,
+      duration: session.duration,
+      mood: selectedMood,
+      breathing_completed: session.breathingCompleted,
+      reflection_added: session.reflectionCompleted,
+    });
 
     // Check for unlocked achievements
     const unlockedAchievements = await AchievementService.checkAchievements();

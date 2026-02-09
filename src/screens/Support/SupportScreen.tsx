@@ -24,6 +24,7 @@ import SubscriptionService from '../../services/monetization/SubscriptionService
 import AdService from '../../services/monetization/AdService';
 import DonationService, { DONATION_TIERS } from '../../services/monetization/DonationService';
 import StorageService from '../../services/StorageService';
+import AnalyticsService from '../../services/AnalyticsService';
 
 // Types
 import { SubscriptionPlan } from '../../types';
@@ -41,6 +42,11 @@ const SupportScreen: React.FC = () => {
   const [canWatchAd, setCanWatchAd] = useState(false);
   const [hoursUntilNextAd, setHoursUntilNextAd] = useState(0);
   const [selectedTab, setSelectedTab] = useState<'subscription' | 'watch' | 'donate'>('subscription');
+
+  const handleTabChange = (tab: 'subscription' | 'watch' | 'donate') => {
+    setSelectedTab(tab);
+    AnalyticsService.logEvent('premium_card_tapped', { tab });
+  };
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
@@ -367,7 +373,7 @@ const SupportScreen: React.FC = () => {
               key={tab}
               style={[styles.tab, selectedTab === tab && styles.tabActive]}
               onPress={() => {
-                setSelectedTab(tab);
+                handleTabChange(tab);
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               }}
             >

@@ -18,6 +18,7 @@ import {
 } from "../types";
 import { createStorage } from "./StorageAdapter";
 import { PRAYER_NAMES as PrayerName } from "../constants";
+import AnalyticsService from './AnalyticsService';
 
 class StorageService {
   private storage;
@@ -275,6 +276,12 @@ class StorageService {
     const longest = this.storage.getNumber("longest_streak") || 0;
     if (current > longest) {
       this.storage.set("longest_streak", current);
+    }
+
+    // Log streak milestones
+    const milestones = [7, 30, 60, 100, 365];
+    if (milestones.includes(current)) {
+      AnalyticsService.logStreakMilestone(current);
     }
   }
 

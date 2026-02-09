@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useStore } from '../store/useStore';
 import MosqueModeService from '../services/MosqueModeService';
+import AnalyticsService from '../services/AnalyticsService';
 import { PrayerTime, PrayerName, MosqueModeSettings } from '../types';
 
 export const useMosqueMode = () => {
@@ -41,6 +42,12 @@ export const useMosqueMode = () => {
     };
 
     setUserSettings(updated);
+
+    if (enabled) {
+      AnalyticsService.logEvent('mosque_mode_activated');
+    } else {
+      AnalyticsService.logEvent('mosque_mode_deactivated');
+    }
   }, [userSettings, setUserSettings]);
 
   // Update iqamah offset for a prayer

@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
+import AnalyticsService from '../../services/AnalyticsService';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import * as Location from 'expo-location';
@@ -115,6 +116,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
     StorageService.setUserSettings(settings);
     setUserSettings(settings);
 
+    AnalyticsService.logOnboardingCompleted();
     onComplete();
   };
 

@@ -18,6 +18,7 @@ import { useTheme } from '../../providers/ThemeProvider';
 import { useIsFocused } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { useStore } from '../../store/useStore';
+import AnalyticsService from '../../services/AnalyticsService';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const COMPASS_SIZE = Math.min(SCREEN_WIDTH - 64, 300);
@@ -426,6 +427,7 @@ const QiblaFinderScreen: React.FC = () => {
       stopHeading();
       return;
     }
+    AnalyticsService.logEvent('qibla_opened');
     // Reset sensor refs on re-focus to prevent stale catch-up animation
     smoothedHeadingRef.current = null;
     lastUpdateMsRef.current = 0;
