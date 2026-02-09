@@ -15,8 +15,8 @@ class AchievementService {
     // Prayer Achievements
     {
       id: 'first_prayer',
-      name: 'First Step',
-      description: 'Complete your first prayer',
+      name: 'The First Light',
+      description: 'Begin your journey with your first prayer',
       icon: '🌟',
       category: 'prayer',
       tier: 'bronze',
@@ -28,8 +28,8 @@ class AchievementService {
     },
     {
       id: 'perfect_day',
-      name: 'Perfect Day',
-      description: 'Complete all 5 prayers in one day',
+      name: 'A Day of Remembrance',
+      description: 'Offer all 5 prayers in a single day',
       icon: '✨',
       category: 'prayer',
       tier: 'silver',
@@ -42,9 +42,9 @@ class AchievementService {
     },
     {
       id: 'prayer_25',
-      name: 'Quarter Century',
-      description: 'Complete 25 prayers',
-      icon: '🎯',
+      name: 'Growing Roots',
+      description: 'Offer 25 prayers',
+      icon: '�',
       category: 'prayer',
       tier: 'bronze',
       target: 25,
@@ -55,9 +55,9 @@ class AchievementService {
     },
     {
       id: 'prayer_100',
-      name: 'Century',
-      description: 'Complete 100 prayers',
-      icon: '💯',
+      name: 'Steadfast Heart',
+      description: 'Offer 100 prayers',
+      icon: '�',
       category: 'prayer',
       tier: 'silver',
       target: 100,
@@ -68,8 +68,8 @@ class AchievementService {
     },
     {
       id: 'prayer_500',
-      name: 'Devoted Worshipper',
-      description: 'Complete 500 prayers',
+      name: 'Devoted Soul',
+      description: 'Offer 500 prayers',
       icon: '🕌',
       category: 'prayer',
       tier: 'gold',
@@ -81,9 +81,9 @@ class AchievementService {
     },
     {
       id: 'prayer_1000',
-      name: 'Thousand Blessings',
-      description: 'Complete 1000 prayers',
-      icon: '🏆',
+      name: 'A Thousand Blessings',
+      description: 'Offer 1000 prayers — may each one draw you closer',
+      icon: '🤲',
       category: 'prayer',
       tier: 'platinum',
       target: 1000,
@@ -96,9 +96,9 @@ class AchievementService {
     // Streak Achievements
     {
       id: 'streak_3',
-      name: 'Getting Started',
-      description: 'Maintain a 3-day streak',
-      icon: '🔥',
+      name: 'Seeds of Habit',
+      description: 'Pray consistently for 3 days',
+      icon: '🌿',
       category: 'streak',
       tier: 'bronze',
       target: 3,
@@ -109,9 +109,9 @@ class AchievementService {
     },
     {
       id: 'streak_7',
-      name: 'Week Warrior',
-      description: 'Maintain a 7-day streak',
-      icon: '📅',
+      name: 'A Week of Devotion',
+      description: 'Pray consistently for 7 days',
+      icon: '🌙',
       category: 'streak',
       tier: 'silver',
       target: 7,
@@ -122,9 +122,9 @@ class AchievementService {
     },
     {
       id: 'streak_30',
-      name: 'Monthly Master',
-      description: 'Maintain a 30-day streak',
-      icon: '🌙',
+      name: 'Unwavering Faith',
+      description: 'Pray consistently for 30 days',
+      icon: '🕋',
       category: 'streak',
       tier: 'gold',
       target: 30,
@@ -135,8 +135,8 @@ class AchievementService {
     },
     {
       id: 'streak_100',
-      name: 'Century of Consistency',
-      description: 'Maintain a 100-day streak',
+      name: 'The Constant Servant',
+      description: 'Pray consistently for 100 days',
       icon: '💎',
       category: 'streak',
       tier: 'platinum',
@@ -150,8 +150,8 @@ class AchievementService {
     // Mindfulness Achievements
     {
       id: 'mindful_first',
-      name: 'Mindful Beginning',
-      description: 'Complete your first mindfulness session',
+      name: 'Present Heart',
+      description: 'Complete your first mindful prayer preparation',
       icon: '🧘',
       category: 'mindfulness',
       tier: 'bronze',
@@ -163,8 +163,8 @@ class AchievementService {
     },
     {
       id: 'mindful_10',
-      name: 'Mindful Practitioner',
-      description: 'Complete 10 mindfulness sessions',
+      name: 'Inner Stillness',
+      description: 'Prepare mindfully for 10 prayers',
       icon: '🌸',
       category: 'mindfulness',
       tier: 'silver',
@@ -176,8 +176,8 @@ class AchievementService {
     },
     {
       id: 'mindful_50',
-      name: 'Zen Master',
-      description: 'Complete 50 mindfulness sessions',
+      name: 'The Contemplative',
+      description: 'Prepare mindfully for 50 prayers',
       icon: '🪷',
       category: 'mindfulness',
       tier: 'gold',
@@ -191,9 +191,9 @@ class AchievementService {
     // Focus Achievements
     {
       id: 'focus_high',
-      name: 'Laser Focus',
-      description: 'Achieve 90%+ focus score 5 times',
-      icon: '🎯',
+      name: 'Khushu',
+      description: 'Achieve deep focus in prayer 5 times',
+      icon: '✨',
       category: 'focus',
       tier: 'silver',
       target: 5,
@@ -204,8 +204,8 @@ class AchievementService {
     },
     {
       id: 'focus_perfect_week',
-      name: 'Perfect Focus Week',
-      description: 'Maintain 80%+ average focus for a week',
+      name: 'Week of Presence',
+      description: 'Maintain deep presence in prayer for a full week',
       icon: '⭐',
       category: 'focus',
       tier: 'gold',
@@ -219,8 +219,8 @@ class AchievementService {
     // Reflection Achievements
     {
       id: 'reflection_10',
-      name: 'Thoughtful',
-      description: 'Add reflections to 10 prayers',
+      name: 'Words of the Heart',
+      description: 'Reflect after 10 prayers',
       icon: '💭',
       category: 'mindfulness',
       tier: 'bronze',
@@ -232,8 +232,8 @@ class AchievementService {
     },
     {
       id: 'reflection_50',
-      name: 'Deep Thinker',
-      description: 'Add reflections to 50 prayers',
+      name: 'The Reflective Soul',
+      description: 'Reflect after 50 prayers',
       icon: '📖',
       category: 'mindfulness',
       tier: 'silver',
@@ -247,8 +247,8 @@ class AchievementService {
     // Special Achievements
     {
       id: 'early_bird',
-      name: 'Early Bird',
-      description: 'Pray Fajr on time for 7 consecutive days',
+      name: 'Guardian of the Dawn',
+      description: 'Pray Fajr on time for 7 days',
       icon: '🌅',
       category: 'special',
       tier: 'gold',
@@ -260,8 +260,8 @@ class AchievementService {
     },
     {
       id: 'night_owl',
-      name: 'Night Owl',
-      description: 'Never miss Isha for 30 days',
+      name: 'Keeper of the Night',
+      description: 'Pray Isha faithfully for 30 days',
       icon: '🌃',
       category: 'special',
       tier: 'gold',
@@ -273,8 +273,8 @@ class AchievementService {
     },
     {
       id: 'ramadan_warrior',
-      name: 'Ramadan Warrior',
-      description: 'Perfect prayers during Ramadan',
+      name: 'Blessed Month',
+      description: 'Complete all prayers during Ramadan',
       icon: '🌙',
       category: 'special',
       tier: 'platinum',
@@ -286,9 +286,9 @@ class AchievementService {
     },
     {
       id: 'comeback_king',
-      name: 'Comeback King',
-      description: 'Return to perfect day after missing prayers',
-      icon: '💪',
+      name: 'Tawbah',
+      description: 'Return to a full day of prayer after missing some — Allah loves those who repent',
+      icon: '�️',
       category: 'special',
       tier: 'silver',
       checkCondition: async () => {

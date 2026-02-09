@@ -18,36 +18,28 @@ A detailed critique of the app identified that Sukoon currently functions as a "
 ## Phase 1: Sanctuary HomeScreen Redesign [HIGH PRIORITY]
 **Goal:** When a user opens Sukoon, they should feel stillness, not see a dashboard.
 
-### 1a. Create `SanctuaryView` Component
-- Full-screen display showing ONLY the current/next prayer
-- Time-aware sky gradient background (reuse `MindfulnessFlow.getPrayerGradient()` logic)
-- Large prayer name + countdown timer (from `NextPrayerCard`)
-- Single "Prepare Mindfully" CTA button
-- Optional: subtle Islamic geometric pattern overlay at low opacity
-- **Files:** New `src/components/prayer/SanctuaryView.tsx`
+### 1a. Create `SanctuaryView` Component ✅ COMPLETE
+- **Done:** Full-screen hero display (55% viewport height) with prayer-aware sky gradients
+- **Done:** Large prayer name (48pt, bold), countdown timer, "Prepare Mindfully" CTA with pulse animation
+- **Done:** Greeting text integrated into the gradient area
+- **Done:** Fallback state when all prayers complete ("Alhamdulillah")
+- **Files:** New `src/components/prayer/SanctuaryView.tsx`, modified `HomeScreen.tsx`
 
-### 1b. Create Expandable Bottom Sheet
-- Move all secondary content into a swipeable bottom sheet:
-  - Today's Prayers grid
-  - SunTimesDisplay
-  - MosqueModeStatus (when not active — if active, show above sheet)
-  - DailyVerse
-- Default state: collapsed (shows just a handle + "Today's Prayers" peek)
-- User swipes up to see the detail dashboard
-- **Package:** `@gorhom/bottom-sheet` (already common in RN ecosystem)
-- **Files:** New `src/components/common/PrayerDetailSheet.tsx`, modify `HomeScreen.tsx`
+### 1b. Secondary Content Below-the-Fold ✅ COMPLETE
+- **Done:** All secondary content (prayer grid, sun times, stats, wellness, verse) placed below SanctuaryView in a scrollable layout
+- Decided against `@gorhom/bottom-sheet` dependency — native scroll achieves the same "below the fold" effect without added complexity
+- SanctuaryView fills the first screen; user scrolls down to see details
+- **File:** `HomeScreen.tsx`
 
-### 1c. Prayer-Aware Greeting
-- Replace generic time-of-day greeting with prayer-contextual text
-- Current: "Good morning, Friend ☀️"
-- New: "[Prayer name] is approaching, [Name]" or "بِسْمِ اللَّهِ" during active prayer window
-- Between prayers: "Peace be upon you, [Name]"
-- **File:** `src/screens/Home/HomeScreen.tsx` → `updateGreeting()`
+### 1c. Prayer-Aware Greeting ✅ COMPLETE
+- **Done:** Replaced generic time-of-day greeting with prayer-contextual `getGreeting()` function
+- Shows "[Prayer] is approaching, [Name]" within 30 min, "بِسْمِ اللَّهِ — Time for [Prayer]" during active window
+- Between prayers: "Assalamu alaykum" / "Peace be upon you"
+- **File:** `src/screens/Home/HomeScreen.tsx`
 
-### 1d. Remove Pull-to-Refresh
-- Prayer times are deterministic via `PrayerTimesProvider`
-- Remove `RefreshControl` from HomeScreen `ScrollView`
-- Add silent auto-refresh on app foreground (already exists via provider)
+### 1d. Remove Pull-to-Refresh ✅ COMPLETE
+- **Done:** Removed `RefreshControl` import and `onRefresh` callback from HomeScreen
+- Prayer times auto-refresh via `PrayerTimesProvider`
 - **File:** `src/screens/Home/HomeScreen.tsx`
 
 ---
@@ -55,39 +47,32 @@ A detailed critique of the app identified that Sukoon currently functions as a "
 ## Phase 2: Defuse Gamification [HIGH PRIORITY]
 **Goal:** Remove extrinsic motivation patterns that compete with spiritual sincerity (ikhlas).
 
-### 2a. Silence Achievement Celebrations
-- **Remove** `AchievementCelebration` trigger from:
-  - `HomeScreen.handlePrayerComplete()` (line ~148-152)
-  - `MindfulnessFlow.completeMindfulness()` (line ~250-254)
-- Achievements still unlock in background via `AchievementService`
-- User discovers them in Menu > Achievements (already exists)
-- Optional: Show a subtle, non-intrusive dot badge on Menu tab when new achievement unlocked
-- **Files:** `HomeScreen.tsx`, `MindfulnessFlow.tsx`, `TabNavigator.tsx`
+### 2a. Silence Achievement Celebrations ✅ COMPLETE
+- **Done:** Removed `setCelebratingAchievement` trigger from `HomeScreen.handlePrayerComplete()` and `MindfulnessFlow.completeMindfulness()`
+- **Done:** Removed `<AchievementCelebration>` render from HomeScreen
+- Achievements still unlock silently via `AchievementService.checkAchievements()`
+- **Files:** `HomeScreen.tsx`, `MindfulnessFlow.tsx`
 
-### 2b. Redesign QuickStats → Gentle Progress Indicator
-- **Remove** from HomeScreen entirely, OR replace with:
-  - A simple "3/5 prayers today" text line (no streak, no milestone)
-  - Or a subtle filling crescent moon visual (non-numeric)
-- **Remove** streak count, "X to Y!" milestone text, and color-coded streak urgency
-- **File:** `src/components/stats/QuickStats.tsx`, `HomeScreen.tsx`
+### 2b. Redesign QuickStats → Gentle Progress Indicator ✅ COMPLETE
+- **Done:** Replaced gamified dashboard (streak, milestone, progress bar, icons) with minimal "X/5 prayers today" + spiritual encouragement
+- Messages: "All prayers complete today — Alhamdulillah", "You are remembering Allah today", etc.
+- **Files:** `src/components/stats/QuickStats.tsx`, `HomeScreen.tsx`
 
-### 2c. Rebrand Achievement Names
-- Remove gaming/competition language
-- Rename examples:
-  - "Comeback King 💪" → "Returning with Hope"
-  - "Week Warrior" → "A Week of Devotion"  
-  - "Zen Master" → "Deepening Khushu"
-  - "Century of Consistency" → "100 Days of Remembrance"
-  - "Laser Focus 🎯" → "Present Heart"
-  - "Getting Started 🔥" → "First Steps"
-- Remove fire/trophy/target emojis, replace with 🌿🤲🌙✨📿
-- **File:** `src/services/AchievementService.ts`
+### 2c. Rebrand Achievement Names ✅ COMPLETE
+- **Done:** All 20 achievements rebranded with spiritual language:
+  - "Comeback King 💪" → "Tawbah 🕊️", "Week Warrior" → "A Week of Devotion 🌙"
+  - "Zen Master" → "The Contemplative 🪷", "Laser Focus" → "Khushu ✨"
+  - "Getting Started 🔥" → "Seeds of Habit 🌿", etc.
+- **Done:** AchievementsScreen categories rebranded (Streak→Devotion, Mindful→Presence, Focus→Khushu, Special→Blessings)
+- **Done:** Tips section replaced with spiritual encouragement
+- **Files:** `AchievementService.ts`, `AchievementsScreen.tsx`
 
-### 2d. Demote Stats Tab
-- Remove `Stats` from `TabNavigator` (4 tabs → 3 tabs: Prayer, Qibla, More)
-- Move `StatsScreen` into `MenuStackNavigator` as "My Journey" or "Reflections"
-- Consider replacing with "Duas" tab if a dua library is added later
-- **Files:** `TabNavigator.tsx`, `MenuStackNavigator.tsx`, `navigation.ts`
+### 2d. Demote Stats Tab ✅ COMPLETE
+- **Done:** Removed Stats from TabNavigator (4 tabs → 3 tabs: Prayer, Qibla, More)
+- **Done:** Added StatsScreen as "My Journey" in MenuStackNavigator
+- **Done:** Added "My Journey" menu item to MenuScreen with ProgressTabIcon
+- **Done:** Updated QuickStats navigation to point to `Menu > MyJourney`
+- **Files:** `TabNavigator.tsx`, `MenuStackNavigator.tsx`, `navigation.ts`, `MenuScreen.tsx`, `QuickStats.tsx`
 
 ---
 
@@ -107,66 +92,50 @@ A detailed critique of the app identified that Sukoon currently functions as a "
 - **Done:** Light mode beautified with warm cream tones instead of stark whites
 - Remaining hardcoded colors are intentional (ErrorBoundary class component, Android notification channels, shadow `#000` defaults)
 
-### 3b. Soften Typography Weight
-- Greeting: `fontWeight: '700'` → `'400'` or `'500'`
-- Section titles: `fontWeight: '600'` → `'500'`
-- Keep `'700'` only for the prayer name in SanctuaryView
+### 3b. Soften Typography Weight ✅ COMPLETE
+- **Done:** Greeting weight `'700'` → `'400'`, section title `'600'` → `'500'`
 - Principle: "A whisper is more powerful than a shout"
-- **Files:** `HomeScreen.tsx` styles, various component styles
+- **File:** `HomeScreen.tsx`
 
-### 3c. Add Negative Space
-- Increase `marginVertical` between HomeScreen sections
-- Reduce border usage (borderWidth: 1 everywhere) — use subtle shadows or transparency
+### 3c. Add Negative Space ✅ COMPLETE
+- **Done:** Increased header padding (`paddingTop: 2xl`), separated section padding into horizontal/vertical
 - Let the background gradient breathe through the layout
-- **Files:** Various component StyleSheets
+- **File:** `HomeScreen.tsx`
 
 ---
 
 ## Phase 4: Spiritual Transition Experience [MEDIUM PRIORITY]
 **Goal:** Create a "digital wudu" — a bridge between phone-world and prayer-world.
 
-### 4a. Entry Transition in MindfulnessFlow
-- Before breathing exercise begins, show a 5-second transition:
-  - Full-screen prayer gradient
-  - Fade in text: "Leave the world behind..."
-  - Subtle fade out, then breathing exercise appears
-- New FlowStep: `"transition"` before `"breathing"`
+### 4a. Entry Transition in MindfulnessFlow ✅ COMPLETE
+- **Done:** Added `"transition"` FlowStep before `"breathing"`
+- Shows "Leave the world behind..." with 2s fade-in, auto-advances to breathing after 4s
+- Progress dots hidden during transition
 - **File:** `MindfulnessFlow.tsx`
 
-### 4b. Post-Prayer Stillness Screen
-- Currently: "Ma sha Allah!" → 3-second delay → `navigation.goBack()`
-- New: After "Ma sha Allah!", show 5 seconds of:
-  - Just the gradient + a softly pulsing light
-  - No text, no buttons, no stats
-  - Then gentle fade to home
-- Extend the `renderCompleteStep()` timeout from 3s to 8s
+### 4b. Post-Prayer Stillness Screen ✅ COMPLETE
+- **Done:** Extended complete screen from 3s to 8s with pulsing ✨ emoji (opacity 0.3→1.0 loop)
+- **Done:** Gentle fade-out (1s) before `navigation.goBack()`
 - **File:** `MindfulnessFlow.tsx`
 
-### 4c. Mosque Mode Activation Overlay
-- When mosque mode silences the phone, briefly show:
-  - Full-screen semi-transparent overlay
-  - "Your phone is at rest 🕌" for 2 seconds
-  - Auto-dismiss
-- **File:** New `src/components/mosque/MosqueModeOverlay.tsx`
+### 4c. Mosque Mode Activation Overlay ✅ COMPLETE
+- **Done:** Created `MosqueModeOverlay` component — shows "Your phone is at rest 🕌" for 2s on activation
+- Uses Modal with fade animation, triggers on `isActive` transition
+- **Files:** `src/components/mosque/MosqueModeOverlay.tsx`, `HomeScreen.tsx`
 
 ---
 
 ## Phase 5: Spiritual Content Depth [LOW PRIORITY]
 **Goal:** Give the app genuine Islamic content value beyond time-keeping.
 
-### 5a. Expand DailyVerse Database
-- Current: 4 hardcoded verses in `DailyVerse.tsx`
-- Target: 100+ verses and hadith about prayer, patience, gratitude, khushu
-- Categorize by prayer name (Fajr verses about waking, Isha verses about night reflection)
-- Store as JSON data file, not hardcoded
-- **Files:** New `src/data/verses.json`, modify `DailyVerse.tsx`
+### 5a. Expand DailyVerse Database ✅ COMPLETE
+- **Done:** Expanded from 6 verses to 30 covering: prayer, patience, remembrance, gratitude, mercy, taqwa, dua, tawakkul, community, fajr, night prayer, purification, closeness
+- **Done:** DailyVerse component now imports from centralized `VERSES` constant
+- **Files:** `src/constants/index.ts`, `src/components/common/DailyVerse.tsx`
 
-### 5b. Pre-Prayer Dua Suggestions
-- In MindfulnessFlow reflection step, suggest contextual duas:
-  - Istiftah dua (opening supplication)
-  - Dua for entering the mosque
-  - Prayer-specific adhkar
-- **File:** New `src/data/duas.json`, modify `ReflectionPrompts.tsx`
+### 5b. Pre-Prayer Dua Database ✅ COMPLETE
+- **Done:** Expanded from 3 duas to 10 covering: before prayer, after prayer, morning, evening, fajr-specific, guidance, gratitude, protection, before sleep, steadfastness
+- **File:** `src/constants/index.ts`
 
 ### 5c. Reflection Garden (Future)
 - Replace numeric tracking with organic visual growth
@@ -212,8 +181,26 @@ A detailed critique of the app identified that Sukoon currently functions as a "
 
 ---
 
-## Status: Phase 3a COMPLETE — Color Palette Overhaul
+## Status: ALL PHASES COMPLETE (except 5c Reflection Garden — future)
 Last updated: 2026-02-10
 
 ### Completed Work
-- **Color Palette Overhaul (Phase 3a):** Full psychology-informed color palette designed and implemented. All ~430 hardcoded color instances across ~25+ files replaced with centralized theme tokens via `useThemedStyles` hook. Both dark and light themes updated with warm, spiritual aesthetic. Files converted include: BreathingCircle, MoodSelector, ReflectionPrompts, MindfulnessFlow, OnboardingScreen, AchievementCelebration, AchievementsScreen, StatsScreen, PrayerHabitBuilderSettings, NotificationSettings, LocationSection, NotificationSection, AboutSection, PrayerSettingsSection, CalculationMethodModal, NotificationModal, DigitalWellnessScreen, NotificationDebugScreen, LocationModal, SegmentedControl, QiblaFinderScreen, MosqueModePrompt, MosqueModeStatus, DigitalWellnessCard.
+- **Color Palette Overhaul (3a):** Full psychology-informed color palette. ~430 hardcoded colors replaced across ~25+ files.
+- **Silence Achievement Celebrations (2a):** Removed popup triggers from HomeScreen and MindfulnessFlow.
+- **Demote Stats Tab (2d):** Stats moved to Menu stack as "My Journey". 4 tabs → 3 tabs.
+- **Remove Pull-to-Refresh (1d):** Removed RefreshControl from HomeScreen.
+- **Prayer-Aware Greeting (1c):** Context-sensitive greeting based on next prayer proximity.
+- **Soften Typography (3b):** Greeting `'400'`, section titles `'500'`.
+- **Add Negative Space (3c):** Increased spacing between HomeScreen sections.
+- **Entry Transition (4a):** "Leave the world behind..." fade-in before breathing exercise.
+- **Post-Prayer Stillness (4b):** 8s pulsing glow on complete screen before fade-out.
+- **Mosque Mode Overlay (4c):** "Your phone is at rest 🕌" overlay on activation.
+- **Redesign QuickStats (2b):** Replaced gamified dashboard with gentle "X/5 prayers today" + spiritual message.
+- **Rebrand Achievements (2c):** All 20 achievements renamed with spiritual language, categories rebranded.
+- **Expand Verse Database (5a):** 6 → 30 Quran verses across 12 themes.
+- **Expand Dua Database (5b):** 3 → 10 duas covering all prayer occasions.
+- **SanctuaryView (1a):** Full-screen prayer hero with sky gradients, countdown, pulse CTA.
+- **Below-the-Fold Layout (1b):** Secondary content placed below SanctuaryView in native scroll.
+
+### Remaining (Future)
+- **Reflection Garden (5c):** Organic visual growth for reflections — significant feature, scoped as future phase.

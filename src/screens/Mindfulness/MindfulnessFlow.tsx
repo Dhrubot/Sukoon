@@ -42,7 +42,7 @@ import WidgetService from "../../services/WidgetService";
 
 const { width, height } = Dimensions.get("window");
 
-type FlowStep = "breathing" | "reflection" | "complete";
+type FlowStep = "transition" | "breathing" | "reflection" | "complete";
 
 const MindfulnessFlow: React.FC = () => {
   const navigation = useNavigation();
@@ -64,10 +64,10 @@ const MindfulnessFlow: React.FC = () => {
     time: new Date(serializedPrayer.time) // Convert ISO string back to Date object
   };
 
-  const { setCurrentMindfulnessSession, addPrayerRecord, setCelebratingAchievement } = useStore();
+  const { setCurrentMindfulnessSession, addPrayerRecord } = useStore();
 
   // Flow state
-  const [currentStep, setCurrentStep] = useState<FlowStep>("breathing");
+  const [currentStep, setCurrentStep] = useState<FlowStep>("transition");
   const [breathCount, setBreathCount] = useState(1);
   const [reflectionText, setReflectionText] = useState("");
   const [selectedMood, setSelectedMood] = useState<number>(0);
@@ -80,10 +80,39 @@ const MindfulnessFlow: React.FC = () => {
     AnalyticsService.logEvent('mindfulness_started', { prayer: prayer.name });
   }, []);
 
+  // 4a: Entry transition — "digital wudu" fade-in then auto-advance
+  useEffect(() => {
+    if (currentStep === 'transition') {
+      // Fade in the transition text
+      Animated.timing(transitionFade, {
+        toValue: 1,
+        duration: 2000,
+        useNativeDriver: true,
+      }).start();
+
+      // After 4 seconds, fade out and move to breathing
+      const timer = setTimeout(() => {
+        Animated.timing(transitionFade, {
+          toValue: 0,
+          duration: 1000,
+          useNativeDriver: true,
+        }).start(() => {
+          setCurrentStep('breathing');
+          fadeAnim.setValue(1);
+          slideAnim.setValue(0);
+        });
+      }, 4000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [currentStep]);
+
   // Animations
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
   const completeScale = useRef(new Animated.Value(0)).current;
+  const transitionFade = useRef(new Animated.Value(0)).current;
+  const stillnessPulse = useRef(new Animated.Value(0.3)).current;
 
   // 🎯 Prayer validation effect - run once on mount
   useEffect(() => {
@@ -240,12 +269,8 @@ const MindfulnessFlow: React.FC = () => {
       reflection_added: session.reflectionCompleted,
     });
 
-    // Check for unlocked achievements
-    const unlockedAchievements = await AchievementService.checkAchievements();
-    if (unlockedAchievements.length > 0) {
-      // Show celebration for first unlocked achievement
-      setCelebratingAchievement(unlockedAchievements[0]);
-    }
+    // Check for unlocked achievements (unlock silently in background)
+    await AchievementService.checkAchievements();
 
     // Animate to complete screen
     Animated.parallel([
@@ -277,10 +302,33 @@ const MindfulnessFlow: React.FC = () => {
         // Haptic success
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-        // Navigate back after delay
+        // 4b: Extended stillness — pulsing light, then gentle fade out
+        // Start pulsing glow animation
+        Animated.loop(
+          Animated.sequence([
+            Animated.timing(stillnessPulse, {
+              toValue: 1,
+              duration: 2000,
+              useNativeDriver: true,
+            }),
+            Animated.timing(stillnessPulse, {
+              toValue: 0.3,
+              duration: 2000,
+              useNativeDriver: true,
+            }),
+          ])
+        ).start();
+
+        // Navigate back after 8 seconds of stillness
         setTimeout(() => {
-          navigation.goBack();
-        }, 3000);
+          Animated.timing(fadeAnim, {
+            toValue: 0,
+            duration: 1000,
+            useNativeDriver: true,
+          }).start(() => {
+            navigation.goBack();
+          });
+        }, 8000);
       });
     });
   };
@@ -369,6 +417,17 @@ const MindfulnessFlow: React.FC = () => {
     </Animated.View>
   );
 
+  const renderTransitionStep = () => (
+    <Animated.View
+      style={[
+        styles.transitionContainer,
+        { opacity: transitionFade },
+      ]}
+    >
+      <Text style={styles.transitionText}>Leave the world behind...</Text>
+    </Animated.View>
+  );
+
   const renderCompleteStep = () => (
     <Animated.View
       style={[
@@ -379,7 +438,7 @@ const MindfulnessFlow: React.FC = () => {
         },
       ]}
     >
-      <Text style={styles.completeEmoji}>✨</Text>
+      <Animated.Text style={[styles.completeEmoji, { opacity: stillnessPulse }]}>✨</Animated.Text>
       <Text style={styles.completeTitle}>Ma sha Allah!</Text>
       <Text style={styles.completeText}>
         You've prepared mindfully for{" "}
@@ -417,25 +476,28 @@ const MindfulnessFlow: React.FC = () => {
             )}
           </View>
 
-          {/* Progress dots */}
-          <View style={styles.progressContainer}>
-            <View style={[styles.progressDot, styles.progressDotActive]} />
-            <View
-              style={[
-                styles.progressDot,
-                currentStep !== "breathing" && styles.progressDotActive,
-              ]}
-            />
-            <View
-              style={[
-                styles.progressDot,
-                currentStep === "complete" && styles.progressDotActive,
-              ]}
-            />
-          </View>
+          {/* Progress dots — hidden during transition and complete */}
+          {currentStep !== 'transition' && currentStep !== 'complete' && (
+            <View style={styles.progressContainer}>
+              <View style={[styles.progressDot, styles.progressDotActive]} />
+              <View
+                style={[
+                  styles.progressDot,
+                  currentStep !== "breathing" && styles.progressDotActive,
+                ]}
+              />
+              <View
+                style={[
+                  styles.progressDot,
+                  currentStep === "reflection" && styles.progressDotActive,
+                ]}
+              />
+            </View>
+          )}
 
           {/* Content */}
           <View style={styles.content}>
+            {currentStep === "transition" && renderTransitionStep()}
             {currentStep === "breathing" && renderBreathingStep()}
             {currentStep === "reflection" && renderReflectionStep()}
             {currentStep === "complete" && renderCompleteStep()}
@@ -594,6 +656,20 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     color: theme.colors.mindfulness.textSecondary,
     textAlign: "center",
     lineHeight: 26,
+  },
+  transitionContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 40,
+  },
+  transitionText: {
+    fontSize: 28,
+    fontWeight: "300",
+    color: theme.colors.mindfulness.textPrimary,
+    textAlign: "center",
+    fontStyle: "italic",
+    letterSpacing: 1,
   },
 });
 

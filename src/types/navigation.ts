@@ -6,7 +6,6 @@ import { MenuStackParamList } from '../navigation/MenuStackNavigator';
 export type TabParamList = {
   Home: undefined;
   QiblaFinder: undefined;
-  Stats: undefined;
   Menu: NavigatorScreenParams<MenuStackParamList>; // Nested stack
 };
 

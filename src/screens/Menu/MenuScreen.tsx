@@ -12,7 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../providers/ThemeProvider';
 import { Icon } from '../../components/common/Icon';
-import { AchievementIcon, DigitalWellnessIcon } from '../../assets/icons';
+import { AchievementIcon, DigitalWellnessIcon, ProgressTabIcon } from '../../assets/icons';
 import Svg, { Path } from 'react-native-svg';
 
 // Settings icon component
@@ -57,6 +57,13 @@ interface MenuItem {
 }
 
 const menuItems: MenuItem[] = [
+  {
+    icon: ProgressTabIcon,
+    title: 'My Journey',
+    subtitle: 'Reflect on your prayer history',
+    screen: 'MyJourney',
+    iconType: 'svg',
+  },
   {
     icon: SettingsIcon,
     title: 'Setup & Health',

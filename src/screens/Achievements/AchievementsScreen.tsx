@@ -107,12 +107,12 @@ const AchievementsScreen: React.FC = () => {
   };
 
   const categories = [
-    { key: 'all', label: 'All', icon: '🏆' },
+    { key: 'all', label: 'All', icon: '✨' },
     { key: 'prayer', label: 'Prayer', icon: '🕌' },
-    { key: 'streak', label: 'Streak', icon: '🔥' },
-    { key: 'mindfulness', label: 'Mindful', icon: '🧘' },
-    { key: 'focus', label: 'Focus', icon: '🎯' },
-    { key: 'special', label: 'Special', icon: '⭐' },
+    { key: 'streak', label: 'Devotion', icon: '🌿' },
+    { key: 'mindfulness', label: 'Presence', icon: '🧘' },
+    { key: 'focus', label: 'Khushu', icon: '�' },
+    { key: 'special', label: 'Blessings', icon: '🌙' },
   ];
 
   if (isLoading) {
@@ -132,7 +132,7 @@ const AchievementsScreen: React.FC = () => {
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={styles.title}>Achievements</Text>
+          <Text style={styles.title}>Spiritual Milestones</Text>
           
           {/* Progress Overview */}
           <View style={styles.progressCard}>
@@ -253,20 +253,20 @@ const AchievementsScreen: React.FC = () => {
           ))}
         </View>
 
-        {/* Tips Section */}
+        {/* Encouragement Section */}
         <View style={styles.tipsSection}>
-          <Text style={styles.tipsTitle}>💡 Achievement Tips</Text>
+          <Text style={styles.tipsTitle}>🤲 Remember</Text>
           <Text style={styles.tipText}>
-            • Complete all 5 daily prayers to build streaks
+            • Every prayer is a conversation with Allah
           </Text>
           <Text style={styles.tipText}>
-            • Use mindfulness mode before prayers for focus achievements
+            • Prepare your heart with breathing before you pray
           </Text>
           <Text style={styles.tipText}>
-            • Add reflections after prayers to unlock special badges
+            • Write reflections to deepen your connection
           </Text>
           <Text style={styles.tipText}>
-            • Consistency is key - small steps lead to big achievements!
+            • The best deeds are those done consistently, even if small
           </Text>
         </View>
       </ScrollView>
