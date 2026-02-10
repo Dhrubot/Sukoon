@@ -34,6 +34,7 @@ import { SunTimesDisplay } from "../../components/common/SunTimesDisplay";
 import { MosqueModeStatus, MosqueModeOverlay } from "../../components/mosque";
 import RamadanTimesCard from "../../components/prayer/RamadanTimesCard";
 import OptionalPrayersSection from "../../components/prayer/OptionalPrayersSection";
+import GardenTeaser from "../../components/garden/GardenTeaser";
 
 // Types
 import { PrayerTime, OptionalPrayerTime } from "../../types";
@@ -273,6 +274,9 @@ const HomeScreen = ({ navigation }: any) => {
 
           {/* Quick Stats */}
           <QuickStats prayersToday={completedToday} />
+
+          {/* Garden Teaser — subtle entry point to Reflection Garden */}
+          <GardenTeaser />
 
           {/* Today's Prayer Times */}
           <View style={styles.section}>

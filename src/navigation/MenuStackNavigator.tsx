@@ -9,10 +9,12 @@ import DigitalWellnessScreen from '../screens/DigitalWellness/DigitalWellnessScr
 import StatsScreen from '../screens/Stats/StatsScreen';
 import SupportScreen from '../screens/Support/SupportScreen';
 import SetupHealthScreen from '../screens/SetupHealth/SetupHealthScreen';
+import ReflectionGardenScreen from '../screens/ReflectionGarden/ReflectionGardenScreen';
 
 export type MenuStackParamList = {
   MenuHome: undefined;
   MyJourney: undefined;
+  ReflectionGarden: undefined;
   Achievements: undefined;
   DigitalWellness: undefined;
   Support: undefined;
@@ -51,6 +53,11 @@ export const MenuStackNavigator: React.FC = () => {
         name="MyJourney"
         component={StatsScreen}
         options={{ title: 'My Journey' }}
+      />
+      <Stack.Screen
+        name="ReflectionGarden"
+        component={ReflectionGardenScreen}
+        options={{ title: 'My Garden' }}
       />
       <Stack.Screen name="Achievements" component={AchievementsScreen} />
       <Stack.Screen

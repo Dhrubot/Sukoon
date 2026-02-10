@@ -137,11 +137,18 @@ A detailed critique of the app identified that Sukoon currently functions as a "
 - **Done:** Expanded from 3 duas to 10 covering: before prayer, after prayer, morning, evening, fajr-specific, guidance, gratitude, protection, before sleep, steadfastness
 - **File:** `src/constants/index.ts`
 
-### 5c. Reflection Garden (Future)
-- Replace numeric tracking with organic visual growth
-- Past reflections appear as growing plants/flowers in a garden view
-- More reflections = denser garden (but no numbers)
-- This is a significant feature — scope as a future phase
+### 5c. Reflection Garden ✅ COMPLETE
+- **Done:** Full "My Garden" screen — organic visual growth replaces numeric tracking
+- **Done:** Prayer-colored emoji plants (Fajr→🪻, Dhuhr→🌳, Asr→🌻, Maghrib→🌺, Isha→🌸) with 3 growth stages (seed/sprout/bloom) based on mood score
+- **Done:** GardenCanvas with time-of-day sky gradients, deterministic organic scatter layout, staggered fade-in animations, gentle breathing oscillation
+- **Done:** WeekTimeline (Mon-Sun dots), ReflectionJournal (recent entries with prayer-colored accents), tap-to-reveal reflection text
+- **Done:** GardenTeaser card on HomeScreen for subtle entry point; "My Garden 🌿" in Menu
+- **Done:** Post-prayer feedback in MindfulnessFlow: "A new bloom appeared in your garden 🌱"
+- **Done:** Ramadan golden glow on bloom-stage plants; sparkle overlay for text reflections
+- **Done:** Beautiful empty state for new users with encouraging CTA
+- **Zero numbers anywhere on the garden screen** — visual density is the only metric
+- **Files:** `src/types/garden.ts`, `src/services/ReflectionGardenService.ts`, `src/hooks/useReflectionGarden.ts`, `src/screens/ReflectionGarden/ReflectionGardenScreen.tsx`, `src/components/garden/GardenCanvas.tsx`, `src/components/garden/GardenPlantView.tsx`, `src/components/garden/WeekTimeline.tsx`, `src/components/garden/ReflectionJournal.tsx`, `src/components/garden/GardenTeaser.tsx`
+- **Modified:** `StorageService.ts` (reflection text cross-ref), `MindfulnessFlow.tsx` (save text + garden hint), `MenuStackNavigator.tsx`, `MenuScreen.tsx`, `HomeScreen.tsx`, `colors.ts` (garden tokens)
 
 ---
 

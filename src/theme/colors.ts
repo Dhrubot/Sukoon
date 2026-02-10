@@ -350,6 +350,20 @@ export const darkTheme = {
     confetti:        celebrationColors,
   },
 
+  // Reflection Garden
+  garden: {
+    soil:          palette.navy600,
+    soilBorder:    palette.navy500,
+    stem:          palette.green800,
+    sparkle:       palette.gold300,
+    emptyDot:      palette.whiteAlpha15,
+    todayRing:     palette.green500,
+    cardBg:        palette.navy700,
+    journalBorder: palette.navy500,
+    accentFajr:    '#7986CB',
+    accentMaghrib: '#CE93D8',
+  },
+
   // Prayer gradients for MindfulnessFlow / SanctuaryView
   prayerGradients: prayerGradients.dark,
 
@@ -527,6 +541,20 @@ export const lightTheme = {
     continueBorder:  palette.whiteAlpha40,
     tiers:           achievementTiers,
     confetti:        celebrationColors,
+  },
+
+  // Reflection Garden
+  garden: {
+    soil:          palette.cream300,
+    soilBorder:    palette.cream400,
+    stem:          palette.green700,
+    sparkle:       palette.gold500,
+    emptyDot:      palette.blackAlpha10,
+    todayRing:     palette.green700,
+    cardBg:        palette.white,
+    journalBorder: palette.cream400,
+    accentFajr:    '#3F51B5',
+    accentMaghrib: '#AD1457',
   },
 
   prayerGradients: prayerGradients.light,

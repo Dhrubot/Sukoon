@@ -908,6 +908,43 @@ class StorageService {
     this.storage.remove(key);
   }
 
+  // Reflection Garden — cross-reference for reflection text
+  saveReflectionText(date: string, prayer: string, text: string): void {
+    const key = `reflection_${date}_${prayer}`;
+    this.storage.set(key, text);
+  }
+
+  getReflectionText(date: string, prayer: string): string | null {
+    const key = `reflection_${date}_${prayer}`;
+    const data = this.storage.getString(key);
+    return data || null;
+  }
+
+  getReflectionsInRange(days: number): { date: string; prayer: string; text: string | null }[] {
+    const results: { date: string; prayer: string; text: string | null }[] = [];
+    const now = new Date();
+    const prayers = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+
+    for (let i = 0; i < days; i++) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+      const dateStr = date.toISOString().split('T')[0];
+
+      for (const prayer of prayers) {
+        const record = this.getPrayerRecord(dateStr, prayer);
+        if (record && (record.reflectionAdded || record.mindfulnessCompleted)) {
+          results.push({
+            date: dateStr,
+            prayer,
+            text: this.getReflectionText(dateStr, prayer),
+          });
+        }
+      }
+    }
+
+    return results;
+  }
+
   // Clear all data
   clearAllData(): void {
     this.storage.clearAll();

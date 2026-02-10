@@ -230,6 +230,12 @@ const MindfulnessFlow: React.FC = () => {
     StorageService.saveMindfulnessSession(session);
     setCurrentMindfulnessSession(session);
 
+    // Save reflection text cross-reference for Reflection Garden journal
+    if (reflectionText.trim().length > 0) {
+      const dateStr = new Date().toISOString().split('T')[0];
+      StorageService.saveReflectionText(dateStr, prayer.name, reflectionText.trim());
+    }
+
     // 🎯 NEW: Enhanced prayer record with validation context
     const prayerRecord: PrayerRecord = {
       id: `prayer_${Date.now()}`,
@@ -446,6 +452,9 @@ const MindfulnessFlow: React.FC = () => {
         {"\n\n"}
         May your prayer be accepted and bring you peace.
       </Text>
+      {reflectionText.length > 0 && (
+        <Text style={styles.gardenHint}>A new bloom appeared in your garden 🌱</Text>
+      )}
     </Animated.View>
   );
 
@@ -659,6 +668,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     color: theme.colors.mindfulness.textSecondary,
     textAlign: "center",
     lineHeight: 26,
+  },
+  gardenHint: {
+    fontSize: 14,
+    color: theme.colors.mindfulness.textMuted,
+    textAlign: "center",
+    fontStyle: "italic",
+    marginTop: 20,
   },
   transitionContainer: {
     flex: 1,
