@@ -951,6 +951,156 @@ class NotificationService {
     });
   }
 
+  // 🌌 TAHAJJUD ENCOURAGEMENT — gentle, occasional reminders
+  private tahajjudMessages = [
+    'The last third of the night... a time when du\'a is never rejected 🌌',
+    'Rise for Tahajjud — even two rak\'ahs bring you closer 🤲',
+    'The night is still... a beautiful time to stand before Allah 🕌',
+    'Those who forsake their beds to invoke their Lord in fear and hope 💫',
+    'A quiet moment with your Creator awaits — Tahajjud time 🌙',
+    'The best prayer after the obligatory ones is the night prayer ⭐',
+    'In the stillness of the night, hearts find their truest voice 🤲',
+  ];
+
+  async scheduleTahajjudEncouragement(): Promise<void> {
+    try {
+      const settings = StorageService.getUserSettings();
+      if (!settings?.tahajjudReminders?.enabled) {
+        logger.log('📵 Tahajjud reminders disabled');
+        return;
+      }
+
+      if (!isValidCoordinates(settings.location)) {
+        logger.log('❌ No valid location for Tahajjud reminders');
+        return;
+      }
+
+      // Cancel existing Tahajjud notifications first
+      await this.cancelTahajjudNotifications();
+
+      const frequency = settings.tahajjudReminders.frequency || 'twice_weekly';
+
+      // Determine which days to schedule (over next 7 days)
+      const scheduleDays = this.getTahajjudScheduleDays(frequency);
+
+      for (const dayOffset of scheduleDays) {
+        const date = new Date();
+        date.setDate(date.getDate() + dayOffset);
+
+        try {
+          const fetcher: PrayerTimesFetcher =
+            this.prayerTimesFetcher ||
+            ((params) =>
+              PrayerTimeService.getPrayerTimesList(
+                params.location as any,
+                params.date,
+                params.calculationMethod as any,
+                params.adjustments as any,
+                (params.asrJuristic as any) || 'Standard'
+              ));
+
+          const prayerData = await fetcher({
+            location: settings.location,
+            date,
+            calculationMethod: settings.calculationMethod,
+            adjustments: settings.adjustments,
+            asrJuristic: settings.asrJuristic,
+          });
+
+          // Get midnight time — schedule notification at midnight (start of last third)
+          const midnight = (prayerData as any).midnight as Date | null;
+          if (!midnight || midnight <= new Date()) continue;
+
+          // Respect quiet hours
+          if (settings.habitBuilder?.quietHours?.enabled) {
+            const quietEnd = settings.habitBuilder.quietHours.end;
+            if (quietEnd) {
+              const [h, m] = quietEnd.split(':').map(Number);
+              const quietEndDate = new Date(date);
+              quietEndDate.setHours(h, m, 0, 0);
+              // If midnight falls within quiet hours, skip
+              if (midnight < quietEndDate) continue;
+            }
+          }
+
+          const dateStr = format(midnight, 'yyyy-MM-dd');
+          const identifier = `tahajjud-${dateStr}`;
+          const message = this.tahajjudMessages[dayOffset % this.tahajjudMessages.length];
+
+          await Notifications.scheduleNotificationAsync({
+            content: {
+              title: '🌌 Tahajjud Time',
+              body: message,
+              data: {
+                type: 'tahajjud-reminder',
+                scheduledAt: new Date().toISOString(),
+              },
+              categoryIdentifier: NOTIFICATION_CATEGORIES.TAHAJJUD_REMINDER,
+              ...(Platform.OS === 'android' && {
+                channelId: CHANNELS.TAHAJJUD,
+              }),
+            },
+            trigger: {
+              type: 'date',
+              date: midnight,
+            } as Notifications.NotificationTriggerInput,
+            identifier,
+          });
+
+          logger.log(`🌌 Tahajjud scheduled for ${dateStr}`);
+        } catch (error) {
+          logger.error(`❌ Failed to schedule Tahajjud day ${dayOffset}:`, error);
+        }
+      }
+    } catch (error) {
+      logger.error('❌ Tahajjud scheduling failed:', error);
+    }
+  }
+
+  private getTahajjudScheduleDays(frequency: string): number[] {
+    switch (frequency) {
+      case 'daily':
+        return [0, 1, 2, 3, 4, 5, 6];
+      case 'weekdays':
+        // Mon-Fri from today
+        return [0, 1, 2, 3, 4, 5, 6].filter(d => {
+          const day = new Date();
+          day.setDate(day.getDate() + d);
+          const dow = day.getDay();
+          return dow >= 1 && dow <= 5;
+        });
+      case 'weekends':
+        return [0, 1, 2, 3, 4, 5, 6].filter(d => {
+          const day = new Date();
+          day.setDate(day.getDate() + d);
+          const dow = day.getDay();
+          return dow === 0 || dow === 6;
+        });
+      case 'twice_weekly':
+      default:
+        // Monday and Thursday (Sunnah fasting days)
+        return [0, 1, 2, 3, 4, 5, 6].filter(d => {
+          const day = new Date();
+          day.setDate(day.getDate() + d);
+          const dow = day.getDay();
+          return dow === 1 || dow === 4;
+        });
+    }
+  }
+
+  async cancelTahajjudNotifications(): Promise<void> {
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+    const tahajjudNotifs = scheduled.filter(
+      (notif) => (notif.content.data as any)?.type === 'tahajjud-reminder'
+    );
+    for (const notif of tahajjudNotifs) {
+      await Notifications.cancelScheduledNotificationAsync(notif.identifier);
+    }
+    if (tahajjudNotifs.length > 0) {
+      logger.log(`🗑️ Cancelled ${tahajjudNotifs.length} Tahajjud notifications`);
+    }
+  }
+
   // Force rescheduling method for debugging
   async forceReschedule() {
     logger.log('🔧 Force rescheduling notifications...');

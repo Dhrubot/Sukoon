@@ -29,6 +29,9 @@ import { MosqueModeToggle, IqamahTimeConfig, MosqueModeOptions } from '../../com
 // Modal Components
 import { CalculationMethodModal, NotificationModal } from './modals';
 
+// Services
+import NotificationService from '../../services/NotificationService';
+
 const SettingsScreen = ({ navigation }: any) => {
   const styles = useThemedStyles(createStyles);
   const { theme, themeMode, toggleTheme } = useTheme();
@@ -116,6 +119,31 @@ const SettingsScreen = ({ navigation }: any) => {
           userSettings={userSettings}
           onNotificationPress={() => setShowNotificationModal(true)}
         />
+
+        {/* 🌌 Optional Prayer Settings */}
+        <SettingSection title="OPTIONAL PRAYERS">
+          <SettingRow
+            label="Tahajjud Reminders"
+            subtitle="Gentle encouragement to pray the night prayer"
+            value={userSettings.tahajjudReminders?.enabled ? 'On' : 'Off'}
+            onPress={async () => {
+              const isEnabled = userSettings.tahajjudReminders?.enabled ?? false;
+              const updated = {
+                ...userSettings,
+                tahajjudReminders: {
+                  enabled: !isEnabled,
+                  frequency: userSettings.tahajjudReminders?.frequency || 'twice_weekly' as const,
+                },
+              };
+              setUserSettings(updated);
+              if (!isEnabled) {
+                await NotificationService.scheduleTahajjudEncouragement();
+              } else {
+                await NotificationService.cancelTahajjudNotifications();
+              }
+            }}
+          />
+        </SettingSection>
 
         {/* 🕌 Mosque Mode Settings */}
         <SettingSection title="MOSQUE MODE">

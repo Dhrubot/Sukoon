@@ -130,16 +130,20 @@ const prayerGradients = {
     Dhuhr:   ['#1A2F38', '#153A35', '#0D4F35'] as const,
     Asr:     ['#2A2A1A', '#1F3222', '#1B3A2A'] as const,
     Maghrib: ['#2D1530', '#231A3A', '#1A1F3A'] as const,
-    Isha:    ['#12103A', '#0F1430', '#0A0D2E'] as const,
-    default: ['#1A2F3A', '#153530', '#0D4F35'] as const,
+    Isha:     ['#12103A', '#0F1430', '#0A0D2E'] as const,
+    Taraweeh: ['#1A1040', '#0F1A3A', '#0A2040'] as const,
+    Tahajjud: ['#0A0A2E', '#080818', '#050510'] as const,
+    default:  ['#1A2F3A', '#153530', '#0D4F35'] as const,
   },
   light: {
-    Fajr:    ['#E8EAF6', '#C5CAE9', '#9FA8DA'] as const,
-    Dhuhr:   ['#E8F5E9', '#C8E6C9', '#A5D6A7'] as const,
-    Asr:     ['#FFF8E1', '#FFECB3', '#FFE082'] as const,
-    Maghrib: ['#FCE4EC', '#F8BBD0', '#F48FB1'] as const,
-    Isha:    ['#EDE7F6', '#D1C4E9', '#B39DDB'] as const,
-    default: ['#E0F2F1', '#B2DFDB', '#80CBC4'] as const,
+    Fajr:     ['#E8EAF6', '#C5CAE9', '#9FA8DA'] as const,
+    Dhuhr:    ['#E8F5E9', '#C8E6C9', '#A5D6A7'] as const,
+    Asr:      ['#FFF8E1', '#FFECB3', '#FFE082'] as const,
+    Maghrib:  ['#FCE4EC', '#F8BBD0', '#F48FB1'] as const,
+    Isha:     ['#EDE7F6', '#D1C4E9', '#B39DDB'] as const,
+    Taraweeh: ['#E8EAF6', '#D1C4E9', '#C5CAE9'] as const,
+    Tahajjud: ['#EDE7F6', '#E8EAF6', '#D1C4E9'] as const,
+    default:  ['#E0F2F1', '#B2DFDB', '#80CBC4'] as const,
   },
 } as const;
 
@@ -151,14 +155,18 @@ const prayerColors = {
     dhuhr:   '#81C784',  // soft green — midday sun through leaves
     asr:     '#DCE775',  // muted olive-gold — afternoon light
     maghrib: '#CE93D8',  // soft plum — sunset
-    isha:    '#9FA8DA',  // soft lavender — night
+    isha:     '#9FA8DA',  // soft lavender — night
+    taraweeh: '#B39DDB',  // soft violet — Ramadan night
+    tahajjud: '#7986CB',  // deeper indigo — deepest night
   },
   light: {
-    fajr:    '#3F51B5',  // indigo
-    dhuhr:   '#388E3C',  // forest green
-    asr:     '#F9A825',  // warm amber
-    maghrib: '#AD1457',  // deep rose
-    isha:    '#283593',  // deep indigo
+    fajr:     '#3F51B5',  // indigo
+    dhuhr:    '#388E3C',  // forest green
+    asr:      '#F9A825',  // warm amber
+    maghrib:  '#AD1457',  // deep rose
+    isha:     '#283593',  // deep indigo
+    taraweeh: '#5C6BC0',  // indigo-violet
+    tahajjud: '#3949AB',  // deep indigo-violet
   },
 } as const;
 

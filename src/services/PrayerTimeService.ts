@@ -180,22 +180,23 @@ export class PrayerTimeService {
     method: CalculationMethod = "MWL",
     adjustments?: Record<PrayerName, number>,
     asrJuristic: "Standard" | "Hanafi" = "Standard"
-  ): Promise<{ prayerTimes: PrayerTime[]; sunrise: Date; sunset: Date }> {
+  ): Promise<{ prayerTimes: PrayerTime[]; sunrise: Date; sunset: Date; midnight: Date | null }> {
     // CENTRAL GUARD - Stop invalid calls immediately
     if (!isValidCoordinates(coordinates)) {
       logger.log(
         "🛑 BLOCKED: Invalid coordinates, returning empty prayer times"
       );
-      return { prayerTimes: [], sunrise: new Date(), sunset: new Date() };
+      return { prayerTimes: [], sunrise: new Date(), sunset: new Date(), midnight: null };
     }
 
     try {
       const times = await this.fetchPrayerTimes(coordinates, date, method, asrJuristic);
       const now = new Date();
 
-      // Parse sunrise and sunset
+      // Parse sunrise, sunset, and midnight
       const sunrise = this.parseTimeToDate(times.Sunrise, date);
       const sunset = this.parseTimeToDate(times.Sunset, date);
+      const midnight = times.Midnight ? this.parseTimeToDate(times.Midnight, date) : null;
 
       const prayerNames = FARD_PRAYER_NAMES_LIST as unknown as PrayerName[];
       const prayerTimesList: PrayerTime[] = [];
@@ -261,10 +262,11 @@ export class PrayerTimeService {
         prayerTimes: prayerTimesList,
         sunrise,
         sunset,
+        midnight,
       };
     } catch (error) {
       logger.error("❌ Error in getPrayerTimesList:", error);
-      return { prayerTimes: [], sunrise: new Date(), sunset: new Date() };
+      return { prayerTimes: [], sunrise: new Date(), sunset: new Date(), midnight: null };
     }
   }
 

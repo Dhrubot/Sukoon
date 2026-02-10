@@ -44,7 +44,8 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
     todayPrayerTimes, 
     nextPrayer,
     setTodaySunrise,
-    setTodaySunset 
+    setTodaySunset,
+    setTodayMidnight,
   } = useStore();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -122,10 +123,11 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
         tomorrowFajrPrayer = tomorrowResult.prayerTimes.find(p => p.name === 'Fajr') || null;
       }
 
-      // Update state with prayer times and sun times
+      // Update state with prayer times, sun times, and midnight
       setTodayPrayerTimes(todayResult.prayerTimes);
       setTodaySunrise(todayResult.sunrise);
       setTodaySunset(todayResult.sunset);
+      setTodayMidnight(todayResult.midnight);
       setTomorrowFajr(tomorrowFajrPrayer);
 
       // Calculate next prayer

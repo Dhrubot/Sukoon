@@ -32,9 +32,11 @@ import QuickStats from "../../components/stats/QuickStats";
 import DigitalWellnessCard from "../../components/digitalWellness/DigitalWellnessCard";
 import { SunTimesDisplay } from "../../components/common/SunTimesDisplay";
 import { MosqueModeStatus, MosqueModeOverlay } from "../../components/mosque";
+import RamadanTimesCard from "../../components/prayer/RamadanTimesCard";
+import OptionalPrayersSection from "../../components/prayer/OptionalPrayersSection";
 
 // Types
-import { PrayerTime } from "../../types";
+import { PrayerTime, OptionalPrayerTime } from "../../types";
 import UsageStatsService from "../../services/UsageStatsService";
 import { isRamadan, getRamadanDay } from "../../utils/ramadan";
 
@@ -125,6 +127,11 @@ const HomeScreen = ({ navigation }: any) => {
     if (isRamadan()) {
       const day = getRamadanDay();
       const dayStr = day ? ` — Day ${day}` : '';
+      const hour = now.getHours();
+      // After Isha during Ramadan, mention Taraweeh
+      if (hour >= 20) {
+        return `Time for Taraweeh${dayStr}, ${name}`;
+      }
       return `Ramadan Mubarak${dayStr}, ${name}`;
     }
 
@@ -144,6 +151,16 @@ const HomeScreen = ({ navigation }: any) => {
       time: prayerTime.time.toISOString(),  // Convert Date to string
     };
     
+    navigation.navigate("MindfulnessFlow", { prayer: serializablePrayer });
+  };
+
+  const handleOptionalPrayerPrepare = (prayer: OptionalPrayerTime) => {
+    const serializablePrayer = {
+      name: prayer.name,
+      time: prayer.time.toISOString(),
+      timestamp: prayer.time.getTime(),
+      isNext: false,
+    };
     navigation.navigate("MindfulnessFlow", { prayer: serializablePrayer });
   };
 
@@ -251,23 +268,7 @@ const HomeScreen = ({ navigation }: any) => {
             const fajr = todayPrayerTimes.find(p => p.name === 'Fajr');
             const maghrib = todayPrayerTimes.find(p => p.name === 'Maghrib');
             if (!fajr || !maghrib) return null;
-            const fmt = (d: Date) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            return (
-              <View style={styles.ramadanCard}>
-                <Text style={styles.ramadanTitle}>🌙 Ramadan Times</Text>
-                <View style={styles.ramadanRow}>
-                  <View style={styles.ramadanItem}>
-                    <Text style={styles.ramadanLabel}>Suhoor ends</Text>
-                    <Text style={styles.ramadanTime}>{fmt(fajr.time)}</Text>
-                  </View>
-                  <View style={styles.ramadanDivider} />
-                  <View style={styles.ramadanItem}>
-                    <Text style={styles.ramadanLabel}>Iftar</Text>
-                    <Text style={styles.ramadanTime}>{fmt(maghrib.time)}</Text>
-                  </View>
-                </View>
-              </View>
-            );
+            return <RamadanTimesCard fajrTime={fajr.time} maghribTime={maghrib.time} />;
           })()}
 
           {/* Quick Stats */}
@@ -298,6 +299,9 @@ const HomeScreen = ({ navigation }: any) => {
               })}
             </View>
           </View>
+
+          {/* Optional Prayers (Taraweeh during Ramadan, Tahajjud after Isha) */}
+          <OptionalPrayersSection onPrepare={handleOptionalPrayerPrepare} />
 
           {/* Digital Wellness Card */}
           <DigitalWellnessCard screenTime={screenTime} />
@@ -470,46 +474,6 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 152, 0, 0.3)',
     alignItems: 'center',
-  },
-  ramadanCard: {
-    marginHorizontal: theme.spacing.xl,
-    marginTop: theme.spacing.md,
-    backgroundColor: theme.colors.card.background,
-    borderRadius: 16,
-    padding: theme.spacing.lg,
-    borderWidth: 1,
-    borderColor: theme.colors.border.primary,
-  },
-  ramadanTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: theme.colors.text.primary,
-    textAlign: 'center',
-    marginBottom: theme.spacing.md,
-  },
-  ramadanRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-  },
-  ramadanItem: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  ramadanLabel: {
-    fontSize: 13,
-    color: theme.colors.text.secondary,
-    marginBottom: 4,
-  },
-  ramadanTime: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: theme.colors.primary.DEFAULT,
-  },
-  ramadanDivider: {
-    width: 1,
-    height: 36,
-    backgroundColor: theme.colors.border.primary,
   },
   offlineBannerText: {
     fontSize: theme.typography.fontSize.sm,
