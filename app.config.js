@@ -73,7 +73,7 @@ export default {
         "expo-notifications",
         {
           "icon": "./assets/notification-icon.png",
-          "color": "#00C9A7",  // Turquoise primary color
+          "color": "#2D8B6F",  // Warm sage primary color
           "sounds": [
             "./assets/sounds/adhan_short.wav",
             "./assets/sounds/adhan_full.mp3"

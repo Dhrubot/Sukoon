@@ -12,7 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../providers/ThemeProvider';
 import { Icon } from '../../components/common/Icon';
-import { AchievementIcon, DigitalWellnessIcon } from '../../assets/icons';
+import { AchievementIcon, DigitalWellnessIcon, ProgressTabIcon } from '../../assets/icons';
 import Svg, { Path } from 'react-native-svg';
 
 // Settings icon component
@@ -53,10 +53,24 @@ interface MenuItem {
   title: string;
   subtitle: string;
   screen: string;
-  iconType?: 'component' | 'svg' | 'png';
+  iconType?: 'component' | 'svg' | 'png' | 'emoji';
 }
 
 const menuItems: MenuItem[] = [
+  {
+    icon: ProgressTabIcon,
+    title: 'My Journey',
+    subtitle: 'Reflect on your prayer history',
+    screen: 'MyJourney',
+    iconType: 'svg',
+  },
+  {
+    icon: null, // Emoji-based icon handled below
+    title: 'My Garden',
+    subtitle: 'Your reflections, growing quietly',
+    screen: 'ReflectionGarden',
+    iconType: 'emoji',
+  },
   {
     icon: SettingsIcon,
     title: 'Setup & Health',
@@ -123,7 +137,9 @@ const MenuScreen: React.FC = () => {
               activeOpacity={0.7}
             >
               <View style={[styles.iconContainer, { backgroundColor: theme.colors.card.hover }]}>
-                {item.iconType === 'component' ? (
+                {item.iconType === 'emoji' ? (
+                  <Text style={styles.icon}>🌿</Text>
+                ) : item.iconType === 'component' ? (
                   <IconComponent color={theme.colors.primary.DEFAULT} size={24} />
                 ) : (
                   <Icon source={IconComponent} size={24} color={theme.colors.primary.DEFAULT} />

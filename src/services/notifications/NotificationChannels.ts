@@ -15,6 +15,7 @@ export const NOTIFICATION_CATEGORIES = {
   GRACE_PERIOD_WARNING: 'grace-period-warning',
   SNOOZE_OPTIONS: 'snooze-options',
   MOSQUE_REMINDER: 'mosque-reminder',
+  TAHAJJUD_REMINDER: 'tahajjud-reminder',
 };
 
 /**
@@ -99,6 +100,15 @@ export async function setupNotificationChannels(): Promise<void> {
     showBadge: true,
   });
 
+  await Notifications.setNotificationChannelAsync(CHANNELS.TAHAJJUD, {
+    name: 'Tahajjud Encouragement',
+    description: 'Gentle reminders to pray the night prayer',
+    importance: Notifications.AndroidImportance.LOW,
+    vibrationPattern: [0, 50],
+    lightColor: '#7986CB',
+    sound: null,
+  });
+
   logger.log('✅ Notification channels set up with versioning');
 }
 
@@ -155,6 +165,14 @@ export async function setupNotificationCategories(): Promise<void> {
       identifier: 'skip_prayer',
       buttonTitle: "I'll Skip",
       options: { opensAppToForeground: false, isDestructive: true },
+    },
+  ]);
+
+  await Notifications.setNotificationCategoryAsync(NOTIFICATION_CATEGORIES.TAHAJJUD_REMINDER, [
+    {
+      identifier: 'prepare',
+      buttonTitle: 'Prepare Mindfully',
+      options: { opensAppToForeground: true },
     },
   ]);
 }

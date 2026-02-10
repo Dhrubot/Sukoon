@@ -16,6 +16,9 @@ import * as Haptics from 'expo-haptics';
 import StorageService from '../../services/StorageService';
 import NotificationService from '../../services/NotificationService';
 import { UserSettings, HabitBuilderSettings } from '../../types';
+import { useTheme } from '../../providers/ThemeProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 
 interface PrayerHabitBuilderSettingsProps {
   userSettings: UserSettings;
@@ -26,6 +29,8 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
   userSettings,
   onUpdateSettings,
 }) => {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [localSettings, setLocalSettings] = useState<HabitBuilderSettings>(
     userSettings?.habitBuilder || {
       enabled: false,
@@ -137,8 +142,8 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
           <Switch
             value={localSettings.enabled}
             onValueChange={(value) => updateSettings({ enabled: value })}
-            trackColor={{ false: '#E0E0E0', true: '#81C784' }}
-            thumbColor={localSettings.enabled ? '#4CAF50' : '#f4f3f4'}
+            trackColor={{ false: theme.colors.settings.sliderMax, true: theme.colors.settings.sliderMin }}
+            thumbColor={localSettings.enabled ? theme.colors.settings.sliderThumb : theme.colors.switch.thumb}
             disabled={isUpdating}
           />
         </View>
@@ -160,8 +165,8 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
                     },
                   })
                 }
-                trackColor={{ false: '#E0E0E0', true: '#81C784' }}
-                thumbColor={localSettings.persistentReminders.enabled ? '#4CAF50' : '#f4f3f4'}
+                trackColor={{ false: theme.colors.settings.sliderMax, true: theme.colors.settings.sliderMin }}
+                thumbColor={localSettings.persistentReminders.enabled ? theme.colors.settings.sliderThumb : theme.colors.switch.thumb}
               />
             </View>
             <Text style={styles.settingDescription}>
@@ -201,9 +206,9 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
                         },
                       })
                     }
-                    minimumTrackTintColor="#4CAF50"
-                    maximumTrackTintColor="#E0E0E0"
-                    thumbTintColor="#1B5E3F"
+                    minimumTrackTintColor={theme.colors.settings.sliderMin}
+                    maximumTrackTintColor={theme.colors.settings.sliderMax}
+                    thumbTintColor={theme.colors.settings.sliderThumb}
                   />
                   <Text style={styles.sliderHint}>
                     First "Have you prayed?" reminder
@@ -241,9 +246,9 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
                         },
                       })
                     }
-                    minimumTrackTintColor="#4CAF50"
-                    maximumTrackTintColor="#E0E0E0"
-                    thumbTintColor="#1B5E3F"
+                    minimumTrackTintColor={theme.colors.settings.sliderMin}
+                    maximumTrackTintColor={theme.colors.settings.sliderMax}
+                    thumbTintColor={theme.colors.settings.sliderThumb}
                   />
                   <Text style={styles.sliderHint}>
                     Time between follow-up reminders
@@ -281,9 +286,9 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
                         },
                       })
                     }
-                    minimumTrackTintColor="#4CAF50"
-                    maximumTrackTintColor="#E0E0E0"
-                    thumbTintColor="#1B5E3F"
+                    minimumTrackTintColor={theme.colors.settings.sliderMin}
+                    maximumTrackTintColor={theme.colors.settings.sliderMax}
+                    thumbTintColor={theme.colors.settings.sliderThumb}
                   />
                   <Text style={styles.sliderHint}>
                     Total follow-up reminders per prayer
@@ -307,8 +312,8 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
                     },
                   })
                 }
-                trackColor={{ false: '#E0E0E0', true: '#81C784' }}
-                thumbColor={localSettings.gracePeriodWarning.enabled ? '#4CAF50' : '#f4f3f4'}
+                trackColor={{ false: theme.colors.settings.sliderMax, true: theme.colors.settings.sliderMin }}
+                thumbColor={localSettings.gracePeriodWarning.enabled ? theme.colors.settings.sliderThumb : theme.colors.switch.thumb}
               />
             </View>
             <Text style={styles.settingDescription}>
@@ -346,9 +351,9 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
                       },
                     })
                   }
-                  minimumTrackTintColor="#FF9800"
-                  maximumTrackTintColor="#E0E0E0"
-                  thumbTintColor="#F57C00"
+                  minimumTrackTintColor={theme.colors.settings.sliderWarningMin}
+                  maximumTrackTintColor={theme.colors.settings.sliderMax}
+                  thumbTintColor={theme.colors.settings.sliderWarningThumb}
                 />
                 <Text style={styles.sliderHint}>
                   "Last chance" notification timing
@@ -421,9 +426,9 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
                     snooze: { ...localSettings.snooze, maxSnoozesPerPrayer: value },
                   })
                 }
-                minimumTrackTintColor="#4CAF50"
-                maximumTrackTintColor="#E0E0E0"
-                thumbTintColor="#1B5E3F"
+                minimumTrackTintColor={theme.colors.settings.sliderMin}
+                maximumTrackTintColor={theme.colors.settings.sliderMax}
+                thumbTintColor={theme.colors.settings.sliderThumb}
               />
               <Text style={styles.sliderHint}>
                 Prevent excessive snoozing
@@ -442,8 +447,8 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
                     quietHours: { ...localSettings.quietHours, enabled: value },
                   })
                 }
-                trackColor={{ false: '#E0E0E0', true: '#81C784' }}
-                thumbColor={localSettings.quietHours.enabled ? '#4CAF50' : '#f4f3f4'}
+                trackColor={{ false: theme.colors.settings.sliderMax, true: theme.colors.settings.sliderMin }}
+                thumbColor={localSettings.quietHours.enabled ? theme.colors.settings.sliderThumb : theme.colors.switch.thumb}
               />
             </View>
             <Text style={styles.settingDescription}>
@@ -575,17 +580,17 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: theme.colors.settings.containerBg,
   },
   section: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.settings.sectionBg,
     marginBottom: 16,
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: theme.colors.border.primary,
   },
   headerRow: {
     flexDirection: 'row',
@@ -603,14 +608,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sectionTitle: {
-    fontSize: 18,  // xl
-    fontWeight: '600',  // semibold
-    color: '#1B5E3F',
+    fontSize: 18,
+    fontWeight: '600',
+    color: theme.colors.primary.DEFAULT,
     marginBottom: 4,
   },
   settingDescription: {
-    fontSize: 14,  // md
-    color: '#757575',
+    fontSize: 14,
+    color: theme.colors.settings.labelSecondary,
     lineHeight: 20,
     marginBottom: 16,
   },
@@ -624,31 +629,31 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sliderLabel: {
-    fontSize: 15,  // base
-    fontWeight: '500',  // medium
-    color: '#212121',
+    fontSize: 15,
+    fontWeight: '500',
+    color: theme.colors.settings.labelPrimary,
   },
   sliderValue: {
-    fontSize: 15,  // base
-    fontWeight: '600',  // semibold
-    color: '#1B5E3F',
+    fontSize: 15,
+    fontWeight: '600',
+    color: theme.colors.primary.DEFAULT,
   },
   slider: {
     width: '100%',
     height: 40,
   },
   sliderHint: {
-    fontSize: 13,  // sm (adjusted up)
-    color: '#9E9E9E',
+    fontSize: 13,
+    color: theme.colors.settings.labelMuted,
     marginTop: 4,
   },
   snoozeOptions: {
     marginTop: 12,
   },
   optionLabel: {
-    fontSize: 15,  // base
-    fontWeight: '500',  // medium
-    color: '#212121',
+    fontSize: 15,
+    fontWeight: '500',
+    color: theme.colors.settings.labelPrimary,
     marginBottom: 12,
   },
   buttonRow: {
@@ -659,23 +664,23 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     borderRadius: 8,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: theme.colors.settings.optionBg,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: theme.colors.settings.optionBorder,
     alignItems: 'center',
   },
   snoozeButtonActive: {
-    backgroundColor: '#E8F5E9',
-    borderColor: '#4CAF50',
+    backgroundColor: theme.colors.settings.optionActiveBg,
+    borderColor: theme.colors.settings.optionActiveBorder,
   },
   snoozeButtonText: {
-    fontSize: 14,  // md
-    fontWeight: '500',  // medium
-    color: '#757575',
+    fontSize: 14,
+    fontWeight: '500',
+    color: theme.colors.settings.labelSecondary,
   },
   snoozeButtonTextActive: {
-    color: '#1B5E3F',
-    fontWeight: '600',  // semibold
+    color: theme.colors.primary.DEFAULT,
+    fontWeight: '600',
   },
   timePickerContainer: {
     marginTop: 16,
@@ -687,80 +692,80 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   timeLabel: {
-    fontSize: 15,  // base
-    fontWeight: '500',  // medium
-    color: '#212121',
+    fontSize: 15,
+    fontWeight: '500',
+    color: theme.colors.settings.labelPrimary,
   },
   timeButton: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: theme.colors.settings.optionActiveBg,
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#4CAF50',
+    borderColor: theme.colors.settings.optionActiveBorder,
   },
   timeButtonText: {
-    fontSize: 16,  // lg
-    fontWeight: '600',  // semibold
-    color: '#1B5E3F',
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.primary.DEFAULT,
   },
   quietHoursHint: {
-    fontSize: 13,  // sm (adjusted up)
-    color: '#9E9E9E',
+    fontSize: 13,
+    color: theme.colors.settings.labelMuted,
     marginTop: 8,
     fontStyle: 'italic',
   },
   infoSection: {
-    backgroundColor: '#E3F2FD',
+    backgroundColor: theme.colors.settings.infoBg,
     padding: 20,
     marginBottom: 32,
     borderRadius: 12,
     marginHorizontal: 16,
   },
   infoTitle: {
-    fontSize: 16,  // lg
-    fontWeight: '600',  // semibold
-    color: '#1976D2',
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.settings.infoTitle,
     marginBottom: 16,
   },
   infoItem: {
     marginBottom: 12,
   },
   infoLabel: {
-    fontSize: 14,  // md
-    fontWeight: '600',  // semibold
-    color: '#1565C0',
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.settings.infoLabel,
     marginBottom: 4,
   },
   infoText: {
-    fontSize: 13,  // sm
-    color: '#1976D2',
+    fontSize: 13,
+    color: theme.colors.settings.infoText,
     lineHeight: 18,
   },
   // Time Picker Modal Styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.colors.settings.modalOverlay,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
   timePickerModal: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.settings.modalBg,
     borderRadius: 16,
     padding: 24,
     width: '100%',
     maxWidth: 320,
-    shadowColor: '#000',
+    shadowColor: theme.colors.settings.modalShadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
   },
   timePickerTitle: {
-    fontSize: 20,  // 2xl
-    fontWeight: '600',  // semibold
-    color: '#1B5E3F',
+    fontSize: 20,
+    fontWeight: '600',
+    color: theme.colors.settings.modalTitle,
     marginBottom: 24,
     textAlign: 'center',
   },
@@ -774,32 +779,32 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   timeInputLabel: {
-    fontSize: 13,  // sm (adjusted up)
-    color: '#757575',
+    fontSize: 13,
+    color: theme.colors.settings.labelSecondary,
     marginBottom: 8,
-    fontWeight: '500',  // medium
+    fontWeight: '500',
   },
   timeInput: {
     width: 70,
     height: 60,
     borderWidth: 2,
-    borderColor: '#4CAF50',
+    borderColor: theme.colors.settings.inputBorder,
     borderRadius: 12,
-    fontSize: 28,  // 4xl
-    fontWeight: '600',  // semibold
-    color: '#1B5E3F',
+    fontSize: 28,
+    fontWeight: '600',
+    color: theme.colors.settings.inputText,
     textAlign: 'center',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: theme.colors.settings.inputBg,
   },
   timeSeparator: {
-    fontSize: 32,  // 5xl
-    fontWeight: '700',  // bold
-    color: '#1B5E3F',
+    fontSize: 32,
+    fontWeight: '700',
+    color: theme.colors.primary.DEFAULT,
     marginHorizontal: 12,
   },
   timeInputHint: {
-    fontSize: 13,  // sm (adjusted up)
-    color: '#9E9E9E',
+    fontSize: 13,
+    color: theme.colors.settings.labelMuted,
     textAlign: 'center',
     marginBottom: 24,
     fontStyle: 'italic',
@@ -815,22 +820,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelButton: {
-    backgroundColor: '#F5F5F5',
+    backgroundColor: theme.colors.settings.cancelBg,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: theme.colors.settings.cancelBorder,
   },
   cancelButtonText: {
-    fontSize: 16,  // lg
-    fontWeight: '600',  // semibold
-    color: '#757575',
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.settings.cancelText,
   },
   saveButton: {
-    backgroundColor: '#1B5E3F',
+    backgroundColor: theme.colors.settings.buttonPrimaryBg,
   },
   saveButtonText: {
-    fontSize: 16,  // lg
-    fontWeight: '600',  // semibold
-    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.settings.buttonPrimaryText,
   },
 });
 

@@ -24,6 +24,9 @@ import ReflectionPrompts from "../../components/mindfulness/ReflectionPrompts";
 
 // Store and Services
 import { useStore } from "../../store/useStore";
+import { useTheme } from "../../providers/ThemeProvider";
+import { useThemedStyles } from "../../hooks/useThemedStyles";
+import { AppTheme } from "../../theme";
 import StorageService from "../../services/StorageService";
 import PrayerTimeService from "../../services/PrayerTimeService";
 
@@ -39,10 +42,12 @@ import WidgetService from "../../services/WidgetService";
 
 const { width, height } = Dimensions.get("window");
 
-type FlowStep = "breathing" | "reflection" | "complete";
+type FlowStep = "transition" | "breathing" | "reflection" | "complete";
 
 const MindfulnessFlow: React.FC = () => {
   const navigation = useNavigation();
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const route = useRoute<RouteProp<RootStackParamList, "MindfulnessFlow">>();
   
   // 🎯 NEW: Access centralized prayer times for validation
@@ -59,10 +64,10 @@ const MindfulnessFlow: React.FC = () => {
     time: new Date(serializedPrayer.time) // Convert ISO string back to Date object
   };
 
-  const { setCurrentMindfulnessSession, addPrayerRecord, setCelebratingAchievement } = useStore();
+  const { setCurrentMindfulnessSession, addPrayerRecord } = useStore();
 
   // Flow state
-  const [currentStep, setCurrentStep] = useState<FlowStep>("breathing");
+  const [currentStep, setCurrentStep] = useState<FlowStep>("transition");
   const [breathCount, setBreathCount] = useState(1);
   const [reflectionText, setReflectionText] = useState("");
   const [selectedMood, setSelectedMood] = useState<number>(0);
@@ -75,10 +80,39 @@ const MindfulnessFlow: React.FC = () => {
     AnalyticsService.logEvent('mindfulness_started', { prayer: prayer.name });
   }, []);
 
+  // 4a: Entry transition — "digital wudu" fade-in then auto-advance
+  useEffect(() => {
+    if (currentStep === 'transition') {
+      // Fade in the transition text
+      Animated.timing(transitionFade, {
+        toValue: 1,
+        duration: 2000,
+        useNativeDriver: true,
+      }).start();
+
+      // After 4 seconds, fade out and move to breathing
+      const timer = setTimeout(() => {
+        Animated.timing(transitionFade, {
+          toValue: 0,
+          duration: 1000,
+          useNativeDriver: true,
+        }).start(() => {
+          setCurrentStep('breathing');
+          fadeAnim.setValue(1);
+          slideAnim.setValue(0);
+        });
+      }, 4000);
+
+      return () => clearTimeout(timer);
+    }
+  }, [currentStep]);
+
   // Animations
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
   const completeScale = useRef(new Animated.Value(0)).current;
+  const transitionFade = useRef(new Animated.Value(0)).current;
+  const stillnessPulse = useRef(new Animated.Value(0.3)).current;
 
   // 🎯 Prayer validation effect - run once on mount
   useEffect(() => {
@@ -118,20 +152,9 @@ const MindfulnessFlow: React.FC = () => {
     setHasValidated(true);
   };
 
-  const getPrayerGradient = (): [string, string, string] => {
-    const gradients: Record<string, [string, string, string]> = {
-      // Pre-dawn stillness: deep indigo → dark teal (night yielding to first light)
-      Fajr: ['#0D1B4C', '#152E4A', '#1A3D5C'],
-      // Midday vitality: warm dark teal → rich green (mosque garden at noon)
-      Dhuhr: ['#1A2F38', '#153A35', '#0D4F35'],
-      // Golden hour reflection: warm olive → deep forest (afternoon light through trees)
-      Asr: ['#2A2A1A', '#1F3222', '#1B3A2A'],
-      // Sunset gratitude: soft plum → app navy (the beautiful transition)
-      Maghrib: ['#2D1530', '#231A3A', '#1A1F3A'],
-      // Night contemplation: deep violet → midnight (stillness of isha)
-      Isha: ['#12103A', '#0F1430', '#0A0D2E'],
-    };
-    return gradients[prayer.name] || ['#1A2F3A', '#153530', '#0D4F35'];
+  const getPrayerGradient = (): readonly [string, string, string] => {
+    const gradients = theme.colors.prayerGradients;
+    return (gradients as any)[prayer.name] || gradients.default;
   };
 
   const handleBreathComplete = () => {
@@ -207,6 +230,12 @@ const MindfulnessFlow: React.FC = () => {
     StorageService.saveMindfulnessSession(session);
     setCurrentMindfulnessSession(session);
 
+    // Save reflection text cross-reference for Reflection Garden journal
+    if (reflectionText.trim().length > 0) {
+      const dateStr = new Date().toISOString().split('T')[0];
+      StorageService.saveReflectionText(dateStr, prayer.name, reflectionText.trim());
+    }
+
     // 🎯 NEW: Enhanced prayer record with validation context
     const prayerRecord: PrayerRecord = {
       id: `prayer_${Date.now()}`,
@@ -246,12 +275,8 @@ const MindfulnessFlow: React.FC = () => {
       reflection_added: session.reflectionCompleted,
     });
 
-    // Check for unlocked achievements
-    const unlockedAchievements = await AchievementService.checkAchievements();
-    if (unlockedAchievements.length > 0) {
-      // Show celebration for first unlocked achievement
-      setCelebratingAchievement(unlockedAchievements[0]);
-    }
+    // Check for unlocked achievements (unlock silently in background)
+    await AchievementService.checkAchievements();
 
     // Animate to complete screen
     Animated.parallel([
@@ -283,10 +308,33 @@ const MindfulnessFlow: React.FC = () => {
         // Haptic success
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-        // Navigate back after delay
+        // 4b: Extended stillness — pulsing light, then gentle fade out
+        // Start pulsing glow animation
+        Animated.loop(
+          Animated.sequence([
+            Animated.timing(stillnessPulse, {
+              toValue: 1,
+              duration: 2000,
+              useNativeDriver: true,
+            }),
+            Animated.timing(stillnessPulse, {
+              toValue: 0.3,
+              duration: 2000,
+              useNativeDriver: true,
+            }),
+          ])
+        ).start();
+
+        // Navigate back after 8 seconds of stillness
         setTimeout(() => {
-          navigation.goBack();
-        }, 3000);
+          Animated.timing(fadeAnim, {
+            toValue: 0,
+            duration: 1000,
+            useNativeDriver: true,
+          }).start(() => {
+            navigation.goBack();
+          });
+        }, 8000);
       });
     });
   };
@@ -308,7 +356,7 @@ const MindfulnessFlow: React.FC = () => {
 
       {/* 🎯 NEW: Show prayer timing context */}
       {nextPrayer?.name === prayer.name && (
-        <View style={styles.timingInfo}>
+        <View style={styles.timingInfoContainer}>
           <Text style={styles.timingText}>
             ✨ Perfect timing! This is your next prayer
           </Text>
@@ -375,6 +423,17 @@ const MindfulnessFlow: React.FC = () => {
     </Animated.View>
   );
 
+  const renderTransitionStep = () => (
+    <Animated.View
+      style={[
+        styles.transitionContainer,
+        { opacity: transitionFade },
+      ]}
+    >
+      <Text style={styles.transitionText}>Leave the world behind...</Text>
+    </Animated.View>
+  );
+
   const renderCompleteStep = () => (
     <Animated.View
       style={[
@@ -385,7 +444,7 @@ const MindfulnessFlow: React.FC = () => {
         },
       ]}
     >
-      <Text style={styles.completeEmoji}>✨</Text>
+      <Animated.Text style={[styles.completeEmoji, { opacity: stillnessPulse }]}>✨</Animated.Text>
       <Text style={styles.completeTitle}>Ma sha Allah!</Text>
       <Text style={styles.completeText}>
         You've prepared mindfully for{" "}
@@ -393,6 +452,9 @@ const MindfulnessFlow: React.FC = () => {
         {"\n\n"}
         May your prayer be accepted and bring you peace.
       </Text>
+      {reflectionText.length > 0 && (
+        <Text style={styles.gardenHint}>A new bloom appeared in your garden 🌱</Text>
+      )}
     </Animated.View>
   );
 
@@ -402,7 +464,10 @@ const MindfulnessFlow: React.FC = () => {
   }
 
   return (
-    <LinearGradient colors={getPrayerGradient()} style={styles.container}>
+    <View style={[styles.container, currentStep === 'reflection' && { backgroundColor: theme.colors.background.primary }]}>
+      {currentStep !== 'reflection' && (
+        <LinearGradient colors={getPrayerGradient()} style={StyleSheet.absoluteFill} />
+      )}
       <SafeAreaView style={styles.safeArea}>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -423,36 +488,39 @@ const MindfulnessFlow: React.FC = () => {
             )}
           </View>
 
-          {/* Progress dots */}
-          <View style={styles.progressContainer}>
-            <View style={[styles.progressDot, styles.progressDotActive]} />
-            <View
-              style={[
-                styles.progressDot,
-                currentStep !== "breathing" && styles.progressDotActive,
-              ]}
-            />
-            <View
-              style={[
-                styles.progressDot,
-                currentStep === "complete" && styles.progressDotActive,
-              ]}
-            />
-          </View>
+          {/* Progress dots — hidden during transition and complete */}
+          {currentStep !== 'transition' && currentStep !== 'complete' && (
+            <View style={styles.progressContainer}>
+              <View style={[styles.progressDot, styles.progressDotActive]} />
+              <View
+                style={[
+                  styles.progressDot,
+                  currentStep !== "breathing" && styles.progressDotActive,
+                ]}
+              />
+              <View
+                style={[
+                  styles.progressDot,
+                  currentStep === "reflection" && styles.progressDotActive,
+                ]}
+              />
+            </View>
+          )}
 
           {/* Content */}
           <View style={styles.content}>
+            {currentStep === "transition" && renderTransitionStep()}
             {currentStep === "breathing" && renderBreathingStep()}
             {currentStep === "reflection" && renderReflectionStep()}
             {currentStep === "complete" && renderCompleteStep()}
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -470,21 +538,21 @@ const styles = StyleSheet.create({
     paddingTop: 20,
   },
   prayerName: {
-    fontSize: 24,  // 3xl
+    fontSize: 24,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: theme.colors.mindfulness.textPrimary,
   },
   closeButton: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: "rgba(255, 255, 255, 0.12)",
+    backgroundColor: theme.colors.mindfulness.inputBg,
     justifyContent: "center",
     alignItems: "center",
   },
   closeText: {
-    fontSize: 20,  // 2xl
-    color: "#FFFFFF",
+    fontSize: 20,
+    color: theme.colors.mindfulness.textPrimary,
   },
   progressContainer: {
     flexDirection: "row",
@@ -496,10 +564,10 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: "rgba(255, 255, 255, 0.25)",
+    backgroundColor: theme.colors.mindfulness.dotInactive,
   },
   progressDotActive: {
-    backgroundColor: "#00C9A7",
+    backgroundColor: theme.colors.mindfulness.dotActive,
     width: 24,
   },
   content: {
@@ -514,33 +582,32 @@ const styles = StyleSheet.create({
     paddingBottom: 40,
   },
   stepTitle: {
-    fontSize: 28,  // 4xl
+    fontSize: 28,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: theme.colors.mindfulness.textPrimary,
     textAlign: "center",
     marginBottom: 12,
   },
   instruction: {
-    fontSize: 16,  // lg
-    color: "rgba(255, 255, 255, 0.9)",
+    fontSize: 16,
+    color: theme.colors.mindfulness.textSecondary,
     textAlign: "center",
     marginBottom: 40,
     lineHeight: 22,
   },
-  // 🎯 NEW: Timing info styles
-  timingInfo: {
-    backgroundColor: "rgba(0, 201, 167, 0.15)",
+  timingInfoContainer: {
+    backgroundColor: theme.colors.mindfulness.timingInfoBg,
     borderRadius: 12,
     paddingVertical: 8,
     paddingHorizontal: 16,
     marginBottom: 24,
     alignSelf: "center",
     borderWidth: 1,
-    borderColor: "rgba(0, 201, 167, 0.25)",
+    borderColor: theme.colors.mindfulness.timingInfoBorder,
   },
   timingText: {
     fontSize: 14,
-    color: "#00C9A7",
+    color: theme.colors.mindfulness.accent,
     textAlign: "center",
     fontWeight: "500",
   },
@@ -556,20 +623,20 @@ const styles = StyleSheet.create({
     alignSelf: "center",
   },
   skipText: {
-    fontSize: 16,  // lg
-    color: "rgba(255, 255, 255, 0.7)",
+    fontSize: 16,
+    color: theme.colors.mindfulness.textMuted,
   },
   moodSection: {
     marginTop: 32,
     marginBottom: 32,
   },
   completeButton: {
-    backgroundColor: "rgba(0, 201, 167, 0.2)",
+    backgroundColor: theme.colors.mindfulness.buttonBg,
     borderRadius: 16,
     paddingVertical: 18,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "rgba(0, 201, 167, 0.4)",
+    borderColor: theme.colors.mindfulness.buttonBorder,
     marginTop: 20,
   },
   completeButtonDisabled: {
@@ -578,7 +645,7 @@ const styles = StyleSheet.create({
   completeButtonText: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#FFFFFF",
+    color: theme.colors.mindfulness.textPrimary,
   },
   completeContainer: {
     flex: 1,
@@ -593,14 +660,35 @@ const styles = StyleSheet.create({
   completeTitle: {
     fontSize: 36,
     fontWeight: "700",
-    color: "#FFFFFF",
+    color: theme.colors.mindfulness.textPrimary,
     marginBottom: 16,
   },
   completeText: {
-    fontSize: 18,  // xl
-    color: "rgba(255, 255, 255, 0.9)",
+    fontSize: 18,
+    color: theme.colors.mindfulness.textSecondary,
     textAlign: "center",
     lineHeight: 26,
+  },
+  gardenHint: {
+    fontSize: 14,
+    color: theme.colors.mindfulness.textMuted,
+    textAlign: "center",
+    fontStyle: "italic",
+    marginTop: 20,
+  },
+  transitionContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 40,
+  },
+  transitionText: {
+    fontSize: 28,
+    fontWeight: "300",
+    color: theme.colors.mindfulness.textPrimary,
+    textAlign: "center",
+    fontStyle: "italic",
+    letterSpacing: 1,
   },
 });
 

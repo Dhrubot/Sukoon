@@ -1,10 +1,9 @@
 // src/screens/Home/HomeScreen.tsx
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
   ScrollView,
-  RefreshControl,
   TouchableOpacity,
   StyleSheet,
   Dimensions,
@@ -27,18 +26,20 @@ import { usePrayerTimes } from "../../providers/PrayerTimesProvider";
 
 // Components
 import PrayerCard from "../../components/prayer/PrayerCard";
-import NextPrayerCard from "../../components/prayer/NextPrayerCard";
+import SanctuaryView from "../../components/prayer/SanctuaryView";
 import DailyVerse from "../../components/common/DailyVerse";
 import QuickStats from "../../components/stats/QuickStats";
 import DigitalWellnessCard from "../../components/digitalWellness/DigitalWellnessCard";
 import { SunTimesDisplay } from "../../components/common/SunTimesDisplay";
-import { MosqueModeStatus } from "../../components/mosque";
+import { MosqueModeStatus, MosqueModeOverlay } from "../../components/mosque";
+import RamadanTimesCard from "../../components/prayer/RamadanTimesCard";
+import OptionalPrayersSection from "../../components/prayer/OptionalPrayersSection";
+import GardenTeaser from "../../components/garden/GardenTeaser";
 
 // Types
-import { Achievement, PrayerTime } from "../../types";
-import AchievementService from "../../services/AchievementService";
-import AchievementCelebration from "../../components/achievements/AchievementCelebration";
+import { PrayerTime, OptionalPrayerTime } from "../../types";
 import UsageStatsService from "../../services/UsageStatsService";
+import { isRamadan, getRamadanDay } from "../../utils/ramadan";
 
 const { width } = Dimensions.get("window");
 
@@ -62,18 +63,12 @@ const HomeScreen = ({ navigation }: any) => {
     userSettings,
     todayPrayerRecords,
     setTodayPrayerRecords,
-    currentStreak,
-    isRefreshing,
-    setIsRefreshing,
-    celebratingAchievement,
-    setCelebratingAchievement,
     todaySunrise,
     todaySunset
   } = useStore();
 
   // Local state for UI features
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [greeting, setGreeting] = useState("");
   const [screenTime, setScreenTime] = useState(0);
 
   // 🎯 REMOVED: loadPrayerTimes function - now handled by provider!
@@ -88,13 +83,10 @@ const HomeScreen = ({ navigation }: any) => {
     // Update time every minute
     const timer = setInterval(() => {
       setCurrentTime(new Date());
-      updateGreeting();
     }, 60000);
 
-    updateGreeting();
-
     return () => clearInterval(timer);
-  }, []); // 🎯 SIMPLIFIED: No dependencies on location/settings
+  }, []);
 
   const loadTodayRecords = () => {
     const today = format(new Date(), "yyyy-MM-dd");
@@ -111,33 +103,49 @@ const HomeScreen = ({ navigation }: any) => {
     }
   };
 
-  const updateGreeting = () => {
-    const hour = new Date().getHours();
+  // 1c: Prayer-aware greeting
+  const getGreeting = (): string => {
     const name = userSettings?.name || "Friend";
+    const now = currentTime;
 
-    if (hour < 5) {
-      setGreeting(`Night prayers, ${name} 🌙`);
-    } else if (hour < 12) {
-      setGreeting(`Good morning, ${name} ☀️`);
-    } else if (hour < 17) {
-      setGreeting(`Good afternoon, ${name} 🌞`);
-    } else if (hour < 20) {
-      setGreeting(`Good evening, ${name} 🌅`);
-    } else {
-      setGreeting(`Peace be upon you, ${name} 🌙`);
+    if (nextPrayer) {
+      const minutesUntil = Math.floor(
+        (nextPrayer.time.getTime() - now.getTime()) / (1000 * 60)
+      );
+
+      // Within 30 minutes of next prayer — approaching
+      if (minutesUntil > 0 && minutesUntil <= 30) {
+        return `${nextPrayer.name} is approaching, ${name}`;
+      }
+
+      // Within active prayer window (past the time, within grace)
+      if (minutesUntil <= 0 && minutesUntil > -60) {
+        return `بِسْمِ اللَّهِ — Time for ${nextPrayer.name}`;
+      }
     }
+
+    // Ramadan-aware greeting
+    if (isRamadan()) {
+      const day = getRamadanDay();
+      const dayStr = day ? ` — Day ${day}` : '';
+      const hour = now.getHours();
+      // After Isha during Ramadan, mention Taraweeh
+      if (hour >= 20) {
+        return `Time for Taraweeh${dayStr}, ${name}`;
+      }
+      return `Ramadan Mubarak${dayStr}, ${name}`;
+    }
+
+    // Default: peaceful between-prayers greeting
+    const hour = now.getHours();
+    if (hour < 5) return `Peace be upon you, ${name}`;
+    if (hour < 12) return `Assalamu alaykum, ${name}`;
+    if (hour < 17) return `Peace be upon you, ${name}`;
+    if (hour < 20) return `Assalamu alaykum, ${name}`;
+    return `Peace be upon you, ${name}`;
   };
 
-  // 🎯 SIMPLIFIED: Refresh now just calls the provider's refresh
-  const onRefresh = useCallback(async () => {
-    setIsRefreshing(true);
-    await refreshPrayerTimes(); // 🎯 NEW: Use provider's refresh
-    loadTodayRecords();
-    loadScreenTime();
-    setIsRefreshing(false);
-  }, [refreshPrayerTimes]);
-
-  const handlePrayerComplete = async (prayerTime: PrayerTime) => {
+  const handlePrayerComplete = (prayerTime: PrayerTime) => {
     // Create a serializable version of prayerTime by converting Date to ISO string
     const serializablePrayer = {
       ...prayerTime,
@@ -145,24 +153,22 @@ const HomeScreen = ({ navigation }: any) => {
     };
     
     navigation.navigate("MindfulnessFlow", { prayer: serializablePrayer });
-    const unlocked = await AchievementService.checkAchievements();
-    if (unlocked.length > 0) {
-      // Show celebration for first unlocked achievement
-      setCelebratingAchievement(unlocked[0]);
-    }
+  };
+
+  const handleOptionalPrayerPrepare = (prayer: OptionalPrayerTime) => {
+    const serializablePrayer = {
+      name: prayer.name,
+      time: prayer.time.toISOString(),
+      timestamp: prayer.time.getTime(),
+      isNext: false,
+    };
+    navigation.navigate("MindfulnessFlow", { prayer: serializablePrayer });
   };
 
   const getBackgroundGradient = (): readonly [ColorValue, ColorValue] => {
     return [theme.colors.background.primary, theme.colors.background.secondary];
   };
 
-  const getNextMilestone = (current: number): number => {
-    if (current < 3) return 3;
-    if (current < 7) return 7;
-    if (current < 30) return 30;
-    if (current < 100) return 100;
-    return 365;
-  };
 
   const completedToday = todayPrayerRecords.filter(r => r.status === 'prayed').length;
 
@@ -218,39 +224,31 @@ const HomeScreen = ({ navigation }: any) => {
     );
   }
 
-  // 🎯 MAIN UI: Same as before, but now using reliable prayer times from provider
+  // 🎯 MAIN UI: SanctuaryView hero + secondary content below
   return (
     <SafeAreaView style={styles.container}>
-      <LinearGradient colors={getBackgroundGradient()} style={styles.container}>
-        <ScrollView
-          style={styles.scrollView}
-          refreshControl={
-            <RefreshControl refreshing={isRefreshing} onRefresh={onRefresh} />
-          }
-          showsVerticalScrollIndicator={false}
-        >
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.greeting}>{greeting}</Text>
-            <Text style={styles.date}>
-              {format(currentTime, "EEEE, MMMM do, yyyy")}
-            </Text>
-          </View>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+      >
+        {/* 1a: SanctuaryView — full-screen next prayer hero */}
+        {nextPrayer ? (
+          <SanctuaryView
+            prayer={nextPrayer}
+            greeting={getGreeting()}
+            onPrepare={() => handlePrayerComplete(nextPrayer)}
+          />
+        ) : (
+          <LinearGradient colors={getBackgroundGradient()} style={styles.noNextPrayer}>
+            <Text style={styles.greeting}>{getGreeting()}</Text>
+            <Text style={styles.allPrayersComplete}>All prayers complete today</Text>
+            <Text style={styles.allPrayersSubtext}>Alhamdulillah</Text>
+          </LinearGradient>
+        )}
 
-          {/* Sunrise & Sunset Times */}
-          <SunTimesDisplay sunrise={todaySunrise} sunset={todaySunset} />
-
-          {/* 🕌 Mosque Mode Status Banner */}
-          <MosqueModeStatus />
-
-          {/* Next Prayer Card */}
-          {nextPrayer && (
-            <NextPrayerCard
-              prayer={nextPrayer}
-              onPrepare={() => handlePrayerComplete(nextPrayer)}
-            />
-          )}
-
+        {/* Secondary content — below the fold */}
+        <View style={[styles.secondaryContent, { backgroundColor: theme.colors.background.primary }]}>
           {/* Offline Banner */}
           {isOffline && (
             <View style={styles.offlineBanner}>
@@ -260,18 +258,34 @@ const HomeScreen = ({ navigation }: any) => {
             </View>
           )}
 
+          {/* 🕌 Mosque Mode Status Banner */}
+          <MosqueModeStatus />
+
+          {/* Sunrise & Sunset */}
+          <SunTimesDisplay sunrise={todaySunrise} sunset={todaySunset} />
+
+          {/* Ramadan Suhoor/Iftar — only during Ramadan */}
+          {isRamadan() && todayPrayerTimes.length > 0 && (() => {
+            const fajr = todayPrayerTimes.find(p => p.name === 'Fajr');
+            const maghrib = todayPrayerTimes.find(p => p.name === 'Maghrib');
+            if (!fajr || !maghrib) return null;
+            return <RamadanTimesCard fajrTime={fajr.time} maghribTime={maghrib.time} />;
+          })()}
+
+          {/* Quick Stats */}
+          <QuickStats prayersToday={completedToday} />
+
+          {/* Garden Teaser — subtle entry point to Reflection Garden */}
+          <GardenTeaser />
+
           {/* Today's Prayer Times */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Today's Prayers</Text>
             <View style={styles.prayerGrid}>
               {todayPrayerTimes.map((prayer, index) => {
-                // 🎯 FIXED: Get the matching prayer record
                 const record = todayPrayerRecords.find(
                   (r) => r.prayer === prayer.name
                 );
-                
-                // Get the next prayer in the list (for grace period calculation)
-                // If this is the last prayer of the day, nextPrayer will be null
                 const nextPrayerInList = index < todayPrayerTimes.length - 1 
                   ? todayPrayerTimes[index + 1] 
                   : null;
@@ -290,31 +304,22 @@ const HomeScreen = ({ navigation }: any) => {
             </View>
           </View>
 
-          {/* Quick Stats */}
-          <QuickStats
-            prayersToday={completedToday} 
-            streak={currentStreak}        
-            nextMilestone={getNextMilestone(currentStreak)} 
-          />
+          {/* Optional Prayers (Taraweeh during Ramadan, Tahajjud after Isha) */}
+          <OptionalPrayersSection onPrepare={handleOptionalPrayerPrepare} />
 
           {/* Digital Wellness Card */}
-          <DigitalWellnessCard
-            screenTime={screenTime} 
-          />
+          <DigitalWellnessCard screenTime={screenTime} />
 
           {/* Daily Verse */}
           <DailyVerse />
 
-          {/* Achievement Celebration */}
-          {celebratingAchievement && (
-            <AchievementCelebration
-              achievement={celebratingAchievement}
-              onClose={() => setCelebratingAchievement(null)}
-              isVisible={true} 
-            />
-          )}
-        </ScrollView>
-      </LinearGradient>
+          {/* Bottom spacing */}
+          <View style={{ height: 40 }} />
+        </View>
+      </ScrollView>
+
+      {/* 4c: Mosque mode activation overlay */}
+      <MosqueModeOverlay />
     </SafeAreaView>
   );
 };
@@ -327,27 +332,50 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flex: 1,
   },
   header: {
-    padding: theme.spacing.xl,
+    paddingHorizontal: theme.spacing.xl,
+    paddingTop: theme.spacing['2xl'],
+    paddingBottom: theme.spacing.xl,
     alignItems: 'center',
   },
   greeting: {
     fontSize: theme.typography.fontSize['3xl'],
-    fontWeight: '700',
-    color: theme.colors.text.primary,
+    fontWeight: '400',
+    color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: theme.spacing.sm,
   },
-  date: {
-    fontSize: theme.typography.fontSize.md,
-    color: theme.colors.text.secondary,
+  noNextPrayer: {
+    minHeight: 300,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing['2xl'],
+  },
+  allPrayersComplete: {
+    fontSize: 28,
+    fontWeight: '300',
+    color: theme.colors.text.primary,
     textAlign: 'center',
+    marginTop: theme.spacing.lg,
+  },
+  allPrayersSubtext: {
+    fontSize: 18,
+    fontWeight: '300',
+    color: theme.colors.text.secondary,
+    fontStyle: 'italic',
+    marginTop: theme.spacing.sm,
+  },
+  secondaryContent: {
+    paddingTop: theme.spacing.lg,
   },
   section: {
-    padding: theme.spacing.xl,
+    paddingHorizontal: theme.spacing.xl,
+    paddingTop: theme.spacing.lg,
+    paddingBottom: theme.spacing.sm,
   },
   sectionTitle: {
     fontSize: theme.typography.fontSize['2xl'],
-    fontWeight: '600',
+    fontWeight: '500',
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.lg,
   },
@@ -434,6 +462,11 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontSize: theme.typography.fontSize.base,
     fontWeight: '600',
     color: theme.colors.text.primary,
+  },
+  date: {
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.secondary,
+    textAlign: 'center',
   },
   offlineBanner: {
     backgroundColor: 'rgba(255, 152, 0, 0.15)',

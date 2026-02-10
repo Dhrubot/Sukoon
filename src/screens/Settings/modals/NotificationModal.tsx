@@ -9,6 +9,8 @@ import {
 } from 'react-native';
 import NotificationSettings from '../../../components/settings/NotificationSettings';
 import { UserSettings } from '../../../types';
+import { useThemedStyles } from '../../../hooks/useThemedStyles';
+import { AppTheme } from '../../../theme';
 
 interface NotificationModalProps {
   visible: boolean;
@@ -22,7 +24,9 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
   onClose,
   userSettings,
   onUpdateSettings,
-}) => (
+}) => {
+  const styles = useThemedStyles(createStyles);
+  return (
   <Modal
     visible={visible}
     transparent
@@ -46,16 +50,17 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
       </View>
     </View>
   </Modal>
-);
+  );
+};
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: theme.colors.settings.modalOverlay,
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.settings.modalBg,
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
     height: '90%',
@@ -66,17 +71,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: theme.colors.border.primary,
   },
   modalTitle: {
-    fontSize: 20,  // 2xl
-    fontWeight: '600',  // semibold
-    color: '#212121',
+    fontSize: 20,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
   },
   modalClose: {
-    fontSize: 16,  // lg
-    color: '#1B5E3F',
-    fontWeight: '600',  // semibold
+    fontSize: 16,
+    color: theme.colors.settings.modalClose,
+    fontWeight: '600',
   },
   modalBody: {
     flex: 1,

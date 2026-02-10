@@ -11,6 +11,9 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Haptics from 'expo-haptics';
 import { Achievement } from '../../types';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { useTheme } from '../../providers/ThemeProvider';
+import { AppTheme } from '../../theme';
 
 const { width, height } = Dimensions.get('window');
 
@@ -25,6 +28,8 @@ const AchievementCelebration: React.FC<AchievementCelebrationProps> = ({
   isVisible,
   onClose,
 }) => {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const scaleAnim = useRef(new Animated.Value(0)).current;
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -124,21 +129,13 @@ const AchievementCelebration: React.FC<AchievementCelebrationProps> = ({
   };
 
   const getTierGradient = (tier?: string): [string, string] => {
-    switch (tier) {
-      case 'bronze': return ['#CD7F32', '#8B4513'];
-      case 'silver': return ['#C0C0C0', '#808080'];
-      case 'gold': return ['#FFD700', '#FFA500'];
-      case 'platinum': return ['#E5E4E2', '#BCC6CC'];
-      default: return ['#1B5E3F', '#2E7D32'];
-    }
+    const tiers = theme.colors.achievement.tiers;
+    const t = (tier && tiers[tier as keyof typeof tiers]) || tiers.default;
+    return [t.from, t.to];
   };
 
   const getConfettiColor = (index: number): string => {
-    const colors = [
-      '#FF6B6B', '#4ECDC4', '#45B7D1', '#FDCB6E',
-      '#6C5CE7', '#A29BFE', '#FD79A8', '#FDCB6E',
-      '#55A3FF', '#F8B500', '#FC5C65', '#26DE81',
-    ];
+    const colors = theme.colors.achievement.confetti;
     return colors[index % colors.length];
   };
 
@@ -232,10 +229,10 @@ const AchievementCelebration: React.FC<AchievementCelebrationProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    backgroundColor: theme.colors.achievement.overlayBg,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -261,7 +258,7 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     padding: 32,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: theme.colors.achievement.shadow,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.3,
     shadowRadius: 16,
@@ -274,51 +271,51 @@ const styles = StyleSheet.create({
     fontSize: 80,
   },
   unlockedText: {
-    fontSize: 14,  // md
-    fontWeight: '700',  // bold
-    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 14,
+    fontWeight: '700',
+    color: theme.colors.achievement.textSecondary,
     letterSpacing: 2,
     marginBottom: 12,
   },
   achievementName: {
-    fontSize: 24,  // 3xl
-    fontWeight: '700',  // bold
-    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: '700',
+    color: theme.colors.achievement.textPrimary,
     textAlign: 'center',
     marginBottom: 8,
   },
   achievementDescription: {
-    fontSize: 16,  // lg
-    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 16,
+    color: theme.colors.achievement.textSecondary,
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 22,
   },
   tierBadge: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    backgroundColor: theme.colors.achievement.badgeBg,
     paddingHorizontal: 16,
     paddingVertical: 6,
     borderRadius: 16,
     marginBottom: 24,
   },
   tierText: {
-    fontSize: 13,  // sm (adjusted up)
-    fontWeight: '700',  // bold
-    color: '#FFFFFF',
+    fontSize: 13,
+    fontWeight: '700',
+    color: theme.colors.achievement.textPrimary,
     letterSpacing: 1,
   },
   continueButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    backgroundColor: theme.colors.achievement.continueBg,
     paddingHorizontal: 32,
     paddingVertical: 14,
     borderRadius: 24,
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
+    borderColor: theme.colors.achievement.continueBorder,
   },
   continueText: {
-    fontSize: 16,  // lg
-    fontWeight: '600',  // semibold
-    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.achievement.textPrimary,
   },
 });
 

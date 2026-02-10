@@ -9,6 +9,8 @@ import {
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useTheme } from '../../providers/ThemeProvider';
+import { VERSES } from '../../constants';
+import { isRamadan } from '../../utils/ramadan';
 
 // Quran/Book Icon Component
 const QuranIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
@@ -38,33 +40,7 @@ const QuranIcon: React.FC<{ color: string; size: number }> = ({ color, size }) =
   </Svg>
 );
 
-// Sample verses - in production, this would come from a larger database
-const verses = [
-  {
-    arabic: 'إِنَّ الصَّلَاةَ تَنْهَىٰ عَنِ الْفَحْشَاءِ وَالْمُنكَرِ',
-    translation: 'Indeed, prayer prohibits immorality and wrongdoing',
-    reference: 'Quran 29:45',
-    theme: 'prayer',
-  },
-  {
-    arabic: 'وَاسْتَعِينُوا بِالصَّبْرِ وَالصَّلَاةِ',
-    translation: 'And seek help through patience and prayer',
-    reference: 'Quran 2:45',
-    theme: 'patience',
-  },
-  {
-    arabic: 'إِنَّ اللَّهَ مَعَ الصَّابِرِينَ',
-    translation: 'Indeed, Allah is with the patient',
-    reference: 'Quran 2:153',
-    theme: 'patience',
-  },
-  {
-    arabic: 'فَاذْكُرُونِي أَذْكُرْكُمْ',
-    translation: 'So remember Me; I will remember you',
-    reference: 'Quran 2:152',
-    theme: 'remembrance',
-  },
-];
+const verses = VERSES;
 
 const DailyVerse: React.FC = () => {
   const { theme } = useTheme();
@@ -72,12 +48,22 @@ const DailyVerse: React.FC = () => {
   const [showTranslation, setShowTranslation] = useState(true);
 
   useEffect(() => {
-    // Get a daily verse based on the date
     const today = new Date();
     const dayOfYear = Math.floor(
       (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) /
       (1000 * 60 * 60 * 24)
     );
+
+    // During Ramadan, bias toward Ramadan-themed verses
+    if (isRamadan()) {
+      const ramadanVerses = verses.filter((v: any) => v.theme === 'ramadan');
+      if (ramadanVerses.length > 0) {
+        const idx = dayOfYear % ramadanVerses.length;
+        setVerse(ramadanVerses[idx]);
+        return;
+      }
+    }
+
     const verseIndex = dayOfYear % verses.length;
     setVerse(verses[verseIndex]);
   }, []);

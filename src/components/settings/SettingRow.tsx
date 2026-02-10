@@ -91,10 +91,10 @@ const styles = StyleSheet.create({
     fontWeight: '300',
   },
   dangerText: {
-    color: '#F44336',
+    color: '#EF4444',
   },
   disabledText: {
-    color: '#BDBDBD',
+    color: '#94A3B8',
   },
   disabledRow: {
     opacity: 0.7,

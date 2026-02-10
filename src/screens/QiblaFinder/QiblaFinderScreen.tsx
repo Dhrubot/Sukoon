@@ -250,15 +250,16 @@ const QiblaFinderScreen: React.FC = () => {
       const eNorm = Math.sqrt(ex * ex + ey * ey + ez * ez) || 1;
       const nex = ex / eNorm;
       const ney = ey / eNorm;
+      const nez = ez / eNorm;
 
-      // North = Gravity x East (cross product)
-      const nx = nay * ez - naz * ey;
-      const ny = naz * ex - nax * ez;
+      // North = Gravity x NormalizedEast (cross product)
+      const ny = naz * nex - nax * nez;
 
-      // Heading = atan2(East.y, North.y) gives compass bearing
-      let heading = Math.atan2(nex, nx) * (180 / Math.PI);
+      // Heading = atan2(East.y, North.y) — Y is the device forward axis
+      let heading = Math.atan2(ney, ny) * (180 / Math.PI);
 
-      // On iOS the sensor axes are different — adjust
+      // iOS accelerometer z-axis is inverted relative to Android,
+      // which mirrors the East vector and thus the heading
       if (Platform.OS === 'ios') {
         heading = -heading;
       }
@@ -462,9 +463,9 @@ const QiblaFinderScreen: React.FC = () => {
   const calibrationBanner = useMemo(() => {
     if (calibrationStatus === 'good') return null;
     if (calibrationStatus === 'fair') {
-      return { text: 'Compass accuracy is fair', color: '#F59E0B' };
+      return { text: 'Compass accuracy is fair', color: theme.colors.status.warning };
     }
-    return { text: 'Calibration needed - Move phone in figure 8', color: '#EF4444' };
+    return { text: 'Calibration needed - Move phone in figure 8', color: theme.colors.status.error };
   }, [calibrationStatus]);
 
   // Phase 4: Generate degree tick marks

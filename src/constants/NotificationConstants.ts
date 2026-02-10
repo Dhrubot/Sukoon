@@ -14,6 +14,7 @@ export const CHANNELS = {
   PRE_PRAYER: `pre-prayer-v${NOTIFICATION_CHANNEL_VERSION}`,
   MINDFULNESS: `mindfulness-v${NOTIFICATION_CHANNEL_VERSION}`,
   GRACE_WARNING: `grace-warning-v${NOTIFICATION_CHANNEL_VERSION}`, // Prayer Habit Builder Tier 3
+  TAHAJJUD: `tahajjud-v${NOTIFICATION_CHANNEL_VERSION}`, // Gentle Tahajjud encouragement
 };
 
 export const SOUNDS = {

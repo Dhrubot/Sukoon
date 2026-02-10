@@ -7,11 +7,9 @@ import { Icon } from '../components/common/Icon';
 import {
   HomeTabIcon,
   QiblaTabIcon,
-  ProgressTabIcon,
 } from '../assets/icons';
 
 import HomeScreen from '../screens/Home/HomeScreen';
-import StatsScreen from '../screens/Stats/StatsScreen';
 import QiblaFinderScreen from '../screens/QiblaFinder/QiblaFinderScreen';
 import { MenuStackNavigator } from './MenuStackNavigator';
 
@@ -79,16 +77,6 @@ export const TabNavigator: React.FC = () => {
           tabBarLabel: 'Qibla',
           tabBarIcon: ({ color }) => (
             <Icon source={QiblaTabIcon} size={22} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen
-        name="Stats"
-        component={StatsScreen}
-        options={{
-          tabBarLabel: 'Progress',
-          tabBarIcon: ({ color }) => (
-            <Icon source={ProgressTabIcon} size={20} color={color} />
           ),
         }}
       />

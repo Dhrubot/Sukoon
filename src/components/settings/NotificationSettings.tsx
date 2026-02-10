@@ -16,6 +16,9 @@ import NotificationService from '../../services/NotificationService';
 import StorageService from '../../services/StorageService';
 import { UserSettings } from '../../types';
 import PrayerHabitBuilderSettings from './PrayerHabitBuilderSettings';
+import { useTheme } from '../../providers/ThemeProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 
 interface NotificationSettingsProps {
   userSettings: UserSettings;
@@ -23,6 +26,8 @@ interface NotificationSettingsProps {
 }
 
 const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSettings, onUpdateSettings }) => {
+  const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [activeTab, setActiveTab] = useState<'basic' | 'habit'>('basic');
   const [localSettings, setLocalSettings] = useState(userSettings?.notifications || {
     enabled: true,
@@ -152,8 +157,8 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
           <Switch
             value={localSettings.enabled}
             onValueChange={handleToggleNotifications}
-            trackColor={{ false: '#E0E0E0', true: '#81C784' }}
-            thumbColor={localSettings.enabled ? '#4CAF50' : '#f4f3f4'}
+            trackColor={{ false: theme.colors.settings.sliderMax, true: theme.colors.settings.sliderMin }}
+            thumbColor={localSettings.enabled ? theme.colors.settings.sliderThumb : theme.colors.switch.thumb}
             disabled={isUpdating}
           />
         </View>
@@ -203,8 +208,8 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
               <Switch
                 value={localSettings.soundEnabled}
                 onValueChange={(value) => updateSettings({ soundEnabled: value })}
-                trackColor={{ false: '#E0E0E0', true: '#81C784' }}
-                thumbColor={localSettings.soundEnabled ? '#4CAF50' : '#f4f3f4'}
+                trackColor={{ false: theme.colors.settings.sliderMax, true: theme.colors.settings.sliderMin }}
+                thumbColor={localSettings.soundEnabled ? theme.colors.settings.sliderThumb : theme.colors.switch.thumb}
               />
             </View>
           </View>
@@ -221,8 +226,8 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
               <Switch
                 value={localSettings.vibrationEnabled}
                 onValueChange={(value) => updateSettings({ vibrationEnabled: value })}
-                trackColor={{ false: '#E0E0E0', true: '#81C784' }}
-                thumbColor={localSettings.vibrationEnabled ? '#4CAF50' : '#f4f3f4'}
+                trackColor={{ false: theme.colors.settings.sliderMax, true: theme.colors.settings.sliderMin }}
+                thumbColor={localSettings.vibrationEnabled ? theme.colors.settings.sliderThumb : theme.colors.switch.thumb}
               />
             </View>
           </View>
@@ -239,8 +244,8 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
               <Switch
                 value={localSettings.postPrayerCheck}
                 onValueChange={(value) => updateSettings({ postPrayerCheck: value })}
-                trackColor={{ false: '#E0E0E0', true: '#81C784' }}
-                thumbColor={localSettings.postPrayerCheck ? '#4CAF50' : '#f4f3f4'}
+                trackColor={{ false: theme.colors.settings.sliderMax, true: theme.colors.settings.sliderMin }}
+                thumbColor={localSettings.postPrayerCheck ? theme.colors.settings.sliderThumb : theme.colors.switch.thumb}
               />
             </View>
           </View>
@@ -289,14 +294,14 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.settings.sectionBg,
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#F5F5F5',
+    backgroundColor: theme.colors.settings.optionBg,
     padding: 4,
     margin: 16,
     borderRadius: 12,
@@ -310,37 +315,37 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   tabActive: {
-    backgroundColor: '#FFFFFF',
-    shadowColor: '#000',
+    backgroundColor: theme.colors.settings.sectionBg,
+    shadowColor: theme.colors.settings.modalShadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
   },
   tabText: {
-    fontSize: 15,  // base
-    fontWeight: '500',  // medium
-    color: '#757575',
+    fontSize: 15,
+    fontWeight: '500',
+    color: theme.colors.settings.labelSecondary,
   },
   tabTextActive: {
-    color: '#1B5E3F',
-    fontWeight: '600',  // semibold
+    color: theme.colors.primary.DEFAULT,
+    fontWeight: '600',
   },
   scrollView: {
     flex: 1,
-    backgroundColor: '#FAFAFA',
+    backgroundColor: theme.colors.settings.containerBg,
   },
   section: {
-    backgroundColor: '#FFFFFF',
+    backgroundColor: theme.colors.settings.sectionBg,
     marginBottom: 16,
     padding: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
+    borderBottomColor: theme.colors.border.primary,
   },
   sectionTitle: {
-    fontSize: 18,  // xl
-    fontWeight: '600',  // semibold
-    color: '#1B5E3F',
+    fontSize: 18,
+    fontWeight: '600',
+    color: theme.colors.primary.DEFAULT,
     marginBottom: 12,
   },
   settingRow: {
@@ -353,14 +358,14 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   settingLabel: {
-    fontSize: 16,  // lg
-    fontWeight: '500',  // medium
-    color: '#212121',
+    fontSize: 16,
+    fontWeight: '500',
+    color: theme.colors.settings.labelPrimary,
     marginBottom: 4,
   },
   settingDescription: {
-    fontSize: 14,  // md
-    color: '#757575',
+    fontSize: 14,
+    color: theme.colors.settings.labelSecondary,
     lineHeight: 20,
   },
   reminderOptions: {
@@ -373,58 +378,58 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingVertical: 10,
     borderRadius: 20,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: theme.colors.settings.optionBg,
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: theme.colors.settings.optionBorder,
   },
   reminderOptionActive: {
-    backgroundColor: '#E8F5E9',
-    borderColor: '#4CAF50',
+    backgroundColor: theme.colors.settings.optionActiveBg,
+    borderColor: theme.colors.settings.optionActiveBorder,
   },
   reminderOptionText: {
-    fontSize: 14,  // md
-    color: '#757575',
+    fontSize: 14,
+    color: theme.colors.settings.labelSecondary,
   },
   reminderOptionTextActive: {
-    color: '#1B5E3F',
-    fontWeight: '600',  // semibold
+    color: theme.colors.primary.DEFAULT,
+    fontWeight: '600',
   },
   button: {
-    backgroundColor: '#1B5E3F',
+    backgroundColor: theme.colors.settings.buttonPrimaryBg,
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: 'center',
     marginBottom: 12,
   },
   secondaryButton: {
-    backgroundColor: 'transparent',
+    backgroundColor: theme.colors.settings.buttonSecondaryBg,
     borderWidth: 1,
-    borderColor: '#1B5E3F',
+    borderColor: theme.colors.settings.buttonSecondaryBorder,
   },
   buttonText: {
-    fontSize: 16,  // lg
-    fontWeight: '600',  // semibold
-    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.settings.buttonPrimaryText,
   },
   secondaryButtonText: {
-    color: '#1B5E3F',
+    color: theme.colors.settings.buttonSecondaryText,
   },
   tipsSection: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: theme.colors.settings.tipsBg,
     padding: 20,
     marginBottom: 32,
     borderRadius: 12,
     marginHorizontal: 16,
   },
   tipsTitle: {
-    fontSize: 16,  // lg
-    fontWeight: '600',  // semibold
-    color: '#1B5E3F',
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.settings.tipsTitle,
     marginBottom: 12,
   },
   tipText: {
-    fontSize: 14,  // md
-    color: '#2E7D32',
+    fontSize: 14,
+    color: theme.colors.settings.tipsText,
     lineHeight: 22,
     marginBottom: 8,
   },

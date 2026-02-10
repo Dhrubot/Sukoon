@@ -1,5 +1,6 @@
 // Prayer related types
 export type PrayerName = "Fajr" | "Dhuhr" | "Asr" | "Maghrib" | "Isha";
+export type ExtendedPrayerName = PrayerName | "Taraweeh" | "Tahajjud" | "Jumah";
 
 export interface PrayerTime {
   name: PrayerName;
@@ -23,6 +24,16 @@ export interface PrayerTimesWithSun {
   prayerTimes: PrayerTime[];
   sunrise: Date;
   sunset: Date;
+  midnight: Date | null;
+}
+
+export interface OptionalPrayerTime {
+  name: ExtendedPrayerName;
+  displayName: string;
+  arabic: string;
+  icon: string;
+  time: Date;
+  category: 'sunnah' | 'seasonal' | 'weekly';
 }
 
 export interface PrayerRecord {
@@ -105,6 +116,10 @@ export interface UserSettings {
   };
   habitBuilder: HabitBuilderSettings;
   mosqueMode: MosqueModeSettings;
+  tahajjudReminders?: {
+    enabled: boolean;
+    frequency: 'daily' | 'weekdays' | 'weekends' | 'twice_weekly';
+  };
   theme: "light" | "dark" | "auto";
 }
 

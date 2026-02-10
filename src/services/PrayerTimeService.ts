@@ -16,6 +16,8 @@ import {
   AladhanResponse,
 } from "../types";
 import { isValidCoordinates } from "../utils/locationValidation";
+import { FARD_PRAYER_NAMES_LIST } from "../constants/prayerRegistry";
+import { cacheHijriDate } from "../utils/ramadan";
 import logger from "../utils/logger";
 
 const ALADHAN_API_BASE = "https://api.aladhan.com/v1";
@@ -137,6 +139,11 @@ export class PrayerTimeService {
         this.cachedTimes.set(cacheKey, times);
         this.evictCacheIfNeeded();
 
+        // Cache Hijri date for Ramadan detection (no extra API call)
+        if (data.data.date?.hijri) {
+          cacheHijriDate(data.data.date.hijri);
+        }
+
         // Cache for tomorrow as well if it's after Asr
         const now = new Date();
         const asrTime = this.parseTimeToDate(times.Asr, date);
@@ -173,30 +180,25 @@ export class PrayerTimeService {
     method: CalculationMethod = "MWL",
     adjustments?: Record<PrayerName, number>,
     asrJuristic: "Standard" | "Hanafi" = "Standard"
-  ): Promise<{ prayerTimes: PrayerTime[]; sunrise: Date; sunset: Date }> {
+  ): Promise<{ prayerTimes: PrayerTime[]; sunrise: Date; sunset: Date; midnight: Date | null }> {
     // CENTRAL GUARD - Stop invalid calls immediately
     if (!isValidCoordinates(coordinates)) {
       logger.log(
         "🛑 BLOCKED: Invalid coordinates, returning empty prayer times"
       );
-      return { prayerTimes: [], sunrise: new Date(), sunset: new Date() };
+      return { prayerTimes: [], sunrise: new Date(), sunset: new Date(), midnight: null };
     }
 
     try {
       const times = await this.fetchPrayerTimes(coordinates, date, method, asrJuristic);
       const now = new Date();
 
-      // Parse sunrise and sunset
+      // Parse sunrise, sunset, and midnight
       const sunrise = this.parseTimeToDate(times.Sunrise, date);
       const sunset = this.parseTimeToDate(times.Sunset, date);
+      const midnight = times.Midnight ? this.parseTimeToDate(times.Midnight, date) : null;
 
-      const prayerNames: PrayerName[] = [
-        "Fajr",
-        "Dhuhr",
-        "Asr",
-        "Maghrib",
-        "Isha",
-      ];
+      const prayerNames = FARD_PRAYER_NAMES_LIST as unknown as PrayerName[];
       const prayerTimesList: PrayerTime[] = [];
       let nextPrayerFound = false;
 
@@ -260,10 +262,11 @@ export class PrayerTimeService {
         prayerTimes: prayerTimesList,
         sunrise,
         sunset,
+        midnight,
       };
     } catch (error) {
       logger.error("❌ Error in getPrayerTimesList:", error);
-      return { prayerTimes: [], sunrise: new Date(), sunset: new Date() };
+      return { prayerTimes: [], sunrise: new Date(), sunset: new Date(), midnight: null };
     }
   }
 

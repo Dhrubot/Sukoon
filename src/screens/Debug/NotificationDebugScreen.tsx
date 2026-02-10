@@ -14,8 +14,11 @@ import * as Device from 'expo-device';
 import NotificationService from '../../services/NotificationService';
 import { useStore } from '../../store/useStore';
 import { usePrayerTimes } from '../../providers/PrayerTimesProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 
 export const NotificationDebugScreen = () => {
+  const styles = useThemedStyles(createStyles);
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [permissionStatus, setPermissionStatus] = useState<string>('unknown');
   const [scheduledCount, setScheduledCount] = useState(0);
@@ -308,12 +311,15 @@ export const NotificationDebugScreen = () => {
   );
 };
 
-const InfoRow = ({ label, value }: { label: string; value: string }) => (
-  <View style={styles.infoRow}>
-    <Text style={styles.infoLabel}>{label}:</Text>
-    <Text style={styles.infoValue}>{value}</Text>
-  </View>
-);
+const InfoRow = ({ label, value }: { label: string; value: string }) => {
+  const styles = useThemedStyles(createStyles);
+  return (
+    <View style={styles.infoRow}>
+      <Text style={styles.infoLabel}>{label}:</Text>
+      <Text style={styles.infoValue}>{value}</Text>
+    </View>
+  );
+};
 
 const TestButton = ({ 
   title, 
@@ -325,115 +331,118 @@ const TestButton = ({
   onPress: () => void; 
   description: string;
   danger?: boolean;
-}) => (
-  <TouchableOpacity
-    style={[styles.testButton, danger && styles.dangerButton]}
-    onPress={onPress}
-  >
-    <Text style={[styles.buttonTitle, danger && styles.dangerText]}>{title}</Text>
-    <Text style={styles.buttonDescription}>{description}</Text>
-  </TouchableOpacity>
-);
+}) => {
+  const styles = useThemedStyles(createStyles);
+  return (
+    <TouchableOpacity
+      style={[styles.testButton, danger && styles.dangerButton]}
+      onPress={onPress}
+    >
+      <Text style={[styles.buttonTitle, danger && styles.dangerText]}>{title}</Text>
+      <Text style={styles.buttonDescription}>{description}</Text>
+    </TouchableOpacity>
+  );
+};
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F5F5F5',
+    backgroundColor: theme.colors.settings.containerBg,
   },
   header: {
-    backgroundColor: '#1B5E3F',
+    backgroundColor: theme.colors.primary.DEFAULT,
     padding: 20,
     paddingTop: 60,
   },
   title: {
-    fontSize: 24,  // 3xl
-    fontWeight: '700',  // bold
-    color: 'white',
+    fontSize: 24,
+    fontWeight: '700',
+    color: theme.colors.primary.contrast,
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 14,  // md
-    color: 'rgba(255,255,255,0.8)',
+    fontSize: 14,
+    color: theme.colors.achievement.textSecondary,
   },
   section: {
-    backgroundColor: 'white',
+    backgroundColor: theme.colors.settings.sectionBg,
     marginTop: 12,
     marginHorizontal: 12,
     padding: 16,
     borderRadius: 12,
   },
   sectionTitle: {
-    fontSize: 18,  // xl
-    fontWeight: '600',  // semibold
+    fontSize: 18,
+    fontWeight: '600',
     marginBottom: 12,
-    color: '#1B5E3F',
+    color: theme.colors.primary.DEFAULT,
   },
   subsectionTitle: {
-    fontSize: 14,  // md
-    fontWeight: '600',  // semibold
+    fontSize: 14,
+    fontWeight: '600',
     marginTop: 12,
     marginBottom: 8,
-    color: '#666',
+    color: theme.colors.text.secondary,
   },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    borderBottomColor: theme.colors.border.primary,
   },
   infoLabel: {
-    fontSize: 14,  // md
-    color: '#666',
+    fontSize: 14,
+    color: theme.colors.text.secondary,
   },
   infoValue: {
-    fontSize: 14,  // md
-    fontWeight: '600',  // semibold
-    color: '#333',
+    fontSize: 14,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
   },
   notificationCard: {
-    backgroundColor: '#F9F9F9',
+    backgroundColor: theme.colors.settings.optionBg,
     padding: 12,
     borderRadius: 8,
     marginBottom: 8,
   },
   notifText: {
-    fontSize: 13,  // sm (adjusted up)
-    color: '#666',
+    fontSize: 13,
+    color: theme.colors.text.secondary,
     marginBottom: 4,
   },
   testButton: {
-    backgroundColor: '#1B5E3F',
+    backgroundColor: theme.colors.settings.buttonPrimaryBg,
     padding: 16,
     borderRadius: 8,
     marginBottom: 12,
   },
   dangerButton: {
-    backgroundColor: '#D32F2F',
+    backgroundColor: theme.colors.status.error,
   },
   buttonTitle: {
-    fontSize: 16,  // lg
-    fontWeight: '600',  // semibold
-    color: 'white',
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.settings.buttonPrimaryText,
     marginBottom: 4,
   },
   dangerText: {
-    color: 'white',
+    color: theme.colors.settings.buttonPrimaryText,
   },
   buttonDescription: {
-    fontSize: 13,  // sm (adjusted up)
-    color: 'rgba(255,255,255,0.8)',
+    fontSize: 13,
+    color: theme.colors.achievement.textSecondary,
   },
   noteBox: {
-    backgroundColor: '#FFF3E0',
+    backgroundColor: theme.colors.settings.warningBg,
     padding: 12,
     borderRadius: 8,
     borderLeftWidth: 4,
-    borderLeftColor: '#FF9800',
+    borderLeftColor: theme.colors.status.warning,
   },
   noteText: {
-    fontSize: 13,  // sm
-    color: '#666',
+    fontSize: 13,
+    color: theme.colors.text.secondary,
     lineHeight: 20,
   },
 });

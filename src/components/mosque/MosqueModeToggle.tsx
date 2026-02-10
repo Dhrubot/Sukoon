@@ -138,7 +138,14 @@ export const MosqueModeToggle: React.FC = () => {
             {
               text: 'Disable',
               style: 'destructive',
-              onPress: () => enableMosqueMode(false),
+              onPress: async () => {
+                await enableMosqueMode(false);
+                Alert.alert(
+                  'Mosque Mode Disabled',
+                  'You will no longer receive automatic silent mode at iqamah time. You can re-enable this anytime.',
+                  [{ text: 'OK' }]
+                );
+              },
             },
           ]
         );

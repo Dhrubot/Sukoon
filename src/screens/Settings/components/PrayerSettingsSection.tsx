@@ -7,6 +7,8 @@ import StorageService from '../../../services/StorageService';
 import NotificationService from '../../../services/NotificationService';
 import { UserSettings, CalculationMethodType, PrayerTime, PrayerName } from '../../../types';
 import { useTheme } from '../../../providers/ThemeProvider';
+import { useThemedStyles } from '../../../hooks/useThemedStyles';
+import { AppTheme } from '../../../theme';
 import { NotificationToggleButton } from '../../../components/common/NotificationToggleButton';
 import { SegmentedControl } from '../../../components/settings/SegmentedControl';
 
@@ -43,6 +45,7 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
   onPreviewMethod,
   onRefreshPrayerTimes, // 🆕 NEW
 }) => {
+  const styles = useThemedStyles(createStyles);
   const juristicOptions = [
     {
       value: 'Standard',
@@ -261,54 +264,52 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   juristicMethodWrapper: {
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
+    borderTopColor: theme.colors.border.primary,
   },
   juristicControl: {
     marginTop: 12,
   },
   juristicExplanation: {
-    backgroundColor: '#F8F9FA',
+    backgroundColor: theme.colors.settings.previewBg,
     borderRadius: 8,
     padding: 10,
     marginTop: 10,
     borderLeftWidth: 3,
-    borderLeftColor: '#1B5E3F',
+    borderLeftColor: theme.colors.primary.DEFAULT,
   },
   explanationText: {
-    fontSize: 13,  // sm
-    color: '#495057',
+    fontSize: 13,
+    color: theme.colors.settings.labelPrimary,
     lineHeight: 18,
   },
-  
-  // Prayer times preview styles
   statusContainer: {
-    backgroundColor: '#F8F9FA',
+    backgroundColor: theme.colors.settings.previewBg,
     borderRadius: 8,
     padding: 12,
     marginTop: 12,
   },
   statusText: {
-    fontSize: 14,  // md
-    color: '#6C757D',
+    fontSize: 14,
+    color: theme.colors.settings.labelMuted,
     textAlign: 'center',
   },
   prayerTimesContainer: {
-    backgroundColor: '#F8F9FA',
+    backgroundColor: theme.colors.settings.previewBg,
     borderRadius: 12,
     padding: 16,
     marginTop: 12,
     borderWidth: 1,
-    borderColor: '#E9ECEF',
+    borderColor: theme.colors.settings.optionBorder,
   },
   prayerTimesTitle: {
-    fontSize: 16,  // lg
-    fontWeight: '600',  // semibold
-    color: '#1B5E3F',
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.primary.DEFAULT,
     marginBottom: 12,
   },
   prayerTimesList: {
@@ -320,7 +321,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.1)',
+    borderBottomColor: theme.colors.border.primary,
   },
   prayerInfoSection: {
     flex: 1,
@@ -330,67 +331,63 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   prayerName: {
-    fontSize: 14,  
-    color: '#495057',
-    fontWeight: '500',  
+    fontSize: 14,
+    color: theme.colors.settings.labelPrimary,
+    fontWeight: '500',
   },
   nextPrayerName: {
-    color: '#1B5E3F',
-    fontWeight: '700',  
+    color: theme.colors.primary.DEFAULT,
+    fontWeight: '700',
   },
   asrHighlight: {
-    color: '#FF6F00', // Orange color for Asr to draw attention
+    color: theme.colors.status.warning,
   },
   prayerTime: {
-    fontSize: 14,  // md
-    color: '#6C757D',
-    fontWeight: '400',  // regular
+    fontSize: 14,
+    color: theme.colors.settings.labelMuted,
+    fontWeight: '400',
   },
   nextPrayerTime: {
-    color: '#1B5E3F',
-    fontWeight: '600',  // semibold
+    color: theme.colors.primary.DEFAULT,
+    fontWeight: '600',
   },
   moreText: {
-    fontSize: 13,  // sm (adjusted up)
-    color: '#ADB5BD',
+    fontSize: 13,
+    color: theme.colors.settings.labelMuted,
     fontStyle: 'italic',
     textAlign: 'center',
     marginTop: 4,
   },
-  
-  // Test button styles
   testSection: {
     marginTop: 16,
     paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
+    borderTopColor: theme.colors.border.primary,
   },
   testButton: {
-    backgroundColor: '#E8F5E9',
+    backgroundColor: theme.colors.settings.optionActiveBg,
     borderRadius: 8,
     padding: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#C8E6C9',
+    borderColor: theme.colors.settings.optionActiveBorder,
   },
   testButtonText: {
-    fontSize: 14,  // md
-    color: '#1B5E3F',
-    fontWeight: '600',  // semibold
+    fontSize: 14,
+    color: theme.colors.primary.DEFAULT,
+    fontWeight: '600',
   },
-  
-  // Hint styles
   hintContainer: {
-    backgroundColor: '#FFF3CD',
+    backgroundColor: theme.colors.settings.hintBg,
     borderRadius: 8,
     padding: 10,
     marginTop: 12,
     borderWidth: 1,
-    borderColor: '#FFEAA7',
+    borderColor: theme.colors.settings.hintBorder,
   },
   hintText: {
-    fontSize: 13,  // sm (adjusted up)
-    color: '#856404',
+    fontSize: 13,
+    color: theme.colors.settings.hintText,
     textAlign: 'center',
     lineHeight: 16,
   },

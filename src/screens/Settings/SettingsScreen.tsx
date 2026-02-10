@@ -29,6 +29,9 @@ import { MosqueModeToggle, IqamahTimeConfig, MosqueModeOptions } from '../../com
 // Modal Components
 import { CalculationMethodModal, NotificationModal } from './modals';
 
+// Services
+import NotificationService from '../../services/NotificationService';
+
 const SettingsScreen = ({ navigation }: any) => {
   const styles = useThemedStyles(createStyles);
   const { theme, themeMode, toggleTheme } = useTheme();
@@ -117,6 +120,31 @@ const SettingsScreen = ({ navigation }: any) => {
           onNotificationPress={() => setShowNotificationModal(true)}
         />
 
+        {/* 🌌 Optional Prayer Settings */}
+        <SettingSection title="OPTIONAL PRAYERS">
+          <SettingRow
+            label="Tahajjud Reminders"
+            subtitle="Gentle encouragement to pray the night prayer"
+            value={userSettings.tahajjudReminders?.enabled ? 'On' : 'Off'}
+            onPress={async () => {
+              const isEnabled = userSettings.tahajjudReminders?.enabled ?? false;
+              const updated = {
+                ...userSettings,
+                tahajjudReminders: {
+                  enabled: !isEnabled,
+                  frequency: userSettings.tahajjudReminders?.frequency || 'twice_weekly' as const,
+                },
+              };
+              setUserSettings(updated);
+              if (!isEnabled) {
+                await NotificationService.scheduleTahajjudEncouragement();
+              } else {
+                await NotificationService.cancelTahajjudNotifications();
+              }
+            }}
+          />
+        </SettingSection>
+
         {/* 🕌 Mosque Mode Settings */}
         <SettingSection title="MOSQUE MODE">
           <MosqueModeToggle />
@@ -149,9 +177,9 @@ const SettingsScreen = ({ navigation }: any) => {
           onResetApp={handleResetApp}
         />
 
-        <TouchableOpacity onPress={() => navigation.navigate('NotificationDebug')}>
+        {__DEV__ && <TouchableOpacity onPress={() => navigation.navigate('NotificationDebug')}>
           <Text>🔧 Notification Debugger</Text>
-        </TouchableOpacity>
+        </TouchableOpacity>}
 
         {/* Appearance Settings */}
         <SettingSection title="APPEARANCE">
@@ -170,7 +198,7 @@ const SettingsScreen = ({ navigation }: any) => {
         />
 
         {/* 🎯 NEW: Connection status indicator */}
-        <View style={styles.statusSection}>
+       { __DEV__ && <View style={styles.statusSection}>
           <Text style={styles.statusTitle}>🔗 Connection Status</Text>
           <View style={styles.statusRow}>
             <Text style={styles.statusLabel}>Prayer Times:</Text>
@@ -194,6 +222,7 @@ const SettingsScreen = ({ navigation }: any) => {
             </Text>
           </View>
         </View>
+        }
       </ScrollView>
 
       {/* 🎯 ENHANCED: Calculation Method Modal with previews */}

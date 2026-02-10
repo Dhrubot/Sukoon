@@ -10,6 +10,8 @@ import {
 } from 'react-native';
 import { format } from 'date-fns';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 import { useMosqueMode } from '../../hooks/useMosqueMode';
 import { PrayerTime } from '../../types';
 
@@ -27,6 +29,7 @@ export const MosqueModePrompt: React.FC<MosqueModePromptProps> = ({
   onCancel,
 }) => {
   const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const { getIqamahTime, settings } = useMosqueMode();
 
   const iqamahTime = getIqamahTime(prayer);
@@ -100,7 +103,7 @@ export const MosqueModePrompt: React.FC<MosqueModePromptProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -113,7 +116,7 @@ const styles = StyleSheet.create({
     maxWidth: 400,
     borderRadius: 20,
     padding: 24,
-    shadowColor: '#000',
+    shadowColor: theme.colors.achievement.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
@@ -169,7 +172,7 @@ const styles = StyleSheet.create({
     borderWidth: 2,
   },
   confirmButton: {
-    shadowColor: '#00C9A7',
+    shadowColor: theme.colors.primary.DEFAULT,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
@@ -183,7 +186,7 @@ const styles = StyleSheet.create({
     // Color comes from inline style
   },
   confirmText: {
-    color: '#FFFFFF',
+    color: theme.colors.primary.contrast,
   },
   footerText: {
     fontSize: 12,

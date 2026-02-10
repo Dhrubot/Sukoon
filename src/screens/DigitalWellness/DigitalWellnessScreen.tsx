@@ -22,12 +22,14 @@ import { useStore } from '../../store/useStore';
 
 // Types
 import { UsageStats, ScreenTimeData, AppUsageData } from '../../types';
+import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 
 const { width } = Dimensions.get('window');
 
 const DigitalWellnessScreen: React.FC = () => {
+  const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const { todayPrayerTimes } = useStore();
   const [isLoading, setIsLoading] = useState(true);
@@ -135,9 +137,9 @@ const DigitalWellnessScreen: React.FC = () => {
   };
 
   const getScoreColor = (score: number): string => {
-    if (score >= 80) return '#4CAF50';
-    if (score >= 60) return '#FF9800';
-    return '#F44336';
+    if (score >= 80) return theme.colors.status.success;
+    if (score >= 60) return theme.colors.status.warning;
+    return theme.colors.status.error;
   };
 
   const formatTime = (minutes: number): string => {
@@ -151,12 +153,12 @@ const DigitalWellnessScreen: React.FC = () => {
   };
 
   const getChartConfig = () => ({
-    backgroundColor: '#ffffff',
-    backgroundGradientFrom: '#ffffff',
-    backgroundGradientTo: '#ffffff',
+    backgroundColor: theme.colors.chart.background,
+    backgroundGradientFrom: theme.colors.chart.gradientFrom,
+    backgroundGradientTo: theme.colors.chart.gradientTo,
     decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(27, 94, 63, ${opacity})`,
-    labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+    color: (opacity = 1) => `rgba(45, 139, 111, ${opacity})`,
+    labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
     style: {
       borderRadius: 16,
     },
@@ -182,7 +184,7 @@ const DigitalWellnessScreen: React.FC = () => {
     <ScrollView showsVerticalScrollIndicator={false}>
       {/* Focus Score Card */}
       <LinearGradient
-        colors={['#1B5E3F', '#2E7D32']}
+        colors={[theme.colors.prayerGradients.default[0], theme.colors.prayerGradients.default[1]]}
         style={styles.focusCard}
       >
         <Text style={styles.focusTitle}>Today's Digital Focus Score</Text>
@@ -311,20 +313,20 @@ const DigitalWellnessScreen: React.FC = () => {
                 {
                   name: 'Social',
                   population: usageStats.socialMediaTime,
-                  color: '#F44336',
-                  legendFontColor: '#7F7F7F',
+                  color: theme.colors.status.error,
+                  legendFontColor: theme.colors.chart.legendFont,
                 },
                 {
                   name: 'Productive',
                   population: usageStats.productiveTime,
-                  color: '#4CAF50',
-                  legendFontColor: '#7F7F7F',
+                  color: theme.colors.status.success,
+                  legendFontColor: theme.colors.chart.legendFont,
                 },
                 {
                   name: 'Other',
                   population: usageStats.totalScreenTime - usageStats.socialMediaTime - usageStats.productiveTime,
-                  color: '#9E9E9E',
-                  legendFontColor: '#7F7F7F',
+                  color: theme.colors.text.muted,
+                  legendFontColor: theme.colors.chart.legendFont,
                 },
               ]}
               width={width - 40}
@@ -412,7 +414,7 @@ const DigitalWellnessScreen: React.FC = () => {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#1B5E3F" />
+          <ActivityIndicator size="large" color={theme.colors.primary.DEFAULT} />
           <Text style={styles.loadingText}>Loading your digital wellness data...</Text>
         </View>
       </SafeAreaView>
@@ -564,7 +566,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     padding: 24,
     borderRadius: 16,
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: theme.colors.achievement.shadow,
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
@@ -600,7 +602,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginHorizontal: 6,
     borderWidth: 1,
     borderColor: theme.colors.card.hover,
-    shadowColor: '#000',
+    shadowColor: theme.colors.achievement.shadow,
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
