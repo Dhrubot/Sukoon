@@ -149,9 +149,9 @@ const SettingsScreen = ({ navigation }: any) => {
           onResetApp={handleResetApp}
         />
 
-        <TouchableOpacity onPress={() => navigation.navigate('NotificationDebug')}>
+        {/* <TouchableOpacity onPress={() => navigation.navigate('NotificationDebug')}>
           <Text>🔧 Notification Debugger</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         {/* Appearance Settings */}
         <SettingSection title="APPEARANCE">
@@ -170,7 +170,7 @@ const SettingsScreen = ({ navigation }: any) => {
         />
 
         {/* 🎯 NEW: Connection status indicator */}
-        <View style={styles.statusSection}>
+        {/* <View style={styles.statusSection}>
           <Text style={styles.statusTitle}>🔗 Connection Status</Text>
           <View style={styles.statusRow}>
             <Text style={styles.statusLabel}>Prayer Times:</Text>
@@ -193,7 +193,7 @@ const SettingsScreen = ({ navigation }: any) => {
               {nextPrayer ? `${nextPrayer.name}` : 'None'}
             </Text>
           </View>
-        </View>
+        </View> */}
       </ScrollView>
 
       {/* 🎯 ENHANCED: Calculation Method Modal with previews */}

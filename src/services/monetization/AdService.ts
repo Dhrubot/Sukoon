@@ -31,16 +31,24 @@ class AdService {
   private isRewardedAdLoaded = false;
   private adRewardCallback: ((earned: boolean) => void) | null = null;
   private _initialized = false;
+  private _lastError: string | null = null;
+  private _retryCount = 0;
+  private _maxRetries = 3;
+  private _retryTimer: ReturnType<typeof setTimeout> | null = null;
 
   async initialize() {
     if (this._initialized) return true;
     try {
+      // CRITICAL: SDK must be initialized before any ad requests
+      await MobileAds().initialize();
+      logger.log('MobileAds SDK initialized');
       await this.configureHalalFiltering();
       this.loadRewardedAd();
       this._initialized = true;
       return true;
     } catch (error) {
       logger.error('Failed to initialize AdService:', error);
+      this._lastError = String(error);
       return false;
     }
   }
@@ -94,12 +102,14 @@ class AdService {
 
     this.rewardedAd.addAdEventListener(AdEventType.ERROR, (error) => {
       logger.warn('Rewarded ad error:', error);
+      this._lastError = String(error);
       this.isRewardedAdLoaded = false;
       if (this.adRewardCallback) {
         this.adRewardCallback(false);
         this.adRewardCallback = null;
       }
       AnalyticsService.logAdFailed(String(error));
+      this.retryLoadAd();
     });
 
     this.rewardedAd.load();
@@ -167,6 +177,24 @@ class AdService {
     return this.isRewardedAdLoaded;
   }
 
+  getLastError(): string | null {
+    return this._lastError;
+  }
+
+  private retryLoadAd() {
+    if (this._retryCount >= this._maxRetries) {
+      logger.warn(`Ad load failed after ${this._maxRetries} retries`);
+      return;
+    }
+    const delays = [5000, 15000, 30000];
+    const delay = delays[this._retryCount] || 30000;
+    this._retryCount++;
+    logger.log(`Retrying ad load in ${delay / 1000}s (attempt ${this._retryCount}/${this._maxRetries})`);
+    this._retryTimer = setTimeout(() => {
+      this.loadRewardedAd();
+    }, delay);
+  }
+
   /**
    * Get current ad-free status (premium subscription or temporary from ad).
    */
@@ -187,9 +215,12 @@ class AdService {
   }
 
   cleanup() {
+    if (this._retryTimer) clearTimeout(this._retryTimer);
     this.rewardedAd = null;
     this.isRewardedAdLoaded = false;
     this._initialized = false;
+    this._retryCount = 0;
+    this._lastError = null;
   }
 }
 
