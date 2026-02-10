@@ -36,6 +36,7 @@ import { MosqueModeStatus, MosqueModeOverlay } from "../../components/mosque";
 // Types
 import { PrayerTime } from "../../types";
 import UsageStatsService from "../../services/UsageStatsService";
+import { isRamadan, getRamadanDay } from "../../utils/ramadan";
 
 const { width } = Dimensions.get("window");
 
@@ -118,6 +119,13 @@ const HomeScreen = ({ navigation }: any) => {
       if (minutesUntil <= 0 && minutesUntil > -60) {
         return `بِسْمِ اللَّهِ — Time for ${nextPrayer.name}`;
       }
+    }
+
+    // Ramadan-aware greeting
+    if (isRamadan()) {
+      const day = getRamadanDay();
+      const dayStr = day ? ` — Day ${day}` : '';
+      return `Ramadan Mubarak${dayStr}, ${name}`;
     }
 
     // Default: peaceful between-prayers greeting
@@ -237,6 +245,30 @@ const HomeScreen = ({ navigation }: any) => {
 
           {/* Sunrise & Sunset */}
           <SunTimesDisplay sunrise={todaySunrise} sunset={todaySunset} />
+
+          {/* Ramadan Suhoor/Iftar — only during Ramadan */}
+          {isRamadan() && todayPrayerTimes.length > 0 && (() => {
+            const fajr = todayPrayerTimes.find(p => p.name === 'Fajr');
+            const maghrib = todayPrayerTimes.find(p => p.name === 'Maghrib');
+            if (!fajr || !maghrib) return null;
+            const fmt = (d: Date) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            return (
+              <View style={styles.ramadanCard}>
+                <Text style={styles.ramadanTitle}>🌙 Ramadan Times</Text>
+                <View style={styles.ramadanRow}>
+                  <View style={styles.ramadanItem}>
+                    <Text style={styles.ramadanLabel}>Suhoor ends</Text>
+                    <Text style={styles.ramadanTime}>{fmt(fajr.time)}</Text>
+                  </View>
+                  <View style={styles.ramadanDivider} />
+                  <View style={styles.ramadanItem}>
+                    <Text style={styles.ramadanLabel}>Iftar</Text>
+                    <Text style={styles.ramadanTime}>{fmt(maghrib.time)}</Text>
+                  </View>
+                </View>
+              </View>
+            );
+          })()}
 
           {/* Quick Stats */}
           <QuickStats prayersToday={completedToday} />
@@ -438,6 +470,46 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255, 152, 0, 0.3)',
     alignItems: 'center',
+  },
+  ramadanCard: {
+    marginHorizontal: theme.spacing.xl,
+    marginTop: theme.spacing.md,
+    backgroundColor: theme.colors.card.background,
+    borderRadius: 16,
+    padding: theme.spacing.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border.primary,
+  },
+  ramadanTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
+    textAlign: 'center',
+    marginBottom: theme.spacing.md,
+  },
+  ramadanRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+  },
+  ramadanItem: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  ramadanLabel: {
+    fontSize: 13,
+    color: theme.colors.text.secondary,
+    marginBottom: 4,
+  },
+  ramadanTime: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: theme.colors.primary.DEFAULT,
+  },
+  ramadanDivider: {
+    width: 1,
+    height: 36,
+    backgroundColor: theme.colors.border.primary,
   },
   offlineBannerText: {
     fontSize: theme.typography.fontSize.sm,

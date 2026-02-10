@@ -180,8 +180,8 @@ const celebrationColors = [
 
 // ─── Onboarding Gradient ───────────────────────────────────────────
 const onboardingGradient = {
-  dark:  [palette.navy900, palette.navy700, palette.navy600] as const,
-  light: [palette.cream50, palette.cream100, palette.cream200] as const,
+  dark:  [palette.navy900, palette.navy800, palette.navy900] as const,
+  light: [palette.cream50, palette.cream50, palette.cream100] as const,
 } as const;
 
 // ─── Switch / Toggle Colors ────────────────────────────────────────
@@ -314,8 +314,8 @@ export const darkTheme = {
     gradient:        onboardingGradient.dark,
     inputBg:         palette.whiteAlpha15,
     inputBorder:     palette.whiteAlpha30,
-    buttonBg:        palette.whiteAlpha20,
-    buttonBorder:    palette.whiteAlpha30,
+    buttonBg:        palette.greenAlpha20,
+    buttonBorder:    palette.greenAlpha40,
     optionBg:        palette.whiteAlpha10,
     optionBorder:    palette.whiteAlpha20,
     optionActiveBg:  palette.whiteAlpha20,

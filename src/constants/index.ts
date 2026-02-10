@@ -1,3 +1,20 @@
+// ─── Prayer Registry (single source of truth) ──────────────────
+export {
+  FARD_PRAYERS,
+  OPTIONAL_PRAYERS,
+  ALL_PRAYERS,
+  FARD_PRAYER_NAMES_LIST,
+  PRAYER_NAME_MAP,
+  PRAYER_ICON_MAP,
+  PRAYER_ARABIC_MAP,
+  getPrayerDefinition,
+  getAvailablePrayers,
+} from './prayerRegistry';
+export type { PrayerDefinition, PrayerCategory } from './prayerRegistry';
+
+// ─── Backward-compatible prayer constants (derived from registry) ─
+import { PRAYER_NAME_MAP, PRAYER_ICON_MAP } from './prayerRegistry';
+
 export const PRAYER_NAMES = {
     fajr: 'Fajr',
     dhuhr: 'Dhuhr',
@@ -7,11 +24,11 @@ export const PRAYER_NAMES = {
   } as const;
   
   export const PRAYER_ICONS = {
-    fajr: '🌅',
-    dhuhr: '☀️',
-    asr: '🌤',
-    maghrib: '🌇',
-    isha: '🌙',
+    fajr: PRAYER_ICON_MAP['fajr'] || '🌅',
+    dhuhr: PRAYER_ICON_MAP['dhuhr'] || '☀️',
+    asr: PRAYER_ICON_MAP['asr'] || '🌤',
+    maghrib: PRAYER_ICON_MAP['maghrib'] || '🌇',
+    isha: PRAYER_ICON_MAP['isha'] || '🌙',
   } as const;
   
   export const PRAYER_GRADIENTS = {

@@ -16,6 +16,8 @@ import {
   AladhanResponse,
 } from "../types";
 import { isValidCoordinates } from "../utils/locationValidation";
+import { FARD_PRAYER_NAMES_LIST } from "../constants/prayerRegistry";
+import { cacheHijriDate } from "../utils/ramadan";
 import logger from "../utils/logger";
 
 const ALADHAN_API_BASE = "https://api.aladhan.com/v1";
@@ -137,6 +139,11 @@ export class PrayerTimeService {
         this.cachedTimes.set(cacheKey, times);
         this.evictCacheIfNeeded();
 
+        // Cache Hijri date for Ramadan detection (no extra API call)
+        if (data.data.date?.hijri) {
+          cacheHijriDate(data.data.date.hijri);
+        }
+
         // Cache for tomorrow as well if it's after Asr
         const now = new Date();
         const asrTime = this.parseTimeToDate(times.Asr, date);
@@ -190,13 +197,7 @@ export class PrayerTimeService {
       const sunrise = this.parseTimeToDate(times.Sunrise, date);
       const sunset = this.parseTimeToDate(times.Sunset, date);
 
-      const prayerNames: PrayerName[] = [
-        "Fajr",
-        "Dhuhr",
-        "Asr",
-        "Maghrib",
-        "Isha",
-      ];
+      const prayerNames = FARD_PRAYER_NAMES_LIST as unknown as PrayerName[];
       const prayerTimesList: PrayerTime[] = [];
       let nextPrayerFound = false;
 

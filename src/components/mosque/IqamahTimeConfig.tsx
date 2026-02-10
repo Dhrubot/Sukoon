@@ -12,8 +12,9 @@ import { Picker } from '@react-native-picker/picker';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useMosqueMode } from '../../hooks/useMosqueMode';
 import { PrayerName } from '../../types';
+import { FARD_PRAYER_NAMES_LIST } from '../../constants/prayerRegistry';
 
-const PRAYER_NAMES: PrayerName[] = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+const PRAYER_NAMES = FARD_PRAYER_NAMES_LIST as unknown as PrayerName[];
 
 // Offset options in minutes
 const OFFSET_OPTIONS = [3, 5, 7, 10, 12, 15, 20, 25, 30];

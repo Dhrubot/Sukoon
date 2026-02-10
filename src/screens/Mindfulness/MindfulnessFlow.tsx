@@ -455,7 +455,10 @@ const MindfulnessFlow: React.FC = () => {
   }
 
   return (
-    <LinearGradient colors={getPrayerGradient()} style={styles.container}>
+    <View style={[styles.container, currentStep === 'reflection' && { backgroundColor: theme.colors.background.primary }]}>
+      {currentStep !== 'reflection' && (
+        <LinearGradient colors={getPrayerGradient()} style={StyleSheet.absoluteFill} />
+      )}
       <SafeAreaView style={styles.safeArea}>
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
@@ -504,7 +507,7 @@ const MindfulnessFlow: React.FC = () => {
           </View>
         </KeyboardAvoidingView>
       </SafeAreaView>
-    </LinearGradient>
+    </View>
   );
 };
 

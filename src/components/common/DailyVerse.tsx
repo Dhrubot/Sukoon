@@ -10,6 +10,7 @@ import {
 import Svg, { Path } from 'react-native-svg';
 import { useTheme } from '../../providers/ThemeProvider';
 import { VERSES } from '../../constants';
+import { isRamadan } from '../../utils/ramadan';
 
 // Quran/Book Icon Component
 const QuranIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
@@ -47,12 +48,22 @@ const DailyVerse: React.FC = () => {
   const [showTranslation, setShowTranslation] = useState(true);
 
   useEffect(() => {
-    // Get a daily verse based on the date
     const today = new Date();
     const dayOfYear = Math.floor(
       (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) /
       (1000 * 60 * 60 * 24)
     );
+
+    // During Ramadan, bias toward Ramadan-themed verses
+    if (isRamadan()) {
+      const ramadanVerses = verses.filter((v: any) => v.theme === 'ramadan');
+      if (ramadanVerses.length > 0) {
+        const idx = dayOfYear % ramadanVerses.length;
+        setVerse(ramadanVerses[idx]);
+        return;
+      }
+    }
+
     const verseIndex = dayOfYear % verses.length;
     setVerse(verses[verseIndex]);
   }, []);
