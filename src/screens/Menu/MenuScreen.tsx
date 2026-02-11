@@ -158,7 +158,7 @@ const MenuScreen: React.FC = () => {
             Sukoon v1.0.0
           </Text>
           <Text style={[styles.blessing, { color: theme.colors.text.muted }]}>
-            May Allah accept our efforts 🤲
+            May Allah accept our efforts
           </Text>
         </View>
       </ScrollView>

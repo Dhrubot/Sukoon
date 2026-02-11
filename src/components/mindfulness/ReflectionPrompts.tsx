@@ -55,7 +55,7 @@ const reflectionPrompts = {
 };
 
 const quickReflections = [
-  "Alhamdulillah for this moment of peace 🤲",
+  "Alhamdulillah for this moment of peace",
   "May Allah accept my prayer and forgive my shortcomings",
   "I seek Allah's guidance for the rest of my day",
   "Grateful for the opportunity to connect with my Creator",

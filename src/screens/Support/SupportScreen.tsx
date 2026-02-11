@@ -122,7 +122,7 @@ const SupportScreen: React.FC = () => {
       const success = await DonationService.makeDonation(tierId);
       if (success) {
         Alert.alert(
-          'JazakAllah Khair! 🤲',
+          'JazakAllah Khair!',
           'May Allah reward your generosity. Your support helps us continue developing.',
           [{ text: 'Ameen' }]
         );
@@ -134,99 +134,98 @@ const SupportScreen: React.FC = () => {
     }
   };
 
-  const renderSubscriptionTab = () => (
-    <ScrollView showsVerticalScrollIndicator={false}>
-      <View style={styles.introCard}>
-        <Text style={styles.introTitle}>Premium Features</Text>
-        <Text style={styles.introText}>
-          Unlock advanced features while supporting continued development
-        </Text>
-      </View>
+  // const renderSubscriptionTab = () => (
+  //   <ScrollView showsVerticalScrollIndicator={false}>
+  //     <View style={styles.introCard}>
+  //       <Text style={styles.introTitle}>Premium Features</Text>
+  //       <Text style={styles.introText}>
+  //         Unlock advanced features while supporting continued development
+  //       </Text>
+  //     </View>
 
-      {/* Features List */}
-      <View style={styles.featuresContainer}>
-        <Text style={styles.featuresTitle}>What's Included:</Text>
+  //     {/* Features List */}
+  //     <View style={styles.featuresContainer}>
+  //       <Text style={styles.featuresTitle}>What's Included:</Text>
         
-        {[
-          { icon: '👨‍👩‍👧‍👦', text: 'Family Sharing - Track family prayers together' },
-          { icon: '📊', text: 'Advanced Analytics & Insights' },
-          { icon: '☁️', text: 'Cloud Backup & Sync' },
-          { icon: '🔊', text: '30+ Premium Notification Sounds' },
-          { icon: '📤', text: 'Export Prayer Data' },
-          { icon: '🎨', text: 'Custom Themes & Colors' },
-          { icon: '🕋', text: 'Qibla Compass with AR' },
-          { icon: '📖', text: 'Extended Dua Library' },
-          { icon: '🔄', text: 'Unlimited History' },
-          { icon: '🚫', text: 'Ad-Free Experience' },
-        ].map((feature, index) => (
-          <View key={index} style={styles.featureRow}>
-            <Text style={styles.featureIcon}>{feature.icon}</Text>
-            <Text style={styles.featureText}>{feature.text}</Text>
-          </View>
-        ))}
-      </View>
+  //       {[
+  //         { icon: '👨‍👩‍👧‍👦', text: 'Family Sharing - Track family prayers together' },
+  //         { icon: '📊', text: 'Advanced Analytics & Insights' },
+  //         { icon: '☁️', text: 'Cloud Backup & Sync' },
+  //         { icon: '🔊', text: '30+ Premium Notification Sounds' },
+  //         { icon: '📤', text: 'Export Prayer Data' },
+  //         { icon: '🎨', text: 'Custom Themes & Colors' },
+  //         { icon: '🕋', text: 'Qibla Compass with AR' },
+  //         { icon: '📖', text: 'Extended Dua Library' },
+  //         { icon: '🔄', text: 'Unlimited History' },
+  //       ].map((feature, index) => (
+  //         <View key={index} style={styles.featureRow}>
+  //           <Text style={styles.featureIcon}>{feature.icon}</Text>
+  //           <Text style={styles.featureText}>{feature.text}</Text>
+  //         </View>
+  //       ))}
+  //     </View>
 
-      {/* Subscription Plans */}
-      <View style={styles.plansContainer}>
-        {/* Monthly Plan */}
-        <TouchableOpacity
-          style={[styles.planCard, currentPlan?.type === 'monthly' && styles.activePlan]}
-          onPress={() => handleSubscribe('monthly')}
-          disabled={isProcessing || currentPlan?.type === 'monthly'}
-        >
-          <View style={styles.planHeader}>
-            <Text style={styles.planName}>Monthly</Text>
-            <Text style={styles.planPrice}>$1.99/month</Text>
-          </View>
-          <Text style={styles.planDescription}>Perfect for trying premium</Text>
-          {currentPlan?.type === 'monthly' && (
-            <Text style={styles.currentPlanBadge}>Current Plan</Text>
-          )}
-        </TouchableOpacity>
+  //     {/* Subscription Plans */}
+  //     <View style={styles.plansContainer}>
+  //       {/* Monthly Plan */}
+  //       <TouchableOpacity
+  //         style={[styles.planCard, currentPlan?.type === 'monthly' && styles.activePlan]}
+  //         onPress={() => handleSubscribe('monthly')}
+  //         disabled={isProcessing || currentPlan?.type === 'monthly'}
+  //       >
+  //         <View style={styles.planHeader}>
+  //           <Text style={styles.planName}>Monthly</Text>
+  //           <Text style={styles.planPrice}>$1.99/month</Text>
+  //         </View>
+  //         <Text style={styles.planDescription}>Perfect for trying premium</Text>
+  //         {currentPlan?.type === 'monthly' && (
+  //           <Text style={styles.currentPlanBadge}>Current Plan</Text>
+  //         )}
+  //       </TouchableOpacity>
 
-        {/* Yearly Plan */}
-        <TouchableOpacity
-          style={[styles.planCard, styles.recommendedPlan, currentPlan?.type === 'yearly' && styles.activePlan]}
-          onPress={() => handleSubscribe('yearly')}
-          disabled={isProcessing || currentPlan?.type === 'yearly'}
-        >
-          <View style={styles.recommendedBadge}>
-            <Text style={styles.recommendedText}>BEST VALUE</Text>
-          </View>
-          <View style={styles.planHeader}>
-            <Text style={styles.planName}>Yearly</Text>
-            <Text style={styles.planPrice}>$19.99/year</Text>
-          </View>
-          <Text style={styles.planDescription}>Save 17% - Only $1.67/month</Text>
-          {currentPlan?.type === 'yearly' && (
-            <Text style={styles.currentPlanBadge}>Current Plan</Text>
-          )}
-        </TouchableOpacity>
+  //       {/* Yearly Plan */}
+  //       <TouchableOpacity
+  //         style={[styles.planCard, styles.recommendedPlan, currentPlan?.type === 'yearly' && styles.activePlan]}
+  //         onPress={() => handleSubscribe('yearly')}
+  //         disabled={isProcessing || currentPlan?.type === 'yearly'}
+  //       >
+  //         <View style={styles.recommendedBadge}>
+  //           <Text style={styles.recommendedText}>BEST VALUE</Text>
+  //         </View>
+  //         <View style={styles.planHeader}>
+  //           <Text style={styles.planName}>Yearly</Text>
+  //           <Text style={styles.planPrice}>$19.99/year</Text>
+  //         </View>
+  //         <Text style={styles.planDescription}>Save 17% - Only $1.67/month</Text>
+  //         {currentPlan?.type === 'yearly' && (
+  //           <Text style={styles.currentPlanBadge}>Current Plan</Text>
+  //         )}
+  //       </TouchableOpacity>
 
-        {/* Lifetime Plan */}
-        <TouchableOpacity
-          style={[styles.planCard, currentPlan?.type === 'lifetime' && styles.activePlan]}
-          onPress={() => handleSubscribe('lifetime')}
-          disabled={isProcessing || currentPlan?.type === 'lifetime'}
-        >
-          <View style={styles.planHeader}>
-            <Text style={styles.planName}>Lifetime</Text>
-            <Text style={styles.planPrice}>$49.99</Text>
-          </View>
-          <Text style={styles.planDescription}>One-time payment, forever access</Text>
-          {currentPlan?.type === 'lifetime' && (
-            <Text style={styles.currentPlanBadge}>Current Plan</Text>
-          )}
-        </TouchableOpacity>
-      </View>
+  //       {/* Lifetime Plan */}
+  //       <TouchableOpacity
+  //         style={[styles.planCard, currentPlan?.type === 'lifetime' && styles.activePlan]}
+  //         onPress={() => handleSubscribe('lifetime')}
+  //         disabled={isProcessing || currentPlan?.type === 'lifetime'}
+  //       >
+  //         <View style={styles.planHeader}>
+  //           <Text style={styles.planName}>Lifetime</Text>
+  //           <Text style={styles.planPrice}>$49.99</Text>
+  //         </View>
+  //         <Text style={styles.planDescription}>One-time payment, forever access</Text>
+  //         {currentPlan?.type === 'lifetime' && (
+  //           <Text style={styles.currentPlanBadge}>Current Plan</Text>
+  //         )}
+  //       </TouchableOpacity>
+  //     </View>
 
-      {currentPlan && (
-        <TouchableOpacity style={styles.manageButton} onPress={() => SubscriptionService.cancelSubscription()}>
-          <Text style={styles.manageButtonText}>Manage Subscription</Text>
-        </TouchableOpacity>
-      )}
-    </ScrollView>
-  );
+  //     {currentPlan && (
+  //       <TouchableOpacity style={styles.manageButton} onPress={() => SubscriptionService.cancelSubscription()}>
+  //         <Text style={styles.manageButtonText}>Manage Subscription</Text>
+  //       </TouchableOpacity>
+  //     )}
+  //   </ScrollView>
+  // );
 
   const renderWatchAdTab = () => {
     const adStatus = AdService.getAdFreeStatus();
@@ -389,7 +388,7 @@ const SupportScreen: React.FC = () => {
 
         {/* Tab Content */}
         <View style={styles.tabContent}>
-          {selectedTab === 'subscription' && renderSubscriptionTab()}
+          {/* {selectedTab === 'subscription' && renderSubscriptionTab()} */}
           {selectedTab === 'watch' && renderWatchAdTab()}
           {selectedTab === 'donate' && renderDonateTab()}
         </View>
@@ -397,7 +396,7 @@ const SupportScreen: React.FC = () => {
         {/* Footer Message */}
         <View style={styles.footer}>
           <Text style={styles.footerText}>
-            JazakAllah Khair for supporting us! May Allah reward your generosity. 💚
+            JazakAllah Khair for supporting us! May Allah reward your generosity.
           </Text>
         </View>
       </ScrollView>
