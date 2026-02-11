@@ -41,7 +41,8 @@ const SupportScreen: React.FC = () => {
   const [currentPlan, setCurrentPlan] = useState<SubscriptionPlan | null>(null);
   const [canWatchAd, setCanWatchAd] = useState(false);
   const [hoursUntilNextAd, setHoursUntilNextAd] = useState(0);
-  const [selectedTab, setSelectedTab] = useState<'subscription' | 'watch' | 'donate'>('subscription');
+  // TODO: Re-enable 'subscription' as default once we have premium features ready
+  const [selectedTab, setSelectedTab] = useState<'subscription' | 'watch' | 'donate'>('watch');
 
   const handleTabChange = (tab: 'subscription' | 'watch' | 'donate') => {
     setSelectedTab(tab);
@@ -366,8 +367,10 @@ const SupportScreen: React.FC = () => {
         </View>
 
         {/* Tab Selector */}
+        {/* TODO: Re-enable 'subscription' tab once we have premium features ready */}
         <View style={styles.tabContainer}>
-          {(['subscription', 'watch', 'donate'] as const).map((tab) => (
+          {/* {(['subscription', 'watch', 'donate'] as const).map((tab) => ( */}
+          {(['watch', 'donate'] as const).map((tab) => (
             <TouchableOpacity
               key={tab}
               style={[styles.tab, selectedTab === tab && styles.tabActive]}
@@ -377,10 +380,10 @@ const SupportScreen: React.FC = () => {
               }}
             >
               <Text style={[styles.tabIcon, selectedTab === tab && styles.tabIconActive]}>
-                {tab === 'subscription' ? '⭐' : tab === 'watch' ? '📺' : '🤲'}
+                {/* tab === 'subscription' ? '⭐' : */ tab === 'watch' ? '📺' : '🤲'}
               </Text>
               <Text style={[styles.tabText, selectedTab === tab && styles.tabTextActive]}>
-                {tab === 'subscription' ? 'Premium' : tab === 'watch' ? 'Watch Ad' : 'Donate'}
+                {/* tab === 'subscription' ? 'Premium' : */ tab === 'watch' ? 'Watch Ad' : 'Donate'}
               </Text>
             </TouchableOpacity>
           ))}
