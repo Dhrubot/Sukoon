@@ -99,6 +99,7 @@ export default {
           ios: {
             newArchEnabled: true,
             deploymentTarget: "15.1",
+            useFrameworks: "static",
           },
         },
       ],
