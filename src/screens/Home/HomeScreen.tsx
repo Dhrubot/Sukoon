@@ -241,7 +241,7 @@ const HomeScreen = ({ navigation }: any) => {
           {isOffline && (
             <View style={styles.offlineBanner}>
               <Text style={styles.offlineBannerText}>
-                ✈️ Offline — times are estimated
+                Offline — times are estimated
               </Text>
             </View>
           )}
