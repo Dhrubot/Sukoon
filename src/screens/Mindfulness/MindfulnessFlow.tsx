@@ -113,10 +113,21 @@ const MindfulnessFlow: React.FC = () => {
   // Fade-in when step changes — decoupled from animation callbacks
   // so React renders the new step content BEFORE the fade-in targets native views
   // Skips: transition (own effect), breathing (entered from transition with own anim),
-  //        praying (beginPrayer handles it), complete (completeReflection handles it)
+  //        complete (completeReflection handles it with scale spring)
   useEffect(() => {
-    if (['transition', 'breathing', 'praying', 'complete'].includes(currentStep)) return;
+    if (['transition', 'breathing', 'complete'].includes(currentStep)) return;
 
+    // Praying step gets a slower, gentler fade (no slide)
+    if (currentStep === 'praying') {
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }).start();
+      return;
+    }
+
+    // niyyah, reflection — standard slide-up fade-in
     slideAnim.setValue(50);
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -260,19 +271,13 @@ const MindfulnessFlow: React.FC = () => {
     setSavedRecordId(recordId);
     setPrayerStartTime(new Date());
 
-    // Transition to minimal "praying" screen
+    // Transition to minimal "praying" screen — fade out, then useEffect handles fade-in
     Animated.timing(fadeAnim, {
       toValue: 0,
       duration: 500,
       useNativeDriver: true,
     }).start(() => {
       setCurrentStep("praying");
-      // Fade-in for praying step (handled here since useEffect skips 'praying')
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 800,
-        useNativeDriver: true,
-      }).start();
     });
   };
 
@@ -442,10 +447,11 @@ const MindfulnessFlow: React.FC = () => {
         </Text>
 
         <TouchableOpacity
-          style={styles.completeButton}
+          style={styles.beginPrayerButton}
           onPress={beginPrayer}
+          activeOpacity={0.8}
         >
-          <Text style={styles.completeButtonText}>Begin Prayer 🤲</Text>
+          <Text style={styles.beginPrayerText}>Begin Prayer</Text>
         </TouchableOpacity>
       </View>
     </Animated.View>
@@ -796,6 +802,23 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   niyyahEmoji: {
     fontSize: 64,
     marginBottom: 24,
+  },
+  beginPrayerButton: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: 20,
+    paddingVertical: 20,
+    paddingHorizontal: 48,
+    alignItems: "center",
+    alignSelf: "center",
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+    minWidth: 220,
+  },
+  beginPrayerText: {
+    fontSize: 19,
+    fontWeight: "600",
+    color: theme.colors.mindfulness.textPrimary,
+    letterSpacing: 0.5,
   },
   niyyahText: {
     fontSize: 20,
