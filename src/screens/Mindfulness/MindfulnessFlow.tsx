@@ -447,7 +447,7 @@ const MindfulnessFlow: React.FC = () => {
       <Animated.Text style={[styles.completeEmoji, { opacity: stillnessPulse }]}>✨</Animated.Text>
       <Text style={styles.completeTitle}>Ma sha Allah!</Text>
       <Text style={styles.completeText}>
-        You've prepared mindfully for{" "}
+        You've prepared for{" "}
         {PrayerTimeService.getPrayerDisplayName(prayer.name)} prayer.
         {"\n\n"}
         May your prayer be accepted and bring you peace.

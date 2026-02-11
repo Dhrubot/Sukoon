@@ -111,7 +111,7 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
           onPress={onPrepare}
           activeOpacity={0.7}
         >
-          <Text style={styles.prepareText}>Prepare Mindfully</Text>
+          <Text style={styles.prepareText}>Prepare for Prayer</Text>
         </TouchableOpacity>
       </Animated.View>
     </LinearGradient>

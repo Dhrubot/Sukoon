@@ -28,8 +28,6 @@ import { usePrayerTimes } from "../../providers/PrayerTimesProvider";
 import PrayerCard from "../../components/prayer/PrayerCard";
 import SanctuaryView from "../../components/prayer/SanctuaryView";
 import DailyVerse from "../../components/common/DailyVerse";
-import QuickStats from "../../components/stats/QuickStats";
-import DigitalWellnessCard from "../../components/digitalWellness/DigitalWellnessCard";
 import { SunTimesDisplay } from "../../components/common/SunTimesDisplay";
 import { MosqueModeStatus, MosqueModeOverlay } from "../../components/mosque";
 import RamadanTimesCard from "../../components/prayer/RamadanTimesCard";
@@ -38,7 +36,7 @@ import GardenTeaser from "../../components/garden/GardenTeaser";
 
 // Types
 import { PrayerTime, OptionalPrayerTime } from "../../types";
-import UsageStatsService from "../../services/UsageStatsService";
+
 import { isRamadan, getRamadanDay } from "../../utils/ramadan";
 
 const { width } = Dimensions.get("window");
@@ -69,7 +67,6 @@ const HomeScreen = ({ navigation }: any) => {
 
   // Local state for UI features
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [screenTime, setScreenTime] = useState(0);
 
   // 🎯 REMOVED: loadPrayerTimes function - now handled by provider!
   // 🎯 REMOVED: location checks - now handled by provider!
@@ -78,7 +75,6 @@ const HomeScreen = ({ navigation }: any) => {
   useEffect(() => {
     // Only load non-prayer-time related data
     loadTodayRecords();
-    loadScreenTime();
 
     // Update time every minute
     const timer = setInterval(() => {
@@ -94,14 +90,6 @@ const HomeScreen = ({ navigation }: any) => {
     setTodayPrayerRecords(records);
   };
 
-  const loadScreenTime = async () => {
-    try {
-      const data = await UsageStatsService.getTodayScreenTime();
-      setScreenTime(data?.totalScreenTime || 0);
-    } catch (error) {
-      console.error("Error loading screen time:", error);
-    }
-  };
 
   // 1c: Prayer-aware greeting
   const getGreeting = (): string => {
@@ -272,9 +260,6 @@ const HomeScreen = ({ navigation }: any) => {
             return <RamadanTimesCard fajrTime={fajr.time} maghribTime={maghrib.time} />;
           })()}
 
-          {/* Quick Stats */}
-          <QuickStats prayersToday={completedToday} />
-
           {/* Garden Teaser — subtle entry point to Reflection Garden */}
           <GardenTeaser />
 
@@ -306,9 +291,6 @@ const HomeScreen = ({ navigation }: any) => {
 
           {/* Optional Prayers (Taraweeh during Ramadan, Tahajjud after Isha) */}
           <OptionalPrayersSection onPrepare={handleOptionalPrayerPrepare} />
-
-          {/* Digital Wellness Card */}
-          <DigitalWellnessCard screenTime={screenTime} />
 
           {/* Daily Verse */}
           <DailyVerse />

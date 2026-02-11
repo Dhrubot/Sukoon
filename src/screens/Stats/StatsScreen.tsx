@@ -435,10 +435,10 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
           <Text style={styles.sectionTitle}>Insights</Text>
           
           <View style={styles.insightCard}>
-            <Text style={styles.insightTitle}>🎯 Mindfulness Rate</Text>
+            <Text style={styles.insightTitle}>🎯 Presence Rate</Text>
             <Text style={styles.insightValue}>{stats.mindfulnessRate.toFixed(1)}%</Text>
             <Text style={styles.insightDescription}>
-              of your prayers include mindfulness practice
+              of your prayers include presence practice
             </Text>
           </View>
           

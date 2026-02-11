@@ -196,7 +196,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
               Get gentle reminders for each prayer time
             </Text>
             <Text style={styles.description}>
-              We'll notify you 10 minutes before each prayer so you can prepare mindfully
+              We'll notify you 10 minutes before each prayer so you can prepare for prayer
             </Text>
             {/* NEW: Adhan Toggle Section */}
             <View style={styles.toggleContainer}>

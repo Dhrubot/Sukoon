@@ -151,7 +151,7 @@ class AchievementService {
     {
       id: 'mindful_first',
       name: 'Present Heart',
-      description: 'Complete your first mindful prayer preparation',
+      description: 'Complete your first prayer preparation',
       icon: '🧘',
       category: 'mindfulness',
       tier: 'bronze',
@@ -164,7 +164,7 @@ class AchievementService {
     {
       id: 'mindful_10',
       name: 'Inner Stillness',
-      description: 'Prepare mindfully for 10 prayers',
+      description: 'Prepare with presence for 10 prayers',
       icon: '🌸',
       category: 'mindfulness',
       tier: 'silver',
@@ -177,7 +177,7 @@ class AchievementService {
     {
       id: 'mindful_50',
       name: 'The Contemplative',
-      description: 'Prepare mindfully for 50 prayers',
+      description: 'Prepare with presence for 50 prayers',
       icon: '🪷',
       category: 'mindfulness',
       tier: 'gold',
@@ -337,21 +337,8 @@ class AchievementService {
   }
 
   private async notifyAchievementUnlocked(achievement: AchievementDefinition) {
-    // Haptic feedback
+    // Gentle haptic only — no push notification (gamification of worship undermines ikhlas)
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-    // Local notification
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: '🏆 Achievement Unlocked!',
-        body: `${achievement.name}: ${achievement.description}`,
-        data: { 
-          type: 'achievement',
-          achievementId: achievement.id,
-        },
-      },
-      trigger: null, // Immediate
-    });
   }
 
   private async getAchievementProgress(achievement: AchievementDefinition): Promise<number> {

@@ -4,7 +4,6 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { useTheme } from '../providers/ThemeProvider';
 import MenuScreen from '../screens/Menu/MenuScreen';
 import SettingsScreen from '../screens/Settings/SettingsScreen';
-import AchievementsScreen from '../screens/Achievements/AchievementsScreen';
 import DigitalWellnessScreen from '../screens/DigitalWellness/DigitalWellnessScreen';
 import StatsScreen from '../screens/Stats/StatsScreen';
 import SupportScreen from '../screens/Support/SupportScreen';
@@ -15,7 +14,6 @@ export type MenuStackParamList = {
   MenuHome: undefined;
   MyJourney: undefined;
   ReflectionGarden: undefined;
-  Achievements: undefined;
   DigitalWellness: undefined;
   Support: undefined;
   Settings: undefined;
@@ -59,7 +57,6 @@ export const MenuStackNavigator: React.FC = () => {
         component={ReflectionGardenScreen}
         options={{ title: 'My Garden' }}
       />
-      <Stack.Screen name="Achievements" component={AchievementsScreen} />
       <Stack.Screen
         name="DigitalWellness"
         component={DigitalWellnessScreen}

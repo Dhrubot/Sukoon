@@ -87,7 +87,7 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
 
   const getStatusText = (): string => {
     if (record?.status === 'prayed') {
-      return record.mindfulnessCompleted ? '✓ Prayed Mindfully' : '✓ Prayed';
+      return record.mindfulnessCompleted ? '✓ Prayed with Presence' : '✓ Prayed';
     }
 
     // Check if prayer is truly missed

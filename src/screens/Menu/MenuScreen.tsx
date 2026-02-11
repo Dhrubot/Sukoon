@@ -12,7 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../providers/ThemeProvider';
 import { Icon } from '../../components/common/Icon';
-import { AchievementIcon, DigitalWellnessIcon, ProgressTabIcon } from '../../assets/icons';
+import { DigitalWellnessIcon, ProgressTabIcon } from '../../assets/icons';
 import Svg, { Path } from 'react-native-svg';
 
 // Settings icon component
@@ -77,13 +77,6 @@ const menuItems: MenuItem[] = [
     subtitle: 'Verify location, reminders, and mosque mode',
     screen: 'SetupHealth',
     iconType: 'component',
-  },
-  {
-    icon: AchievementIcon,
-    title: 'Achievements',
-    subtitle: 'Track your spiritual milestones',
-    screen: 'Achievements',
-    iconType: 'svg',
   },
   {
     icon: DigitalWellnessIcon,

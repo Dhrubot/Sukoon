@@ -94,7 +94,7 @@ const NextPrayerCard: React.FC<NextPrayerCardProps> = ({ prayer, onPrepare }) =>
       </View>
 
       <TouchableOpacity style={[styles.prepareButton, { backgroundColor: theme.colors.primary.DEFAULT, borderColor: theme.colors.primary.light }]} onPress={onPrepare}>
-        <Text style={[styles.prepareButtonText, { color: theme.colors.primary.contrast }]}>Prepare Mindfully</Text>
+        <Text style={[styles.prepareButtonText, { color: theme.colors.primary.contrast }]}>Prepare for Prayer</Text>
       </TouchableOpacity>
     </LinearGradient>
   );

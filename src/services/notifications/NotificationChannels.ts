@@ -132,7 +132,7 @@ export async function setupNotificationCategories(): Promise<void> {
   await Notifications.setNotificationCategoryAsync(NOTIFICATION_CATEGORIES.PRE_PRAYER, [
     {
       identifier: 'prepare',
-      buttonTitle: 'Prepare Mindfully',
+      buttonTitle: 'Prepare for Prayer',
       options: { opensAppToForeground: true },
     },
   ]);
@@ -171,7 +171,7 @@ export async function setupNotificationCategories(): Promise<void> {
   await Notifications.setNotificationCategoryAsync(NOTIFICATION_CATEGORIES.TAHAJJUD_REMINDER, [
     {
       identifier: 'prepare',
-      buttonTitle: 'Prepare Mindfully',
+      buttonTitle: 'Prepare for Prayer',
       options: { opensAppToForeground: true },
     },
   ]);
