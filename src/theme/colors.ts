@@ -44,13 +44,25 @@ const palette = {
   navy800: '#1E2340',
   navy900: '#181D38',
 
-  // Warm Cream — light mode background family
-  cream50:  '#FFFDF9',
-  cream100: '#FFF9F0',
-  cream200: '#FFF3E0',
-  cream300: '#F5EDE3',
-  cream400: '#E8DDD0',
-  cream500: '#D4C8B8',
+  // Warm Linen — light mode background family ("sandstone layers")
+  cream50:  '#FAF7F2',   // warm linen — primary bg
+  cream100: '#F3EDE4',   // soft sandstone — secondary bg
+  cream200: '#EDE5D8',   // parchment
+  cream300: '#E8E0D4',   // warm stone — tertiary bg
+  cream400: '#E2D9CC',   // warm border
+  cream500: '#D4C8B8',   // deep sandstone
+
+  // Warm Whites — card surfaces ("alabaster, not clinical")
+  warmWhite:    '#FEFCF8',  // card bg — warm white, not sterile
+  warmWhiteHov: '#F5F0E8',  // card hover
+
+  // Warm Text — "ink on parchment" (replaces cold slate for light theme)
+  ink900:  '#2C2520',   // primary text — warm espresso
+  ink700:  '#4A3F37',   // emphasis text
+  ink600:  '#6B5E54',   // secondary text — warm taupe
+  ink500:  '#827568',   // subtle text
+  ink400:  '#9C8E82',   // muted text — warm stone
+  ink300:  '#B5A99E',   // hint text
 
   // Gold — accent (Islamic ornamentation, reverence)
   gold50:  '#FFF8E7',
@@ -135,15 +147,16 @@ const prayerGradients = {
     Tahajjud: ['#0A0A2E', '#080818', '#050510'] as const,
     default:  ['#1A2F3A', '#153530', '#0D4F35'] as const,
   },
+  // Light gradients — muted sky-realistic tones ("morning light in a mosque")
   light: {
-    Fajr:     ['#E8EAF6', '#C5CAE9', '#9FA8DA'] as const,
-    Dhuhr:    ['#E8F5E9', '#C8E6C9', '#A5D6A7'] as const,
-    Asr:      ['#FFF8E1', '#FFECB3', '#FFE082'] as const,
-    Maghrib:  ['#FCE4EC', '#F8BBD0', '#F48FB1'] as const,
-    Isha:     ['#EDE7F6', '#D1C4E9', '#B39DDB'] as const,
-    Taraweeh: ['#E8EAF6', '#D1C4E9', '#C5CAE9'] as const,
-    Tahajjud: ['#EDE7F6', '#E8EAF6', '#D1C4E9'] as const,
-    default:  ['#E0F2F1', '#B2DFDB', '#80CBC4'] as const,
+    Fajr:     ['#E8E4F0', '#D6CFE8', '#C9C0D8'] as const,  // pre-dawn lavender-gray
+    Dhuhr:    ['#EAF0E4', '#D8E8D0', '#C8DCBC'] as const,  // midday garden light
+    Asr:      ['#F0EBE0', '#E8DCC8', '#DED0B4'] as const,  // golden afternoon haze
+    Maghrib:  ['#F0E4E8', '#E0CCD4', '#D4B8C4'] as const,  // dusty rose sunset
+    Isha:     ['#E4E0F0', '#D0C8E4', '#BEB4D6'] as const,  // twilight blue-violet
+    Taraweeh: ['#E8E4F0', '#D4CDE6', '#C5BCD8'] as const,  // Ramadan night wash
+    Tahajjud: ['#E0DCF0', '#D4CEE8', '#C8C0DC'] as const,  // deep pre-dawn hush
+    default:  ['#E8EDE4', '#D8E0D0', '#C8D4BC'] as const,  // garden sage
   },
 } as const;
 
@@ -189,7 +202,7 @@ const celebrationColors = [
 // ─── Onboarding Gradient ───────────────────────────────────────────
 const onboardingGradient = {
   dark:  [palette.navy900, palette.navy800, palette.navy900] as const,
-  light: [palette.cream50, palette.cream50, palette.cream100] as const,
+  light: [palette.cream50, palette.cream100, palette.cream50] as const,
 } as const;
 
 // ─── Switch / Toggle Colors ────────────────────────────────────────
@@ -218,13 +231,13 @@ const chartColors = {
     legendFont:         palette.slate300,
   },
   light: {
-    background:         palette.white,
-    gradientFrom:       palette.white,
-    gradientTo:         palette.white,
-    line:               palette.green700,
-    dot:                palette.green600,
-    label:              palette.slate600,
-    legendFont:         palette.slate700,
+    background:         palette.warmWhite,
+    gradientFrom:       palette.warmWhite,
+    gradientTo:         palette.warmWhite,
+    line:               palette.green500,
+    dot:                palette.green400,
+    label:              palette.ink600,
+    legendFont:         palette.ink700,
   },
 } as const;
 
@@ -426,34 +439,36 @@ export const darkTheme = {
 };
 
 // ═══════════════════════════════════════════════════════════════════
-// LIGHT THEME — Warm, organic, cream-based (not clinical white)
+// LIGHT THEME — "Sanctuary in Daylight"
+// Morning light in a mosque: warm sandstone, calligraphy ink,
+// garden green, parchment layers. Never cold, never clinical.
 // ═══════════════════════════════════════════════════════════════════
 export const lightTheme = {
   background: {
-    primary:   palette.cream50,
-    secondary: palette.cream100,
-    tertiary:  palette.cream300,
+    primary:   palette.cream50,       // warm linen
+    secondary: palette.cream100,      // soft sandstone
+    tertiary:  palette.cream300,      // warm stone
     overlay:   palette.blackAlpha40,
   },
 
   text: {
-    primary:   palette.slate800,
-    secondary: palette.slate600,
-    muted:     palette.slate400,
+    primary:   palette.ink900,        // warm espresso — like calligraphy ink
+    secondary: palette.ink600,        // warm taupe
+    muted:     palette.ink400,        // warm stone
     inverse:   palette.white,
   },
 
   primary: {
-    DEFAULT:  palette.green700,
-    light:    palette.green500,
-    dark:     palette.green800,
+    DEFAULT:  palette.green500,       // same green as dark theme — garden light
+    light:    palette.green400,       // hover / lighter touch
+    dark:     palette.green700,       // pressed / emphasis
     contrast: palette.white,
   },
 
   secondary: {
-    DEFAULT: palette.slate500,
-    light:   palette.slate300,
-    dark:    palette.slate700,
+    DEFAULT: palette.ink500,          // warm subtle
+    light:   palette.ink300,          // warm hint
+    dark:    palette.ink700,          // warm emphasis
   },
 
   status: {
@@ -466,21 +481,21 @@ export const lightTheme = {
   prayer: prayerColors.light,
 
   border: {
-    primary:   palette.cream400,
-    secondary: palette.cream300,
-    focus:     palette.green600,
+    primary:   palette.cream400,      // warm border
+    secondary: palette.cream300,      // subtle divider
+    focus:     palette.green500,      // matches primary
   },
 
   card: {
-    background: palette.white,
-    hover:      palette.cream100,
-    border:     palette.cream400,
+    background: palette.warmWhite,    // alabaster, not clinical white
+    hover:      palette.warmWhiteHov, // warm hover
+    border:     palette.cream400,     // organic border
   },
 
   interactive: {
-    active:   palette.green700,
-    hover:    palette.cream100,
-    disabled: palette.slate300,
+    active:   palette.green500,       // matches primary
+    hover:    palette.warmWhiteHov,
+    disabled: palette.ink300,
   },
 
   gold:        palette.gold500,
@@ -489,17 +504,17 @@ export const lightTheme = {
   mindfulness: {
     circleBg:        palette.greenAlpha08,
     circleBorder:    palette.greenAlpha30,
-    circleShadow:    palette.green700,
+    circleShadow:    palette.green500,
     innerCircleBg:   palette.greenAlpha12,
     outerRingBorder: palette.greenAlpha20,
     progressFill:    palette.greenAlpha20,
     progressRingBg:  palette.blackAlpha05,
-    accent:          palette.green700,
-    textPrimary:     palette.slate800,
-    textSecondary:   palette.slate600,
-    textMuted:       palette.slate500,
-    textSubtle:      palette.slate400,
-    textHint:        palette.slate400,
+    accent:          palette.green500,
+    textPrimary:     palette.ink900,        // warm ink on gradient
+    textSecondary:   palette.ink600,        // warm taupe
+    textMuted:       palette.ink500,
+    textSubtle:      palette.ink400,
+    textHint:        palette.ink300,
     inputBg:         palette.blackAlpha05,
     inputBorder:     palette.greenAlpha25,
     quickOptionBg:   palette.greenAlpha08,
@@ -508,7 +523,7 @@ export const lightTheme = {
     buttonBorder:    palette.greenAlpha30,
     timingInfoBg:    palette.greenAlpha08,
     timingInfoBorder: palette.greenAlpha20,
-    dotActive:       palette.green700,
+    dotActive:       palette.green500,
     dotInactive:     palette.blackAlpha20,
   },
 
@@ -516,19 +531,19 @@ export const lightTheme = {
     gradient:        onboardingGradient.light,
     inputBg:         palette.blackAlpha05,
     inputBorder:     palette.cream400,
-    buttonBg:        palette.green700,
-    buttonBorder:    palette.green800,
+    buttonBg:        palette.green500,      // garden green
+    buttonBorder:    palette.green700,
     optionBg:        palette.blackAlpha05,
     optionBorder:    palette.cream400,
     optionActiveBg:  palette.greenAlpha08,
     toggleBg:        palette.blackAlpha05,
-    textSubtle:      palette.slate600,
-    textMuted:       palette.slate500,
-    textHint:        palette.slate400,
-    textDim:         palette.slate400,
-    placeholder:     palette.slate400,
+    textSubtle:      palette.ink600,
+    textMuted:       palette.ink500,
+    textHint:        palette.ink400,
+    textDim:         palette.ink300,
+    placeholder:     palette.ink300,
     progressBg:      palette.blackAlpha10,
-    textBody:        palette.slate700,
+    textBody:        palette.ink700,
   },
 
   achievement: {
@@ -543,18 +558,18 @@ export const lightTheme = {
     confetti:        celebrationColors,
   },
 
-  // Reflection Garden
+  // Reflection Garden — warm parchment surfaces
   garden: {
     soil:          palette.cream300,
     soilBorder:    palette.cream400,
-    stem:          palette.green700,
+    stem:          palette.green600,
     sparkle:       palette.gold500,
     emptyDot:      palette.blackAlpha10,
-    todayRing:     palette.green700,
-    cardBg:        palette.white,
+    todayRing:     palette.green500,
+    cardBg:        palette.warmWhite,
     journalBorder: palette.cream400,
-    accentFajr:    '#3F51B5',
-    accentMaghrib: '#AD1457',
+    accentFajr:    '#5C6BC0',           // warmer indigo
+    accentMaghrib: '#C2185B',           // warm rose
   },
 
   prayerGradients: prayerGradients.light,
@@ -563,55 +578,55 @@ export const lightTheme = {
 
   chart: chartColors.light,
 
-  // Settings surfaces
+  // Settings surfaces — warm sandstone, not cold slate
   settings: {
-    sectionBg:         palette.white,
-    containerBg:       palette.slate50,
-    inputBg:           palette.slate50,
-    inputBorder:       palette.green600,
-    inputText:         palette.green800,
-    sliderMin:         palette.statusSuccess,
-    sliderMax:         palette.slate200,
-    sliderThumb:       palette.green700,
-    sliderWarningMin:  '#FF9800',
+    sectionBg:         palette.warmWhite,
+    containerBg:       palette.cream50,
+    inputBg:           palette.cream100,
+    inputBorder:       palette.green500,
+    inputText:         palette.green700,
+    sliderMin:         palette.green400,
+    sliderMax:         palette.cream400,
+    sliderThumb:       palette.green500,
+    sliderWarningMin:  palette.statusWarning,
     sliderWarningThumb: '#F57C00',
-    optionBg:          palette.slate50,
-    optionBorder:      palette.slate200,
-    optionActiveBg:    '#E8F5E9',
-    optionActiveBorder: palette.statusSuccess,
-    buttonPrimaryBg:   palette.green700,
+    optionBg:          palette.cream100,
+    optionBorder:      palette.cream400,
+    optionActiveBg:    palette.greenAlpha08,
+    optionActiveBorder: palette.green500,
+    buttonPrimaryBg:   palette.green500,
     buttonPrimaryText: palette.white,
     buttonSecondaryBg: 'transparent',
-    buttonSecondaryBorder: palette.green700,
-    buttonSecondaryText: palette.green700,
-    cancelBg:          palette.slate50,
-    cancelBorder:      palette.slate200,
-    cancelText:        palette.slate500,
-    infoBg:            '#E3F2FD',
-    infoTitle:         '#1976D2',
-    infoLabel:         '#1565C0',
-    infoText:          '#1976D2',
-    warningBg:         '#FFF3CD',
-    warningBorder:     '#FFEAA7',
-    warningText:       '#856404',
-    hintBg:            '#FFF3CD',
-    hintBorder:        '#FFEAA7',
-    hintText:          '#856404',
-    tipsBg:            '#E8F5E9',
-    tipsTitle:         palette.green700,
-    tipsText:          '#2E7D32',
+    buttonSecondaryBorder: palette.green500,
+    buttonSecondaryText: palette.green500,
+    cancelBg:          palette.cream100,
+    cancelBorder:      palette.cream400,
+    cancelText:        palette.ink400,
+    infoBg:            'rgba(59, 130, 246, 0.08)',
+    infoTitle:         '#4A6FA5',        // warmer blue
+    infoLabel:         '#4A6FA5',
+    infoText:          '#4A6FA5',
+    warningBg:         'rgba(245, 158, 11, 0.08)',
+    warningBorder:     'rgba(245, 158, 11, 0.20)',
+    warningText:       '#92700C',        // warm amber on warm bg
+    hintBg:            'rgba(245, 158, 11, 0.08)',
+    hintBorder:        'rgba(245, 158, 11, 0.20)',
+    hintText:          '#92700C',
+    tipsBg:            palette.greenAlpha08,
+    tipsTitle:         palette.green600,
+    tipsText:          palette.green700,
     modalOverlay:      palette.blackAlpha50,
-    modalBg:           palette.white,
+    modalBg:           palette.warmWhite,
     modalShadow:       palette.black,
-    modalBorder:       '#E9ECEF',
-    modalTitle:        palette.green700,
-    modalClose:        palette.green700,
-    modalCloseDisabled: '#ADB5BD',
-    previewBg:         palette.slate50,
-    previewBorder:     palette.green700,
-    labelPrimary:      palette.slate800,
-    labelSecondary:    palette.slate500,
-    labelMuted:        palette.slate400,
+    modalBorder:       palette.cream400,
+    modalTitle:        palette.green500,
+    modalClose:        palette.green500,
+    modalCloseDisabled: palette.ink300,
+    previewBg:         palette.cream100,
+    previewBorder:     palette.green500,
+    labelPrimary:      palette.ink900,
+    labelSecondary:    palette.ink500,
+    labelMuted:        palette.ink400,
   },
 };
 
