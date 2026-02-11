@@ -77,6 +77,13 @@ const MindfulnessFlow: React.FC = () => {
   const [savedRecordId, setSavedRecordId] = useState<string | null>(null);
   const [prayerStartTime, setPrayerStartTime] = useState<Date | null>(null);
 
+  // Animations — declared before any useEffects that reference them
+  const fadeAnim = useRef(new Animated.Value(1)).current;
+  const slideAnim = useRef(new Animated.Value(0)).current;
+  const completeScale = useRef(new Animated.Value(0)).current;
+  const transitionFade = useRef(new Animated.Value(0)).current;
+  const stillnessPulse = useRef(new Animated.Value(0.3)).current;
+
   // Analytics: log mindfulness started
   useEffect(() => {
     AnalyticsService.logEvent('mindfulness_started', { prayer: prayer.name });
@@ -101,6 +108,28 @@ const MindfulnessFlow: React.FC = () => {
         ])
       ).start();
     }
+  }, [currentStep]);
+
+  // Fade-in when step changes — decoupled from animation callbacks
+  // so React renders the new step content BEFORE the fade-in targets native views
+  // Skips: transition (own effect), breathing (entered from transition with own anim),
+  //        praying (beginPrayer handles it), complete (completeReflection handles it)
+  useEffect(() => {
+    if (['transition', 'breathing', 'praying', 'complete'].includes(currentStep)) return;
+
+    slideAnim.setValue(50);
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
   }, [currentStep]);
 
   // 4a: Entry transition — "digital wudu" fade-in then auto-advance
@@ -129,13 +158,6 @@ const MindfulnessFlow: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [currentStep]);
-
-  // Animations
-  const fadeAnim = useRef(new Animated.Value(1)).current;
-  const slideAnim = useRef(new Animated.Value(0)).current;
-  const completeScale = useRef(new Animated.Value(0)).current;
-  const transitionFade = useRef(new Animated.Value(0)).current;
-  const stillnessPulse = useRef(new Animated.Value(0.3)).current;
 
   // 🎯 Prayer validation effect - run once on mount
   useEffect(() => {
@@ -201,20 +223,7 @@ const MindfulnessFlow: React.FC = () => {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      setCurrentStep(step);
-      slideAnim.setValue(50);
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      setCurrentStep(step); // useEffect handles fade-in after React renders new content
     });
   };
 
@@ -258,6 +267,7 @@ const MindfulnessFlow: React.FC = () => {
       useNativeDriver: true,
     }).start(() => {
       setCurrentStep("praying");
+      // Fade-in for praying step (handled here since useEffect skips 'praying')
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 800,
