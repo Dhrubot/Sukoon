@@ -152,6 +152,44 @@ A detailed critique of the app identified that Sukoon currently functions as a "
 
 ---
 
+## Phase 6: "Input Later, Stillness Now" [HIGH PRIORITY]
+**Goal:** Never ask the user to type, scroll, or analyze immediately before prayer. Push all cognitive load to *after* the prayer.
+
+### 6a. Pre/Post Prayer Flow Split ✅ COMPLETE
+- **Done:** MindfulnessFlow restructured from 4 steps to 6: `transition → breathing → niyyah → praying → reflection → complete`
+- **Done:** Niyyah step — minimal intention screen: "I intend to pray [Prayer] for the sake of Allah" + "Begin Prayer 🤲"
+- **Done:** Praying step — minimal dark "Prayer in Progress" screen with pulsing 🕌, "Take your time. Allah is listening." + "I've Finished My Prayer ✓"
+- **Done:** PrayerRecord saved immediately when entering prayer (if user closes app, prayer is still recorded)
+- **Done:** Reflection moved to **post-prayer** — "How was your prayer?" → mood + text → "Complete ✨"
+- **Done:** MindfulnessSession + reflection text saved after prayer via `saveMindfulnessSession()` which auto-updates linked PrayerRecord
+- **Done:** Progress dots show 3 steps (Breathe · Intend · Reflect), hidden during praying/transition/complete
+- **Done:** Gradient background during pre-prayer steps, plain background during praying + reflection
+- **Principle:** Pre-prayer experience is strictly passive and guiding. Analytical input happens only after standing before Allah.
+- **File:** `MindfulnessFlow.tsx`
+
+### 6b. Ramadan Countdown Notifications ✅ COMPLETE
+- **Done:** `RamadanCountdownService` with 10 countdown messages, 6 milestone messages (30/14/7/3/2/1 day), 23 during-Ramadan daily messages
+- **Done:** All messages are authentic Islamic quotes (Quran, Hadith) with practical preparation tips
+- **Done:** Schedules up to 30 notifications before Ramadan, 14 during Ramadan
+- **Done:** Fires daily at 9:00 AM local time; milestone days get special messages
+- **Done:** One-per-day guard prevents duplicate scheduling; cancels old before rescheduling
+- **Done:** Uses cached Hijri date from Aladhan API (no new API calls)
+- **Done:** Dedicated `RAMADAN_COUNTDOWN` Android notification channel
+- **Done:** Auto-triggered from `useServiceInitialization` after prayer times load
+- **Files:** `src/services/RamadanCountdownService.ts`, `NotificationChannels.ts`, `NotificationConstants.ts`, `useServiceInitialization.ts`
+
+### 6c. Sanctuary Refinement ✅ COMPLETE
+- **Done:** Renamed "Prepare Mindfully" → "Prepare for Prayer" across all user-facing text (SanctuaryView, NextPrayerCard, notifications, onboarding)
+- **Done:** Renamed "✓ Prayed Mindfully" → "✓ Prayed with Presence" in PrayerCard
+- **Done:** Renamed "Mindfulness Rate" → "Presence Rate" in StatsScreen
+- **Done:** Removed Achievements from Menu and Navigator (code preserved, just de-surfaced)
+- **Done:** Silenced achievement unlock push notification (kept haptic only)
+- **Done:** Removed QuickStats from HomeScreen (replaced by GardenTeaser)
+- **Done:** Removed DigitalWellnessCard from HomeScreen (accessible via Menu)
+- **Files:** `SanctuaryView.tsx`, `NextPrayerCard.tsx`, `PrayerCard.tsx`, `OnboardingScreen.tsx`, `NotificationChannels.ts`, `AchievementService.ts`, `StatsScreen.tsx`, `MenuScreen.tsx`, `MenuStackNavigator.tsx`, `HomeScreen.tsx`
+
+---
+
 ## Implementation Order (Recommended)
 
 ### Session 1: Quick Wins (2a, 2d, 1d)

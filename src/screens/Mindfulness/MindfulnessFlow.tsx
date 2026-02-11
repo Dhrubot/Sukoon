@@ -42,7 +42,7 @@ import WidgetService from "../../services/WidgetService";
 
 const { width, height } = Dimensions.get("window");
 
-type FlowStep = "transition" | "breathing" | "reflection" | "complete";
+type FlowStep = "transition" | "breathing" | "niyyah" | "praying" | "reflection" | "complete";
 
 const MindfulnessFlow: React.FC = () => {
   const navigation = useNavigation();
@@ -74,11 +74,34 @@ const MindfulnessFlow: React.FC = () => {
   const [sessionStartTime] = useState(new Date());
   const [isBreathingActive, setIsBreathingActive] = useState(true);
   const [hasValidated, setHasValidated] = useState(false);
+  const [savedRecordId, setSavedRecordId] = useState<string | null>(null);
+  const [prayerStartTime, setPrayerStartTime] = useState<Date | null>(null);
 
   // Analytics: log mindfulness started
   useEffect(() => {
     AnalyticsService.logEvent('mindfulness_started', { prayer: prayer.name });
   }, []);
+
+  // Start gentle pulse during "praying" step
+  useEffect(() => {
+    if (currentStep === 'praying') {
+      stillnessPulse.setValue(0.3);
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(stillnessPulse, {
+            toValue: 1,
+            duration: 3000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(stillnessPulse, {
+            toValue: 0.3,
+            duration: 3000,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    }
+  }, [currentStep]);
 
   // 4a: Entry transition — "digital wudu" fade-in then auto-advance
   useEffect(() => {
@@ -159,14 +182,13 @@ const MindfulnessFlow: React.FC = () => {
 
   const handleBreathComplete = () => {
     if (breathCount >= 3) {
-      moveToReflection();
+      moveToNiyyah();
     } else {
       setBreathCount(breathCount + 1);
     }
   };
 
-  const moveToReflection = () => {
-    setIsBreathingActive(false);
+  const animateToStep = (step: FlowStep) => {
     Animated.parallel([
       Animated.timing(fadeAnim, {
         toValue: 0,
@@ -179,7 +201,7 @@ const MindfulnessFlow: React.FC = () => {
         useNativeDriver: true,
       }),
     ]).start(() => {
-      setCurrentStep("reflection");
+      setCurrentStep(step);
       slideAnim.setValue(50);
       Animated.parallel([
         Animated.timing(fadeAnim, {
@@ -196,20 +218,69 @@ const MindfulnessFlow: React.FC = () => {
     });
   };
 
-  const skipBreathing = () => {
-    moveToReflection();
+  const moveToNiyyah = () => {
+    setIsBreathingActive(false);
+    animateToStep("niyyah");
   };
 
-  const completeMindfulness = async () => {
+  const skipBreathing = () => {
+    moveToNiyyah();
+  };
+
+  // ── PRE-PRAYER: Save prayer record and enter "praying" state ──
+  const beginPrayer = () => {
+    const recordId = `prayer_${Date.now()}`;
+    const prayerRecord: PrayerRecord = {
+      id: recordId,
+      date: new Date().toISOString().split("T")[0],
+      prayer: prayer.name,
+      status: "prayed",
+      prayedAt: new Date(),
+      mindfulnessCompleted: true,
+      reflectionAdded: false,
+      mindfulnessScore: 0,
+    };
+
+    // Save immediately — if user closes app during prayer, it's still recorded
+    StorageService.savePrayerRecordWithTracking(prayerRecord);
+    addPrayerRecord(prayerRecord);
+    WidgetService.reloadWidgets();
+
+    AnalyticsService.logPrayerCompleted(prayer.name, true);
+
+    setSavedRecordId(recordId);
+    setPrayerStartTime(new Date());
+
+    // Transition to minimal "praying" screen
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 500,
+      useNativeDriver: true,
+    }).start(() => {
+      setCurrentStep("praying");
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 800,
+        useNativeDriver: true,
+      }).start();
+    });
+  };
+
+  // ── POST-PRAYER: User finished praying, transition to reflection ──
+  const finishPrayer = () => {
+    animateToStep("reflection");
+  };
+
+  // ── POST-PRAYER: Save reflection + session after mood/text ──
+  const completeReflection = async () => {
     if (selectedMood === 0) {
       Alert.alert(
-        "Please select your mood",
-        "How was your focus during prayer?"
+        "How was your prayer?",
+        "Please select how you felt during prayer."
       );
       return;
     }
 
-    // 🎯 NEW: Enhanced session tracking with prayer validation context
     const session: MindfulnessSession = {
       id: `mindfulness_${Date.now()}`,
       prayerName: prayer.name,
@@ -226,7 +297,7 @@ const MindfulnessFlow: React.FC = () => {
       },
     };
 
-    // Save session
+    // saveMindfulnessSession automatically updates the linked PrayerRecord
     StorageService.saveMindfulnessSession(session);
     setCurrentMindfulnessSession(session);
 
@@ -236,37 +307,6 @@ const MindfulnessFlow: React.FC = () => {
       StorageService.saveReflectionText(dateStr, prayer.name, reflectionText.trim());
     }
 
-    // 🎯 NEW: Enhanced prayer record with validation context
-    const prayerRecord: PrayerRecord = {
-      id: `prayer_${Date.now()}`,
-      date: new Date().toISOString().split("T")[0],
-      prayer: prayer.name,
-      status: "prayed",
-      prayedAt: new Date(),
-      mindfulnessCompleted: true,
-      reflectionAdded: reflectionText.length > 0,
-      mindfulnessScore: selectedMood * 20, // Convert 1-5 to 20-100
-    };
-
-    // 🎯 NEW: Add metadata if prayer was late/makeup
-    const now = new Date();
-    const prayerTime = prayer.time;
-    const minutesLate = Math.floor((now.getTime() - prayerTime.getTime()) / (1000 * 60));
-    
-    if (minutesLate > 30) {
-      // Prayer was significantly late - could be makeup or delayed
-      console.log(`Prayer ${prayer.name} was completed ${minutesLate} minutes after time`);
-    }
-
-    // Save prayer record
-    StorageService.savePrayerRecordWithTracking(prayerRecord);
-    addPrayerRecord(prayerRecord);
-
-    // Refresh widget to show updated prayer status
-    WidgetService.reloadWidgets();
-
-    // Analytics
-    AnalyticsService.logPrayerCompleted(prayer.name, true);
     AnalyticsService.logEvent('mindfulness_completed', {
       prayer: prayer.name,
       duration: session.duration,
@@ -275,7 +315,6 @@ const MindfulnessFlow: React.FC = () => {
       reflection_added: session.reflectionCompleted,
     });
 
-    // Check for unlocked achievements (unlock silently in background)
     await AchievementService.checkAchievements();
 
     // Animate to complete screen
@@ -305,11 +344,8 @@ const MindfulnessFlow: React.FC = () => {
           useNativeDriver: true,
         }),
       ]).start(() => {
-        // Haptic success
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-        // 4b: Extended stillness — pulsing light, then gentle fade out
-        // Start pulsing glow animation
         Animated.loop(
           Animated.sequence([
             Animated.timing(stillnessPulse, {
@@ -325,7 +361,6 @@ const MindfulnessFlow: React.FC = () => {
           ])
         ).start();
 
-        // Navigate back after 8 seconds of stillness
         setTimeout(() => {
           Animated.timing(fadeAnim, {
             toValue: 0,
@@ -377,6 +412,60 @@ const MindfulnessFlow: React.FC = () => {
     </Animated.View>
   );
 
+  const renderNiyyahStep = () => (
+    <Animated.View
+      style={[
+        styles.stepContent,
+        {
+          opacity: fadeAnim,
+          transform: [{ translateY: slideAnim }],
+        },
+      ]}
+    >
+      <View style={styles.niyyahContainer}>
+        <Text style={styles.niyyahEmoji}>🤲</Text>
+        <Text style={styles.stepTitle}>Set Your Intention</Text>
+        <Text style={styles.niyyahText}>
+          I intend to pray{" "}
+          {PrayerTimeService.getPrayerDisplayName(prayer.name)}
+          {"\n"}for the sake of Allah
+        </Text>
+
+        <TouchableOpacity
+          style={styles.completeButton}
+          onPress={beginPrayer}
+        >
+          <Text style={styles.completeButtonText}>Begin Prayer 🤲</Text>
+        </TouchableOpacity>
+      </View>
+    </Animated.View>
+  );
+
+  const renderPrayingStep = () => (
+    <Animated.View
+      style={[
+        styles.prayingContainer,
+        { opacity: fadeAnim },
+      ]}
+    >
+      <Text style={styles.prayingLabel}>
+        {PrayerTimeService.getPrayerDisplayName(prayer.name)}
+      </Text>
+      <Animated.Text style={[styles.prayingEmoji, { opacity: stillnessPulse }]}>
+        🕌
+      </Animated.Text>
+      <Text style={styles.prayingText}>You are in prayer</Text>
+      <Text style={styles.prayingSubtext}>Take your time. Allah is listening.</Text>
+
+      <TouchableOpacity
+        style={styles.finishPrayerButton}
+        onPress={finishPrayer}
+      >
+        <Text style={styles.finishPrayerText}>I've Finished My Prayer ✓</Text>
+      </TouchableOpacity>
+    </Animated.View>
+  );
+
   const renderReflectionStep = () => (
     <Animated.View
       style={[
@@ -392,7 +481,7 @@ const MindfulnessFlow: React.FC = () => {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.stepTitle}>Reflect & Set Intention</Text>
+        <Text style={styles.stepTitle}>How Was Your Prayer?</Text>
 
         <ReflectionPrompts
           prayerName={prayer.name}
@@ -412,11 +501,11 @@ const MindfulnessFlow: React.FC = () => {
             styles.completeButton,
             selectedMood === 0 && styles.completeButtonDisabled,
           ]}
-          onPress={completeMindfulness}
+          onPress={completeReflection}
           disabled={selectedMood === 0}
         >
           <Text style={styles.completeButtonText}>
-            Begin Prayer with Intention 🤲
+            Complete ✨
           </Text>
         </TouchableOpacity>
       </ScrollView>
@@ -463,9 +552,21 @@ const MindfulnessFlow: React.FC = () => {
     return null;
   }
 
+  const showGradient = currentStep !== 'reflection';
+  const showHeader = currentStep !== 'praying';
+  const showDots = !['transition', 'praying', 'complete'].includes(currentStep);
+
+  // Progress: breathing=1, niyyah=2, reflection=3 (4 dots total)
+  const stepIndexMap: Record<string, number> = { breathing: 0, niyyah: 1, reflection: 2 };
+  const stepIndex = stepIndexMap[currentStep] ?? -1;
+
   return (
-    <View style={[styles.container, currentStep === 'reflection' && { backgroundColor: theme.colors.background.primary }]}>
-      {currentStep !== 'reflection' && (
+    <View style={[
+      styles.container,
+      !showGradient && { backgroundColor: theme.colors.background.primary },
+      currentStep === 'praying' && { backgroundColor: theme.colors.background.primary },
+    ]}>
+      {showGradient && currentStep !== 'praying' && (
         <LinearGradient colors={getPrayerGradient()} style={StyleSheet.absoluteFill} />
       )}
       <SafeAreaView style={styles.safeArea}>
@@ -473,37 +574,35 @@ const MindfulnessFlow: React.FC = () => {
           behavior={Platform.OS === "ios" ? "padding" : "height"}
           style={styles.keyboardAvoid}
         >
-          {/* Header */}
-          <View style={styles.header}>
-            <Text style={styles.prayerName}>
-              {PrayerTimeService.getPrayerDisplayName(prayer.name)} Prayer
-            </Text>
-            {currentStep !== "complete" && (
-              <TouchableOpacity
-                onPress={() => navigation.goBack()}
-                style={styles.closeButton}
-              >
-                <Text style={styles.closeText}>✕</Text>
-              </TouchableOpacity>
-            )}
-          </View>
+          {/* Header — hidden during "praying" minimal screen */}
+          {showHeader && (
+            <View style={styles.header}>
+              <Text style={styles.prayerName}>
+                {PrayerTimeService.getPrayerDisplayName(prayer.name)} Prayer
+              </Text>
+              {currentStep !== "complete" && (
+                <TouchableOpacity
+                  onPress={() => navigation.goBack()}
+                  style={styles.closeButton}
+                >
+                  <Text style={styles.closeText}>✕</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
 
-          {/* Progress dots — hidden during transition and complete */}
-          {currentStep !== 'transition' && currentStep !== 'complete' && (
+          {/* Progress dots — 3 visible steps: Breathe · Intend · Reflect */}
+          {showDots && (
             <View style={styles.progressContainer}>
-              <View style={[styles.progressDot, styles.progressDotActive]} />
-              <View
-                style={[
-                  styles.progressDot,
-                  currentStep !== "breathing" && styles.progressDotActive,
-                ]}
-              />
-              <View
-                style={[
-                  styles.progressDot,
-                  currentStep === "reflection" && styles.progressDotActive,
-                ]}
-              />
+              {[0, 1, 2].map((i) => (
+                <View
+                  key={i}
+                  style={[
+                    styles.progressDot,
+                    i <= stepIndex && styles.progressDotActive,
+                  ]}
+                />
+              ))}
             </View>
           )}
 
@@ -511,6 +610,8 @@ const MindfulnessFlow: React.FC = () => {
           <View style={styles.content}>
             {currentStep === "transition" && renderTransitionStep()}
             {currentStep === "breathing" && renderBreathingStep()}
+            {currentStep === "niyyah" && renderNiyyahStep()}
+            {currentStep === "praying" && renderPrayingStep()}
             {currentStep === "reflection" && renderReflectionStep()}
             {currentStep === "complete" && renderCompleteStep()}
           </View>
@@ -675,6 +776,71 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     textAlign: "center",
     fontStyle: "italic",
     marginTop: 20,
+  },
+  niyyahContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 20,
+  },
+  niyyahEmoji: {
+    fontSize: 64,
+    marginBottom: 24,
+  },
+  niyyahText: {
+    fontSize: 20,
+    fontWeight: "300",
+    color: theme.colors.mindfulness.textSecondary,
+    textAlign: "center",
+    lineHeight: 30,
+    marginBottom: 48,
+    fontStyle: "italic",
+  },
+  prayingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    paddingHorizontal: 40,
+  },
+  prayingLabel: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: theme.colors.text.secondary,
+    letterSpacing: 1,
+    marginBottom: 32,
+  },
+  prayingEmoji: {
+    fontSize: 80,
+    marginBottom: 24,
+  },
+  prayingText: {
+    fontSize: 24,
+    fontWeight: "600",
+    color: theme.colors.text.primary,
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  prayingSubtext: {
+    fontSize: 16,
+    fontWeight: "300",
+    color: theme.colors.text.secondary,
+    textAlign: "center",
+    fontStyle: "italic",
+    marginBottom: 60,
+  },
+  finishPrayerButton: {
+    backgroundColor: theme.colors.mindfulness.buttonBg,
+    borderRadius: 16,
+    paddingVertical: 18,
+    paddingHorizontal: 32,
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: theme.colors.mindfulness.buttonBorder,
+  },
+  finishPrayerText: {
+    fontSize: 18,
+    fontWeight: "600",
+    color: theme.colors.mindfulness.textPrimary,
   },
   transitionContainer: {
     flex: 1,

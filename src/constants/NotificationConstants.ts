@@ -15,6 +15,7 @@ export const CHANNELS = {
   MINDFULNESS: `mindfulness-v${NOTIFICATION_CHANNEL_VERSION}`,
   GRACE_WARNING: `grace-warning-v${NOTIFICATION_CHANNEL_VERSION}`, // Prayer Habit Builder Tier 3
   TAHAJJUD: `tahajjud-v${NOTIFICATION_CHANNEL_VERSION}`, // Gentle Tahajjud encouragement
+  RAMADAN_COUNTDOWN: `ramadan-countdown-v${NOTIFICATION_CHANNEL_VERSION}`, // Ramadan countdown & encouragement
 };
 
 export const SOUNDS = {

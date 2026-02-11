@@ -109,6 +109,15 @@ export async function setupNotificationChannels(): Promise<void> {
     sound: null,
   });
 
+  await Notifications.setNotificationChannelAsync(CHANNELS.RAMADAN_COUNTDOWN, {
+    name: 'Ramadan Countdown',
+    description: 'Daily countdown and encouragement for Ramadan',
+    importance: Notifications.AndroidImportance.DEFAULT,
+    vibrationPattern: [0, 100],
+    lightColor: '#D4AF37',
+    sound: 'default',
+  });
+
   logger.log('✅ Notification channels set up with versioning');
 }
 
