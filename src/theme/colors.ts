@@ -377,6 +377,31 @@ export const darkTheme = {
     accentMaghrib: '#CE93D8',
   },
 
+  // Qibla Finder — spiritual wayfinder surfaces
+  qibla: {
+    compassBg:              palette.navy700,
+    compassRing:            palette.navy500,
+    compassRingAligned:     palette.gold400,
+    needleBeam:             palette.green500,
+    needleBeamAligned:      palette.gold400,
+    needleTip:              palette.green400,
+    alignedGlow:            palette.gold400,
+    alignedGlowShadow:      palette.gold600,
+    kaabaIcon:              palette.white,
+    kaabaGold:              palette.gold400,
+    bearingText:            palette.green400,
+    hintText:               palette.slate400,
+    interferenceWarningBg:  'rgba(239, 68, 68, 0.15)',
+    interferenceWarningText: palette.statusError,
+    anomalyWarningBg:       'rgba(245, 158, 11, 0.15)',
+    anomalyWarningText:     palette.statusWarning,
+    cardinalN:              palette.white,
+    cardinalMuted:          palette.slate500,
+    tickCardinal:           palette.slate400,
+    tickMinor:              palette.navy500,
+    verifyLink:             palette.green400,
+  },
+
   // Prayer gradients for MindfulnessFlow / SanctuaryView
   prayerGradients: prayerGradients.dark,
 
@@ -570,6 +595,31 @@ export const lightTheme = {
     journalBorder: palette.cream400,
     accentFajr:    '#5C6BC0',           // warmer indigo
     accentMaghrib: '#C2185B',           // warm rose
+  },
+
+  // Qibla Finder — warm sandstone wayfinder surfaces
+  qibla: {
+    compassBg:              palette.warmWhite,
+    compassRing:            palette.cream400,
+    compassRingAligned:     palette.gold500,
+    needleBeam:             palette.green500,
+    needleBeamAligned:      palette.gold500,
+    needleTip:              palette.green600,
+    alignedGlow:            palette.gold500,
+    alignedGlowShadow:     palette.gold600,
+    kaabaIcon:              palette.ink900,
+    kaabaGold:              palette.gold500,
+    bearingText:            palette.green600,
+    hintText:               palette.ink500,
+    interferenceWarningBg:  'rgba(239, 68, 68, 0.10)',
+    interferenceWarningText: palette.statusError,
+    anomalyWarningBg:       'rgba(245, 158, 11, 0.10)',
+    anomalyWarningText:     '#92700C',
+    cardinalN:              palette.ink900,
+    cardinalMuted:          palette.ink400,
+    tickCardinal:           palette.ink500,
+    tickMinor:              palette.cream400,
+    verifyLink:             palette.green600,
   },
 
   prayerGradients: prayerGradients.light,
