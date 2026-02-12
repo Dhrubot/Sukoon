@@ -605,22 +605,42 @@ const withWidgetTarget = (config) => {
     console.log('✅ Added widget target:', WIDGET_NAME);
 
     // --- 2. Locate the widget target's Sources build phase ---
-    // Use the returned pbxNativeTarget directly — do NOT re-look it up
-    // from objects hash, as the xcode package's UUID keys may not match.
-    const widgetNativeTarget = target.pbxNativeTarget;
+    // Strategy: find the PBXSourcesBuildPhase with an empty files array.
+    // addTarget() creates an empty Sources phase for the widget; the main
+    // app's Sources phase already has files, so the empty one is ours.
     let widgetSourcesPhaseUuid = null;
-    if (widgetNativeTarget && widgetNativeTarget.buildPhases) {
-      for (const phase of widgetNativeTarget.buildPhases) {
-        const phaseUuid = typeof phase === 'object' ? phase.value : phase;
-        if (objects['PBXSourcesBuildPhase'] && objects['PBXSourcesBuildPhase'][phaseUuid]) {
-          widgetSourcesPhaseUuid = phaseUuid;
-          break;
-        }
+    const sourcePhasesSection = objects['PBXSourcesBuildPhase'] || {};
+    for (const key of Object.keys(sourcePhasesSection)) {
+      if (key.endsWith('_comment')) continue;
+      const phase = sourcePhasesSection[key];
+      if (phase && typeof phase === 'object' && phase.files && phase.files.length === 0) {
+        widgetSourcesPhaseUuid = key;
+        break;
       }
     }
     console.log(widgetSourcesPhaseUuid
       ? `✅ Found widget Sources build phase: ${widgetSourcesPhaseUuid}`
-      : '❌ Could not find widget Sources build phase');
+      : '❌ Could not find widget Sources build phase — will create one');
+
+    // Fallback: create the Sources phase ourselves if addTarget didn't
+    if (!widgetSourcesPhaseUuid) {
+      widgetSourcesPhaseUuid = genUuid();
+      sourcePhasesSection[widgetSourcesPhaseUuid] = {
+        isa: 'PBXSourcesBuildPhase',
+        buildActionMask: 2147483647,
+        files: [],
+        runOnlyForDeploymentPostprocessing: 0,
+      };
+      sourcePhasesSection[`${widgetSourcesPhaseUuid}_comment`] = 'Sources';
+      // Also add to native target's buildPhases
+      if (target.pbxNativeTarget && target.pbxNativeTarget.buildPhases) {
+        target.pbxNativeTarget.buildPhases.push({
+          value: widgetSourcesPhaseUuid,
+          comment: 'Sources',
+        });
+      }
+      console.log('✅ Created fallback Sources build phase for widget');
+    }
 
     // --- 3. Create PBXGroup for widget source files ---
     let widgetGroupKey = project.findPBXGroupKey({ name: WIDGET_NAME });
