@@ -565,11 +565,18 @@ const withWidgetFiles = (config) => {
 
 /**
  * 3. Add the widget extension target to the Xcode project
+ *
+ * NOTE: The xcode npm package's high-level APIs (findPBXGroupKey,
+ * addSourceFile) are unreliable for extension targets — they silently
+ * fail when the group created by addTarget() isn't findable.
+ * We therefore manipulate project.hash.project.objects directly.
  */
 const withWidgetTarget = (config) => {
   return withXcodeProject(config, async (config) => {
     const project = config.modResults;
     const projectName = config.modRequest.projectName || 'Sukoon';
+    const objects = project.hash.project.objects;
+    const genUuid = () => project.generateUuid();
 
     // Check if widget target already exists
     const targets = project.pbxNativeTargetSection();
@@ -582,7 +589,7 @@ const withWidgetTarget = (config) => {
       return config;
     }
 
-    // --- Add the widget target ---
+    // --- 1. Add the widget target (creates empty Sources + Frameworks phases) ---
     const target = project.addTarget(
       WIDGET_NAME,
       'app_extension',
@@ -597,22 +604,95 @@ const withWidgetTarget = (config) => {
 
     console.log('✅ Added widget target:', WIDGET_NAME);
 
-    // --- Add source files to widget target ---
-    const groupKey = project.findPBXGroupKey({ name: WIDGET_NAME });
-    if (groupKey) {
-      project.addSourceFile(
-        `${WIDGET_NAME}/SukoonWidget.swift`,
-        { target: target.uuid },
-        groupKey
-      );
-      project.addSourceFile(
-        `${WIDGET_NAME}/SukoonWidgetBundle.swift`,
-        { target: target.uuid },
-        groupKey
-      );
+    // --- 2. Locate the widget target's Sources build phase ---
+    const widgetNativeTarget = objects['PBXNativeTarget'][target.uuid];
+    let widgetSourcesPhaseUuid = null;
+    if (widgetNativeTarget && widgetNativeTarget.buildPhases) {
+      for (const phase of widgetNativeTarget.buildPhases) {
+        const phaseUuid = typeof phase === 'object' ? phase.value : phase;
+        if (objects['PBXSourcesBuildPhase'] && objects['PBXSourcesBuildPhase'][phaseUuid]) {
+          widgetSourcesPhaseUuid = phaseUuid;
+          break;
+        }
+      }
     }
 
-    // --- Add bridge files to main app target ---
+    // --- 3. Create PBXGroup for widget source files ---
+    let widgetGroupKey = project.findPBXGroupKey({ name: WIDGET_NAME });
+    if (!widgetGroupKey) {
+      widgetGroupKey = genUuid();
+      objects['PBXGroup'][widgetGroupKey] = {
+        isa: 'PBXGroup',
+        children: [],
+        name: `"${WIDGET_NAME}"`,
+        path: `"${WIDGET_NAME}"`,
+        sourceTree: '"<group>"',
+      };
+      objects['PBXGroup'][`${widgetGroupKey}_comment`] = WIDGET_NAME;
+
+      // Add to the root project group
+      const mainGroup = project.getFirstProject().firstProject.mainGroup;
+      if (mainGroup && objects['PBXGroup'][mainGroup]) {
+        objects['PBXGroup'][mainGroup].children.push({
+          value: widgetGroupKey,
+          comment: WIDGET_NAME,
+        });
+      }
+      console.log('✅ Created PBXGroup for widget');
+    }
+
+    // --- 4. Add widget Swift source files to widget target ---
+    const widgetSourceFiles = [
+      { name: 'SukoonWidget.swift',       path: `${WIDGET_NAME}/SukoonWidget.swift` },
+      { name: 'SukoonWidgetBundle.swift',  path: `${WIDGET_NAME}/SukoonWidgetBundle.swift` },
+    ];
+
+    for (const file of widgetSourceFiles) {
+      const fileRefUuid = genUuid();
+      const buildFileUuid = genUuid();
+
+      // PBXFileReference
+      objects['PBXFileReference'][fileRefUuid] = {
+        isa: 'PBXFileReference',
+        lastKnownFileType: 'sourcecode.swift',
+        name: `"${file.name}"`,
+        path: `"${file.path}"`,
+        sourceTree: '"<group>"',
+      };
+      objects['PBXFileReference'][`${fileRefUuid}_comment`] = file.name;
+
+      // PBXBuildFile → links file ref to widget target compile
+      objects['PBXBuildFile'][buildFileUuid] = {
+        isa: 'PBXBuildFile',
+        fileRef: fileRefUuid,
+        fileRef_comment: file.name,
+      };
+      objects['PBXBuildFile'][`${buildFileUuid}_comment`] = `${file.name} in Sources`;
+
+      // Add to widget Sources build phase
+      if (widgetSourcesPhaseUuid) {
+        const phase = objects['PBXSourcesBuildPhase'][widgetSourcesPhaseUuid];
+        if (phase && phase.files) {
+          phase.files.push({
+            value: buildFileUuid,
+            comment: `${file.name} in Sources`,
+          });
+        }
+      }
+
+      // Add file ref to widget PBXGroup
+      const group = objects['PBXGroup'][widgetGroupKey];
+      if (group && group.children) {
+        group.children.push({
+          value: fileRefUuid,
+          comment: file.name,
+        });
+      }
+    }
+
+    console.log('✅ Added widget source files to Sources build phase');
+
+    // --- 5. Add bridge files to main app target ---
     const mainTarget = project.getFirstTarget();
     const mainGroupKey = project.findPBXGroupKey({ name: projectName });
     if (mainGroupKey && mainTarget) {
@@ -628,7 +708,7 @@ const withWidgetTarget = (config) => {
       );
     }
 
-    // --- Configure build settings for widget target ---
+    // --- 6. Configure build settings for widget target ---
     const configurations = project.pbxXCBuildConfigurationSection();
     for (const key in configurations) {
       const cfg = configurations[key];
@@ -653,7 +733,7 @@ const withWidgetTarget = (config) => {
       }
     }
 
-    // --- Add SwiftUI and WidgetKit frameworks to widget target ---
+    // --- 7. Add SwiftUI and WidgetKit frameworks to widget target ---
     project.addFramework('SwiftUI.framework', {
       target: target.uuid,
       link: true,
@@ -663,10 +743,27 @@ const withWidgetTarget = (config) => {
       link: true,
     });
 
-    // --- Embed the widget extension in the main app ---
+    // --- 8. Embed the widget extension in the main app ---
     const mainTargetObj = project.getFirstTarget();
     if (mainTargetObj) {
-      // Add "Embed Foundation Extensions" build phase
+      // Create a PBXBuildFile for the widget .appex product
+      const widgetProductRef = widgetNativeTarget
+        ? widgetNativeTarget.productReference
+        : null;
+
+      const embedBuildFileUuid = genUuid();
+      if (widgetProductRef) {
+        objects['PBXBuildFile'][embedBuildFileUuid] = {
+          isa: 'PBXBuildFile',
+          fileRef: widgetProductRef,
+          fileRef_comment: `${WIDGET_NAME}.appex`,
+          settings: { ATTRIBUTES: ['RemoveHeadersOnCopy'] },
+        };
+        objects['PBXBuildFile'][`${embedBuildFileUuid}_comment`] =
+          `${WIDGET_NAME}.appex in Embed Foundation Extensions`;
+      }
+
+      // Add "Embed Foundation Extensions" copy-files build phase
       const embedPhase = project.addBuildPhase(
         [],
         'PBXCopyFilesBuildPhase',
@@ -677,10 +774,17 @@ const withWidgetTarget = (config) => {
       if (embedPhase && embedPhase.buildPhase) {
         embedPhase.buildPhase.dstSubfolderSpec = 13; // PlugIns folder
         embedPhase.buildPhase.dstPath = '""';
+        // Add the .appex to this embed phase
+        if (widgetProductRef) {
+          embedPhase.buildPhase.files.push({
+            value: embedBuildFileUuid,
+            comment: `${WIDGET_NAME}.appex in Embed Foundation Extensions`,
+          });
+        }
       }
     }
 
-    // --- Set bridging header for main target ---
+    // --- 9. Set bridging header for main target ---
     for (const key in configurations) {
       const cfg = configurations[key];
       if (
