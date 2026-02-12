@@ -605,7 +605,9 @@ const withWidgetTarget = (config) => {
     console.log('✅ Added widget target:', WIDGET_NAME);
 
     // --- 2. Locate the widget target's Sources build phase ---
-    const widgetNativeTarget = objects['PBXNativeTarget'][target.uuid];
+    // Use the returned pbxNativeTarget directly — do NOT re-look it up
+    // from objects hash, as the xcode package's UUID keys may not match.
+    const widgetNativeTarget = target.pbxNativeTarget;
     let widgetSourcesPhaseUuid = null;
     if (widgetNativeTarget && widgetNativeTarget.buildPhases) {
       for (const phase of widgetNativeTarget.buildPhases) {
@@ -616,6 +618,9 @@ const withWidgetTarget = (config) => {
         }
       }
     }
+    console.log(widgetSourcesPhaseUuid
+      ? `✅ Found widget Sources build phase: ${widgetSourcesPhaseUuid}`
+      : '❌ Could not find widget Sources build phase');
 
     // --- 3. Create PBXGroup for widget source files ---
     let widgetGroupKey = project.findPBXGroupKey({ name: WIDGET_NAME });
@@ -747,8 +752,8 @@ const withWidgetTarget = (config) => {
     const mainTargetObj = project.getFirstTarget();
     if (mainTargetObj) {
       // Create a PBXBuildFile for the widget .appex product
-      const widgetProductRef = widgetNativeTarget
-        ? widgetNativeTarget.productReference
+      const widgetProductRef = target.pbxNativeTarget
+        ? target.pbxNativeTarget.productReference
         : null;
 
       const embedBuildFileUuid = genUuid();
