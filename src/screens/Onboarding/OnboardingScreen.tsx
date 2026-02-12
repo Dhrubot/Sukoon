@@ -127,7 +127,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
       case 'welcome':
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.emoji}>🕌</Text>
+            {/* <Text style={styles.emoji}>🕌</Text> */}
             <Text style={styles.title}>Welcome to Sukoon</Text>
             <Text style={styles.subtitle}>
               Your companion for mindful prayer and spiritual growth
@@ -144,8 +144,8 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
       case 'name':
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.emoji}>👋</Text>
-            <Text style={styles.title}>Assalamu Alaikum!</Text>
+            {/* <Text style={styles.emoji}>👋</Text> */}
+            <Text style={styles.title}>As Salamu Alaikum!</Text>
             <Text style={styles.subtitle}>What should we call you?</Text>
             <TextInput
               style={styles.input}
@@ -170,7 +170,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
       case 'location':
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.emoji}>📍</Text>
+            {/* <Text style={styles.emoji}>📍</Text> */}
             <Text style={styles.title}>Prayer Times</Text>
             <Text style={styles.subtitle}>
               We need your location to calculate accurate prayer times
@@ -190,7 +190,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
       case 'notifications':
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.emoji}>🔔</Text>
+            {/* <Text style={styles.emoji}>🔔</Text> */}
             <Text style={styles.title}>Prayer Reminders</Text>
             <Text style={styles.subtitle}>
               Get gentle reminders for each prayer time
@@ -226,7 +226,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
         return (
           <ScrollView contentContainerStyle={[styles.stepContainer, { flex: 0, flexGrow: 1, paddingVertical: 20 }]}
             showsVerticalScrollIndicator={false}>
-            <Text style={styles.emoji}>🕌</Text>
+            {/* <Text style={styles.emoji}>🕌</Text> */}
             <Text style={styles.title}>Calculation Method</Text>
             <Text style={styles.subtitle}>
               Choose your preferred prayer time calculation method
