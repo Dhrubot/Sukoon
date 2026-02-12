@@ -514,16 +514,15 @@ const withWidgetFiles = (config) => {
       );
       console.log('✅ Created SukoonWidgetBridge.m');
 
-      // Ensure bridging header exists (needed for Swift ↔ ObjC interop)
+      // Always write bridging header with React Native imports
+      // (Expo prebuild may create an empty one first, so we overwrite it)
       const bridgingHeaderPath = path.join(mainAppPath, `${projectName}-Bridging-Header.h`);
-      if (!fs.existsSync(bridgingHeaderPath)) {
-        fs.writeFileSync(
-          bridgingHeaderPath,
-          `//\n//  ${projectName}-Bridging-Header.h\n//\n\n#import <React/RCTBridgeModule.h>\n#import <React/RCTViewManager.h>\n`,
-          'utf-8'
-        );
-        console.log('✅ Created bridging header');
-      }
+      fs.writeFileSync(
+        bridgingHeaderPath,
+        `//\n//  ${projectName}-Bridging-Header.h\n//\n\n#import <React/RCTBridgeModule.h>\n#import <React/RCTViewManager.h>\n`,
+        'utf-8'
+      );
+      console.log('✅ Created bridging header with RCT imports');
 
       // --- Widget extension files ---
       const widgetPath = path.join(iosPath, WIDGET_NAME);
