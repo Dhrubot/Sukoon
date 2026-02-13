@@ -16,6 +16,7 @@ export interface HijriDate {
   monthNameEn: string;
   monthNameAr: string;
   year: number;
+  cachedFor?: string; // Gregorian date string "YYYY-MM-DD" — used for staleness check
 }
 
 /**
@@ -34,6 +35,7 @@ export function cacheHijriDate(hijriData: {
       monthNameEn: hijriData.month.en,
       monthNameAr: hijriData.month.ar,
       year: parseInt(hijriData.year, 10),
+      cachedFor: new Date().toISOString().slice(0, 10),
     };
     StorageService.setValue(STORAGE_KEY_HIJRI, JSON.stringify(hijri));
   } catch (e) {
@@ -48,7 +50,11 @@ export function getCachedHijriDate(): HijriDate | null {
   try {
     const raw = StorageService.getValue(STORAGE_KEY_HIJRI);
     if (!raw) return null;
-    return JSON.parse(raw) as HijriDate;
+    const parsed = JSON.parse(raw) as HijriDate;
+    // Only trust cache if it was set today
+    const today = new Date().toISOString().slice(0, 10);
+    if (parsed.cachedFor && parsed.cachedFor !== today) return null;
+    return parsed;
   } catch {
     return null;
   }

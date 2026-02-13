@@ -6,13 +6,18 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../providers/ThemeProvider';
 import { Icon } from '../../components/common/Icon';
-import { DigitalWellnessIcon, ProgressTabIcon } from '../../assets/icons';
+import { ProgressTabIcon } from '../../assets/icons';
+// Only import DigitalWellnessIcon on non-iOS (filtered from menu on iOS)
+const { DigitalWellnessIcon } = Platform.OS === 'ios'
+  ? { DigitalWellnessIcon: null }
+  : require('../../assets/icons');
 import Svg, { Path } from 'react-native-svg';
 
 // Settings icon component
@@ -56,7 +61,7 @@ interface MenuItem {
   iconType?: 'component' | 'svg' | 'png' | 'emoji';
 }
 
-const menuItems: MenuItem[] = [
+const allMenuItems: MenuItem[] = [
   {
     icon: ProgressTabIcon,
     title: 'My Journey',
@@ -100,6 +105,11 @@ const menuItems: MenuItem[] = [
     iconType: 'component',
   },
 ];
+
+const menuItems = allMenuItems.filter((item) => {
+  if (item.screen === 'DigitalWellness' && Platform.OS === 'ios') return false;
+  return true;
+});
 
 const MenuScreen: React.FC = () => {
   const { theme } = useTheme();

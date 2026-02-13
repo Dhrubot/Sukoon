@@ -163,7 +163,7 @@ const HomeScreen = ({ navigation }: any) => {
   // 🎯 NEW: Handle invalid location state
   if (!hasValidLocation) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
         <LinearGradient colors={getBackgroundGradient()} style={styles.container}>
           <View style={styles.locationSetupContainer}>
             <Text style={styles.setupTitle}>🕌 Welcome to Sukoon</Text>
@@ -184,7 +184,7 @@ const HomeScreen = ({ navigation }: any) => {
   // 🎯 NEW: Handle loading state
   if (prayerTimesLoading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
         <LinearGradient colors={getBackgroundGradient()} style={styles.container}>
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={theme.colors.primary.DEFAULT} />
@@ -198,7 +198,7 @@ const HomeScreen = ({ navigation }: any) => {
   // 🎯 NEW: Handle error state
   if (prayerTimesError) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
         <LinearGradient colors={getBackgroundGradient()} style={styles.container}>
           <View style={styles.errorContainer}>
             <Text style={styles.errorTitle}>⚠️ Prayer Times Unavailable</Text>
@@ -214,7 +214,7 @@ const HomeScreen = ({ navigation }: any) => {
 
   // 🎯 MAIN UI: SanctuaryView hero + secondary content below
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
