@@ -8,6 +8,7 @@ import { CHANNELS } from '../constants/NotificationConstants';
 import { getCachedHijriDate, isRamadan, getRamadanDay } from '../utils/ramadan';
 import StorageService from './StorageService';
 import logger from '../utils/logger';
+import { getLocalDateKey } from '../utils/dateHelpers';
 
 const NOTIFICATION_PREFIX = 'ramadan-countdown';
 const STORAGE_KEY_LAST_SCHEDULED = 'ramadan_countdown_last_scheduled';
@@ -81,7 +82,7 @@ class RamadanCountdownServiceClass {
       }
 
       // Don't schedule more than once per day
-      const today = new Date().toISOString().split('T')[0];
+      const today = getLocalDateKey();
       const lastScheduled = StorageService.getValue(STORAGE_KEY_LAST_SCHEDULED);
       if (lastScheduled === today) {
         logger.log('🌙 Ramadan notifications already scheduled today');

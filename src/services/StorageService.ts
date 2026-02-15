@@ -19,6 +19,7 @@ import {
 import { createStorage } from "./StorageAdapter";
 import { PRAYER_NAMES as PrayerName } from "../constants";
 import AnalyticsService from './AnalyticsService';
+import { getLocalDateKey } from '../utils/dateHelpers';
 
 class StorageService {
   private storage;
@@ -192,7 +193,7 @@ class StorageService {
     this.storage.set(key, JSON.stringify(session));
 
     // Link to prayer record
-    const date = new Date(session.startedAt).toISOString().split("T")[0];
+    const date = getLocalDateKey(new Date(session.startedAt));
     const prayerRecord = this.getPrayerRecord(date, session.prayerName);
     if (prayerRecord) {
       prayerRecord.mindfulnessCompleted = true;
@@ -248,16 +249,24 @@ class StorageService {
     this.storage.set("current_streak", value);
   }
 
+  // P0-D FIX: Made idempotent — guards with last_streak_update_date so repeated
+  // calls on the same day don't keep incrementing. Also fixes the missing reset
+  // path (Bug 9): today < 5 now always resets streak to 0 regardless of yesterday.
   updateStreak(): void {
-    const today = new Date().toISOString().split("T")[0];
-    const yesterday = new Date(Date.now() - 86400000)
-      .toISOString()
-      .split("T")[0];
+    const today = getLocalDateKey();
+    const yesterday = getLocalDateKey(new Date(Date.now() - 86400000));
 
     const todayStats = this.getDailyStats(today);
     const yesterdayStats = this.getDailyStats(yesterday);
 
+    // Guard: only recalculate streak once per calendar day
+    const lastStreakDate = this.storage.getString("last_streak_update_date");
+
     if (todayStats && todayStats.prayersCompleted === 5) {
+      if (lastStreakDate === today) {
+        // Already calculated streak for today's perfect day — skip
+        return;
+      }
       if (yesterdayStats && yesterdayStats.prayersCompleted === 5) {
         // Continue streak
         const current = this.getCurrentStreak();
@@ -266,9 +275,13 @@ class StorageService {
         // Start new streak
         this.storage.set("current_streak", 1);
       }
-    } else if (yesterdayStats && yesterdayStats.prayersCompleted < 5) {
-      // Break streak
-      this.storage.set("current_streak", 0);
+      this.storage.set("last_streak_update_date", today);
+    } else {
+      // Today is not yet a perfect day — reset streak if yesterday wasn't perfect
+      // (Bug 9 fix: this covers the previously missing case)
+      if (!yesterdayStats || yesterdayStats.prayersCompleted < 5) {
+        this.storage.set("current_streak", 0);
+      }
     }
 
     // Update longest streak
@@ -296,7 +309,7 @@ class StorageService {
     const currentDate = new Date(startDate);
 
     while (currentDate <= endDate) {
-      const dateStr = currentDate.toISOString().split("T")[0];
+      const dateStr = getLocalDateKey(currentDate);
       const dayRecords = this.getDayPrayerRecords(dateStr);
       records.push(...dayRecords);
       currentDate.setDate(currentDate.getDate() + 1);
@@ -382,7 +395,7 @@ class StorageService {
 
     const currentDate = new Date(startDate);
     while (currentDate <= endDate) {
-      const dateStr = currentDate.toISOString().split("T")[0];
+      const dateStr = getLocalDateKey(currentDate);
 
       // Get prayer records
       const dayRecords = this.getDayPrayerRecords(dateStr);
@@ -552,12 +565,19 @@ class StorageService {
   }
 
   // Save prayer record with achievement tracking
+  // P0-D FIX: Made idempotent — only increments counters when a NEW prayer
+  // completion is recorded (no existing 'prayed' record for this date+prayer).
   savePrayerRecordWithTracking(record: PrayerRecord): void {
-    // Save the record
+    // Check if a 'prayed' record already exists for this date+prayer
+    const existing = this.getPrayerRecord(record.date, record.prayer);
+    const isNewCompletion = record.status === "prayed" &&
+      (!existing || existing.status !== "prayed");
+
+    // Save the record (always — may update reflection/score fields)
     this.savePrayerRecord(record);
 
-    // Update counters for achievements
-    if (record.status === "prayed") {
+    // Only increment counters for genuinely new completions
+    if (isNewCompletion) {
       this.incrementTotalPrayersCount();
 
       if (record.mindfulnessCompleted) {
@@ -573,14 +593,16 @@ class StorageService {
       }
     }
 
-    // Update daily stats
+    // Update daily stats (idempotent — recalculates from records)
     this.updateDailyStats(record.date);
 
-    // Update streaks
+    // Update streaks (idempotent after fix)
     this.updateStreak();
 
     // Update consecutive prayer counts
-    this.updateConsecutivePrayerCounts(record);
+    if (isNewCompletion) {
+      this.updateConsecutivePrayerCounts(record);
+    }
   }
 
   private updateConsecutivePrayerCounts(record: PrayerRecord): void {
@@ -589,7 +611,7 @@ class StorageService {
         // Check if yesterday's Fajr was also prayed
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split("T")[0];
+        const yesterdayStr = getLocalDateKey(yesterday);
         const yesterdayRecords = this.getDayPrayerRecords(yesterdayStr);
         const yesterdayFajr = yesterdayRecords.find(
           (r) => r.prayer === PrayerName.fajr
@@ -607,7 +629,7 @@ class StorageService {
         // Similar logic for Isha
         const yesterday = new Date();
         yesterday.setDate(yesterday.getDate() - 1);
-        const yesterdayStr = yesterday.toISOString().split("T")[0];
+        const yesterdayStr = getLocalDateKey(yesterday);
         const yesterdayRecords = this.getDayPrayerRecords(yesterdayStr);
         const yesterdayIsha = yesterdayRecords.find(
           (r) => r.prayer === PrayerName.isha
@@ -865,7 +887,7 @@ class StorageService {
     for (let i = 0; i < days; i++) {
       const date = new Date(now);
       date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = getLocalDateKey(date);
       const dayRecords = this.getDayPrayerRecords(dateStr);
       records.push(...dayRecords);
     }
@@ -928,7 +950,7 @@ class StorageService {
     for (let i = 0; i < days; i++) {
       const date = new Date(now);
       date.setDate(date.getDate() - i);
-      const dateStr = date.toISOString().split('T')[0];
+      const dateStr = getLocalDateKey(date);
 
       for (const prayer of prayers) {
         const record = this.getPrayerRecord(dateStr, prayer);

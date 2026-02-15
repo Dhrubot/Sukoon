@@ -127,9 +127,9 @@ const HomeScreen = ({ navigation }: any) => {
     // Default: peaceful between-prayers greeting
     const hour = now.getHours();
     if (hour < 5) return `Peace be upon you, ${name}`;
-    if (hour < 12) return `Assalamu alaykum, ${name}`;
+    if (hour < 12) return `As Salamu Alaykum, ${name}`;
     if (hour < 17) return `Peace be upon you, ${name}`;
-    if (hour < 20) return `Assalamu alaykum, ${name}`;
+    if (hour < 20) return `As Salamu Alaykum, ${name}`;
     return `Peace be upon you, ${name}`;
   };
 

@@ -40,7 +40,7 @@ export interface PrayerRecord {
   id: string;
   date: string; // YYYY-MM-DD
   prayer: PrayerName;
-  status: "prayed" | "missed" | "delayed";
+  status: "prayed" | "missed" | "delayed" | "in_progress";
   prayedAt?: Date;
   mindfulnessCompleted?: boolean;
   reflectionAdded?: boolean;

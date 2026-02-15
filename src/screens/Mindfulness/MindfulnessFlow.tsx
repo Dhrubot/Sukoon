@@ -39,6 +39,9 @@ import { RootStackParamList } from "../../types/navigation";
 import AchievementService from "../../services/AchievementService";
 import AnalyticsService from "../../services/AnalyticsService";
 import WidgetService from "../../services/WidgetService";
+import NotificationService from "../../services/NotificationService";
+import ReminderStateService from "../../services/ReminderStateService";
+import { getLocalDateKey } from "../../utils/dateHelpers";
 
 const { width, height } = Dimensions.get("window");
 
@@ -56,6 +59,9 @@ const MindfulnessFlow: React.FC = () => {
     nextPrayer, 
     hasValidLocation 
   } = usePrayerTimes();
+
+  // P0-G: Access sunrise for fiqh-aware Fajr deadline
+  const { todaySunrise } = useStore();
   
   // Parse the serialized prayer object and convert the ISO string back to a Date
   const serializedPrayer = route.params.prayer;
@@ -175,16 +181,35 @@ const MindfulnessFlow: React.FC = () => {
     validatePrayerTiming();
   }, []); // Empty deps - only run once on mount
 
-  // 🎯 Validate that the prayer is still current/upcoming
+  // 🎯 P0-G FIX: Compute fiqh-aware deadline for this prayer.
+  // Fajr → sunrise; others → next prayer's start time.
+  // Falls back to 2h if prayer times aren't loaded yet.
+  const getPrayerDeadline = (): Date => {
+    const prayerTime = prayer.time;
+
+    if (prayer.name === 'Fajr' && todaySunrise) {
+      return todaySunrise;
+    }
+
+    // Find the next prayer after this one in today's list
+    if (todayPrayerTimes.length > 0) {
+      const currentIndex = todayPrayerTimes.findIndex(p => p.name === prayer.name);
+      if (currentIndex >= 0 && currentIndex < todayPrayerTimes.length - 1) {
+        return todayPrayerTimes[currentIndex + 1].time;
+      }
+    }
+
+    // Fallback: 2 hours after prayer time (for Isha or if times not loaded)
+    return new Date(prayerTime.getTime() + 2 * 60 * 60 * 1000);
+  };
+
+  // 🎯 Validate that the prayer is still within its valid window
   const validatePrayerTiming = () => {
     const now = new Date();
-    const prayerTime = prayer.time;
+    const deadline = getPrayerDeadline();
     
-    // Allow prayers up to 2 hours after their time
-    const twoHoursAfterPrayer = new Date(prayerTime.getTime() + 2 * 60 * 60 * 1000);
-    
-    // Check if prayer time has passed by more than 2 hours
-    if (now > twoHoursAfterPrayer) {
+    // Check if prayer window has passed
+    if (now > deadline) {
       // Show alert and navigate back
       Alert.alert(
         "Prayer Time Passed",
@@ -247,26 +272,26 @@ const MindfulnessFlow: React.FC = () => {
     moveToNiyyah();
   };
 
-  // ── PRE-PRAYER: Save prayer record and enter "praying" state ──
+  // ── PRE-PRAYER: Save in_progress record and enter "praying" state ──
+  // P0-E FIX: No longer marks prayer as "prayed" before salah begins.
+  // Saves as "in_progress" so the app knows a flow is active (crash recovery),
+  // but counters/streaks are NOT incremented until finishPrayer.
   const beginPrayer = () => {
     const recordId = `prayer_${Date.now()}`;
     const prayerRecord: PrayerRecord = {
       id: recordId,
-      date: new Date().toISOString().split("T")[0],
+      date: getLocalDateKey(),
       prayer: prayer.name,
-      status: "prayed",
-      prayedAt: new Date(),
+      status: "in_progress",
       mindfulnessCompleted: true,
       reflectionAdded: false,
       mindfulnessScore: 0,
     };
 
-    // Save immediately — if user closes app during prayer, it's still recorded
-    StorageService.savePrayerRecordWithTracking(prayerRecord);
+    // Save in_progress record — if user closes app during prayer,
+    // a background job or next open can reconcile incomplete records.
+    StorageService.savePrayerRecord(prayerRecord);
     addPrayerRecord(prayerRecord);
-    WidgetService.reloadWidgets();
-
-    AnalyticsService.logPrayerCompleted(prayer.name, true);
 
     setSavedRecordId(recordId);
     setPrayerStartTime(new Date());
@@ -281,8 +306,38 @@ const MindfulnessFlow: React.FC = () => {
     });
   };
 
-  // ── POST-PRAYER: User finished praying, transition to reflection ──
+  // ── POST-PRAYER: User finished praying — NOW mark as "prayed" ──
+  // P0-E FIX: This is where prayer completion is canonically recorded.
+  // P0-F FIX: Also closes the reminder flow so Tier 2/3 notifications stop.
   const finishPrayer = () => {
+    const dateKey = getLocalDateKey();
+
+    // Upgrade the in_progress record to "prayed" with full tracking
+    if (savedRecordId) {
+      const prayerRecord: PrayerRecord = {
+        id: savedRecordId,
+        date: dateKey,
+        prayer: prayer.name,
+        status: "prayed",
+        prayedAt: new Date(),
+        mindfulnessCompleted: true,
+        reflectionAdded: false,
+        mindfulnessScore: 0,
+      };
+
+      StorageService.savePrayerRecordWithTracking(prayerRecord);
+      addPrayerRecord(prayerRecord);
+      WidgetService.reloadWidgets();
+
+      AnalyticsService.logPrayerCompleted(prayer.name, true);
+    }
+
+    // P0-F FIX: Close the reminder flow for this prayer.
+    // Mark reminder state as completed + cancel pending Tier2/Tier3/snoozes.
+    const prayerId = `${prayer.name}-${dateKey}`;
+    ReminderStateService.markPrayerCompleted(prayerId);
+    NotificationService.cancelPrayerReminderFlow(prayerId).catch(() => {});
+
     animateToStep("reflection");
   };
 
@@ -318,7 +373,7 @@ const MindfulnessFlow: React.FC = () => {
 
     // Save reflection text cross-reference for Reflection Garden journal
     if (reflectionText.trim().length > 0) {
-      const dateStr = new Date().toISOString().split('T')[0];
+      const dateStr = getLocalDateKey();
       StorageService.saveReflectionText(dateStr, prayer.name, reflectionText.trim());
     }
 
@@ -477,7 +532,7 @@ const MindfulnessFlow: React.FC = () => {
         style={styles.finishPrayerButton}
         onPress={finishPrayer}
       >
-        <Text style={styles.finishPrayerText}>I've Finished My Prayer ✓</Text>
+        <Text style={styles.finishPrayerText}>Finished Praying ✓</Text>
       </TouchableOpacity>
     </Animated.View>
   );

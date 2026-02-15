@@ -230,8 +230,8 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
         <View style={styles.juristicExplanation}>
           <Text style={styles.explanationText}>
             {userSettings.asrJuristic === 'Hanafi' 
-              ? '⏰ Hanafi: Asr begins when shadow = 2× object length (later)'
-              : '⏰ Standard: Asr begins when shadow = 1× object length (earlier)'
+              ? 'Hanafi: Asr begins when shadow = 2× object length (later)'
+              : 'Standard: Asr begins when shadow = 1× object length (earlier)'
             }
           </Text>
         </View>
@@ -246,7 +246,7 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
             disabled={prayerTimesLoading}
           >
             <Text style={styles.testButtonText}>
-              {prayerTimesLoading ? '⏳ Loading...' : '🧪 Test Prayer Calculations'}
+              {prayerTimesLoading ? '⏳ Loading...' : 'Test Prayer Calculations'}
             </Text>
           </TouchableOpacity>
         </View>

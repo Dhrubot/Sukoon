@@ -78,7 +78,7 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
         disabled={isUpdatingLocation}
       >
         <Text style={styles.buttonText}>
-          {isUpdatingLocation ? '⏳ Updating...' : isLocationSet ? '🔄 Update Location' : '📍 Set Location'}
+          {isUpdatingLocation ? '⏳ Updating...' : isLocationSet ? 'Update Location' : '📍 Set Location'}
         </Text>
       </TouchableOpacity>
 
@@ -89,7 +89,7 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
           disabled={isUpdatingLocation}
         >
           <Text style={styles.manualButtonText}>
-            🗺️ Select Location Manually
+            Select Location Manually
           </Text>
         </TouchableOpacity>
       )}

@@ -8,6 +8,7 @@ import { isValidCoordinates } from '../utils/locationValidation';
 import logger from '../utils/logger';
 import WidgetService from '../services/WidgetService';
 import StorageService from '../services/StorageService';
+import { getLocalDateKey } from '../utils/dateHelpers';
 
 interface PrayerTimesContextType {
   todayPrayerTimes: PrayerTime[];
@@ -59,19 +60,44 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
   const hasValidLocation = isValidCoordinates(location);
 
   // Centralized prayer times loading
-  // Enhanced next prayer calculation with tomorrow's Fajr
-  const calculateNextPrayer = (todayPrayers: PrayerTime[], tomorrowFajr: PrayerTime | null): PrayerTime | null => {
+  // P0-G FIX: Enhanced next prayer calculation that considers active prayer windows.
+  // A prayer remains the "next" prayer to act on until its fiqh deadline (the start
+  // of the following prayer, or sunrise for Fajr), not just until its adhan time.
+  const calculateNextPrayer = (todayPrayers: PrayerTime[], tomorrowFajr: PrayerTime | null, sunrise?: Date | null): PrayerTime | null => {
     if (todayPrayers.length === 0) return null;
 
     const now = new Date();
     logger.log('🔍 Calculating next prayer...');
 
-    // Check today's remaining prayers
-    for (const prayer of todayPrayers) {
-      if (prayer.time > now) {
-        logger.log('✅ Next prayer today:', prayer.name);
-        return { ...prayer, isNext: true };
+    // First pass: find the first prayer whose TIME hasn't arrived yet (upcoming)
+    for (let i = 0; i < todayPrayers.length; i++) {
+      if (todayPrayers[i].time > now) {
+        // Check if the PREVIOUS prayer is still in its active window
+        // (its time has passed but its deadline hasn't)
+        if (i > 0) {
+          const prev = todayPrayers[i - 1];
+          const prevDeadline = prev.name === 'Fajr' && sunrise
+            ? sunrise
+            : todayPrayers[i].time; // deadline = next prayer's start
+          if (now < prevDeadline) {
+            logger.log('✅ Active prayer window:', prev.name);
+            return { ...prev, isNext: true };
+          }
+        }
+        logger.log('✅ Next prayer today:', todayPrayers[i].name);
+        return { ...todayPrayers[i], isNext: true };
       }
+    }
+
+    // All prayer times have passed — check if the last prayer (Isha) is still active
+    // Isha's window extends until midnight or Fajr (we use a 2h fallback)
+    const lastPrayer = todayPrayers[todayPrayers.length - 1];
+    const ishaDeadline = tomorrowFajr
+      ? tomorrowFajr.time
+      : new Date(lastPrayer.time.getTime() + 2 * 60 * 60 * 1000);
+    if (now < ishaDeadline) {
+      logger.log('✅ Active prayer window (last):', lastPrayer.name);
+      return { ...lastPrayer, isNext: true };
     }
 
     // If no more prayers today, return tomorrow's Fajr
@@ -130,15 +156,15 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
       setTodayMidnight(todayResult.midnight);
       setTomorrowFajr(tomorrowFajrPrayer);
 
-      // Calculate next prayer
-      const nextPrayer = calculateNextPrayer(todayResult.prayerTimes, tomorrowFajrPrayer);
+      // Calculate next prayer (pass sunrise for fiqh-aware Fajr deadline)
+      const nextPrayer = calculateNextPrayer(todayResult.prayerTimes, tomorrowFajrPrayer, todayResult.sunrise);
       setNextPrayer(nextPrayer);
 
       setIsOffline(PrayerTimeService.lastFetchWasFallback);
       logger.log('✅ Prayer times loaded successfully');
 
       // Push data to iOS widget
-      const todayStr = new Date().toISOString().split('T')[0];
+      const todayStr = getLocalDateKey();
       const todayRecords = StorageService.getDayPrayerRecords(todayStr);
       const streak = StorageService.getCurrentStreak();
       WidgetService.updateWidgetData(

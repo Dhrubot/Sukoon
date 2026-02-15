@@ -121,7 +121,7 @@ const SettingsScreen = ({ navigation }: any) => {
         />
 
         {/* 🌌 Optional Prayer Settings */}
-        <SettingSection title="OPTIONAL PRAYERS">
+        <SettingSection title="">
           <SettingRow
             label="Tahajjud Reminders"
             subtitle="Gentle encouragement to pray the night prayer"
@@ -146,7 +146,7 @@ const SettingsScreen = ({ navigation }: any) => {
         </SettingSection>
 
         {/* 🕌 Mosque Mode Settings */}
-        <SettingSection title="MOSQUE MODE">
+        <SettingSection title="">
           <MosqueModeToggle />
           {userSettings.mosqueMode?.enabled && (
             <View style={{ marginTop: 16 }}>
