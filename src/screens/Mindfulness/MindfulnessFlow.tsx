@@ -61,8 +61,8 @@ const MindfulnessFlow: React.FC = () => {
     hasValidLocation 
   } = usePrayerTimes();
 
-  // P0-G: Access sunrise for fiqh-aware Fajr deadline
-  const { todaySunrise } = useStore();
+  // P0-G: Access sunrise/midnight for fiqh-aware prayer deadlines
+  const { todaySunrise, todayMidnight } = useStore();
   
   // Parse the serialized prayer object and convert the ISO string back to a Date
   const serializedPrayer = route.params.prayer;
@@ -196,8 +196,8 @@ const MindfulnessFlow: React.FC = () => {
   }, []); // Empty deps - only run once on mount
 
   // 🎯 P0-G FIX: Compute fiqh-aware deadline for this prayer.
-  // Fajr → sunrise; others → next prayer's start time.
-  // Falls back to 2h if prayer times aren't loaded yet.
+  // Fajr → sunrise; Dhuhr/Asr/Maghrib → next prayer's start time.
+  // Isha → tomorrow's Fajr (absolute), Islamic midnight (preferred cutoff).
   const getPrayerDeadline = (): Date => {
     const prayerTime = prayer.time;
 
@@ -213,7 +213,19 @@ const MindfulnessFlow: React.FC = () => {
       }
     }
 
-    // Fallback: 2 hours after prayer time (for Isha or if times not loaded)
+    // Isha (last prayer): use Islamic midnight or a generous fallback.
+    // todayMidnight from the Aladhan API = midpoint between sunset & Fajr.
+    // We use tomorrow's Fajr as the absolute deadline if available,
+    // otherwise Islamic midnight, otherwise 4h fallback.
+    if (prayer.name === 'Isha') {
+      if (todayMidnight) {
+        return todayMidnight;
+      }
+      // 4h fallback is generous enough for most latitudes
+      return new Date(prayerTime.getTime() + 4 * 60 * 60 * 1000);
+    }
+
+    // Generic fallback: 2 hours after prayer time (if times not loaded)
     return new Date(prayerTime.getTime() + 2 * 60 * 60 * 1000);
   };
 
