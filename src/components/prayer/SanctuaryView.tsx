@@ -23,14 +23,20 @@ interface SanctuaryViewProps {
   prayer: PrayerTime;
   greeting: string;
   record?: PrayerRecord;
+  isTimeEntered?: boolean;
+  missedPrayer?: PrayerTime;
   onPrepare: () => void;
+  onPrepareQada?: () => void;
 }
 
 const SanctuaryView: React.FC<SanctuaryViewProps> = ({
   prayer,
   greeting,
   record,
+  isTimeEntered = true,
+  missedPrayer,
   onPrepare,
+  onPrepareQada,
 }) => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
@@ -84,6 +90,7 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
 
   const handlePress = () => {
     if (isAlreadyPrayed) {
+      // Already prayed — offer to repeat the mindfulness flow
       Alert.alert(
         'Already Prayed',
         'You\'ve already recorded this prayer. Would you like to go through the mindfulness flow again?',
@@ -92,9 +99,35 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
           { text: 'Yes, Repeat Flow', onPress: onPrepare },
         ]
       );
+    } else if (!isTimeEntered && missedPrayer && onPrepareQada) {
+      // Adhan hasn't happened yet AND there's a missed prayer — offer qada
+      Alert.alert(
+        `${PrayerTimeService.getPrayerDisplayName(prayer.name)} Adhan Hasn\'t Happened Yet`,
+        `Would you like to prepare for ${PrayerTimeService.getPrayerDisplayName(missedPrayer.name)} as a Qada (makeup) prayer?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: `Prepare ${PrayerTimeService.getPrayerDisplayName(missedPrayer.name)} Qada`, onPress: onPrepareQada },
+        ]
+      );
+    } else if (!isTimeEntered) {
+      // Adhan hasn't happened yet but no missed prayers — confirm early preparation
+      Alert.alert(
+        'Adhan Hasn\'t Happened Yet',
+        `${PrayerTimeService.getPrayerDisplayName(prayer.name)} time hasn\'t entered yet. Would you like to prepare for prayer anyway?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Yes, Prepare', onPress: onPrepare },
+        ]
+      );
     } else {
       onPrepare();
     }
+  };
+
+  const getButtonText = (): string => {
+    if (isAlreadyPrayed) return 'Already Prayed';
+    if (!isTimeEntered) return 'Prepare For Prayer';
+    return 'Prepare for Prayer';
   };
 
   const getPrayerGradient = (): readonly [string, string, string] => {
@@ -135,13 +168,13 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
         <TouchableOpacity
           style={[
             styles.prepareButton,
-            isAlreadyPrayed && styles.alreadyPrayedButton,
+            (isAlreadyPrayed || !isTimeEntered) && styles.alreadyPrayedButton,
           ]}
           onPress={handlePress}
           activeOpacity={0.7}
         >
           <Text style={styles.prepareText}>
-            {isAlreadyPrayed ? 'Already Prayed' : 'Prepare for Prayer'}
+            {getButtonText()}
           </Text>
         </TouchableOpacity>
       </Animated.View>

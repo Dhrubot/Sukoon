@@ -168,6 +168,27 @@ const HomeScreen = ({ navigation }: any) => {
     );
   }, [nextPrayer, todayPrayerRecords]);
 
+  // Check if the hero prayer's adhan has actually happened
+  const isHeroPrayerTimeEntered = useMemo(() => {
+    if (!nextPrayer) return false;
+    return nextPrayer.time <= currentTime;
+  }, [nextPrayer, currentTime]);
+
+  // Find the most recent MISSED prayer (before the hero prayer) for qada prompt
+  const missedPreviousPrayer = useMemo(() => {
+    if (!nextPrayer || isHeroPrayerTimeEntered) return undefined;
+    const heroIdx = todayPrayerTimes.findIndex(p => p.name === nextPrayer.name);
+    // Walk backwards to find the first unprayed prayer
+    for (let i = heroIdx - 1; i >= 0; i--) {
+      const p = todayPrayerTimes[i];
+      const prayed = todayPrayerRecords.some(
+        r => r.prayer === p.name && r.status === 'prayed'
+      );
+      if (!prayed) return p;
+    }
+    return undefined;
+  }, [nextPrayer, todayPrayerTimes, todayPrayerRecords, isHeroPrayerTimeEntered]);
+
   // 🎯 NEW: Handle invalid location state
   if (!hasValidLocation) {
     return (
@@ -234,7 +255,10 @@ const HomeScreen = ({ navigation }: any) => {
             prayer={nextPrayer}
             greeting={getGreeting()}
             record={heroPrayerRecord}
+            isTimeEntered={isHeroPrayerTimeEntered}
+            missedPrayer={missedPreviousPrayer}
             onPrepare={() => handlePrayerComplete(nextPrayer)}
+            onPrepareQada={missedPreviousPrayer ? () => handlePrayerComplete(missedPreviousPrayer) : undefined}
           />
         ) : (
           <LinearGradient colors={getBackgroundGradient()} style={styles.noNextPrayer}>

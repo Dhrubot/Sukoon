@@ -6,7 +6,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -14,10 +13,6 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../providers/ThemeProvider';
 import { Icon } from '../../components/common/Icon';
 import { ProgressTabIcon } from '../../assets/icons';
-// Only import DigitalWellnessIcon on non-iOS (filtered from menu on iOS)
-const { DigitalWellnessIcon } = Platform.OS === 'ios'
-  ? { DigitalWellnessIcon: null }
-  : require('../../assets/icons');
 import Svg, { Path } from 'react-native-svg';
 
 // Settings icon component
@@ -62,6 +57,13 @@ interface MenuItem {
 }
 
 const allMenuItems: MenuItem[] = [
+   {
+    icon: null, // Emoji-based icon handled below
+    title: 'My Garden',
+    subtitle: 'Your reflections, growing quietly',
+    screen: 'ReflectionGarden',
+    iconType: 'emoji',
+  },
   {
     icon: ProgressTabIcon,
     title: 'My Journey',
@@ -70,25 +72,11 @@ const allMenuItems: MenuItem[] = [
     iconType: 'svg',
   },
   {
-    icon: null, // Emoji-based icon handled below
-    title: 'My Garden',
-    subtitle: 'Your reflections, growing quietly',
-    screen: 'ReflectionGarden',
-    iconType: 'emoji',
-  },
-  {
     icon: SettingsIcon,
     title: 'Setup & Health',
     subtitle: 'Verify location, reminders, and mosque mode',
     screen: 'SetupHealth',
     iconType: 'component',
-  },
-  {
-    icon: DigitalWellnessIcon,
-    title: 'Digital Wellness',
-    subtitle: 'Monitor your screen time',
-    screen: 'DigitalWellness',
-    iconType: 'svg',
   },
   {
     icon: SupportIcon,
@@ -106,10 +94,7 @@ const allMenuItems: MenuItem[] = [
   },
 ];
 
-const menuItems = allMenuItems.filter((item) => {
-  if (item.screen === 'DigitalWellness' && Platform.OS === 'ios') return false;
-  return true;
-});
+const menuItems = allMenuItems;
 
 const MenuScreen: React.FC = () => {
   const { theme } = useTheme();

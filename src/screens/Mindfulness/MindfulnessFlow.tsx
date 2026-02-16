@@ -11,6 +11,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  Keyboard,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -387,6 +388,9 @@ const MindfulnessFlow: React.FC = () => {
 
     await AchievementService.checkAchievements();
 
+    // Dismiss keyboard before transitioning (prevents iOS KeyboardAvoidingView interference)
+    Keyboard.dismiss();
+
     // Animate to complete screen
     Animated.parallel([
       Animated.timing(fadeAnim, {
@@ -401,45 +405,50 @@ const MindfulnessFlow: React.FC = () => {
       }),
     ]).start(() => {
       setCurrentStep("complete");
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 500,
-          useNativeDriver: true,
-        }),
-        Animated.spring(completeScale, {
-          toValue: 1,
-          friction: 4,
-          tension: 40,
-          useNativeDriver: true,
-        }),
-      ]).start(() => {
-        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-        Animated.loop(
-          Animated.sequence([
-            Animated.timing(stillnessPulse, {
-              toValue: 1,
-              duration: 2000,
-              useNativeDriver: true,
-            }),
-            Animated.timing(stillnessPulse, {
-              toValue: 0.3,
-              duration: 2000,
-              useNativeDriver: true,
-            }),
-          ])
-        ).start();
-
-        setTimeout(() => {
+      // Wait for React to re-render and mount the complete step view
+      // before starting the entrance animation. Without this, the native
+      // driver has no target view and the animation is silently dropped.
+      requestAnimationFrame(() => {
+        Animated.parallel([
           Animated.timing(fadeAnim, {
-            toValue: 0,
-            duration: 800,
+            toValue: 1,
+            duration: 500,
             useNativeDriver: true,
-          }).start(() => {
-            navigation.goBack();
-          });
-        }, 3000);
+          }),
+          Animated.spring(completeScale, {
+            toValue: 1,
+            friction: 4,
+            tension: 40,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+
+          Animated.loop(
+            Animated.sequence([
+              Animated.timing(stillnessPulse, {
+                toValue: 1,
+                duration: 2000,
+                useNativeDriver: true,
+              }),
+              Animated.timing(stillnessPulse, {
+                toValue: 0.3,
+                duration: 2000,
+                useNativeDriver: true,
+              }),
+            ])
+          ).start();
+
+          setTimeout(() => {
+            Animated.timing(fadeAnim, {
+              toValue: 0,
+              duration: 1000,
+              useNativeDriver: true,
+            }).start(() => {
+              navigation.goBack();
+            });
+          }, 8000);
+        });
       });
     });
   };
@@ -607,7 +616,7 @@ const MindfulnessFlow: React.FC = () => {
       <Animated.Text style={[styles.completeEmoji, { opacity: stillnessPulse }]}>✨</Animated.Text>
       <Text style={styles.completeTitle}>Ma sha Allah!</Text>
       <Text style={styles.completeText}>
-        You've prepared for{" "}
+        You've prepared & prayed for{" "}
         {PrayerTimeService.getPrayerDisplayName(prayer.name)} prayer.
         {"\n\n"}
         May your prayer be accepted and bring you peace.

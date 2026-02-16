@@ -139,9 +139,11 @@ export class PrayerTimeService {
         this.cachedTimes.set(cacheKey, times);
         this.evictCacheIfNeeded();
 
-        // Cache Hijri date for Ramadan detection (no extra API call)
+        // Cache Hijri date for Ramadan detection (no extra API call).
+        // Pass the requested date so pre-fetches for tomorrow don't
+        // overwrite today's Hijri cache.
         if (data.data.date?.hijri) {
-          cacheHijriDate(data.data.date.hijri);
+          cacheHijriDate(data.data.date.hijri, date);
         }
 
         // Cache for tomorrow as well if it's after Asr

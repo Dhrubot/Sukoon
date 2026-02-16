@@ -13,7 +13,6 @@ export { default as DuaTabIcon } from '../../../assets/icons/dua-tab-icon.svg';
 // FEATURE ICONS (SVG)
 // ========================================
 export { default as AchievementIcon } from '../../../assets/icons/achievement-icon.svg';
-export { default as DigitalWellnessIcon } from '../../../assets/icons/digital-wellness-icon.svg';
 
 // ========================================
 // NOTIFICATION ICONS (SVG)
