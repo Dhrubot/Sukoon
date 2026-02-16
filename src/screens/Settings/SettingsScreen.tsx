@@ -198,7 +198,7 @@ const SettingsScreen = ({ navigation }: any) => {
 
         {/* About */}
         <AboutSection
-          onPrivacyPolicy={handlePrivacyPolicy}
+          onPrivacyPolicy={() => handlePrivacyPolicy(navigation)}
           onShowDebugInfo={__DEV__ ? showDebugInfo : undefined}
         />
 

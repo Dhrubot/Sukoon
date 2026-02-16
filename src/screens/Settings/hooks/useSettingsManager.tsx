@@ -330,8 +330,8 @@ export const useSettingsManager = () => {
     );
   };
 
-  const handlePrivacyPolicy = () => {
-    Alert.alert('Privacy Policy', 'Privacy policy will be shown here.', [{ text: 'OK' }]);
+  const handlePrivacyPolicy = (navigation: any) => {
+    navigation.navigate('PrivacyPolicy');
   };
 
   const showDebugInfo = async () => {

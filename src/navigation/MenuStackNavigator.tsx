@@ -4,6 +4,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { useTheme } from '../providers/ThemeProvider';
 import MenuScreen from '../screens/Menu/MenuScreen';
 import SettingsScreen from '../screens/Settings/SettingsScreen';
+import PrivacyPolicyScreen from '../screens/Settings/PrivacyPolicyScreen';
 import StatsScreen from '../screens/Stats/StatsScreen';
 import SupportScreen from '../screens/Support/SupportScreen';
 import SetupHealthScreen from '../screens/SetupHealth/SetupHealthScreen';
@@ -17,6 +18,7 @@ export type MenuStackParamList = {
   MosqueMode: undefined;
   Support: undefined;
   Settings: undefined;
+  PrivacyPolicy: undefined;
   SetupHealth: undefined;
 };
 
@@ -64,6 +66,11 @@ export const MenuStackNavigator: React.FC = () => {
       />
       <Stack.Screen name="Support" component={SupportScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen
+        name="PrivacyPolicy"
+        component={PrivacyPolicyScreen}
+        options={{ title: 'Privacy Policy' }}
+      />
       <Stack.Screen
         name="SetupHealth"
         component={SetupHealthScreen}

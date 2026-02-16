@@ -129,7 +129,7 @@ const TimeInput: React.FC<TimeInputProps> = ({
                 <Picker
                   selectedValue={hour}
                   onValueChange={(v) => setHour(v as number)}
-                  style={styles.picker}
+                  style={[styles.picker, { color: theme.colors.text.primary }]}
                   itemStyle={{ color: theme.colors.text.primary, fontSize: 20 }}
                 >
                   {HOURS_12.map((h) => (
@@ -148,7 +148,7 @@ const TimeInput: React.FC<TimeInputProps> = ({
                 <Picker
                   selectedValue={minute}
                   onValueChange={(v) => setMinute(v as number)}
-                  style={styles.picker}
+                  style={[styles.picker, { color: theme.colors.text.primary }]}
                   itemStyle={{ color: theme.colors.text.primary, fontSize: 20 }}
                 >
                   {MINUTES.map((m) => (
@@ -169,7 +169,7 @@ const TimeInput: React.FC<TimeInputProps> = ({
                 <Picker
                   selectedValue={period}
                   onValueChange={(v) => setPeriod(v as 'AM' | 'PM')}
-                  style={styles.picker}
+                  style={[styles.picker, { color: theme.colors.text.primary }]}
                   itemStyle={{ color: theme.colors.text.primary, fontSize: 20 }}
                 >
                   <Picker.Item label="AM" value="AM" />
