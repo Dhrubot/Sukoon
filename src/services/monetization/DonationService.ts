@@ -1,26 +1,15 @@
-import { Platform, Linking } from 'react-native';
-import * as InAppPurchases from 'react-native-iap';
+import { Linking } from 'react-native';
+import IAPManager from './IAPManager';
 import StorageService from '../StorageService';
 import { Donation } from '../../types';
+import logger from '../../utils/logger';
 
-// Donation product IDs
+// Donation product IDs — all go through IAP (store policy compliance)
 const DONATION_PRODUCTS = {
-  COFFEE: Platform.select({
-    ios: 'com.talukders.sukoon.donate.coffee',
-    android: 'com.talukders.sukoon.donate.coffee',
-  }) as string,
-  MEAL: Platform.select({
-    ios: 'com.talukders.sukoon.donate.meal',
-    android: 'com.talukders.sukoon.donate.meal',
-  }) as string,
-  GENEROUS: Platform.select({
-    ios: 'com.talukders.sukoon.donate.generous',
-    android: 'com.talukders.sukoon.donate.generous',
-  }) as string,
-  CUSTOM: Platform.select({
-    ios: 'com.talukders.sukoon.donate.custom',
-    android: 'com.talukders.sukoon.donate.custom',
-  }) as string,
+  COFFEE: 'com.talukders.sukoon.donate.coffee',
+  MEAL: 'com.talukders.sukoon.donate.meal',
+  GENEROUS: 'com.talukders.sukoon.donate.generous',
+  MAJOR: 'com.talukders.sukoon.donate.major',
 };
 
 // Donation tiers
@@ -50,48 +39,34 @@ export const DONATION_TIERS = [
     emoji: '💚',
   },
   {
-    id: 'custom',
-    productId: DONATION_PRODUCTS.CUSTOM,
-    amount: 0, // Custom amount
-    title: 'Custom Amount 🤲',
-    description: 'Choose your own amount',
-    emoji: '🤲',
+    id: 'major',
+    productId: DONATION_PRODUCTS.MAJOR,
+    amount: 49.99,
+    title: 'Major Support 🌟',
+    description: 'Make a big impact for the Ummah',
+    emoji: '🌟',
   },
 ];
 
 class DonationService {
   private donationProducts: any[] = [];
-  private purchaseListener: any = null;
 
   async initialize() {
     try {
-      // Load donation products
-      const products = await InAppPurchases.getProducts({
-        skus: Object.values(DONATION_PRODUCTS),
-      });
-      
+      // Register donation purchase handler with IAPManager
+      IAPManager.registerDonationHandler(this.processDonation.bind(this));
+
+      // Load donation products via IAPManager
+      const products = await IAPManager.getProducts(
+        Object.values(DONATION_PRODUCTS),
+      );
+
       this.donationProducts = products;
-      this.setupDonationListener();
-      
       return true;
     } catch (error) {
-      console.error('Failed to initialize donations:', error);
+      logger.error('Failed to initialize donations:', error);
       return false;
     }
-  }
-
-  private setupDonationListener() {
-    this.purchaseListener = InAppPurchases.purchaseUpdatedListener(
-      async (purchase) => {
-        if (this.isDonationProduct(purchase.productId)) {
-          await this.processDonation(purchase);
-        }
-      }
-    );
-  }
-
-  private isDonationProduct(productId: string): boolean {
-    return Object.values(DONATION_PRODUCTS).includes(productId);
   }
 
   private async processDonation(purchase: any) {
@@ -100,7 +75,7 @@ class DonationService {
       const donation: Donation = {
         id: purchase.transactionId,
         amount: this.getAmountForProduct(purchase.productId),
-        currency: 'USD', // Get from product details
+        currency: 'USD',
         date: new Date(purchase.transactionDate),
         productId: purchase.productId,
         status: 'completed',
@@ -109,16 +84,13 @@ class DonationService {
       // Save donation record
       StorageService.saveDonation(donation);
 
-      // Acknowledge the donation (consumable)
-      await InAppPurchases.finishTransaction({
-        purchase,
-        isConsumable: true,
-      });
+      // Acknowledge the donation (consumable) via IAPManager
+      await IAPManager.finishTransaction(purchase, true);
 
       // Show thank you
       this.showThankYou(donation);
     } catch (error) {
-      console.error('Failed to process donation:', error);
+      logger.error('Failed to process donation:', error);
     }
   }
 
@@ -127,45 +99,22 @@ class DonationService {
     return tier?.amount || 0;
   }
 
-  async makeDonation(tierId: string, customAmount?: number): Promise<boolean> {
+  async makeDonation(tierId: string): Promise<boolean> {
     try {
       const tier = DONATION_TIERS.find(t => t.id === tierId);
       if (!tier) {
         throw new Error('Invalid donation tier');
       }
 
-      if (tierId === 'custom' && customAmount) {
-        // For custom amounts, use external payment processor
-        return await this.processCustomDonation(customAmount);
-      }
-
-      // Process through IAP
-      const purchase = await InAppPurchases.requestPurchase({
-        sku: tier.productId,
-        andDangerouslyFinishTransactionAutomaticallyIOS: false,
-      });
-
+      // All tiers go through IAP (store policy compliance)
+      await IAPManager.requestPurchase(tier.productId, true);
       return true;
     } catch (error: any) {
       if (error.code === 'E_USER_CANCELLED') {
-        console.log('User cancelled donation');
+        logger.log('User cancelled donation');
       } else {
-        console.error('Donation error:', error);
+        logger.error('Donation error:', error);
       }
-      return false;
-    }
-  }
-
-  private async processCustomDonation(amount: number): Promise<boolean> {
-    // For custom amounts, redirect to external donation page
-    // This could be PayPal, Stripe, or any halal payment processor
-    const donationUrl = `https://paypal.me/CodifizApp/${amount}`;
-    
-    try {
-      await Linking.openURL(donationUrl);
-      return true;
-    } catch (error) {
-      console.error('Failed to open donation URL:', error);
       return false;
     }
   }
@@ -249,9 +198,7 @@ class DonationService {
   }
 
   cleanup() {
-    if (this.purchaseListener) {
-      this.purchaseListener.remove();
-    }
+    // IAPManager owns the listener lifecycle
   }
 }
 

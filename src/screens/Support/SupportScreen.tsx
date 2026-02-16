@@ -20,6 +20,7 @@ import * as Haptics from 'expo-haptics';
 import logger from '../../utils/logger';
 
 // Services
+import IAPManager from '../../services/monetization/IAPManager';
 import SubscriptionService from '../../services/monetization/SubscriptionService';
 import AdService from '../../services/monetization/AdService';
 import DonationService, { DONATION_TIERS } from '../../services/monetization/DonationService';
@@ -59,6 +60,8 @@ const SupportScreen: React.FC = () => {
       // Only run heavy initialization once per app session
       if (!servicesInitialized) {
         setIsLoading(true);
+        // IAPManager must be initialized first — owns the single IAP connection + listener
+        await IAPManager.initialize();
         await SubscriptionService.initialize();
         await AdService.initialize();
         await DonationService.initialize();

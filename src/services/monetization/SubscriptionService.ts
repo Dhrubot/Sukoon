@@ -1,88 +1,61 @@
 import { Linking, Platform } from 'react-native';
-import * as InAppPurchases from 'react-native-iap';
+import IAPManager from './IAPManager';
 import StorageService from '../StorageService';
 import { SubscriptionPlan, PremiumFeatures } from '../../types';
 import logger from '../../utils/logger';
 
 const PRODUCTS = {
-  MONTHLY: Platform.select({
-    ios: 'com.talukders.sukoon.premium.monthly',
-    android: 'com.talukders.sukoon.premium.monthly',
-  }) as string,
-  YEARLY: Platform.select({
-    ios: 'com.talukders.sukoon.premium.yearly',
-    android: 'com.talukders.sukoon.premium.yearly',
-  }) as string,
-  LIFETIME: Platform.select({
-    ios: 'com.talukders.sukoon.premium.lifetime',
-    android: 'com.talukders.sukoon.premium.lifetime',
-  }) as string,
+  MONTHLY: 'com.talukders.sukoon.premium.monthly',
+  YEARLY: 'com.talukders.sukoon.premium.yearly',
+  LIFETIME: 'com.talukders.sukoon.premium.lifetime',
 };
 
 class SubscriptionService {
   private products: any[] = [];
   private currentSubscription: SubscriptionPlan | null = null;
-  private purchaseUpdateSubscription: any = null;
-  private purchaseErrorSubscription: any = null;
 
   async initialize() {
     try {
-      // Initialize IAP
-      const result = await InAppPurchases.initConnection();
-      logger.log('IAP initialized:', result);
+      // Register subscription purchase handler with IAPManager
+      IAPManager.registerSubscriptionHandler(this.handlePurchase.bind(this));
 
-      // Get products
+      // Load subscription products via IAPManager
       await this.loadProducts();
-
-      // Set up purchase listeners
-      this.setupPurchaseListeners();
 
       // Check existing purchases
       await this.restorePurchases();
 
       return true;
     } catch (error) {
-      logger.error('Failed to initialize IAP:', error);
+      logger.error('Failed to initialize subscriptions:', error);
       return false;
     }
   }
 
   private async loadProducts() {
     try {
-      const products = await InAppPurchases.getProducts({
-        skus: Object.values(PRODUCTS),
-      });
+      const products = await IAPManager.getProducts(
+        Object.values(PRODUCTS),
+      );
       this.products = products;
-      logger.log('Products loaded:', products);
+      logger.log('Subscription products loaded:', products);
     } catch (error) {
-      logger.error('Failed to load products:', error);
+      logger.error('Failed to load subscription products:', error);
     }
   }
 
-  private setupPurchaseListeners() {
-    this.purchaseUpdateSubscription = InAppPurchases.purchaseUpdatedListener(
-      async (purchase) => {
-        logger.log('Purchase updated:', purchase);
-        const receipt = purchase.transactionReceipt;
-        
-        if (receipt) {
-          // Validate receipt (in production, do this server-side)
-          await this.validateAndSavePurchase(purchase);
-          
-          // Acknowledge purchase
-          await InAppPurchases.finishTransaction({
-            purchase,
-            isConsumable: false,
-          });
-        }
-      }
-    );
+  // Called by IAPManager when a subscription purchase is detected
+  private async handlePurchase(purchase: any) {
+    logger.log('Subscription purchase received:', purchase);
+    const receipt = purchase.transactionReceipt;
 
-    this.purchaseErrorSubscription = InAppPurchases.purchaseErrorListener(
-      (error) => {
-        logger.error('Purchase error:', error);
-      }
-    );
+    if (receipt) {
+      // Validate receipt (in production, do this server-side)
+      await this.validateAndSavePurchase(purchase);
+
+      // Acknowledge purchase (non-consumable)
+      await IAPManager.finishTransaction(purchase, false);
+    }
   }
 
   private async validateAndSavePurchase(purchase: any) {
@@ -144,10 +117,7 @@ class SubscriptionService {
           break;
       }
 
-      const purchase = await InAppPurchases.requestPurchase({
-        sku: productId,
-        andDangerouslyFinishTransactionAutomaticallyIOS: false,
-      });
+      const purchase = await IAPManager.requestPurchase(productId, false);
 
       return purchase;
     } catch (error: any) {
@@ -162,7 +132,7 @@ class SubscriptionService {
 
   async restorePurchases() {
     try {
-      const purchases = await InAppPurchases.getAvailablePurchases();
+      const purchases = await IAPManager.getAvailablePurchases();
       
       if (purchases && purchases.length > 0) {
         // Find the most recent valid purchase
@@ -267,13 +237,7 @@ class SubscriptionService {
   }
 
   cleanup() {
-    if (this.purchaseUpdateSubscription) {
-      this.purchaseUpdateSubscription.remove();
-    }
-    if (this.purchaseErrorSubscription) {
-      this.purchaseErrorSubscription.remove();
-    }
-    InAppPurchases.endConnection();
+    // IAPManager owns the connection and listener lifecycle
   }
 }
 
