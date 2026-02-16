@@ -11,6 +11,7 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useLocationSetup } from '../hooks/useLocationSetup';
+import { useTheme } from '../providers/ThemeProvider';
 import { useThemedStyles } from '../hooks/useThemedStyles';
 import { AppTheme } from '../theme';
 
@@ -20,6 +21,7 @@ interface LocationModalProps {
 }
 
 export const LocationModal: React.FC<LocationModalProps> = ({ visible, onClose }) => {
+  const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const {
     formData,
@@ -66,6 +68,7 @@ export const LocationModal: React.FC<LocationModalProps> = ({ visible, onClose }
               <TextInput
                 style={styles.input}
                 placeholder="Enter your city"
+                placeholderTextColor={theme.colors.text.muted}
                 value={formData.city}
                 onChangeText={(text) => updateFormData('city', text)}
                 autoCapitalize="words"
@@ -77,6 +80,7 @@ export const LocationModal: React.FC<LocationModalProps> = ({ visible, onClose }
               <TextInput
                 style={styles.input}
                 placeholder="Enter your country"
+                placeholderTextColor={theme.colors.text.muted}
                 value={formData.country}
                 onChangeText={(text) => updateFormData('country', text)}
                 autoCapitalize="words"
@@ -88,6 +92,7 @@ export const LocationModal: React.FC<LocationModalProps> = ({ visible, onClose }
               <TextInput
                 style={styles.input}
                 placeholder="Enter postal code"
+                placeholderTextColor={theme.colors.text.muted}
                 value={formData.postalCode}
                 onChangeText={(text) => updateFormData('postalCode', text)}
                 autoCapitalize="characters"

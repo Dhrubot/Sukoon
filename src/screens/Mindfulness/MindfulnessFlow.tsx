@@ -84,6 +84,19 @@ const MindfulnessFlow: React.FC = () => {
   const [savedRecordId, setSavedRecordId] = useState<string | null>(null);
   const [prayerStartTime, setPrayerStartTime] = useState<Date | null>(null);
 
+  // Phase 6: Randomly selected khushu line for praying screen (picked once per session)
+  const [khushuLine] = useState(() => {
+    const lines = [
+      'Allah is facing you. Do not turn away.',
+      'Pray as if it is your last prayer.',
+      'He hears every word. He sees every prostration.',
+      'The Prophet \u2E3A said: Pray as if you see Him.',
+      'Your Lord is closer to you than your jugular vein.',
+      'This prayer may be the one that changes everything.',
+    ];
+    return lines[Math.floor(Math.random() * lines.length)];
+  });
+
   // Animations — declared before any useEffects that reference them
   const fadeAnim = useRef(new Animated.Value(1)).current;
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -502,12 +515,24 @@ const MindfulnessFlow: React.FC = () => {
       ]}
     >
       <View style={styles.niyyahContainer}>
-        <Text style={styles.niyyahEmoji}>🤲</Text>
+        <Text style={styles.niyyahWhisper}>
+          You are about to stand before the Lord of all the worlds
+        </Text>
         <Text style={styles.stepTitle}>Set Your Intention</Text>
         <Text style={styles.niyyahText}>
           I intend to pray{" "}
           {PrayerTimeService.getPrayerDisplayName(prayer.name)}
           {"\n"}for the sake of Allah
+        </Text>
+
+        <Text style={styles.niyyahWhisper}>
+          Prepare your heart for conversing with your Lord
+        </Text>
+        <Text style={styles.niyyahWhisper}>
+          Leave every worry at the door. This moment is between you and Him alone.
+        </Text>
+        <Text style={styles.niyyahWhisper}>
+          Pray with the prayer of one who may not get another chance
         </Text>
 
         <TouchableOpacity
@@ -531,11 +556,10 @@ const MindfulnessFlow: React.FC = () => {
       <Text style={styles.prayingLabel}>
         {PrayerTimeService.getPrayerDisplayName(prayer.name)}
       </Text>
-      <Animated.Text style={[styles.prayingEmoji, { opacity: stillnessPulse }]}>
-        🕌
-      </Animated.Text>
       <Text style={styles.prayingText}>You are in prayer</Text>
-      <Text style={styles.prayingSubtext}>Take your time. Allah is listening.</Text>
+      <Animated.Text style={[styles.prayingSubtext, { opacity: stillnessPulse }]}>
+        {khushuLine}
+      </Animated.Text>
 
       <TouchableOpacity
         style={styles.finishPrayerButton}
@@ -863,9 +887,15 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: 20,
   },
-  niyyahEmoji: {
-    fontSize: 64,
-    marginBottom: 24,
+  niyyahWhisper: {
+    fontSize: 15,
+    fontWeight: "300",
+    color: theme.colors.mindfulness.textSecondary,
+    textAlign: "center",
+    fontStyle: "italic",
+    lineHeight: 24,
+    marginBottom: 16,
+    opacity: 0.85,
   },
   beginPrayerButton: {
     backgroundColor: 'rgba(255,255,255,0.18)',
@@ -906,16 +936,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     letterSpacing: 1,
     marginBottom: 32,
   },
-  prayingEmoji: {
-    fontSize: 80,
-    marginBottom: 24,
-  },
   prayingText: {
     fontSize: 24,
     fontWeight: "600",
     color: theme.colors.text.primary,
     textAlign: "center",
-    marginBottom: 8,
+    marginBottom: 16,
   },
   prayingSubtext: {
     fontSize: 16,

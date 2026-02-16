@@ -56,6 +56,21 @@ interface MenuItem {
   iconType?: 'component' | 'svg' | 'png' | 'emoji';
 }
 
+// Mosque icon component
+const MosqueIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 2C12 2 8 6 8 9C8 10.1 8.4 11.1 9 11.8V20H6V22H18V20H15V11.8C15.6 11.1 16 10.1 16 9C16 6 12 2 12 2Z"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path d="M3 20H6V14H3V20Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <Path d="M18 20H21V14H18V20Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
 const allMenuItems: MenuItem[] = [
    {
     icon: null, // Emoji-based icon handled below
@@ -63,6 +78,13 @@ const allMenuItems: MenuItem[] = [
     subtitle: 'Your reflections, growing quietly',
     screen: 'ReflectionGarden',
     iconType: 'emoji',
+  },
+  {
+    icon: MosqueIcon,
+    title: 'Mosque Mode',
+    subtitle: 'Auto-silence your phone for prayer',
+    screen: 'MosqueMode',
+    iconType: 'component',
   },
   {
     icon: ProgressTabIcon,

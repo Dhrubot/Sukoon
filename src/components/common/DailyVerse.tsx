@@ -105,7 +105,7 @@ const DailyVerse: React.FC = () => {
         )}
       </TouchableOpacity>
 
-      <Text style={[styles.hint, { color: theme.colors.text.muted }]}>Tap to toggle translation</Text>
+      {/* <Text style={[styles.hint, { color: theme.colors.text.muted }]}>Tap to toggle translation</Text> */}
     </View>
   );
 };
