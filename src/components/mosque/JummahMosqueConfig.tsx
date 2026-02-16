@@ -15,16 +15,22 @@ import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import { useMosqueMode } from '../../hooks/useMosqueMode';
+import { usePrayerTimes } from '../../providers/PrayerTimesProvider';
+import TimeInput, { formatTime } from '../common/TimeInput';
 
-const DURATION_OPTIONS = [15, 20, 25, 30, 35, 40, 45, 60];
+const DURATION_OPTIONS = [15, 20, 25, 30, 35, 40, 45, 50, 55, 60];
 const OFFSET_OPTIONS = [5, 10, 15, 20, 25, 30];
+
+type InputMode = 'offset' | 'exact';
 
 const JummahMosqueConfig: React.FC = () => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const { settings, updateMosqueModeSettings } = useMosqueMode();
+  const { todayPrayerTimes } = usePrayerTimes();
   const [showDurationPicker, setShowDurationPicker] = useState(false);
   const [showOffsetPicker, setShowOffsetPicker] = useState(false);
+  const [inputMode, setInputMode] = useState<InputMode>('offset');
 
   const jummah = settings?.jummah ?? {
     enabled: true,
@@ -47,6 +53,29 @@ const JummahMosqueConfig: React.FC = () => {
   const handleOffsetChange = (value: number) => {
     updateMosqueModeSettings({
       jummah: { ...jummah, iqamahOffset: value },
+    });
+  };
+
+  // Compute exact iqamah time from Dhuhr adhan + offset
+  const getExactJummahTime = (): string => {
+    const dhuhr = todayPrayerTimes.find(p => p.name === 'Dhuhr');
+    if (!dhuhr) return '12:30';
+    const iqamah = new Date(dhuhr.time.getTime() + jummah.iqamahOffset * 60000);
+    const h = iqamah.getHours();
+    const m = iqamah.getMinutes();
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+  };
+
+  // Convert exact time back to offset from Dhuhr adhan
+  const handleExactTimeChange = (timeStr: string) => {
+    const dhuhr = todayPrayerTimes.find(p => p.name === 'Dhuhr');
+    if (!dhuhr) return;
+    const [hStr, mStr] = timeStr.split(':');
+    const exactDate = new Date(dhuhr.time);
+    exactDate.setHours(parseInt(hStr, 10), parseInt(mStr, 10), 0, 0);
+    const diffMin = Math.max(1, Math.round((exactDate.getTime() - dhuhr.time.getTime()) / 60000));
+    updateMosqueModeSettings({
+      jummah: { ...jummah, iqamahOffset: diffMin },
     });
   };
 
@@ -104,37 +133,81 @@ const JummahMosqueConfig: React.FC = () => {
             </Picker>
           )}
 
-          {/* Iqamah Offset */}
-          <TouchableOpacity
-            style={styles.optionRow}
-            onPress={() => setShowOffsetPicker(!showOffsetPicker)}
-            activeOpacity={0.7}
-          >
-            <View>
-              <Text style={styles.optionLabel}>Iqamah Offset</Text>
-              <Text style={styles.optionHint}>
-                Minutes after Dhuhr adhan on Friday
-              </Text>
-            </View>
-            <Text style={styles.optionValue}>{jummah.iqamahOffset} min</Text>
-          </TouchableOpacity>
+          {/* Iqamah Time — Offset / Exact toggle */}
+          <View style={styles.iqamahSection}>
+            <Text style={styles.optionLabel}>Jumu'ah Iqamah</Text>
 
-          {showOffsetPicker && (
-            <Picker
-              selectedValue={jummah.iqamahOffset}
-              onValueChange={(v) => handleOffsetChange(v as number)}
-              style={styles.picker}
-              itemStyle={{ color: theme.colors.text.primary }}
-            >
-              {OFFSET_OPTIONS.map((min) => (
-                <Picker.Item
-                  key={min}
-                  label={`${min} minutes after adhan`}
-                  value={min}
+            <View style={styles.modeToggle}>
+              <TouchableOpacity
+                style={[
+                  styles.modeButton,
+                  inputMode === 'offset' && { backgroundColor: '#D4AF37' },
+                ]}
+                onPress={() => setInputMode('offset')}
+              >
+                <Text style={[
+                  styles.modeButtonText,
+                  { color: inputMode === 'offset' ? '#FFFFFF' : theme.colors.text.secondary },
+                ]}>
+                  Offset
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.modeButton,
+                  inputMode === 'exact' && { backgroundColor: '#D4AF37' },
+                ]}
+                onPress={() => setInputMode('exact')}
+              >
+                <Text style={[
+                  styles.modeButtonText,
+                  { color: inputMode === 'exact' ? '#FFFFFF' : theme.colors.text.secondary },
+                ]}>
+                  Exact Time
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {inputMode === 'offset' ? (
+              <>
+                <TouchableOpacity
+                  style={styles.optionRow}
+                  onPress={() => setShowOffsetPicker(!showOffsetPicker)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.optionHint}>
+                    Minutes after Dhuhr adhan on Friday
+                  </Text>
+                  <Text style={styles.optionValue}>{jummah.iqamahOffset} min</Text>
+                </TouchableOpacity>
+
+                {showOffsetPicker && (
+                  <Picker
+                    selectedValue={jummah.iqamahOffset}
+                    onValueChange={(v) => handleOffsetChange(v as number)}
+                    style={styles.picker}
+                    itemStyle={{ color: theme.colors.text.primary }}
+                  >
+                    {OFFSET_OPTIONS.map((min) => (
+                      <Picker.Item
+                        key={min}
+                        label={`${min} minutes after adhan`}
+                        value={min}
+                      />
+                    ))}
+                  </Picker>
+                )}
+              </>
+            ) : (
+              <View style={styles.exactTimeRow}>
+                <TimeInput
+                  label="Jumu'ah Start"
+                  value={getExactJummahTime()}
+                  onChange={handleExactTimeChange}
                 />
-              ))}
-            </Picker>
-          )}
+              </View>
+            )}
+          </View>
         </View>
       )}
     </View>
@@ -200,6 +273,33 @@ const createStyles = (theme: AppTheme) =>
     picker: {
       marginTop: -8,
       marginBottom: 4,
+    },
+    iqamahSection: {
+      marginTop: 8,
+      paddingTop: 8,
+      borderTopWidth: 1,
+      borderTopColor: 'rgba(128, 128, 128, 0.1)',
+    },
+    modeToggle: {
+      flexDirection: 'row',
+      gap: 8,
+      marginTop: 10,
+      marginBottom: 8,
+    },
+    modeButton: {
+      flex: 1,
+      paddingVertical: 8,
+      alignItems: 'center',
+      borderRadius: 8,
+      borderWidth: 1,
+      borderColor: 'rgba(212, 175, 55, 0.3)',
+    },
+    modeButtonText: {
+      fontSize: 13,
+      fontWeight: '600',
+    },
+    exactTimeRow: {
+      marginTop: 4,
     },
   });
 

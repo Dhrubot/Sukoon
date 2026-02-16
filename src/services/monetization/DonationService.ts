@@ -159,7 +159,7 @@ class DonationService {
   private async processCustomDonation(amount: number): Promise<boolean> {
     // For custom amounts, redirect to external donation page
     // This could be PayPal, Stripe, or any halal payment processor
-    const donationUrl = `https://prayerbuddy.app/donate?amount=${amount}`;
+    const donationUrl = `https://paypal.me/CodifizApp/${amount}`;
     
     try {
       await Linking.openURL(donationUrl);
@@ -187,12 +187,12 @@ class DonationService {
 
   // Alternative donation methods
   async openPayPalDonation() {
-    const paypalUrl = 'https://paypal.me/prayerbuddy'; // Replace with actual
+    const paypalUrl = 'https://paypal.me/CodifizApp';
     await Linking.openURL(paypalUrl);
   }
 
   async openCryptoDonation() {
-    const cryptoUrl = 'https://prayerbuddy.app/crypto-donation';
+    const cryptoUrl = 'https://commerce.coinbase.com/checkout/ee131f5e-bec6-4829-b897-ab64258ce317';
     await Linking.openURL(cryptoUrl);
   }
 
