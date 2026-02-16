@@ -237,7 +237,7 @@ const SupportScreen: React.FC = () => {
           <Text style={styles.adEmoji}>📺</Text>
           <Text style={styles.adTitle}>Support by Watching</Text>
           <Text style={styles.adDescription}>
-            Watch a short ad when YOU choose to support the app and unlock premium features for 24 hours
+            Watch a short ad when You choose to support the app
           </Text>
 
           <Text style={styles.adNote}>
@@ -379,9 +379,9 @@ const SupportScreen: React.FC = () => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               }}
             >
-              <Text style={[styles.tabIcon, selectedTab === tab && styles.tabIconActive]}>
-                {/* tab === 'subscription' ? '⭐' : */ tab === 'watch' ? '📺' : '🤲'}
-              </Text>
+              {/* <Text style={[styles.tabIcon, selectedTab === tab && styles.tabIconActive]}>
+                { tab === 'subscription' ? '⭐' :  tab === 'watch' ? '📺' : '🤲'}
+              </Text> */}
               <Text style={[styles.tabText, selectedTab === tab && styles.tabTextActive]}>
                 {/* tab === 'subscription' ? 'Premium' : */ tab === 'watch' ? 'Watch Ad' : 'Donate'}
               </Text>

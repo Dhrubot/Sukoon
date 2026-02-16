@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { format } from 'date-fns';
 import { SettingSection } from '../../../components/settings/SettingSection';
@@ -6,6 +6,7 @@ import { SettingRow } from '../../../components/settings/SettingRow';
 import StorageService from '../../../services/StorageService';
 import NotificationService from '../../../services/NotificationService';
 import { UserSettings, CalculationMethodType, PrayerTime, PrayerName } from '../../../types';
+import { isFriday } from '../../../utils/ramadan';
 import { useTheme } from '../../../providers/ThemeProvider';
 import { useThemedStyles } from '../../../hooks/useThemedStyles';
 import { AppTheme } from '../../../theme';
@@ -46,6 +47,8 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
   onRefreshPrayerTimes, // 🆕 NEW
 }) => {
   const styles = useThemedStyles(createStyles);
+  const [expanded, setExpanded] = useState(false);
+  const tahajjudEnabled = userSettings?.tahajjudReminders?.enabled ?? false;
   const juristicOptions = [
     {
       value: 'Standard',
@@ -160,39 +163,71 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
       );
     }
 
+    // Build display list: first 3 or all (when expanded)
+    const visiblePrayers = expanded ? todayPrayerTimes : todayPrayerTimes.slice(0, 3);
+    const hiddenCount = todayPrayerTimes.length - 3 + (tahajjudEnabled && expanded ? 1 : 0);
+    const friday = isFriday();
+
     return (
       <View style={styles.prayerTimesContainer}>
         <Text style={styles.prayerTimesTitle}>Today's Prayer Times</Text>
         <View style={styles.prayerTimesList}>
-          {todayPrayerTimes.map((prayer) => (
-            <View key={prayer.name} style={styles.prayerTimeRow}>
-              <View style={styles.prayerInfoSection}>
-                <Text style={[
-                  styles.prayerName,
-                  prayer.name === nextPrayer?.name && styles.nextPrayerName,
-                  prayer.name === 'Asr' && styles.asrHighlight // 🆕 Highlight Asr
-                ]}>
-                  {prayer.name}
-                </Text>
-                <Text style={[
-                  styles.prayerTime,
-                  prayer.name === nextPrayer?.name && styles.nextPrayerTime
-                ]}>
-                  {format(prayer.time, 'h:mm a')}
-                  {prayer.name === nextPrayer?.name && ' ⭐'}
-                </Text>
+          {visiblePrayers.map((prayer) => {
+            const displayName = prayer.name === 'Dhuhr' && friday
+              ? 'Dhuhr (Jumu\'ah)'
+              : prayer.name;
+            return (
+              <View key={prayer.name} style={styles.prayerTimeRow}>
+                <View style={styles.prayerInfoSection}>
+                  <Text style={[
+                    styles.prayerName,
+                    prayer.name === nextPrayer?.name && styles.nextPrayerName,
+                    prayer.name === 'Asr' && styles.asrHighlight,
+                    prayer.name === 'Dhuhr' && friday && styles.jummahHighlight,
+                  ]}>
+                    {displayName}
+                  </Text>
+                  <Text style={[
+                    styles.prayerTime,
+                    prayer.name === nextPrayer?.name && styles.nextPrayerTime
+                  ]}>
+                    {format(prayer.time, 'h:mm a')}
+                    {prayer.name === nextPrayer?.name && ' ⭐'}
+                  </Text>
+                </View>
+                <NotificationToggleButton
+                  prayerName={prayer.name}
+                  enabled={userSettings.prayerNotifications?.[prayer.name] ?? true}
+                  onToggle={handleNotificationToggle}
+                  disabled={!userSettings.notifications?.enabled}
+                  size={20}
+                />
               </View>
-              <NotificationToggleButton
-                prayerName={prayer.name}
-                enabled={userSettings.prayerNotifications?.[prayer.name] ?? true}
-                onToggle={handleNotificationToggle}
-                disabled={!userSettings.notifications?.enabled}
-                size={20}
-              />
+            );
+          })}
+
+          {/* Tahajjud row (only when expanded and enabled) */}
+          {expanded && tahajjudEnabled && (
+            <View style={styles.prayerTimeRow}>
+              <View style={styles.prayerInfoSection}>
+                <Text style={[styles.prayerName, styles.tahajjudName]}>Tahajjud</Text>
+                <Text style={[styles.prayerTime, styles.tahajjudTime]}>Last third of night</Text>
+              </View>
             </View>
-          ))}
-          {todayPrayerTimes.length > 3 && (
-            <Text style={styles.moreText}>... and {todayPrayerTimes.length - 3} more</Text>
+          )}
+
+          {/* Expandable toggle */}
+          {!expanded && todayPrayerTimes.length > 3 && (
+            <TouchableOpacity onPress={() => setExpanded(true)} activeOpacity={0.7}>
+              <Text style={styles.moreText}>
+                Show {todayPrayerTimes.length - 3} more{tahajjudEnabled ? ' + Tahajjud' : ''} ▾
+              </Text>
+            </TouchableOpacity>
+          )}
+          {expanded && todayPrayerTimes.length > 3 && (
+            <TouchableOpacity onPress={() => setExpanded(false)} activeOpacity={0.7}>
+              <Text style={styles.moreText}>Show less ▴</Text>
+            </TouchableOpacity>
           )}
         </View>
       </View>
@@ -351,12 +386,26 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     color: theme.colors.primary.DEFAULT,
     fontWeight: '600',
   },
+  jummahHighlight: {
+    color: '#D4AF37',
+    fontWeight: '700',
+  },
+  tahajjudName: {
+    color: '#7986CB',
+    fontStyle: 'italic',
+  },
+  tahajjudTime: {
+    color: '#7986CB',
+    fontStyle: 'italic',
+    fontSize: 12,
+  },
   moreText: {
     fontSize: 13,
-    color: theme.colors.settings.labelMuted,
-    fontStyle: 'italic',
+    color: theme.colors.primary.DEFAULT,
+    fontWeight: '500',
     textAlign: 'center',
-    marginTop: 4,
+    marginTop: 8,
+    paddingVertical: 4,
   },
   testSection: {
     marginTop: 16,

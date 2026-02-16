@@ -11,18 +11,24 @@ import {
 import { Picker } from '@react-native-picker/picker';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useMosqueMode } from '../../hooks/useMosqueMode';
+import { usePrayerTimes } from '../../providers/PrayerTimesProvider';
 import { PrayerName } from '../../types';
 import { FARD_PRAYER_NAMES_LIST } from '../../constants/prayerRegistry';
+import TimeInput, { formatTime } from '../common/TimeInput';
 
 const PRAYER_NAMES = FARD_PRAYER_NAMES_LIST as unknown as PrayerName[];
 
 // Offset options in minutes
 const OFFSET_OPTIONS = [3, 5, 7, 10, 12, 15, 20, 25, 30];
 
+type InputMode = 'offset' | 'exact';
+
 export const IqamahTimeConfig: React.FC = () => {
   const { theme } = useTheme();
   const { settings, setIqamahOffset } = useMosqueMode();
+  const { todayPrayerTimes } = usePrayerTimes();
   const [expandedPrayer, setExpandedPrayer] = useState<PrayerName | null>(null);
+  const [inputMode, setInputMode] = useState<InputMode>('offset');
 
   if (!settings) return null;
 
@@ -31,9 +37,38 @@ export const IqamahTimeConfig: React.FC = () => {
     setExpandedPrayer(null);
   };
 
+  // Convert exact time back to offset minutes from adhan
+  const handleExactTimeChange = async (prayer: PrayerName, timeStr: string) => {
+    const adhan = todayPrayerTimes.find(p => p.name === prayer);
+    if (!adhan) return;
+
+    const [hStr, mStr] = timeStr.split(':');
+    const h = parseInt(hStr, 10);
+    const m = parseInt(mStr, 10);
+
+    const exactDate = new Date(adhan.time);
+    exactDate.setHours(h, m, 0, 0);
+
+    const diffMs = exactDate.getTime() - adhan.time.getTime();
+    const diffMin = Math.max(1, Math.round(diffMs / 60000));
+    await setIqamahOffset(prayer, diffMin);
+  };
+
+  // Compute the exact iqamah time from offset
+  const getExactTime = (prayer: PrayerName): string => {
+    const adhan = todayPrayerTimes.find(p => p.name === prayer);
+    if (!adhan) return '12:00';
+    const offset = settings.iqamahOffsets[prayer] || 10;
+    const iqamah = new Date(adhan.time.getTime() + offset * 60000);
+    const h = iqamah.getHours();
+    const m = iqamah.getMinutes();
+    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+  };
+
   const renderPrayerRow = (prayer: PrayerName) => {
     const offset = settings.iqamahOffsets[prayer];
     const isExpanded = expandedPrayer === prayer;
+    const exactTime = getExactTime(prayer);
 
     return (
       <View key={prayer}>
@@ -50,7 +85,9 @@ export const IqamahTimeConfig: React.FC = () => {
               {prayer}
             </Text>
             <Text style={[styles.offsetText, { color: theme.colors.text.secondary }]}>
-              {offset} minutes after adhan
+              {inputMode === 'offset'
+                ? `${offset} minutes after adhan`
+                : `Iqamah at ${formatTime(exactTime)}`}
             </Text>
           </View>
           <Text style={[styles.chevron, { color: theme.colors.primary.DEFAULT }]}>
@@ -58,7 +95,7 @@ export const IqamahTimeConfig: React.FC = () => {
           </Text>
         </TouchableOpacity>
 
-        {isExpanded && (
+        {isExpanded && inputMode === 'offset' && (
           <View style={[styles.pickerContainer, { backgroundColor: theme.colors.card.hover }]}>
             <Text style={[styles.pickerLabel, { color: theme.colors.text.secondary }]}>
               Iqamah starts after:
@@ -79,6 +116,16 @@ export const IqamahTimeConfig: React.FC = () => {
             </Picker>
           </View>
         )}
+
+        {isExpanded && inputMode === 'exact' && (
+          <View style={[styles.pickerContainer, { backgroundColor: theme.colors.card.hover }]}>
+            <TimeInput
+              label={`${prayer} Iqamah Time`}
+              value={exactTime}
+              onChange={(val) => handleExactTimeChange(prayer, val)}
+            />
+          </View>
+        )}
       </View>
     );
   };
@@ -90,8 +137,42 @@ export const IqamahTimeConfig: React.FC = () => {
           Iqamah Times
         </Text>
         <Text style={[styles.subtitle, { color: theme.colors.text.secondary }]}>
-          Set how many minutes after adhan your mosque starts iqamah
+          {inputMode === 'offset'
+            ? 'Set the Iqamah start time after Adhan'
+            : 'Set the exact Iqamah time for each prayer'}
         </Text>
+      </View>
+
+      {/* Mode toggle */}
+      <View style={styles.modeToggle}>
+        <TouchableOpacity
+          style={[
+            styles.modeButton,
+            inputMode === 'offset' && { backgroundColor: theme.colors.primary.DEFAULT },
+          ]}
+          onPress={() => setInputMode('offset')}
+        >
+          <Text style={[
+            styles.modeButtonText,
+            { color: inputMode === 'offset' ? '#FFFFFF' : theme.colors.text.secondary },
+          ]}>
+            Offset
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.modeButton,
+            inputMode === 'exact' && { backgroundColor: theme.colors.primary.DEFAULT },
+          ]}
+          onPress={() => setInputMode('exact')}
+        >
+          <Text style={[
+            styles.modeButtonText,
+            { color: inputMode === 'exact' ? '#FFFFFF' : theme.colors.text.secondary },
+          ]}>
+            Exact Time
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.prayerList}>
@@ -180,6 +261,23 @@ const styles = StyleSheet.create({
   },
   pickerItem: {
     fontSize: 16,
+  },
+  modeToggle: {
+    flexDirection: 'row',
+    gap: 8,
+    marginBottom: 16,
+  },
+  modeButton: {
+    flex: 1,
+    paddingVertical: 10,
+    alignItems: 'center',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(128, 128, 128, 0.2)',
+  },
+  modeButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
   },
   tipBox: {
     marginTop: 16,

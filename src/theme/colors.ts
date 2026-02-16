@@ -145,6 +145,7 @@ const prayerGradients = {
     Isha:     ['#12103A', '#0F1430', '#0A0D2E'] as const,
     Taraweeh: ['#1A1040', '#0F1A3A', '#0A2040'] as const,
     Tahajjud: ['#0A0A2E', '#080818', '#050510'] as const,
+    Jumah:    ['#2A2A10', '#3A3010', '#4A3A10'] as const,
     default:  ['#1A2F3A', '#153530', '#0D4F35'] as const,
   },
   // Light gradients — muted sky-realistic tones ("morning light in a mosque")
@@ -156,6 +157,7 @@ const prayerGradients = {
     Isha:     ['#E4E0F0', '#D0C8E4', '#BEB4D6'] as const,  // twilight blue-violet
     Taraweeh: ['#E8E4F0', '#D4CDE6', '#C5BCD8'] as const,  // Ramadan night wash
     Tahajjud: ['#E0DCF0', '#D4CEE8', '#C8C0DC'] as const,  // deep pre-dawn hush
+    Jumah:    ['#F5F0E0', '#EDE4C8', '#E0D4A8'] as const,  // golden mosque light
     default:  ['#E8EDE4', '#D8E0D0', '#C8D4BC'] as const,  // garden sage
   },
 } as const;
@@ -171,6 +173,7 @@ const prayerColors = {
     isha:     '#9FA8DA',  // soft lavender — night
     taraweeh: '#B39DDB',  // soft violet — Ramadan night
     tahajjud: '#7986CB',  // deeper indigo — deepest night
+    jumah:    '#D4AF37',  // warm gold — Friday congregation
   },
   light: {
     fajr:     '#3F51B5',  // indigo
@@ -180,6 +183,7 @@ const prayerColors = {
     isha:     '#283593',  // deep indigo
     taraweeh: '#5C6BC0',  // indigo-violet
     tahajjud: '#3949AB',  // deep indigo-violet
+    jumah:    '#BF8C00',  // rich gold — Friday congregation
   },
 } as const;
 

@@ -142,6 +142,21 @@ const SettingsScreen = ({ navigation }: any) => {
               }
             }}
           />
+          <SettingRow
+            label="Jumu'ah Reminders"
+            subtitle="Friday Sunnah reminders: Surah Al-Kahf, ghusl, dua hour"
+            value={userSettings.jummahReminders?.enabled !== false ? 'On' : 'Off'}
+            onPress={() => {
+              const isEnabled = userSettings.jummahReminders?.enabled !== false;
+              const updated = {
+                ...userSettings,
+                jummahReminders: {
+                  enabled: !isEnabled,
+                },
+              };
+              setUserSettings(updated);
+            }}
+          />
         </SettingSection>
 
         {/* Mosque Mode moved to dedicated screen via Menu > Mosque Mode */}

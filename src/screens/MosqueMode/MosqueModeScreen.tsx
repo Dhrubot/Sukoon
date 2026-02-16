@@ -12,6 +12,7 @@ import { MosqueModeToggle } from '../../components/mosque/MosqueModeToggle';
 import { MosqueModeStatus } from '../../components/mosque/MosqueModeStatus';
 import { IqamahTimeConfig } from '../../components/mosque/IqamahTimeConfig';
 import { MosqueModeOptions } from '../../components/mosque/MosqueModeOptions';
+import JummahMosqueConfig from '../../components/mosque/JummahMosqueConfig';
 import { useMosqueMode } from '../../hooks/useMosqueMode';
 
 const MosqueModeScreen: React.FC = () => {
@@ -48,6 +49,10 @@ const MosqueModeScreen: React.FC = () => {
           <View style={styles.section}>
             <MosqueModeOptions />
           </View>
+
+          <View style={styles.section}>
+            <JummahMosqueConfig />
+          </View>
         </>
       )}
 
@@ -82,7 +87,8 @@ const styles = StyleSheet.create({
     lineHeight: 22,
   },
   section: {
-    marginTop: 12,
+    marginTop: 16,
+    paddingHorizontal: 20,
   },
   footer: {
     paddingHorizontal: 20,

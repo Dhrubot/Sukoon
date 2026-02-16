@@ -11,12 +11,13 @@ import { OptionalPrayerTime } from '../types';
  *
  * Time-gating rules:
  * - Taraweeh: visible all day during Ramadan (time = Isha + 30 min)
- * - Tahajjud: visible only after Isha (time = Midnight from API)
- * - Jumah: visible on Friday (replaces Dhuhr time)
+ * - Tahajjud: visible all day when tahajjudReminders enabled (time = Midnight from API)
+ * - Jumah: visible on Friday (replaces Dhuhr time) — elevated to first-class, returned separately
  */
 export const useOptionalPrayers = (): OptionalPrayerTime[] => {
   const { todayPrayerTimes } = usePrayerTimes();
-  const { todayMidnight } = useStore();
+  const { todayMidnight, userSettings } = useStore();
+  const tahajjudEnabled = userSettings?.tahajjudReminders?.enabled ?? false;
 
   return useMemo(() => {
     if (todayPrayerTimes.length === 0) return [];
@@ -31,21 +32,14 @@ export const useOptionalPrayers = (): OptionalPrayerTime[] => {
     const optionalDefs = available.filter(p => p.category !== 'fard');
     if (optionalDefs.length === 0) return [];
 
-    const now = new Date();
-    const isha = todayPrayerTimes.find(p => p.name === 'Isha');
-    const isAfterIsha = isha ? now >= isha.time : false;
-
     const results: OptionalPrayerTime[] = [];
 
     for (const def of optionalDefs) {
       const time = computeTime(def, todayPrayerTimes, todayMidnight);
       if (!time) continue;
 
-      // Time-gate Tahajjud: only visible after Isha
-      if (def.key === 'tahajjud' && !isAfterIsha) continue;
-
-      // Jumah: skip for now (not part of this feature — it replaces Dhuhr, different UX)
-      if (def.key === 'jumah') continue;
+      // Tahajjud: only show when user has enabled Tahajjud reminders
+      if (def.key === 'tahajjud' && !tahajjudEnabled) continue;
 
       results.push({
         name: def.name as OptionalPrayerTime['name'],
@@ -58,7 +52,7 @@ export const useOptionalPrayers = (): OptionalPrayerTime[] => {
     }
 
     return results.sort((a, b) => a.time.getTime() - b.time.getTime());
-  }, [todayPrayerTimes, todayMidnight]);
+  }, [todayPrayerTimes, todayMidnight, tahajjudEnabled]);
 };
 
 function computeTime(

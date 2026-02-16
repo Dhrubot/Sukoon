@@ -120,6 +120,9 @@ export interface UserSettings {
     enabled: boolean;
     frequency: 'daily' | 'weekdays' | 'weekends' | 'twice_weekly';
   };
+  jummahReminders?: {
+    enabled: boolean;
+  };
   theme: "light" | "dark" | "auto";
 }
 
@@ -196,6 +199,13 @@ export interface MosqueModeSettings {
   
   // Platform-specific settings
   useVibrateInsteadOfSilent: boolean; // Use vibrate instead of complete silence (default: false)
+  
+  // Jummah-specific settings (Friday khutba + prayer)
+  jummah?: {
+    enabled: boolean;        // Enable Jummah silent mode (default: true)
+    silentDuration: number;  // Minutes — khutba (~20) + prayer (~10) = 30 default
+    iqamahOffset: number;    // Minutes after Dhuhr adhan on Friday
+  };
 }
 
 // Prayer reminder state tracking

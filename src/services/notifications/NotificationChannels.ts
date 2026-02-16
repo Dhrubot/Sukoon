@@ -16,6 +16,7 @@ export const NOTIFICATION_CATEGORIES = {
   SNOOZE_OPTIONS: 'snooze-options',
   MOSQUE_REMINDER: 'mosque-reminder',
   TAHAJJUD_REMINDER: 'tahajjud-reminder',
+  JUMMAH_REMINDER: 'jummah-reminder',
 };
 
 /**
@@ -109,6 +110,15 @@ export async function setupNotificationChannels(): Promise<void> {
     sound: null,
   });
 
+  await Notifications.setNotificationChannelAsync(CHANNELS.JUMMAH, {
+    name: 'Jummah Reminders',
+    description: 'Friday Jummah prayer and Sunnah reminders',
+    importance: Notifications.AndroidImportance.DEFAULT,
+    vibrationPattern: [0, 100],
+    lightColor: '#D4AF37',
+    sound: 'default',
+  });
+
   await Notifications.setNotificationChannelAsync(CHANNELS.RAMADAN_COUNTDOWN, {
     name: 'Ramadan Countdown',
     description: 'Daily countdown and encouragement for Ramadan',
@@ -181,6 +191,14 @@ export async function setupNotificationCategories(): Promise<void> {
     {
       identifier: 'prepare',
       buttonTitle: 'Prepare for Prayer',
+      options: { opensAppToForeground: true },
+    },
+  ]);
+
+  await Notifications.setNotificationCategoryAsync(NOTIFICATION_CATEGORIES.JUMMAH_REMINDER, [
+    {
+      identifier: 'prepare',
+      buttonTitle: 'Prepare for Jumu\'ah',
       options: { opensAppToForeground: true },
     },
   ]);

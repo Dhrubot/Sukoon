@@ -150,6 +150,11 @@ class StorageService {
       autoRestore: true,  // Automatically restore ringer
       promptBeforeEnable: true, // Ask "Heading to mosque?" before enabling
       useVibrateInsteadOfSilent: false, // Use complete silence by default
+      jummah: {
+        enabled: true,         // Enable Jummah silent mode by default
+        silentDuration: 30,    // 30 minutes (khutba ~20 + prayer ~10)
+        iqamahOffset: 15,      // 15 minutes after Dhuhr adhan on Friday
+      },
     };
   }
 
