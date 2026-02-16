@@ -23,8 +23,7 @@ import { SettingRow } from '../../components/settings/SettingRow';
 // Enhanced Components
 import { PrayerSettingsSection } from './components/PrayerSettingsSection';
 
-// Mosque Mode Components
-import { MosqueModeToggle, IqamahTimeConfig, MosqueModeOptions } from '../../components/mosque';
+// Mosque Mode now has its own dedicated screen via MenuStack
 
 // Modal Components
 import { CalculationMethodModal, NotificationModal } from './modals';
@@ -145,16 +144,7 @@ const SettingsScreen = ({ navigation }: any) => {
           />
         </SettingSection>
 
-        {/* 🕌 Mosque Mode Settings */}
-        <SettingSection title="">
-          <MosqueModeToggle />
-          {userSettings.mosqueMode?.enabled && (
-            <View style={{ marginTop: 16 }}>
-              <IqamahTimeConfig />
-              <MosqueModeOptions />
-            </View>
-          )}
-        </SettingSection>
+        {/* Mosque Mode moved to dedicated screen via Menu > Mosque Mode */}
 
         {/* 🎯 ENHANCED: Location Section with manual selection */}
         <LocationSection

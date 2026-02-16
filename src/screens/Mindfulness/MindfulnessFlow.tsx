@@ -515,7 +515,7 @@ const MindfulnessFlow: React.FC = () => {
       ]}
     >
       <View style={styles.niyyahContainer}>
-        <Text style={styles.niyyahWhisper}>
+        <Text style={styles.niyyahText}>
           You are about to stand before the Lord of all the worlds
         </Text>
         <Text style={styles.stepTitle}>Set Your Intention</Text>

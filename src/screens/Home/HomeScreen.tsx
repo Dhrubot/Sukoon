@@ -93,7 +93,9 @@ const HomeScreen = ({ navigation }: any) => {
 
   // 1c: Prayer-aware greeting
   const getGreeting = (): string => {
-    const name = userSettings?.name || "Friend";
+    const fullName = userSettings?.name?.trim() || 'Friend';
+    const firstName = fullName.split(/\s+/)[0];
+    const name = firstName.charAt(0).toUpperCase() + firstName.slice(1);
     const now = currentTime;
 
     if (nextPrayer) {

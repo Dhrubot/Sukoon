@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  AppState,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -24,6 +25,7 @@ import StorageService from '../../services/StorageService';
 import { useStore } from '../../store/useStore';
 import { CalculationMethod, CALCULATION_METHODS } from '../../types';
 import LocationService from '../../services/LocationService';
+import RingerControlService from '../../services/RingerControlService';
 import { Location as AppLocation } from '../../types'
 import { Switch } from 'react-native';
 
@@ -57,8 +59,71 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
 
   // Phase 3: Mosque mode
   const [enableMosqueModeOnboarding, setEnableMosqueModeOnboarding] = useState(false);
+  const pendingDndGrant = useRef(false);
 
   const { setUserSettings } = useStore();
+
+  // Listen for app returning from Android DND settings during onboarding
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+
+    const subscription = AppState.addEventListener('change', async (nextState) => {
+      if (nextState === 'active' && pendingDndGrant.current) {
+        pendingDndGrant.current = false;
+        const canModify = await RingerControlService.canModify();
+        if (canModify) {
+          setEnableMosqueModeOnboarding(true);
+        } else {
+          // User didn't grant — keep toggle off
+          setEnableMosqueModeOnboarding(false);
+          Alert.alert(
+            'Permission Not Granted',
+            'Mosque Mode needs Do Not Disturb access to silence your phone. You can enable it later from the menu.',
+            [{ text: 'OK' }]
+          );
+        }
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
+
+  const handleMosqueModeToggle = async (value: boolean) => {
+    if (!value) {
+      setEnableMosqueModeOnboarding(false);
+      return;
+    }
+
+    if (Platform.OS === 'android') {
+      const nativeAvailable = RingerControlService.isAvailable();
+      if (!nativeAvailable) {
+        Alert.alert('Feature Unavailable', 'Ringer control module is not available. Please rebuild the app.');
+        return;
+      }
+
+      const canModify = await RingerControlService.canModify();
+      if (!canModify) {
+        Alert.alert(
+          'Permission Required',
+          'To auto-silence your phone at iqamah time, Sukoon needs Do Not Disturb access.\n\nYou\'ll be taken to Android settings. Find "Sukoon" and toggle it ON, then come back.',
+          [
+            { text: 'Not Now', style: 'cancel' },
+            {
+              text: 'Grant Access',
+              onPress: async () => {
+                pendingDndGrant.current = true;
+                await RingerControlService.openNotificationPolicyAccessSettings();
+              },
+            },
+          ]
+        );
+        return;
+      }
+    }
+
+    // iOS or Android with permission already granted
+    setEnableMosqueModeOnboarding(true);
+  };
 
   const handleNext = () => {
     switch (currentStep) {
@@ -406,17 +471,21 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
           <View style={styles.stepContainer}>
             <Text style={styles.title}>Mosque Mode</Text>
             <Text style={styles.subtitle}>
-              Your phone silences itself at iqamah time
+              {Platform.OS === 'android'
+                ? 'Your phone silences itself at iqamah time'
+                : 'Get reminded to silence your phone before prayer'}
             </Text>
             <Text style={styles.description}>
-              When you go to the mosque, Sukoon will automatically put your phone on silent before the prayer starts and restore it after.
+              {Platform.OS === 'android'
+                ? 'Sukoon will automatically put your phone on silent before the prayer starts and restore it after.'
+                : 'Since iPhone does not allow apps to control Do Not Disturb directly, Sukoon will send you a reminder before each iqamah so you can silence your phone.'}
             </Text>
             <View style={styles.toggleContainer}>
               <View style={styles.toggleRow}>
                 <Text style={styles.toggleLabel}>Enable Mosque Mode</Text>
                 <Switch
                   value={enableMosqueModeOnboarding}
-                  onValueChange={setEnableMosqueModeOnboarding}
+                  onValueChange={handleMosqueModeToggle}
                   trackColor={{ false: theme.colors.switch.trackFalse, true: theme.colors.switch.trackTrue }}
                   thumbColor={theme.colors.switch.thumb}
                 />
