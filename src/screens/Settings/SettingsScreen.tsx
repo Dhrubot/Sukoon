@@ -194,7 +194,7 @@ const SettingsScreen = ({ navigation }: any) => {
         {/* About */}
         <AboutSection
           onPrivacyPolicy={handlePrivacyPolicy}
-          onShowDebugInfo={showDebugInfo}
+          onShowDebugInfo={__DEV__ ? showDebugInfo : undefined}
         />
 
         {/* 🎯 NEW: Connection status indicator */}

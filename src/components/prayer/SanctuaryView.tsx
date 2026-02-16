@@ -8,9 +8,10 @@ import {
   StyleSheet,
   Animated,
   Dimensions,
+  Alert,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { PrayerTime } from '../../types';
+import { PrayerTime, PrayerRecord } from '../../types';
 import PrayerTimeService from '../../services/PrayerTimeService';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
@@ -21,12 +22,14 @@ const { height } = Dimensions.get('window');
 interface SanctuaryViewProps {
   prayer: PrayerTime;
   greeting: string;
+  record?: PrayerRecord;
   onPrepare: () => void;
 }
 
 const SanctuaryView: React.FC<SanctuaryViewProps> = ({
   prayer,
   greeting,
+  record,
   onPrepare,
 }) => {
   const { theme } = useTheme();
@@ -77,6 +80,23 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
     ).start();
   }, []);
 
+  const isAlreadyPrayed = record?.status === 'prayed';
+
+  const handlePress = () => {
+    if (isAlreadyPrayed) {
+      Alert.alert(
+        'Already Prayed',
+        'You\'ve already recorded this prayer. Would you like to go through the mindfulness flow again?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Yes, Repeat Flow', onPress: onPrepare },
+        ]
+      );
+    } else {
+      onPrepare();
+    }
+  };
+
   const getPrayerGradient = (): readonly [string, string, string] => {
     const gradients = theme.colors.prayerGradients;
     return (gradients as any)[prayer.name] || gradients.default;
@@ -94,24 +114,35 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
 
       {/* Prayer name — the focal point */}
       <View style={styles.prayerInfo}>
-        <Text style={styles.prayerLabel}>Next Prayer</Text>
+        <Text style={styles.prayerLabel}>
+          {isAlreadyPrayed ? 'Current Prayer' : 'Next Prayer'}
+        </Text>
         <Text style={styles.prayerName}>
           {PrayerTimeService.getPrayerDisplayName(prayer.name)}
         </Text>
         <Text style={styles.prayerTime}>
           {PrayerTimeService.formatPrayerTime(prayer.time)}
         </Text>
-        <Text style={styles.countdown}>in {timeRemaining}</Text>
+        {isAlreadyPrayed ? (
+          <Text style={styles.prayedStatus}>Prayed with Presence ✓</Text>
+        ) : (
+          <Text style={styles.countdown}>in {timeRemaining}</Text>
+        )}
       </View>
 
       {/* CTA */}
-      <Animated.View style={{ opacity: pulseAnim }}>
+      <Animated.View style={{ opacity: isAlreadyPrayed ? 1 : pulseAnim }}>
         <TouchableOpacity
-          style={styles.prepareButton}
-          onPress={onPrepare}
+          style={[
+            styles.prepareButton,
+            isAlreadyPrayed && styles.alreadyPrayedButton,
+          ]}
+          onPress={handlePress}
           activeOpacity={0.7}
         >
-          <Text style={styles.prepareText}>Prepare for Prayer</Text>
+          <Text style={styles.prepareText}>
+            {isAlreadyPrayed ? 'Already Prayed' : 'Prepare for Prayer'}
+          </Text>
         </TouchableOpacity>
       </Animated.View>
     </LinearGradient>
@@ -163,6 +194,12 @@ const createStyles = (theme: AppTheme) =>
       color: 'rgba(255, 255, 255, 0.6)',
       fontStyle: 'italic',
     },
+    prayedStatus: {
+      fontSize: 16,
+      fontWeight: '500',
+      color: 'rgba(255, 255, 255, 0.85)',
+      marginTop: 4,
+    },
     prepareButton: {
       borderWidth: 1,
       borderColor: 'rgba(255, 255, 255, 0.3)',
@@ -170,6 +207,10 @@ const createStyles = (theme: AppTheme) =>
       paddingVertical: 14,
       paddingHorizontal: 40,
       backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    },
+    alreadyPrayedButton: {
+      backgroundColor: 'rgba(255, 255, 255, 0.05)',
+      borderColor: 'rgba(255, 255, 255, 0.15)',
     },
     prepareText: {
       fontSize: 16,

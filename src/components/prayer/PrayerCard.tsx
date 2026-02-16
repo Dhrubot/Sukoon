@@ -169,9 +169,9 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
           <Text style={[styles.status, { color: getStatusColor() }]}>
             {getStatusText()}
           </Text>
-          {record?.reflectionAdded && (
+          {/* {record?.reflectionAdded && (
             <Text style={styles.reflectionBadge}>📝</Text>
-          )}
+          )} */}
         </View>
         <NotificationToggleButton
           prayerName={prayer.name}

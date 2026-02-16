@@ -1,5 +1,5 @@
 // src/screens/Home/HomeScreen.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -160,6 +160,14 @@ const HomeScreen = ({ navigation }: any) => {
 
   const completedToday = todayPrayerRecords.filter(r => r.status === 'prayed').length;
 
+  // Find the record for the current hero prayer (if already prayed)
+  const heroPrayerRecord = useMemo(() => {
+    if (!nextPrayer) return undefined;
+    return todayPrayerRecords.find(
+      r => r.prayer === nextPrayer.name && r.status === 'prayed'
+    );
+  }, [nextPrayer, todayPrayerRecords]);
+
   // 🎯 NEW: Handle invalid location state
   if (!hasValidLocation) {
     return (
@@ -225,6 +233,7 @@ const HomeScreen = ({ navigation }: any) => {
           <SanctuaryView
             prayer={nextPrayer}
             greeting={getGreeting()}
+            record={heroPrayerRecord}
             onPrepare={() => handlePrayerComplete(nextPrayer)}
           />
         ) : (

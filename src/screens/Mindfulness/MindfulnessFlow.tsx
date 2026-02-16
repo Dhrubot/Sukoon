@@ -434,12 +434,12 @@ const MindfulnessFlow: React.FC = () => {
         setTimeout(() => {
           Animated.timing(fadeAnim, {
             toValue: 0,
-            duration: 1000,
+            duration: 800,
             useNativeDriver: true,
           }).start(() => {
             navigation.goBack();
           });
-        }, 8000);
+        }, 3000);
       });
     });
   };
