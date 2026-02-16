@@ -54,7 +54,7 @@ const JummahMosqueConfig: React.FC = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Text style={styles.title}>🕌 Jumu'ah Settings</Text>
+          <Text style={styles.title}>Jumu'ah Settings</Text>
           <Text style={styles.subtitle}>
             Khutba + prayer — longer silent mode for Fridays
           </Text>
