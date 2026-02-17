@@ -9,19 +9,19 @@ import {
   Platform,
   Linking,
   Dimensions,
-  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
+import { LinearGradient } from 'expo-linear-gradient';
 import { Magnetometer, Accelerometer } from 'expo-sensors';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useIsFocused } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import { useStore } from '../../store/useStore';
+import LocationService from '../../services/LocationService';
 import AnalyticsService from '../../services/AnalyticsService';
 
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const COMPASS_SIZE = Math.min(SCREEN_WIDTH - 64, 300);
+const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
+const COMPASS_SIZE = Math.min(SCREEN_WIDTH - 48, SCREEN_HEIGHT * 0.42, 340);
 
 // Kaaba coordinates
 const KAABA_LAT = 21.4225;
@@ -98,29 +98,38 @@ const CONFIG = {
   ACCURACY_GOOD: 10, // degrees
   ACCURACY_FAIR: 20, // degrees
   
+  // Magnetic interference (microTesla)
+  INTERFERENCE_HIGH: 100, // > 100 µT = metal/electronics nearby
+  INTERFERENCE_LOW: 15,   // < 15 µT = sensor anomaly
+  
   // Animation (spring config)
   SPRING_STIFFNESS: 90,
   SPRING_DAMPING: 14,
   SPRING_MASS: 1,
 };
 
+type InterferenceLevel = 'none' | 'high' | 'anomaly';
+
 const QiblaFinderScreen: React.FC = () => {
   const { theme } = useTheme();
   const [qiblaDirection, setQiblaDirection] = useState<number>(0);
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [locationName, setLocationName] = useState<string>('Locating...');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [directionOffset, setDirectionOffset] = useState<number>(0);
   const [isAligned, setIsAligned] = useState(false);
   const [calibrationStatus, setCalibrationStatus] = useState<'good' | 'fair' | 'poor'>('good');
+  const [interference, setInterference] = useState<InterferenceLevel>('none');
   const [distanceToKaaba, setDistanceToKaaba] = useState<number | null>(null);
   const isFocused = useIsFocused();
-  const { userSettings, location: storeLocation } = useStore();
 
   // Animation values
   const rotateAnim = useRef(new Animated.Value(0)).current;
   const alignGlowAnim = useRef(new Animated.Value(0)).current;
   const alignPulseAnim = useRef(new Animated.Value(1)).current;
+  const kaabaOpacityAnim = useRef(new Animated.Value(0)).current;
+  const kaabaScaleAnim = useRef(new Animated.Value(0.85)).current;
 
   // Refs for sensor processing
   const headingSubscription = useRef<Location.LocationSubscription | null>(null);
@@ -135,6 +144,8 @@ const QiblaFinderScreen: React.FC = () => {
   const qiblaDirectionRef = useRef<number>(0);
   // Ref to track calibration status and avoid unnecessary setState calls
   const calibrationStatusRef = useRef<'good' | 'fair' | 'poor'>('good');
+  // Ref to track interference level and avoid unnecessary setState calls
+  const interferenceRef = useRef<InterferenceLevel>('none');
 
   // Sensor refs for tilt-compensated compass
   const magSubscription = useRef<ReturnType<typeof Magnetometer.addListener> | null>(null);
@@ -189,7 +200,7 @@ const QiblaFinderScreen: React.FC = () => {
       const aligned = Math.abs(diff) <= CONFIG.ALIGNMENT_THRESHOLD;
       setIsAligned(aligned);
 
-      // Haptic feedback and glow animation on alignment
+      // Haptic feedback, glow, and Kaaba lock-in on alignment
       if (aligned && !alignedRef.current) {
         alignedRef.current = true;
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
@@ -213,6 +224,20 @@ const QiblaFinderScreen: React.FC = () => {
             useNativeDriver: true,
           }),
         ]).start();
+        // Kaaba lock-in: fade in + scale up
+        Animated.parallel([
+          Animated.spring(kaabaScaleAnim, {
+            toValue: 1,
+            stiffness: 120,
+            damping: 12,
+            useNativeDriver: true,
+          }),
+          Animated.timing(kaabaOpacityAnim, {
+            toValue: 1,
+            duration: 300,
+            useNativeDriver: true,
+          }),
+        ]).start();
       }
       if (!aligned && alignedRef.current) {
         alignedRef.current = false;
@@ -221,9 +246,22 @@ const QiblaFinderScreen: React.FC = () => {
           duration: 200,
           useNativeDriver: true,
         }).start();
+        // Kaaba fade out
+        Animated.parallel([
+          Animated.timing(kaabaScaleAnim, {
+            toValue: 0.85,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(kaabaOpacityAnim, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ]).start();
       }
     },
-    [rotateAnim, alignGlowAnim, alignPulseAnim]
+    [rotateAnim, alignGlowAnim, alignPulseAnim, kaabaScaleAnim, kaabaOpacityAnim]
   );
 
   /**
@@ -305,16 +343,9 @@ const QiblaFinderScreen: React.FC = () => {
     [updateNeedle]
   );
 
-  // Phase 2 & 3: Start heading — try tilt-compensated sensors first, fall back to Location heading
+  // Start heading — try tilt-compensated sensors first, fall back to Location heading
   const startHeading = useCallback(async () => {
     try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setError('Location permission is required to find Qibla direction');
-        setIsLoading(false);
-        return;
-      }
-
       if (headingSubscription.current || magSubscription.current) return;
 
       // Try tilt-compensated approach first (Magnetometer + Accelerometer)
@@ -331,17 +362,40 @@ const QiblaFinderScreen: React.FC = () => {
 
         magSubscription.current = Magnetometer.addListener((data) => {
           latestMag.current = data;
+
+          // Magnetic interference detection
+          const bTotal = Math.sqrt(data.x * data.x + data.y * data.y + data.z * data.z);
+          let newInterference: InterferenceLevel = 'none';
+          if (bTotal > CONFIG.INTERFERENCE_HIGH) {
+            newInterference = 'high';
+          } else if (bTotal < CONFIG.INTERFERENCE_LOW) {
+            newInterference = 'anomaly';
+          }
+          if (newInterference !== interferenceRef.current) {
+            interferenceRef.current = newInterference;
+            setInterference(newInterference);
+          }
+
+          // Derive calibration from interference (sensors don't give accuracy)
+          const newCalib: 'good' | 'fair' | 'poor' =
+            newInterference === 'none' ? 'good' :
+            newInterference === 'anomaly' ? 'fair' : 'poor';
+          if (newCalib !== calibrationStatusRef.current) {
+            calibrationStatusRef.current = newCalib;
+            setCalibrationStatus(newCalib);
+          }
+
           const heading = computeTiltCompensatedHeading(data, latestAccel.current);
           processHeading(heading);
         });
-
-        // Sensors don't give accuracy, assume good when available
-        if (calibrationStatusRef.current !== 'good') {
-          calibrationStatusRef.current = 'good';
-          setCalibrationStatus('good');
-        }
       } else {
         // Fallback: expo-location heading (requires phone flat)
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          setError('Location permission is required to find Qibla direction');
+          return;
+        }
+
         headingSubscription.current = await Location.watchHeadingAsync((newHeading) => {
           const rawHeading = newHeading.trueHeading >= 0 ? newHeading.trueHeading : newHeading.magHeading;
           const accuracy = newHeading.accuracy;
@@ -372,38 +426,31 @@ const QiblaFinderScreen: React.FC = () => {
       setIsLoading(true);
       setError(null);
 
-      const stored =
-        (storeLocation && storeLocation.latitude !== 0 && storeLocation.longitude !== 0
-          ? storeLocation
-          : userSettings?.location) || null;
-
-      if (stored && stored.latitude !== 0 && stored.longitude !== 0) {
-        setLocation({ latitude: stored.latitude, longitude: stored.longitude });
+      // 1. Try saved location first (instant, no GPS)
+      const saved = LocationService.getCurrentSavedLocation();
+      if (saved) {
+        setLocation({ latitude: saved.latitude, longitude: saved.longitude });
+        setLocationName(saved.city || 'Current Location');
         setIsLoading(false);
         return;
       }
 
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status !== 'granted') {
-        setError('Location permission is required to find Qibla direction');
+      // 2. Fall back to GPS via LocationService (handles permissions + geocoding)
+      const freshLoc = await LocationService.getCurrentLocation();
+      if (freshLoc) {
+        setLocation({ latitude: freshLoc.latitude, longitude: freshLoc.longitude });
+        setLocationName(freshLoc.city || 'Current Location');
         setIsLoading(false);
         return;
       }
 
-      const currentLocation = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Low,
-      });
-
-      setLocation({
-        latitude: currentLocation.coords.latitude,
-        longitude: currentLocation.coords.longitude,
-      });
+      setError('Location permission is required to find Qibla direction');
       setIsLoading(false);
     } catch {
-      setError('Unable to get location or compass data. Please check settings.');
+      setError('Unable to get location. Please check settings.');
       setIsLoading(false);
     }
-  }, [storeLocation, userSettings?.location]);
+  }, []);
 
   useEffect(() => {
     resolveLocation();
@@ -459,14 +506,53 @@ const QiblaFinderScreen: React.FC = () => {
     return `${Math.round(distanceToKaaba).toLocaleString()} km`;
   }, [distanceToKaaba]);
 
-  // Phase 4: Calibration banner text
+  // Calibration / interference banner
   const calibrationBanner = useMemo(() => {
-    if (calibrationStatus === 'good') return null;
-    if (calibrationStatus === 'fair') {
-      return { text: 'Compass accuracy is fair', color: theme.colors.status.warning };
+    if (interference === 'high') {
+      return {
+        text: 'Magnetic interference detected — move away from metal or electronics',
+        bgColor: theme.colors.qibla.interferenceWarningBg,
+        textColor: theme.colors.qibla.interferenceWarningText,
+      };
     }
-    return { text: 'Calibration needed - Move phone in figure 8', color: theme.colors.status.error };
-  }, [calibrationStatus]);
+    if (interference === 'anomaly') {
+      return {
+        text: 'Weak magnetic signal — move to a different spot',
+        bgColor: theme.colors.qibla.anomalyWarningBg,
+        textColor: theme.colors.qibla.anomalyWarningText,
+      };
+    }
+    if (calibrationStatus === 'fair') {
+      return {
+        text: 'Compass accuracy is fair',
+        bgColor: theme.colors.qibla.anomalyWarningBg,
+        textColor: theme.colors.qibla.anomalyWarningText,
+      };
+    }
+    if (calibrationStatus === 'poor') {
+      return {
+        text: 'Calibration needed — move phone in figure 8',
+        bgColor: theme.colors.qibla.interferenceWarningBg,
+        textColor: theme.colors.qibla.interferenceWarningText,
+      };
+    }
+    return null;
+  }, [calibrationStatus, interference, theme.colors.qibla]);
+
+  // Verify on Map — open native maps app with Kaaba destination
+  const openMapVerification = useCallback(() => {
+    if (!location) return;
+    const { latitude, longitude } = location;
+    const url = Platform.select({
+      ios: `maps://app?saddr=${latitude},${longitude}&daddr=${KAABA_LAT},${KAABA_LNG}`,
+      android: `geo:0,0?q=${KAABA_LAT},${KAABA_LNG}(Kaaba)`,
+      default: `https://www.google.com/maps/dir/${latitude},${longitude}/${KAABA_LAT},${KAABA_LNG}`,
+    });
+    Linking.openURL(url).catch(() => {
+      // Fallback to Google Maps web
+      Linking.openURL(`https://www.google.com/maps/dir/${latitude},${longitude}/${KAABA_LAT},${KAABA_LNG}`);
+    });
+  }, [location]);
 
   // Phase 4: Generate degree tick marks
   const degreeMarks = useMemo(() => {
@@ -491,7 +577,7 @@ const QiblaFinderScreen: React.FC = () => {
   if (isLoading) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
-        <View style={styles.content}>
+        <View style={styles.centeredContent}>
           <Animated.Text style={styles.loadingIcon}>🧭</Animated.Text>
           <Text style={[styles.loadingText, { color: theme.colors.text.primary }]}>
             Finding Qibla direction...
@@ -504,7 +590,7 @@ const QiblaFinderScreen: React.FC = () => {
   if (error) {
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
-        <View style={styles.content}>
+        <View style={styles.centeredContent}>
           <Text style={styles.errorIcon}>⚠️</Text>
           <Text style={[styles.errorTitle, { color: theme.colors.text.primary }]}>
             Location Access Required
@@ -528,159 +614,198 @@ const QiblaFinderScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]} edges={['top']}>
+      {/* Compact header */}
       <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>Qibla Finder</Text>
-        {distanceText && (
-          <Text style={[styles.headerDistance, { color: theme.colors.text.secondary }]}>
-            🕋 {distanceText} to Kaaba
+        <View style={styles.headerLeft}>
+          <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>Qibla</Text>
+          <Text style={[styles.headerCity, { color: theme.colors.qibla.hintText }]}>
+            {locationName}
           </Text>
-        )}
+        </View>
+        <View style={styles.headerRight}>
+          {distanceText && (
+            <Text style={[styles.headerDistance, { color: theme.colors.text.secondary }]}>
+              🕋 {distanceText}
+            </Text>
+          )}
+          <TouchableOpacity onPress={openMapVerification} activeOpacity={0.7}>
+            <Text style={[styles.verifyLink, { color: theme.colors.qibla.verifyLink }]}>
+              Verify on Map
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
-      {/* Phase 4: Calibration warning banner */}
+      {/* Interference / calibration warning banner */}
       {calibrationBanner && (
-        <View style={[styles.calibrationBanner, { backgroundColor: calibrationBanner.color + '20' }]}>
-          <Text style={[styles.calibrationText, { color: calibrationBanner.color }]}>
+        <View style={[styles.calibrationBanner, { backgroundColor: calibrationBanner.bgColor }]}>
+          <Text style={[styles.calibrationText, { color: calibrationBanner.textColor }]}>
             ⚠️ {calibrationBanner.text}
           </Text>
         </View>
       )}
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-        bounces={false}
-      >
-        <View style={styles.compassContainer}>
-          {/* Phase 4: Animated compass with glow effect */}
+      {/* Full-screen compass area */}
+      <View style={styles.compassArea}>
+        <Animated.View
+          style={[
+            styles.compassWrapper,
+            { transform: [{ scale: alignPulseAnim }] },
+          ]}
+        >
+          {/* Glow effect when aligned */}
           <Animated.View
             style={[
-              styles.compassWrapper,
+              styles.compassGlow,
               {
-                transform: [{ scale: alignPulseAnim }],
+                opacity: alignGlowAnim,
+                backgroundColor: theme.colors.qibla.alignedGlow,
+                shadowColor: theme.colors.qibla.alignedGlowShadow,
+              },
+            ]}
+          />
+
+          <View
+            style={[
+              styles.compassCircle,
+              {
+                backgroundColor: theme.colors.qibla.compassBg,
+                borderColor: isAligned
+                  ? theme.colors.qibla.compassRingAligned
+                  : theme.colors.qibla.compassRing,
+                borderWidth: isAligned ? 3 : 2,
               },
             ]}
           >
-            {/* Glow effect when aligned */}
-            <Animated.View
-              style={[
-                styles.compassGlow,
-                {
-                  opacity: alignGlowAnim,
-                  backgroundColor: theme.colors.primary.DEFAULT,
-                  shadowColor: theme.colors.primary.DEFAULT,
-                },
-              ]}
-            />
-
-            <View
-              style={[
-                styles.compassCircle,
-                {
-                  borderColor: isAligned ? theme.colors.primary.DEFAULT : theme.colors.border.primary,
-                  borderWidth: isAligned ? 3 : 2,
-                },
-              ]}
-            >
-              {/* Phase 4: Degree tick marks */}
-              {degreeMarks.map((mark) => (
-                <View
-                  key={mark.angle}
-                  style={[
-                    styles.tickMark,
-                    {
-                      width: mark.isCardinal ? 3 : 1,
-                      height: mark.isCardinal ? 12 : 8,
-                      backgroundColor: mark.isCardinal
-                        ? theme.colors.text.secondary
-                        : theme.colors.border.primary,
-                      transform: [
-                        { translateX: mark.x2 },
-                        { translateY: mark.y2 },
-                        { rotate: `${mark.angle}deg` },
-                      ],
-                    },
-                  ]}
-                />
-              ))}
-
-              {/* Cardinal directions */}
-              <Text style={[styles.cardinal, styles.cardinalN, { color: theme.colors.text.primary, fontWeight: '700' }]}>
-                N
-              </Text>
-              <Text style={[styles.cardinal, styles.cardinalE, { color: theme.colors.text.muted }]}>E</Text>
-              <Text style={[styles.cardinal, styles.cardinalS, { color: theme.colors.text.muted }]}>S</Text>
-              <Text style={[styles.cardinal, styles.cardinalW, { color: theme.colors.text.muted }]}>W</Text>
-
-              {/* Animated needle */}
-              <Animated.View
+            {/* Degree tick marks */}
+            {degreeMarks.map((mark) => (
+              <View
+                key={mark.angle}
                 style={[
-                  styles.needleContainer,
+                  styles.tickMark,
                   {
+                    width: mark.isCardinal ? 3 : 1,
+                    height: mark.isCardinal ? 12 : 8,
+                    backgroundColor: mark.isCardinal
+                      ? theme.colors.qibla.tickCardinal
+                      : theme.colors.qibla.tickMinor,
                     transform: [
-                      {
-                        rotate: rotateAnim.interpolate({
-                          inputRange: [-360, 360],
-                          outputRange: ['-360deg', '360deg'],
-                        }),
-                      },
+                      { translateX: mark.x2 },
+                      { translateY: mark.y2 },
+                      { rotate: `${mark.angle}deg` },
                     ],
                   },
                 ]}
-              >
-                <View style={[styles.needle, { backgroundColor: theme.colors.primary.DEFAULT }]} />
-                <View style={[styles.needleBase, { backgroundColor: theme.colors.primary.light }]} />
-              </Animated.View>
+              />
+            ))}
 
-              {/* Center dot */}
+            {/* Cardinal directions */}
+            <Text style={[styles.cardinal, styles.cardinalN, { color: theme.colors.qibla.cardinalN, fontWeight: '700' }]}>
+              N
+            </Text>
+            <Text style={[styles.cardinal, styles.cardinalE, { color: theme.colors.qibla.cardinalMuted }]}>E</Text>
+            <Text style={[styles.cardinal, styles.cardinalS, { color: theme.colors.qibla.cardinalMuted }]}>S</Text>
+            <Text style={[styles.cardinal, styles.cardinalW, { color: theme.colors.qibla.cardinalMuted }]}>W</Text>
+
+            {/* Animated gradient beam needle */}
+            <Animated.View
+              style={[
+                styles.needleContainer,
+                {
+                  transform: [
+                    {
+                      rotate: rotateAnim.interpolate({
+                        inputRange: [-360, 360],
+                        outputRange: ['-360deg', '360deg'],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            >
+              {/* Beam body — gradient from transparent to colored */}
+              <LinearGradient
+                colors={[
+                  'transparent',
+                  isAligned ? theme.colors.qibla.needleBeamAligned : theme.colors.qibla.needleBeam,
+                ]}
+                start={{ x: 0.5, y: 1 }}
+                end={{ x: 0.5, y: 0 }}
+                style={styles.beamBody}
+              />
+              {/* Arrow tip */}
               <View
                 style={[
-                  styles.centerDot,
+                  styles.beamTip,
                   {
-                    backgroundColor: isAligned ? theme.colors.primary.DEFAULT : theme.colors.text.muted,
+                    borderBottomColor: isAligned
+                      ? theme.colors.qibla.needleBeamAligned
+                      : theme.colors.qibla.needleTip,
                   },
                 ]}
               />
-            </View>
-          </Animated.View>
+            </Animated.View>
 
-          {/* Direction info */}
-          <View style={styles.directionInfo}>
-            <Text style={[styles.directionLabel, { color: theme.colors.text.secondary }]}>
-              Qibla Direction
-            </Text>
-            <Text style={[styles.directionValue, { color: theme.colors.primary.DEFAULT }]}>
-              {Math.round(qiblaDirection)}°
-            </Text>
-            <View style={styles.turnHintContainer}>
-              {isAligned && <Text style={styles.alignedIcon}>✓</Text>}
-              <Text
-                style={[
-                  styles.turnHint,
-                  {
-                    color: isAligned ? theme.colors.primary.DEFAULT : theme.colors.text.secondary,
-                    fontWeight: isAligned ? '700' : '500',
-                  },
-                ]}
-              >
-                {turnText}
-              </Text>
-            </View>
+            {/* Kaaba lock-in icon (center) */}
+            <Animated.View
+              style={[
+                styles.kaabaContainer,
+                {
+                  opacity: kaabaOpacityAnim,
+                  transform: [{ scale: kaabaScaleAnim }],
+                },
+              ]}
+            >
+              <View style={[styles.kaabaCube, { borderColor: theme.colors.qibla.kaabaGold }]} />
+              <Text style={[styles.kaabaLabel, { color: theme.colors.qibla.kaabaGold }]}>Qibla</Text>
+            </Animated.View>
+
+            {/* Center dot (hidden when Kaaba is visible) */}
+            <Animated.View
+              style={[
+                styles.centerDot,
+                {
+                  backgroundColor: isAligned
+                    ? theme.colors.qibla.compassRingAligned
+                    : theme.colors.text.muted,
+                  opacity: kaabaOpacityAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [1, 0],
+                  }),
+                },
+              ]}
+            />
           </View>
+        </Animated.View>
 
-          {/* Instructions */}
-          <View
-            style={[
-              styles.instructions,
-              { backgroundColor: theme.colors.card.background, borderColor: theme.colors.border.primary },
-            ]}
-          >
-            <Text style={[styles.instructionText, { color: theme.colors.text.secondary }]}>
-              Point your phone in any direction and rotate slowly until the needle aligns
+        {/* Direction info — overlaid below compass */}
+        <View style={styles.directionInfo}>
+          <Text style={[styles.directionValue, { color: theme.colors.qibla.bearingText }]}>
+            {Math.round(qiblaDirection)}°
+          </Text>
+          <View style={styles.turnHintContainer}>
+            {isAligned && <Text style={[styles.alignedIcon, { color: theme.colors.qibla.compassRingAligned }]}>✓</Text>}
+            <Text
+              style={[
+                styles.turnHint,
+                {
+                  color: isAligned ? theme.colors.qibla.compassRingAligned : theme.colors.qibla.hintText,
+                  fontWeight: isAligned ? '700' : '500',
+                },
+              ]}
+            >
+              {turnText}
             </Text>
           </View>
         </View>
-      </ScrollView>
+      </View>
+
+      {/* Subtle footer hint */}
+      <View style={styles.footer}>
+        <Text style={[styles.footerHint, { color: theme.colors.text.muted }]}>
+          Hold phone upright and rotate slowly
+        </Text>
+      </View>
     </SafeAreaView>
   );
 };
@@ -689,24 +814,39 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
     paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
+  },
+  headerLeft: {
+    flexShrink: 1,
+  },
+  headerRight: {
+    alignItems: 'flex-end',
   },
   headerTitle: {
     fontSize: 28,
     fontWeight: '700',
+  },
+  headerCity: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginTop: 2,
   },
   headerDistance: {
     fontSize: 14,
     fontWeight: '500',
     marginTop: 4,
   },
-  scrollContent: {
-    flexGrow: 1,
-    paddingBottom: 32,
+  verifyLink: {
+    fontSize: 13,
+    fontWeight: '600',
+    marginTop: 4,
   },
-  content: {
+  centeredContent: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
@@ -746,12 +886,37 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
-  compassContainer: {
+  calibrationBanner: {
+    marginHorizontal: 24,
+    marginBottom: 8,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  calibrationText: {
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  compassArea: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 32,
     paddingHorizontal: 24,
+  },
+  compassWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  compassGlow: {
+    position: 'absolute',
+    width: COMPASS_SIZE + 20,
+    height: COMPASS_SIZE + 20,
+    borderRadius: (COMPASS_SIZE + 20) / 2,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    elevation: 8,
   },
   compassCircle: {
     width: COMPASS_SIZE,
@@ -761,7 +926,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
-    backgroundColor: 'transparent',
+  },
+  tickMark: {
+    position: 'absolute',
+    borderRadius: 1,
   },
   cardinal: {
     position: 'absolute',
@@ -787,99 +955,79 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
   },
-  needle: {
-    width: 8,
-    height: COMPASS_SIZE * 0.4,
-    borderTopLeftRadius: 8,
-    borderTopRightRadius: 8,
-    marginTop: 20,
+  beamBody: {
+    width: 6,
+    height: COMPASS_SIZE * 0.35,
+    borderRadius: 3,
+    marginTop: 24,
   },
-  needleBase: {
+  beamTip: {
+    width: 0,
+    height: 0,
+    backgroundColor: 'transparent',
+    borderStyle: 'solid',
+    borderLeftWidth: 8,
+    borderRightWidth: 8,
+    borderBottomWidth: 16,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    marginTop: -2,
+  },
+  kaabaContainer: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  kaabaCube: {
+    width: 32,
+    height: 32,
+    backgroundColor: '#1A1A1A',
+    borderRadius: 4,
+    borderWidth: 1.5,
+  },
+  kaabaLabel: {
+    fontSize: 10,
+    fontWeight: '700',
+    marginTop: 4,
+    letterSpacing: 1,
+    textTransform: 'uppercase',
+  },
+  centerDot: {
     width: 16,
     height: 16,
     borderRadius: 8,
-    marginTop: -8,
-  },
-  centerDot: {
-    width: 20,
-    height: 20,
-    borderRadius: 10,
     position: 'absolute',
   },
   directionInfo: {
     alignItems: 'center',
-    marginTop: 32,
-  },
-  directionLabel: {
-    fontSize: 14,
-    marginBottom: 8,
+    marginTop: 24,
   },
   directionValue: {
     fontSize: 32,
     fontWeight: '700',
   },
-  turnHint: {
-    marginTop: 10,
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  instructions: {
-    marginTop: 32,
-    marginHorizontal: 0,
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  instructionText: {
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  // Phase 4: New styles
-  calibrationBanner: {
-    marginHorizontal: 24,
-    marginBottom: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  calibrationText: {
-    fontSize: 13,
-    fontWeight: '600',
-  },
-  distanceText: {
-    fontSize: 12,
-    marginTop: 4,
-  },
-  compassWrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  compassGlow: {
-    position: 'absolute',
-    width: COMPASS_SIZE + 20,
-    height: COMPASS_SIZE + 20,
-    borderRadius: (COMPASS_SIZE + 20) / 2,
-    shadowOffset: { width: 0, height: 0 },
-    shadowOpacity: 0.4,
-    shadowRadius: 20,
-    elevation: 8,
-  },
-  tickMark: {
-    position: 'absolute',
-    borderRadius: 1,
-  },
   turnHintContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 10,
+    marginTop: 8,
     gap: 6,
   },
   alignedIcon: {
     fontSize: 16,
-    color: '#22C55E',
     fontWeight: '700',
+  },
+  turnHint: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  footer: {
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+  },
+  footerHint: {
+    fontSize: 13,
+    fontWeight: '400',
   },
 });
 

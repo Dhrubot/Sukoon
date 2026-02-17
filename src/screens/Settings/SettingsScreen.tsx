@@ -23,8 +23,7 @@ import { SettingRow } from '../../components/settings/SettingRow';
 // Enhanced Components
 import { PrayerSettingsSection } from './components/PrayerSettingsSection';
 
-// Mosque Mode Components
-import { MosqueModeToggle, IqamahTimeConfig, MosqueModeOptions } from '../../components/mosque';
+// Mosque Mode now has its own dedicated screen via MenuStack
 
 // Modal Components
 import { CalculationMethodModal, NotificationModal } from './modals';
@@ -121,7 +120,7 @@ const SettingsScreen = ({ navigation }: any) => {
         />
 
         {/* 🌌 Optional Prayer Settings */}
-        <SettingSection title="OPTIONAL PRAYERS">
+        <SettingSection title="">
           <SettingRow
             label="Tahajjud Reminders"
             subtitle="Gentle encouragement to pray the night prayer"
@@ -143,18 +142,24 @@ const SettingsScreen = ({ navigation }: any) => {
               }
             }}
           />
+          <SettingRow
+            label="Jumu'ah Reminders"
+            subtitle="Friday Sunnah reminders: Surah Al-Kahf, ghusl, dua hour"
+            value={userSettings.jummahReminders?.enabled !== false ? 'On' : 'Off'}
+            onPress={() => {
+              const isEnabled = userSettings.jummahReminders?.enabled !== false;
+              const updated = {
+                ...userSettings,
+                jummahReminders: {
+                  enabled: !isEnabled,
+                },
+              };
+              setUserSettings(updated);
+            }}
+          />
         </SettingSection>
 
-        {/* 🕌 Mosque Mode Settings */}
-        <SettingSection title="MOSQUE MODE">
-          <MosqueModeToggle />
-          {userSettings.mosqueMode?.enabled && (
-            <View style={{ marginTop: 16 }}>
-              <IqamahTimeConfig />
-              <MosqueModeOptions />
-            </View>
-          )}
-        </SettingSection>
+        {/* Mosque Mode moved to dedicated screen via Menu > Mosque Mode */}
 
         {/* 🎯 ENHANCED: Location Section with manual selection */}
         <LocationSection
@@ -193,8 +198,8 @@ const SettingsScreen = ({ navigation }: any) => {
 
         {/* About */}
         <AboutSection
-          onPrivacyPolicy={handlePrivacyPolicy}
-          onShowDebugInfo={showDebugInfo}
+          onPrivacyPolicy={() => handlePrivacyPolicy(navigation)}
+          onShowDebugInfo={__DEV__ ? showDebugInfo : undefined}
         />
 
         {/* 🎯 NEW: Connection status indicator */}

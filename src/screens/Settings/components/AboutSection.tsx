@@ -29,7 +29,7 @@ export const AboutSection: React.FC<AboutSectionProps> = ({
       />
     )}
     <Text style={styles.aboutText}>
-      Sukoon is a free app built with ❤️ for the Muslim community
+      Sukoon is an app built for the Muslim community
     </Text>
   </SettingSection>
   );

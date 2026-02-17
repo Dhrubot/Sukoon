@@ -10,7 +10,7 @@ export default {
     splash: {
       image: "./assets/icon.png",
       resizeMode: "contain",
-      backgroundColor: "#1A1F3A",  // Dark theme background
+      backgroundColor: "#00102a",
     },
     assetBundlePatterns: ["**/*"],
     ios: {
@@ -99,6 +99,7 @@ export default {
           ios: {
             newArchEnabled: true,
             deploymentTarget: "15.1",
+            useFrameworks: "static",
           },
         },
       ],

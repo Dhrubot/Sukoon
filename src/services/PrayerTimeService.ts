@@ -139,9 +139,11 @@ export class PrayerTimeService {
         this.cachedTimes.set(cacheKey, times);
         this.evictCacheIfNeeded();
 
-        // Cache Hijri date for Ramadan detection (no extra API call)
+        // Cache Hijri date for Ramadan detection (no extra API call).
+        // Pass the requested date so pre-fetches for tomorrow don't
+        // overwrite today's Hijri cache.
         if (data.data.date?.hijri) {
-          cacheHijriDate(data.data.date.hijri);
+          cacheHijriDate(data.data.date.hijri, date);
         }
 
         // Cache for tomorrow as well if it's after Asr
@@ -224,31 +226,9 @@ export class PrayerTimeService {
         });
       }
 
-      // If no next prayer found today, mark Fajr as next
-      if (!nextPrayerFound && prayerTimesList.length > 0) {
-        try {
-          // Get tomorrow's Fajr
-          const tomorrowTimes = await this.fetchPrayerTimes(
-            coordinates,
-            addDays(date, 1),
-            method,
-            asrJuristic
-          );
-          const tomorrowFajr = this.parseTimeToDate(
-            tomorrowTimes.Fajr,
-            addDays(date, 1)
-          );
-
-          prayerTimesList[0] = {
-            ...prayerTimesList[0],
-            time: tomorrowFajr,
-            timestamp: tomorrowFajr.getTime(),
-            isNext: true,
-          };
-        } catch (error) {
-          logger.error("❌ Error fetching tomorrow's Fajr:", error);
-        }
-      }
+      // NOTE: The provider (PrayerTimesProvider) is the single source of truth
+      // for determining the "next prayer" including fiqh-aware active windows.
+      // The service returns clean today-only data without mutating the array.
 
       logger.log(
         "✅ Prayer list created successfully:",

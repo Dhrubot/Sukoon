@@ -12,7 +12,7 @@ import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../providers/ThemeProvider';
 import { Icon } from '../../components/common/Icon';
-import { AchievementIcon, DigitalWellnessIcon, ProgressTabIcon } from '../../assets/icons';
+import { ProgressTabIcon } from '../../assets/icons';
 import Svg, { Path } from 'react-native-svg';
 
 // Settings icon component
@@ -56,7 +56,36 @@ interface MenuItem {
   iconType?: 'component' | 'svg' | 'png' | 'emoji';
 }
 
-const menuItems: MenuItem[] = [
+// Mosque icon component
+const MosqueIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 2C12 2 8 6 8 9C8 10.1 8.4 11.1 9 11.8V20H6V22H18V20H15V11.8C15.6 11.1 16 10.1 16 9C16 6 12 2 12 2Z"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path d="M3 20H6V14H3V20Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <Path d="M18 20H21V14H18V20Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
+const allMenuItems: MenuItem[] = [
+   {
+    icon: null, // Emoji-based icon handled below
+    title: 'My Garden',
+    subtitle: 'Your reflections, growing quietly',
+    screen: 'ReflectionGarden',
+    iconType: 'emoji',
+  },
+  {
+    icon: MosqueIcon,
+    title: 'Mosque Mode',
+    subtitle: 'Auto-silence your phone for prayer',
+    screen: 'MosqueMode',
+    iconType: 'component',
+  },
   {
     icon: ProgressTabIcon,
     title: 'My Journey',
@@ -65,32 +94,11 @@ const menuItems: MenuItem[] = [
     iconType: 'svg',
   },
   {
-    icon: null, // Emoji-based icon handled below
-    title: 'My Garden',
-    subtitle: 'Your reflections, growing quietly',
-    screen: 'ReflectionGarden',
-    iconType: 'emoji',
-  },
-  {
     icon: SettingsIcon,
     title: 'Setup & Health',
     subtitle: 'Verify location, reminders, and mosque mode',
     screen: 'SetupHealth',
     iconType: 'component',
-  },
-  {
-    icon: AchievementIcon,
-    title: 'Achievements',
-    subtitle: 'Track your spiritual milestones',
-    screen: 'Achievements',
-    iconType: 'svg',
-  },
-  {
-    icon: DigitalWellnessIcon,
-    title: 'Digital Wellness',
-    subtitle: 'Monitor your screen time',
-    screen: 'DigitalWellness',
-    iconType: 'svg',
   },
   {
     icon: SupportIcon,
@@ -107,6 +115,8 @@ const menuItems: MenuItem[] = [
     iconType: 'component',
   },
 ];
+
+const menuItems = allMenuItems;
 
 const MenuScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -165,7 +175,7 @@ const MenuScreen: React.FC = () => {
             Sukoon v1.0.0
           </Text>
           <Text style={[styles.blessing, { color: theme.colors.text.muted }]}>
-            May Allah accept our efforts 🤲
+            May Allah accept our efforts
           </Text>
         </View>
       </ScrollView>

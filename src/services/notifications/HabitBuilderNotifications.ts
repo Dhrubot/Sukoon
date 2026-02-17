@@ -42,19 +42,20 @@ export function isQuietHours(settings: UserSettings, time: Date = new Date()): b
 export function getTier2Messages(urgency: 'first' | 'middle' | 'final'): string[] {
   const messages = {
     first: [
-      "Have you prayed {prayer} yet? 🤲",
-      "Checking in: Did you complete {prayer}? 🕌",
+      "Have you prayed {prayer} yet?",
+      "Checking in: Did you complete {prayer}?",
       "Quick reminder about {prayer} prayer ✨",
+      "Come to the Prayer, Come to Success {prayer}"
     ],
     middle: [
-      "Still waiting for {prayer}! Everything okay? 💚",
-      "Friendly reminder: {prayer} is waiting! 🤲",
-      "Hey there! Don't forget {prayer} prayer 🕌",
+      "Still waiting for {prayer}! Everything okay?",
+      "Friendly reminder: {prayer} is waiting!",
+      "Hey there! Don't forget {prayer} prayer",
     ],
     final: [
-      "Last reminder for {prayer} prayer! 🙏",
-      "I won't give up on you! {prayer} time 💚",
-      "Final check: Have you prayed {prayer}? 🕌",
+      "Last reminder for {prayer} prayer!",
+      "I won't give up on you! {prayer} time",
+      "Final check: Have you prayed {prayer}?",
     ],
   };
 

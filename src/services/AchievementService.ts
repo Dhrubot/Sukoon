@@ -3,6 +3,7 @@ import { Achievement, PrayerRecord } from '../types';
 import * as Notifications from 'expo-notifications';
 import * as Haptics from 'expo-haptics';
 import { PRAYER_NAMES as PrayerName } from '../constants';
+import { getLocalDateKey } from '../utils/dateHelpers';
 
 export interface AchievementDefinition extends Achievement {
   category: 'prayer' | 'streak' | 'mindfulness' | 'focus' | 'special';
@@ -35,7 +36,7 @@ class AchievementService {
       tier: 'silver',
       target: 5,
       checkCondition: () => {
-        const today = new Date().toISOString().split('T')[0];
+        const today = getLocalDateKey();
         const todayRecords = StorageService.getDayPrayerRecords(today);
         return todayRecords.filter(r => r.status === 'prayed').length === 5;
       },
@@ -151,7 +152,7 @@ class AchievementService {
     {
       id: 'mindful_first',
       name: 'Present Heart',
-      description: 'Complete your first mindful prayer preparation',
+      description: 'Complete your first prayer preparation',
       icon: '🧘',
       category: 'mindfulness',
       tier: 'bronze',
@@ -164,7 +165,7 @@ class AchievementService {
     {
       id: 'mindful_10',
       name: 'Inner Stillness',
-      description: 'Prepare mindfully for 10 prayers',
+      description: 'Prepare with presence for 10 prayers',
       icon: '🌸',
       category: 'mindfulness',
       tier: 'silver',
@@ -177,7 +178,7 @@ class AchievementService {
     {
       id: 'mindful_50',
       name: 'The Contemplative',
-      description: 'Prepare mindfully for 50 prayers',
+      description: 'Prepare with presence for 50 prayers',
       icon: '🪷',
       category: 'mindfulness',
       tier: 'gold',
@@ -337,21 +338,8 @@ class AchievementService {
   }
 
   private async notifyAchievementUnlocked(achievement: AchievementDefinition) {
-    // Haptic feedback
+    // Gentle haptic only — no push notification (gamification of worship undermines ikhlas)
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-
-    // Local notification
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: '🏆 Achievement Unlocked!',
-        body: `${achievement.name}: ${achievement.description}`,
-        data: { 
-          type: 'achievement',
-          achievementId: achievement.id,
-        },
-      },
-      trigger: null, // Immediate
-    });
   }
 
   private async getAchievementProgress(achievement: AchievementDefinition): Promise<number> {
@@ -431,7 +419,7 @@ class AchievementService {
 
     // Check backwards from today
     for (let i = 0; i < 30; i++) {
-      const dateStr = currentDate.toISOString().split('T')[0];
+      const dateStr = getLocalDateKey(currentDate);
       const records = StorageService.getDayPrayerRecords(dateStr);
       const fajr = records.find(r => r.prayer === PrayerName.fajr && r.status === 'prayed');
       
@@ -453,7 +441,7 @@ class AchievementService {
 
     // Check backwards from today
     for (let i = 0; i < 60; i++) {
-      const dateStr = currentDate.toISOString().split('T')[0];
+      const dateStr = getLocalDateKey(currentDate);
       const records = StorageService.getDayPrayerRecords(dateStr);
       const isha = records.find(r => r.prayer === PrayerName.isha && r.status === 'prayed');
       
@@ -470,10 +458,10 @@ class AchievementService {
   }
 
   private async checkComebackAchievement(): Promise<boolean> {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateKey();
     const yesterday = new Date();
     yesterday.setDate(yesterday.getDate() - 1);
-    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    const yesterdayStr = getLocalDateKey(yesterday);
 
     const todayRecords = StorageService.getDayPrayerRecords(today);
     const yesterdayRecords = StorageService.getDayPrayerRecords(yesterdayStr);

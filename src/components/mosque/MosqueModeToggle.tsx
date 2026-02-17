@@ -166,7 +166,7 @@ export const MosqueModeToggle: React.FC = () => {
       <View style={styles.content}>
         <View style={styles.textContainer}>
           <Text style={[styles.title, { color: theme.colors.text.primary }]}>
-            🕌 Mosque Mode
+            Mosque Mode
           </Text>
           <Text style={[
             styles.description,

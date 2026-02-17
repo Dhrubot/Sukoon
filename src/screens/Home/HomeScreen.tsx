@@ -1,5 +1,5 @@
 // src/screens/Home/HomeScreen.tsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import {
   View,
   Text,
@@ -28,18 +28,17 @@ import { usePrayerTimes } from "../../providers/PrayerTimesProvider";
 import PrayerCard from "../../components/prayer/PrayerCard";
 import SanctuaryView from "../../components/prayer/SanctuaryView";
 import DailyVerse from "../../components/common/DailyVerse";
-import QuickStats from "../../components/stats/QuickStats";
-import DigitalWellnessCard from "../../components/digitalWellness/DigitalWellnessCard";
 import { SunTimesDisplay } from "../../components/common/SunTimesDisplay";
 import { MosqueModeStatus, MosqueModeOverlay } from "../../components/mosque";
 import RamadanTimesCard from "../../components/prayer/RamadanTimesCard";
 import OptionalPrayersSection from "../../components/prayer/OptionalPrayersSection";
+import JummahCard from "../../components/prayer/JummahCard";
 import GardenTeaser from "../../components/garden/GardenTeaser";
 
 // Types
 import { PrayerTime, OptionalPrayerTime } from "../../types";
-import UsageStatsService from "../../services/UsageStatsService";
-import { isRamadan, getRamadanDay } from "../../utils/ramadan";
+
+import { isRamadan, getRamadanDay, isFriday } from "../../utils/ramadan";
 
 const { width } = Dimensions.get("window");
 
@@ -69,7 +68,6 @@ const HomeScreen = ({ navigation }: any) => {
 
   // Local state for UI features
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [screenTime, setScreenTime] = useState(0);
 
   // 🎯 REMOVED: loadPrayerTimes function - now handled by provider!
   // 🎯 REMOVED: location checks - now handled by provider!
@@ -78,7 +76,6 @@ const HomeScreen = ({ navigation }: any) => {
   useEffect(() => {
     // Only load non-prayer-time related data
     loadTodayRecords();
-    loadScreenTime();
 
     // Update time every minute
     const timer = setInterval(() => {
@@ -94,18 +91,12 @@ const HomeScreen = ({ navigation }: any) => {
     setTodayPrayerRecords(records);
   };
 
-  const loadScreenTime = async () => {
-    try {
-      const data = await UsageStatsService.getTodayScreenTime();
-      setScreenTime(data?.totalScreenTime || 0);
-    } catch (error) {
-      console.error("Error loading screen time:", error);
-    }
-  };
 
   // 1c: Prayer-aware greeting
   const getGreeting = (): string => {
-    const name = userSettings?.name || "Friend";
+    const fullName = userSettings?.name?.trim() || 'Friend';
+    const firstName = fullName.split(/\s+/)[0];
+    const name = firstName.charAt(0).toUpperCase() + firstName.slice(1);
     const now = currentTime;
 
     if (nextPrayer) {
@@ -139,9 +130,9 @@ const HomeScreen = ({ navigation }: any) => {
     // Default: peaceful between-prayers greeting
     const hour = now.getHours();
     if (hour < 5) return `Peace be upon you, ${name}`;
-    if (hour < 12) return `Assalamu alaykum, ${name}`;
+    if (hour < 12) return `As Salamu Alaykum, ${name}`;
     if (hour < 17) return `Peace be upon you, ${name}`;
-    if (hour < 20) return `Assalamu alaykum, ${name}`;
+    if (hour < 20) return `As Salamu Alaykum, ${name}`;
     return `Peace be upon you, ${name}`;
   };
 
@@ -172,10 +163,39 @@ const HomeScreen = ({ navigation }: any) => {
 
   const completedToday = todayPrayerRecords.filter(r => r.status === 'prayed').length;
 
+  // Find the record for the current hero prayer (if already prayed)
+  const heroPrayerRecord = useMemo(() => {
+    if (!nextPrayer) return undefined;
+    return todayPrayerRecords.find(
+      r => r.prayer === nextPrayer.name && r.status === 'prayed'
+    );
+  }, [nextPrayer, todayPrayerRecords]);
+
+  // Check if the hero prayer's adhan has actually happened
+  const isHeroPrayerTimeEntered = useMemo(() => {
+    if (!nextPrayer) return false;
+    return nextPrayer.time <= currentTime;
+  }, [nextPrayer, currentTime]);
+
+  // Find the most recent MISSED prayer (before the hero prayer) for qada prompt
+  const missedPreviousPrayer = useMemo(() => {
+    if (!nextPrayer || isHeroPrayerTimeEntered) return undefined;
+    const heroIdx = todayPrayerTimes.findIndex(p => p.name === nextPrayer.name);
+    // Walk backwards to find the first unprayed prayer
+    for (let i = heroIdx - 1; i >= 0; i--) {
+      const p = todayPrayerTimes[i];
+      const prayed = todayPrayerRecords.some(
+        r => r.prayer === p.name && r.status === 'prayed'
+      );
+      if (!prayed) return p;
+    }
+    return undefined;
+  }, [nextPrayer, todayPrayerTimes, todayPrayerRecords, isHeroPrayerTimeEntered]);
+
   // 🎯 NEW: Handle invalid location state
   if (!hasValidLocation) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
         <LinearGradient colors={getBackgroundGradient()} style={styles.container}>
           <View style={styles.locationSetupContainer}>
             <Text style={styles.setupTitle}>🕌 Welcome to Sukoon</Text>
@@ -196,7 +216,7 @@ const HomeScreen = ({ navigation }: any) => {
   // 🎯 NEW: Handle loading state
   if (prayerTimesLoading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
         <LinearGradient colors={getBackgroundGradient()} style={styles.container}>
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={theme.colors.primary.DEFAULT} />
@@ -210,7 +230,7 @@ const HomeScreen = ({ navigation }: any) => {
   // 🎯 NEW: Handle error state
   if (prayerTimesError) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
         <LinearGradient colors={getBackgroundGradient()} style={styles.container}>
           <View style={styles.errorContainer}>
             <Text style={styles.errorTitle}>⚠️ Prayer Times Unavailable</Text>
@@ -226,7 +246,7 @@ const HomeScreen = ({ navigation }: any) => {
 
   // 🎯 MAIN UI: SanctuaryView hero + secondary content below
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -237,7 +257,11 @@ const HomeScreen = ({ navigation }: any) => {
           <SanctuaryView
             prayer={nextPrayer}
             greeting={getGreeting()}
+            record={heroPrayerRecord}
+            isTimeEntered={isHeroPrayerTimeEntered}
+            missedPrayer={missedPreviousPrayer}
             onPrepare={() => handlePrayerComplete(nextPrayer)}
+            onPrepareQada={missedPreviousPrayer ? () => handlePrayerComplete(missedPreviousPrayer) : undefined}
           />
         ) : (
           <LinearGradient colors={getBackgroundGradient()} style={styles.noNextPrayer}>
@@ -253,7 +277,7 @@ const HomeScreen = ({ navigation }: any) => {
           {isOffline && (
             <View style={styles.offlineBanner}>
               <Text style={styles.offlineBannerText}>
-                ✈️ Offline — times are estimated
+                Offline — times are estimated
               </Text>
             </View>
           )}
@@ -272,11 +296,20 @@ const HomeScreen = ({ navigation }: any) => {
             return <RamadanTimesCard fajrTime={fajr.time} maghribTime={maghrib.time} />;
           })()}
 
-          {/* Quick Stats */}
-          <QuickStats prayersToday={completedToday} />
-
           {/* Garden Teaser — subtle entry point to Reflection Garden */}
           <GardenTeaser />
+
+          {/* Jummah Card — prominently displayed on Fridays */}
+          {isFriday() && todayPrayerTimes.length > 0 && (() => {
+            const dhuhr = todayPrayerTimes.find(p => p.name === 'Dhuhr');
+            if (!dhuhr) return null;
+            return (
+              <JummahCard
+                dhuhrTime={dhuhr.time}
+                onPrepare={() => handlePrayerComplete(dhuhr)}
+              />
+            );
+          })()}
 
           {/* Today's Prayer Times */}
           <View style={styles.section}>
@@ -306,9 +339,6 @@ const HomeScreen = ({ navigation }: any) => {
 
           {/* Optional Prayers (Taraweeh during Ramadan, Tahajjud after Isha) */}
           <OptionalPrayersSection onPrepare={handleOptionalPrayerPrepare} />
-
-          {/* Digital Wellness Card */}
-          <DigitalWellnessCard screenTime={screenTime} />
 
           {/* Daily Verse */}
           <DailyVerse />

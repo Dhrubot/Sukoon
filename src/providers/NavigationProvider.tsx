@@ -2,7 +2,12 @@
 import React, { createRef, useEffect } from 'react';
 import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
 import NotificationService from '../services/NotificationService';
-import { PrayerName } from '../types';
+import StorageService from '../services/StorageService';
+import ReminderStateService from '../services/ReminderStateService';
+import { PrayerName, PrayerRecord } from '../types';
+import { useStore } from '../store/useStore';
+import { getLocalDateKey } from '../utils/dateHelpers';
+import WidgetService from '../services/WidgetService';
 
 // Create navigation reference
 export const navigationRef = createRef<NavigationContainerRef<any>>();
@@ -19,17 +24,60 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
 
       if (navigationRef.current?.isReady()) {
         switch (action) {
-          case "complete":
+          case "complete": {
+            // P0-C FIX: Create PrayerRecord directly instead of relying on
+            // HomeScreen to consume a markPrayerComplete param (which it never did).
+            const dateKey = getLocalDateKey();
+            const existing = StorageService.getPrayerRecord(dateKey, prayer);
+
+            if (!existing || existing.status !== 'prayed') {
+              const record: PrayerRecord = {
+                id: `prayer_${Date.now()}`,
+                date: dateKey,
+                prayer: prayer,
+                status: 'prayed',
+                prayedAt: new Date(),
+                mindfulnessCompleted: false,
+                reflectionAdded: false,
+              };
+              StorageService.savePrayerRecordWithTracking(record);
+              useStore.getState().addPrayerRecord(record);
+              WidgetService.reloadWidgets();
+            }
+
+            // Also close the reminder flow for this prayer
+            const prayerId = `${prayer}-${dateKey}`;
+            ReminderStateService.markPrayerCompleted(prayerId);
+            NotificationService.cancelPrayerReminderFlow(prayerId).catch(() => {});
+
+            // Navigate to Home so user sees the updated state
             navigationRef.current.navigate("MainTabs", {
               screen: "Home",
-              params: { markPrayerComplete: prayer },
             });
             break;
-          case "prepare":
-            navigationRef.current.navigate("MindfulnessFlow", {
-              prayer: prayer,
-            });
+          }
+          case "prepare": {
+            // P0-B FIX: Resolve prayer name to full PrayerTime object.
+            // MindfulnessFlow expects { prayer: { name, time, timestamp, ... } }
+            const todayPrayers = useStore.getState().todayPrayerTimes;
+            const prayerTime = todayPrayers.find(p => p.name === prayer);
+
+            if (prayerTime) {
+              // Serialize Date → ISO string for navigation params (MindfulnessFlow converts back)
+              const serializablePrayer = {
+                ...prayerTime,
+                time: prayerTime.time.toISOString(),
+              };
+              navigationRef.current.navigate("MindfulnessFlow", {
+                prayer: serializablePrayer,
+              });
+            } else {
+              // Fallback: prayer times not loaded yet, go to Home
+              console.warn(`⚠️ Could not resolve prayer time for ${prayer}, navigating to Home`);
+              navigationRef.current.navigate("MainTabs");
+            }
             break;
+          }
           default:
             navigationRef.current.navigate("MainTabs");
             break;

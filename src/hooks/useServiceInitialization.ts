@@ -15,6 +15,8 @@ import SubscriptionService from '../services/monetization/SubscriptionService';
 import AdService from '../services/monetization/AdService';
 import DonationService from '../services/monetization/DonationService';
 import AnalyticsService from '../services/AnalyticsService';
+import RamadanCountdownService from '../services/RamadanCountdownService';
+import JummahNotificationService from '../services/JummahNotificationService';
 
 export const useServiceInitialization = () => {
   const { todayPrayerTimes, nextPrayer, isLoading, hasValidLocation } =
@@ -158,4 +160,19 @@ export const useServiceInitialization = () => {
     userSettings?.mosqueMode?.useVibrateInsteadOfSilent,
     todayPrayerTimes.length,
   ]);
+
+  // 🌙 Schedule Ramadan countdown/encouragement notifications
+  // Triggers after prayer times load (which caches the Hijri date)
+  useEffect(() => {
+    if (hasValidLocation && !isLoading && todayPrayerTimes.length > 0) {
+      RamadanCountdownService.scheduleRamadanNotifications();
+    }
+  }, [hasValidLocation, isLoading, todayPrayerTimes.length]);
+
+  // 🕌 Schedule Jummah (Friday) notifications
+  useEffect(() => {
+    if (hasValidLocation && !isLoading && todayPrayerTimes.length > 0) {
+      JummahNotificationService.scheduleJummahNotifications(todayPrayerTimes);
+    }
+  }, [hasValidLocation, isLoading, todayPrayerTimes.length]);
 };

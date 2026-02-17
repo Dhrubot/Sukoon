@@ -40,7 +40,7 @@ export interface PrayerRecord {
   id: string;
   date: string; // YYYY-MM-DD
   prayer: PrayerName;
-  status: "prayed" | "missed" | "delayed";
+  status: "prayed" | "missed" | "delayed" | "in_progress";
   prayedAt?: Date;
   mindfulnessCompleted?: boolean;
   reflectionAdded?: boolean;
@@ -120,6 +120,9 @@ export interface UserSettings {
     enabled: boolean;
     frequency: 'daily' | 'weekdays' | 'weekends' | 'twice_weekly';
   };
+  jummahReminders?: {
+    enabled: boolean;
+  };
   theme: "light" | "dark" | "auto";
 }
 
@@ -196,6 +199,13 @@ export interface MosqueModeSettings {
   
   // Platform-specific settings
   useVibrateInsteadOfSilent: boolean; // Use vibrate instead of complete silence (default: false)
+  
+  // Jummah-specific settings (Friday khutba + prayer)
+  jummah?: {
+    enabled: boolean;        // Enable Jummah silent mode (default: true)
+    silentDuration: number;  // Minutes — khutba (~20) + prayer (~10) = 30 default
+    iqamahOffset: number;    // Minutes after Dhuhr adhan on Friday
+  };
 }
 
 // Prayer reminder state tracking
@@ -269,76 +279,12 @@ export interface AladhanResponse {
   };
 }
 
-export interface ScreenTimeData {
-  totalScreenTime: number; // minutes
-  unlockCount: number;
-  firstUnlock: Date | null;
-  lastUsed: Date | null;
-}
-
-export interface AppUsageData {
-  packageName: string;
-  appName: string;
-  timeSpent: number; // minutes
-  category: "social" | "productivity" | "entertainment" | "other";
-  icon?: string;
-}
-
-export interface UsageStats {
-  totalScreenTime: number; // minutes
-  unlockCount: number;
-  appUsage: AppUsageData[];
-  socialMediaTime: number; // minutes
-  productiveTime: number; // minutes
-}
-
-export interface DigitalWellnessInsight {
-  id: string;
-  type: "warning" | "achievement" | "tip";
-  title: string;
-  description: string;
-  icon: string;
-  actionable?: {
-    label: string;
-    action: () => void;
-  };
-}
-
-export interface PrePrayerUsage {
-  prayer: PrayerName;
-  screenTime: number; // minutes in 30 min before prayer
-  unlockCount: number;
-  topApp?: string;
-  focusScore: number; // 0-100 based on usage
-}
-
-export interface DigitalWellnessGoal {
-  id: string;
-  type: "daily_limit" | "app_limit" | "unlock_limit" | "prayer_focus";
-  target: number;
-  current: number;
-  unit: "minutes" | "times" | "score";
-  period: "daily" | "weekly";
-  createdAt: Date;
-}
-
-// Update DailyStats to include digital wellness
 export interface DailyStats {
   date: string;
   prayersCompleted: number;
   totalPrayers: number;
   mindfulnessSessions: number;
   averageFocusScore: number;
-  // Add digital wellness stats
-  screenTimeMinutes?: number;
-  unlockCount?: number;
-  socialMediaMinutes?: number;
-  prePrayerDistractions?: {
-    [key in PrayerName]?: {
-      screenTime: number;
-      unlocks: number;
-    };
-  };
 }
 
 // Subscription Types

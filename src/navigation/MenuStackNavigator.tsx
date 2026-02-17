@@ -4,21 +4,21 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { useTheme } from '../providers/ThemeProvider';
 import MenuScreen from '../screens/Menu/MenuScreen';
 import SettingsScreen from '../screens/Settings/SettingsScreen';
-import AchievementsScreen from '../screens/Achievements/AchievementsScreen';
-import DigitalWellnessScreen from '../screens/DigitalWellness/DigitalWellnessScreen';
+import PrivacyPolicyScreen from '../screens/Settings/PrivacyPolicyScreen';
 import StatsScreen from '../screens/Stats/StatsScreen';
 import SupportScreen from '../screens/Support/SupportScreen';
 import SetupHealthScreen from '../screens/SetupHealth/SetupHealthScreen';
 import ReflectionGardenScreen from '../screens/ReflectionGarden/ReflectionGardenScreen';
+import MosqueModeScreen from '../screens/MosqueMode/MosqueModeScreen';
 
 export type MenuStackParamList = {
   MenuHome: undefined;
   MyJourney: undefined;
   ReflectionGarden: undefined;
-  Achievements: undefined;
-  DigitalWellness: undefined;
+  MosqueMode: undefined;
   Support: undefined;
   Settings: undefined;
+  PrivacyPolicy: undefined;
   SetupHealth: undefined;
 };
 
@@ -59,14 +59,18 @@ export const MenuStackNavigator: React.FC = () => {
         component={ReflectionGardenScreen}
         options={{ title: 'My Garden' }}
       />
-      <Stack.Screen name="Achievements" component={AchievementsScreen} />
       <Stack.Screen
-        name="DigitalWellness"
-        component={DigitalWellnessScreen}
-        options={{ title: 'Digital Wellness' }}
+        name="MosqueMode"
+        component={MosqueModeScreen}
+        options={{ title: 'Mosque Mode' }}
       />
       <Stack.Screen name="Support" component={SupportScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen
+        name="PrivacyPolicy"
+        component={PrivacyPolicyScreen}
+        options={{ title: 'Privacy Policy' }}
+      />
       <Stack.Screen
         name="SetupHealth"
         component={SetupHealthScreen}

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,8 @@ import {
   KeyboardAvoidingView,
   Platform,
   Alert,
+  ActivityIndicator,
+  AppState,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -23,6 +25,7 @@ import StorageService from '../../services/StorageService';
 import { useStore } from '../../store/useStore';
 import { CalculationMethod, CALCULATION_METHODS } from '../../types';
 import LocationService from '../../services/LocationService';
+import RingerControlService from '../../services/RingerControlService';
 import { Location as AppLocation } from '../../types'
 import { Switch } from 'react-native';
 
@@ -30,7 +33,8 @@ interface OnboardingScreenProps {
   onComplete: () => void;
 }
 
-type OnboardingStep = 'welcome' | 'name' | 'location' | 'notifications' | 'method';
+type NotificationIntensity = 'gentle' | 'balanced' | 'persistent';
+type OnboardingStep = 'welcome' | 'name' | 'location' | 'notifications' | 'mosque' | 'method';
 
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   const { theme } = useTheme();
@@ -42,7 +46,84 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   const [enableAdhan, setEnableAdhan] = useState(true);
   const [isNotificationEnabled, setIsNotificationEnabled] = useState(false);
 
+  // Phase 1: Location UX
+  const [isLocating, setIsLocating] = useState(false);
+  const [locationFailed, setLocationFailed] = useState(false);
+  const [manualCity, setManualCity] = useState('');
+  const [manualCountry, setManualCountry] = useState('');
+  const [manualLocationError, setManualLocationError] = useState('');
+  const [isSubmittingManual, setIsSubmittingManual] = useState(false);
+
+  // Phase 2: Notification intensity
+  const [notificationIntensity, setNotificationIntensity] = useState<NotificationIntensity>('balanced');
+
+  // Phase 3: Mosque mode
+  const [enableMosqueModeOnboarding, setEnableMosqueModeOnboarding] = useState(false);
+  const pendingDndGrant = useRef(false);
+
   const { setUserSettings } = useStore();
+
+  // Listen for app returning from Android DND settings during onboarding
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+
+    const subscription = AppState.addEventListener('change', async (nextState) => {
+      if (nextState === 'active' && pendingDndGrant.current) {
+        pendingDndGrant.current = false;
+        const canModify = await RingerControlService.canModify();
+        if (canModify) {
+          setEnableMosqueModeOnboarding(true);
+        } else {
+          // User didn't grant — keep toggle off
+          setEnableMosqueModeOnboarding(false);
+          Alert.alert(
+            'Permission Not Granted',
+            'Mosque Mode needs Do Not Disturb access to silence your phone. You can enable it later from the menu.',
+            [{ text: 'OK' }]
+          );
+        }
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
+
+  const handleMosqueModeToggle = async (value: boolean) => {
+    if (!value) {
+      setEnableMosqueModeOnboarding(false);
+      return;
+    }
+
+    if (Platform.OS === 'android') {
+      const nativeAvailable = RingerControlService.isAvailable();
+      if (!nativeAvailable) {
+        Alert.alert('Feature Unavailable', 'Ringer control module is not available. Please rebuild the app.');
+        return;
+      }
+
+      const canModify = await RingerControlService.canModify();
+      if (!canModify) {
+        Alert.alert(
+          'Permission Required',
+          'To auto-silence your phone at iqamah time, Sukoon needs Do Not Disturb access.\n\nYou\'ll be taken to Android settings. Find "Sukoon" and toggle it ON, then come back.',
+          [
+            { text: 'Not Now', style: 'cancel' },
+            {
+              text: 'Grant Access',
+              onPress: async () => {
+                pendingDndGrant.current = true;
+                await RingerControlService.openNotificationPolicyAccessSettings();
+              },
+            },
+          ]
+        );
+        return;
+      }
+    }
+
+    // iOS or Android with permission already granted
+    setEnableMosqueModeOnboarding(true);
+  };
 
   const handleNext = () => {
     switch (currentStep) {
@@ -56,6 +137,9 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
         setCurrentStep('notifications');
         break;
       case 'notifications':
+        setCurrentStep('mosque');
+        break;
+      case 'mosque':
         setCurrentStep('method');
         break;
       case 'method':
@@ -65,21 +149,53 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   };
 
   const requestLocationPermission = async () => {
+    setIsLocating(true);
+    setLocationFailed(false);
+    setManualLocationError('');
     try {
-      // Use LocationService instead of raw Expo calls to get city/country logic
       const location = await LocationService.getCurrentLocation();
 
       if (location) {
-        setLocationData(location); // Store it for completeOnboarding
+        setLocationData(location);
+        setIsLocating(false);
         handleNext();
       } else {
-        // Permission denied or fetch failed, move next anyway but warn?
-        Alert.alert('Location Skipped', 'We could not fetch your location automatically. You can set it manually later.');
-        handleNext();
+        setIsLocating(false);
+        setLocationFailed(true);
       }
     } catch (error) {
       console.log('Onboarding location error:', error);
-      handleNext();
+      setIsLocating(false);
+      setLocationFailed(true);
+    }
+  };
+
+  const handleManualLocationSubmit = async () => {
+    if (!manualCity.trim()) {
+      setManualLocationError('Please enter a city name');
+      return;
+    }
+    if (!manualCountry.trim()) {
+      setManualLocationError('Please enter a country name');
+      return;
+    }
+
+    setIsSubmittingManual(true);
+    setManualLocationError('');
+    try {
+      const location = await LocationService.setLocationByAddress(manualCity.trim(), manualCountry.trim());
+      if (location) {
+        setLocationData(location);
+        setIsSubmittingManual(false);
+        handleNext();
+      } else {
+        setManualLocationError('Could not find that location. Please check your spelling.');
+        setIsSubmittingManual(false);
+      }
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Failed to set location';
+      setManualLocationError(msg);
+      setIsSubmittingManual(false);
     }
   };
 
@@ -115,6 +231,34 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
       settings.location = locationData;
     }
 
+    // Apply notification intensity preset to habitBuilder
+    switch (notificationIntensity) {
+      case 'gentle':
+        settings.habitBuilder.enabled = false;
+        break;
+      case 'balanced':
+        settings.habitBuilder.enabled = true;
+        settings.habitBuilder.persistentReminders.enabled = true;
+        settings.habitBuilder.persistentReminders.maxReminders = 1;
+        settings.habitBuilder.persistentReminders.firstCheckDelay = 20;
+        settings.habitBuilder.gracePeriodWarning.enabled = false;
+        break;
+      case 'persistent':
+        settings.habitBuilder.enabled = true;
+        settings.habitBuilder.persistentReminders.enabled = true;
+        settings.habitBuilder.persistentReminders.maxReminders = 3;
+        settings.habitBuilder.persistentReminders.firstCheckDelay = 15;
+        settings.habitBuilder.persistentReminders.interval = 15;
+        settings.habitBuilder.gracePeriodWarning.enabled = true;
+        settings.habitBuilder.gracePeriodWarning.minutesBeforeNext = 15;
+        break;
+    }
+
+    // Apply mosque mode toggle
+    if (enableMosqueModeOnboarding) {
+      settings.mosqueMode.enabled = true;
+    }
+
     StorageService.setUserSettings(settings);
     setUserSettings(settings);
 
@@ -127,7 +271,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
       case 'welcome':
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.emoji}>🕌</Text>
+            {/* <Text style={styles.emoji}>🕌</Text> */}
             <Text style={styles.title}>Welcome to Sukoon</Text>
             <Text style={styles.subtitle}>
               Your companion for mindful prayer and spiritual growth
@@ -144,8 +288,8 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
       case 'name':
         return (
           <View style={styles.stepContainer}>
-            <Text style={styles.emoji}>👋</Text>
-            <Text style={styles.title}>Assalamu Alaikum!</Text>
+            {/* <Text style={styles.emoji}>👋</Text> */}
+            <Text style={styles.title}>As Salamu Alaikum!</Text>
             <Text style={styles.subtitle}>What should we call you?</Text>
             <TextInput
               style={styles.input}
@@ -169,8 +313,11 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
 
       case 'location':
         return (
-          <View style={styles.stepContainer}>
-            <Text style={styles.emoji}>📍</Text>
+          <ScrollView
+            contentContainerStyle={[styles.stepContainer, { flex: 0, flexGrow: 1, paddingVertical: 20 }]}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
             <Text style={styles.title}>Prayer Times</Text>
             <Text style={styles.subtitle}>
               We need your location to calculate accurate prayer times
@@ -178,27 +325,79 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
             <Text style={styles.description}>
               Your location data stays on your device and is never shared
             </Text>
-            <TouchableOpacity style={styles.button} onPress={requestLocationPermission}>
-              <Text style={styles.buttonText}>Allow Location Access</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={handleNext}>
-              <Text style={styles.skipText}>Skip for now</Text>
-            </TouchableOpacity>
-          </View>
+
+            {isLocating ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color={theme.colors.primary.DEFAULT} />
+                <Text style={styles.loadingText}>Finding your location...</Text>
+              </View>
+            ) : locationFailed ? (
+              <View style={styles.manualLocationContainer}>
+                <Text style={styles.manualLocationHint}>
+                  We couldn't detect your location automatically.{'\n'}Enter it manually below.
+                </Text>
+                <TextInput
+                  style={styles.input}
+                  placeholder="City (e.g. London)"
+                  placeholderTextColor={theme.colors.onboarding.placeholder}
+                  value={manualCity}
+                  onChangeText={setManualCity}
+                  autoCapitalize="words"
+                  returnKeyType="next"
+                />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Country (e.g. United Kingdom)"
+                  placeholderTextColor={theme.colors.onboarding.placeholder}
+                  value={manualCountry}
+                  onChangeText={setManualCountry}
+                  autoCapitalize="words"
+                  returnKeyType="done"
+                  onSubmitEditing={handleManualLocationSubmit}
+                />
+                {manualLocationError ? (
+                  <Text style={styles.errorText}>{manualLocationError}</Text>
+                ) : null}
+                <TouchableOpacity
+                  style={[styles.button, isSubmittingManual && styles.buttonDisabled]}
+                  onPress={handleManualLocationSubmit}
+                  disabled={isSubmittingManual}
+                >
+                  <Text style={styles.buttonText}>
+                    {isSubmittingManual ? 'Setting Location...' : 'Set Location'}
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => { setLocationFailed(false); }}>
+                  <Text style={styles.skipText}>Try GPS again</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <>
+                <TouchableOpacity style={styles.button} onPress={requestLocationPermission}>
+                  <Text style={styles.buttonText}>Allow Location Access</Text>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={handleNext}>
+                  <Text style={styles.skipText}>Skip for now</Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </ScrollView>
         );
 
       case 'notifications':
         return (
-          <View style={styles.stepContainer}>
-            <Text style={styles.emoji}>🔔</Text>
+          <ScrollView
+            contentContainerStyle={[styles.stepContainer, { flex: 0, flexGrow: 1, paddingVertical: 20 }]}
+            showsVerticalScrollIndicator={false}
+          >
             <Text style={styles.title}>Prayer Reminders</Text>
             <Text style={styles.subtitle}>
               Get gentle reminders for each prayer time
             </Text>
             <Text style={styles.description}>
-              We'll notify you 10 minutes before each prayer so you can prepare mindfully
+              We'll notify you before each prayer so you can prepare
             </Text>
-            {/* NEW: Adhan Toggle Section */}
+            {/* Adhan Toggle */}
             <View style={styles.toggleContainer}>
               <View style={styles.toggleRow}>
                 <Text style={styles.toggleLabel}>Play Adhan Sound</Text>
@@ -213,8 +412,90 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
                 Hear the beautiful call to prayer when it's time.
               </Text>
             </View>
+            {/* Notification Intensity Presets */}
+            <Text style={styles.intensityLabel}>
+              How should Sukoon follow up after prayer time?
+            </Text>
+            <View style={styles.intensityOptions}>
+              <TouchableOpacity
+                style={[
+                  styles.intensityOption,
+                  notificationIntensity === 'gentle' && styles.intensityOptionSelected,
+                ]}
+                onPress={() => setNotificationIntensity('gentle')}
+              >
+                <Text style={[
+                  styles.intensityTitle,
+                  notificationIntensity === 'gentle' && styles.intensityTitleSelected,
+                ]}>Gentle</Text>
+                <Text style={styles.intensityDesc}>Just let me know when it's time</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.intensityOption,
+                  notificationIntensity === 'balanced' && styles.intensityOptionSelected,
+                ]}
+                onPress={() => setNotificationIntensity('balanced')}
+              >
+                <Text style={[
+                  styles.intensityTitle,
+                  notificationIntensity === 'balanced' && styles.intensityTitleSelected,
+                ]}>Balanced</Text>
+                <Text style={styles.intensityDesc}>A reminder if I haven't prayed</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.intensityOption,
+                  notificationIntensity === 'persistent' && styles.intensityOptionSelected,
+                ]}
+                onPress={() => setNotificationIntensity('persistent')}
+              >
+                <Text style={[
+                  styles.intensityTitle,
+                  notificationIntensity === 'persistent' && styles.intensityTitleSelected,
+                ]}>Persistent</Text>
+                <Text style={styles.intensityDesc}>Help me build consistency</Text>
+              </TouchableOpacity>
+            </View>
             <TouchableOpacity style={styles.button} onPress={requestNotificationPermission}>
               <Text style={styles.buttonText}>Enable Notifications</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleNext}>
+              <Text style={styles.skipText}>Skip for now</Text>
+            </TouchableOpacity>
+          </ScrollView>
+        );
+
+      case 'mosque':
+        return (
+          <View style={styles.stepContainer}>
+            <Text style={styles.title}>Mosque Mode</Text>
+            <Text style={styles.subtitle}>
+              {Platform.OS === 'android'
+                ? 'Your phone silences itself at iqamah time'
+                : 'Get reminded to silence your phone before prayer'}
+            </Text>
+            <Text style={styles.description}>
+              {Platform.OS === 'android'
+                ? 'Sukoon will automatically put your phone on silent before the prayer starts and restore it after.'
+                : 'Since iPhone does not allow apps to control Do Not Disturb directly, Sukoon will send you a reminder before each iqamah so you can silence your phone.'}
+            </Text>
+            <View style={styles.toggleContainer}>
+              <View style={styles.toggleRow}>
+                <Text style={styles.toggleLabel}>Enable Mosque Mode</Text>
+                <Switch
+                  value={enableMosqueModeOnboarding}
+                  onValueChange={handleMosqueModeToggle}
+                  trackColor={{ false: theme.colors.switch.trackFalse, true: theme.colors.switch.trackTrue }}
+                  thumbColor={theme.colors.switch.thumb}
+                />
+              </View>
+              <Text style={styles.toggleDescription}>
+                Default iqamah times are pre-set. You can customize them anytime from the menu.
+              </Text>
+            </View>
+            <TouchableOpacity style={styles.button} onPress={handleNext}>
+              <Text style={styles.buttonText}>Continue</Text>
             </TouchableOpacity>
             <TouchableOpacity onPress={handleNext}>
               <Text style={styles.skipText}>Skip for now</Text>
@@ -226,7 +507,6 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
         return (
           <ScrollView contentContainerStyle={[styles.stepContainer, { flex: 0, flexGrow: 1, paddingVertical: 20 }]}
             showsVerticalScrollIndicator={false}>
-            <Text style={styles.emoji}>🕌</Text>
             <Text style={styles.title}>Calculation Method</Text>
             <Text style={styles.subtitle}>
               Choose your preferred prayer time calculation method
@@ -259,7 +539,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   };
 
   const getProgress = () => {
-    const steps = ['welcome', 'name', 'location', 'notifications', 'method'];
+    const steps = ['welcome', 'name', 'location', 'notifications', 'mosque', 'method'];
     return (steps.indexOf(currentStep) + 1) / steps.length;
   };
 
@@ -423,6 +703,71 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   toggleDescription: {
     fontSize: 14,
+    color: theme.colors.onboarding.textMuted,
+  },
+  // Phase 1: Location UX styles
+  loadingContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  loadingText: {
+    fontSize: 16,
+    color: theme.colors.onboarding.textSubtle,
+    marginTop: 16,
+  },
+  manualLocationContainer: {
+    width: '100%',
+    alignItems: 'center',
+  },
+  manualLocationHint: {
+    fontSize: 15,
+    color: theme.colors.onboarding.textMuted,
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 22,
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#E53E3E',
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  // Phase 2: Notification intensity styles
+  intensityLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.text.primary,
+    textAlign: 'center',
+    marginBottom: 16,
+  },
+  intensityOptions: {
+    width: '100%',
+    marginBottom: 24,
+  },
+  intensityOption: {
+    backgroundColor: theme.colors.onboarding.optionBg,
+    borderRadius: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: theme.colors.onboarding.optionBorder,
+  },
+  intensityOptionSelected: {
+    backgroundColor: theme.colors.onboarding.optionActiveBg,
+    borderColor: theme.colors.primary.DEFAULT,
+  },
+  intensityTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: theme.colors.onboarding.textBody,
+    marginBottom: 4,
+  },
+  intensityTitleSelected: {
+    color: theme.colors.primary.DEFAULT,
+  },
+  intensityDesc: {
+    fontSize: 13,
     color: theme.colors.onboarding.textMuted,
   },
 });

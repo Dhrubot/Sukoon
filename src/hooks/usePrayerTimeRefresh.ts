@@ -2,6 +2,7 @@
 import { useCallback } from 'react';
 import StorageService from '../services/StorageService';
 import { Location as LocationType } from '../types';
+import { getLocalDateKey } from '../utils/dateHelpers';
 
 export const usePrayerTimeRefresh = () => {
   const shouldRefreshPrayerTimes = useCallback(async (
@@ -11,7 +12,7 @@ export const usePrayerTimeRefresh = () => {
     try {
       // Get today's date in YYYY-MM-DD format for the cache key
       const today = new Date();
-      const dateStr = today.toISOString().split("T")[0];
+      const dateStr = getLocalDateKey(today);
 
       // Create a storage key for the prayer times refresh timestamp
       const refreshKey = `lastPrayerRefresh_${location.latitude.toFixed(
