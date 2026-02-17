@@ -84,7 +84,7 @@ export const WatchAdCard: React.FC<WatchAdCardProps> = ({ onRewardEarned }) => {
       </View>
 
       <Text style={[styles.description, { color: theme.colors.text.secondary }]}>
-        Can't donate? No problem! Watch a short ad to contribute and unlock premium features for 24 hours. All ads are halal-filtered.
+        Can't donate? No problem! All ads are halal-filtered.
       </Text>
 
       <TouchableOpacity
@@ -116,7 +116,7 @@ export const WatchAdCard: React.FC<WatchAdCardProps> = ({ onRewardEarned }) => {
             {hasActiveReward
               ? 'Already Active'
               : canWatch
-                ? 'Watch Ad & Unlock Premium'
+                ? 'Watch Ad'
                 : hoursLeft > 0
                   ? `Available in ${hoursLeft}h`
                   : 'Ad Loading...'}
