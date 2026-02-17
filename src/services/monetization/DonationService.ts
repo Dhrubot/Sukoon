@@ -1,4 +1,3 @@
-import { Linking } from 'react-native';
 import IAPManager from './IAPManager';
 import StorageService from '../StorageService';
 import { Donation } from '../../types';
@@ -18,32 +17,32 @@ export const DONATION_TIERS = [
     id: 'coffee',
     productId: DONATION_PRODUCTS.COFFEE,
     amount: 2.99,
-    title: 'Buy us a Coffee ☕',
-    description: 'Support with a small contribution',
+    title: 'A Small Sadaqah',
+    description: 'Every good deed counts',
     emoji: '☕',
   },
   {
     id: 'meal',
     productId: DONATION_PRODUCTS.MEAL,
     amount: 9.99,
-    title: 'Buy us a Meal 🍱',
-    description: 'Help us keep developing',
+    title: 'Feed the Effort',
+    description: 'Help us keep building',
     emoji: '🍱',
   },
   {
     id: 'generous',
     productId: DONATION_PRODUCTS.GENEROUS,
     amount: 24.99,
-    title: 'Generous Support 💚',
-    description: 'Your generosity keeps us going',
+    title: 'Generous Heart',
+    description: 'Barakah in your generosity',
     emoji: '💚',
   },
   {
     id: 'major',
     productId: DONATION_PRODUCTS.MAJOR,
     amount: 49.99,
-    title: 'Major Support 🌟',
-    description: 'Make a big impact for the Ummah',
+    title: 'Major Blessing',
+    description: 'A lasting impact for the Ummah',
     emoji: '🌟',
   },
 ];
@@ -134,16 +133,9 @@ class DonationService {
     console.log('Thank you for your donation!', donation);
   }
 
-  // Alternative donation methods
-  async openPayPalDonation() {
-    const paypalUrl = 'https://paypal.me/CodifizApp';
-    await Linking.openURL(paypalUrl);
-  }
-
-  async openCryptoDonation() {
-    const cryptoUrl = 'https://commerce.coinbase.com/checkout/ee131f5e-bec6-4829-b897-ab64258ce317';
-    await Linking.openURL(cryptoUrl);
-  }
+  // Note: External payment links (PayPal, Crypto) removed for App Store / Google Play compliance.
+  // Both stores prohibit in-app links to alternative payment methods for digital goods/tips.
+  // External donation options can be mentioned on the website or via email communications.
 
   // Zakat calculator integration
   calculateZakat(assets: number, liabilities: number): {

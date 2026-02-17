@@ -44,7 +44,7 @@ export const WatchAdCard: React.FC<WatchAdCardProps> = ({ onRewardEarned }) => {
       if (earned) {
         Alert.alert(
           'JazakAllah Khair!',
-          'You\'ve earned 24 hours of premium features. Thank you for supporting Sukoon!',
+          'Thank you for supporting Sukoon! Your generosity keeps this app free for the Ummah.',
           [{ text: 'Alhamdulillah' }]
         );
         onRewardEarned?.();
@@ -62,9 +62,9 @@ export const WatchAdCard: React.FC<WatchAdCardProps> = ({ onRewardEarned }) => {
   };
 
   const statusText = hasActiveReward
-    ? `Premium active! ${hoursLeft}h remaining`
+    ? `You've already supported today — JazakAllah Khair!`
     : canWatch
-      ? 'Watch a short halal ad to unlock 24h of premium features'
+      ? 'Watch a short halal ad to help keep Sukoon free'
       : hoursLeft > 0
         ? `Next ad available in ${hoursLeft}h`
         : 'Loading ad...';
@@ -75,7 +75,7 @@ export const WatchAdCard: React.FC<WatchAdCardProps> = ({ onRewardEarned }) => {
         <Text style={styles.icon}>{hasActiveReward ? '✅' : '🎬'}</Text>
         <View style={styles.textContainer}>
           <Text style={[styles.title, { color: theme.colors.text.primary }]}>
-            Support by Watching
+            Support Sukoon
           </Text>
           <Text style={[styles.subtitle, { color: theme.colors.text.secondary }]}>
             {statusText}

@@ -250,6 +250,41 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
             </View>
           </View>
 
+          {/* Notification Intensity */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Reminder Intensity</Text>
+            <Text style={styles.settingDescription}>
+              How persistent should follow-up reminders be?
+            </Text>
+
+            <View style={styles.reminderOptions}>
+              {([
+                { key: 'gentle', label: 'Gentle', desc: 'Single reminder only' },
+                { key: 'balanced', label: 'Balanced', desc: 'Up to 2 follow-ups' },
+                { key: 'persistent', label: 'Persistent', desc: 'Remind until marked' },
+              ] as const).map((opt) => (
+                <TouchableOpacity
+                  key={opt.key}
+                  style={[
+                    styles.reminderOption,
+                    (localSettings.intensity || 'balanced') === opt.key && styles.reminderOptionActive,
+                    { flex: 1 },
+                  ]}
+                  onPress={() => updateSettings({ intensity: opt.key })}
+                >
+                  <Text
+                    style={[
+                      styles.reminderOptionText,
+                      (localSettings.intensity || 'balanced') === opt.key && styles.reminderOptionTextActive,
+                    ]}
+                  >
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
           {/* Test & Debug */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Test Notifications</Text>

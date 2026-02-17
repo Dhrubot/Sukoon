@@ -1,6 +1,7 @@
 // src/components/garden/GardenPlantView.tsx
 import React, { useEffect, useRef } from 'react';
 import { View, Text, Animated, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../providers/ThemeProvider';
 import { GardenPlant } from '../../types/garden';
 import StorageService from '../../services/StorageService';
@@ -25,7 +26,9 @@ const GardenPlantView: React.FC<GardenPlantViewProps> = ({ plant, delay = 0 }) =
         toValue: 1,
         duration: 600,
         useNativeDriver: true,
-      }).start();
+      }).start(() => {
+        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      });
     }, delay);
 
     // Gentle breathing animation
@@ -53,6 +56,7 @@ const GardenPlantView: React.FC<GardenPlantViewProps> = ({ plant, delay = 0 }) =
   }, []);
 
   const handlePress = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     const text = StorageService.getReflectionText(plant.date, plant.prayer);
     const moodLabels = ['', 'Distracted', 'Neutral', 'Focused', 'Peaceful', 'Connected'];
     const moodLabel = moodLabels[plant.mood] || '';

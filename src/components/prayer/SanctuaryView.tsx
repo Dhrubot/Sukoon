@@ -10,12 +10,14 @@ import {
   Dimensions,
   Alert,
 } from 'react-native';
+import QadaSheet from './QadaSheet';
 import { LinearGradient } from 'expo-linear-gradient';
 import { PrayerTime, PrayerRecord } from '../../types';
 import PrayerTimeService from '../../services/PrayerTimeService';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
+import { formatHijriDate } from '../../utils/hijriDate';
 
 const { height } = Dimensions.get('window');
 
@@ -87,6 +89,7 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
   }, []);
 
   const isAlreadyPrayed = record?.status === 'prayed';
+  const [showQadaSheet, setShowQadaSheet] = useState(false);
 
   const handlePress = () => {
     if (isAlreadyPrayed) {
@@ -100,15 +103,8 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
         ]
       );
     } else if (!isTimeEntered && missedPrayer && onPrepareQada) {
-      // Adhan hasn't happened yet AND there's a missed prayer — offer qada
-      Alert.alert(
-        `${PrayerTimeService.getPrayerDisplayName(prayer.name)} Adhan Hasn\'t Happened Yet`,
-        `Would you like to prepare for ${PrayerTimeService.getPrayerDisplayName(missedPrayer.name)} as a Qada (makeup) prayer?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: `Prepare ${PrayerTimeService.getPrayerDisplayName(missedPrayer.name)} Qada`, onPress: onPrepareQada },
-        ]
-      );
+      // Show warm bottom sheet instead of clinical Alert
+      setShowQadaSheet(true);
     } else if (!isTimeEntered) {
       // Adhan hasn't happened yet but no missed prayers — confirm early preparation
       Alert.alert(
@@ -135,50 +131,71 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
     return (gradients as any)[prayer.name] || gradients.default;
   };
 
+  const showQadaSheetElement = missedPrayer != null && onPrepareQada != null;
+
   return (
-    <LinearGradient
-      colors={getPrayerGradient()}
-      style={styles.container}
-      start={{ x: 0.5, y: 0 }}
-      end={{ x: 0.5, y: 1 }}
-    >
-      {/* Greeting */}
-      <Text style={styles.greeting}>{greeting}</Text>
+    <>
+      <LinearGradient
+        colors={getPrayerGradient()}
+        style={styles.container}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+      >
+        {/* Greeting + Hijri date */}
+        <View style={styles.greetingContainer}>
+          <Text style={styles.greeting}>{greeting}</Text>
+          <Text style={styles.hijriDate}>{formatHijriDate()}</Text>
+        </View>
 
-      {/* Prayer name — the focal point */}
-      <View style={styles.prayerInfo}>
-        <Text style={styles.prayerLabel}>
-          {isAlreadyPrayed ? 'Current Prayer' : 'Next Prayer'}
-        </Text>
-        <Text style={styles.prayerName}>
-          {PrayerTimeService.getPrayerDisplayName(prayer.name)}
-        </Text>
-        <Text style={styles.prayerTime}>
-          {PrayerTimeService.formatPrayerTime(prayer.time)}
-        </Text>
-        {isAlreadyPrayed ? (
-          <Text style={styles.prayedStatus}>Prayed with Presence ✓</Text>
-        ) : (
-          <Text style={styles.countdown}>in {timeRemaining}</Text>
-        )}
-      </View>
-
-      {/* CTA */}
-      <Animated.View style={{ opacity: isAlreadyPrayed ? 1 : pulseAnim }}>
-        <TouchableOpacity
-          style={[
-            styles.prepareButton,
-            (isAlreadyPrayed || !isTimeEntered) && styles.alreadyPrayedButton,
-          ]}
-          onPress={handlePress}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.prepareText}>
-            {getButtonText()}
+        {/* Prayer name — the focal point */}
+        <View style={styles.prayerInfo}>
+          <Text style={styles.prayerLabel}>
+            {isAlreadyPrayed ? 'Current Prayer' : 'Next Prayer'}
           </Text>
-        </TouchableOpacity>
-      </Animated.View>
-    </LinearGradient>
+          <Text style={styles.prayerName}>
+            {PrayerTimeService.getPrayerDisplayName(prayer.name)}
+          </Text>
+          <Text style={styles.prayerTime}>
+            {PrayerTimeService.formatPrayerTime(prayer.time)}
+          </Text>
+          {isAlreadyPrayed ? (
+            <Text style={styles.prayedStatus}>Prayed with Presence ✓</Text>
+          ) : (
+            <Text style={styles.countdown}>in {timeRemaining}</Text>
+          )}
+        </View>
+
+        {/* CTA */}
+        <Animated.View style={{ opacity: isAlreadyPrayed ? 1 : pulseAnim }}>
+          <TouchableOpacity
+            style={[
+              styles.prepareButton,
+              (isAlreadyPrayed || !isTimeEntered) && styles.alreadyPrayedButton,
+            ]}
+            onPress={handlePress}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.prepareText}>
+              {getButtonText()}
+            </Text>
+          </TouchableOpacity>
+        </Animated.View>
+      </LinearGradient>
+
+      {/* Qada Bottom Sheet — replaces Alert.alert for missed prayer prompts */}
+      {showQadaSheetElement && (
+        <QadaSheet
+          visible={showQadaSheet}
+          prayerName={missedPrayer!.name}
+          nextPrayerName={prayer.name}
+          onPrayQada={() => {
+            setShowQadaSheet(false);
+            onPrepareQada!();
+          }}
+          onDismiss={() => setShowQadaSheet(false)}
+        />
+      )}
+    </>
   );
 };
 
@@ -192,11 +209,22 @@ const createStyles = (theme: AppTheme) =>
       paddingBottom: 32,
       paddingHorizontal: 24,
     },
+    greetingContainer: {
+      alignItems: 'center',
+    },
     greeting: {
       fontSize: 16,
       fontWeight: '400',
-      color: 'rgba(255, 255, 255, 0.7)',
+      color: theme.colors.sanctuary.greeting,
       textAlign: 'center',
+    },
+    hijriDate: {
+      fontSize: 12,
+      fontWeight: '400',
+      color: theme.colors.sanctuary.label,
+      textAlign: 'center',
+      marginTop: 4,
+      opacity: 0.8,
     },
     prayerInfo: {
       alignItems: 'center',
@@ -204,51 +232,51 @@ const createStyles = (theme: AppTheme) =>
     prayerLabel: {
       fontSize: 12,
       fontWeight: '500',
-      color: 'rgba(255, 255, 255, 0.5)',
+      color: theme.colors.sanctuary.label,
       letterSpacing: 2,
       textTransform: 'uppercase',
       marginBottom: 8,
     },
     prayerName: {
       fontSize: 48,
-      fontWeight: '700',
-      color: '#FFFFFF',
+      fontFamily: theme.typography.fontFamily.heading,
+      color: theme.colors.sanctuary.prayerName,
       marginBottom: 8,
     },
     prayerTime: {
       fontSize: 20,
       fontWeight: '400',
-      color: 'rgba(255, 255, 255, 0.8)',
+      color: theme.colors.sanctuary.prayerTime,
       marginBottom: 4,
     },
     countdown: {
       fontSize: 16,
       fontWeight: '300',
-      color: 'rgba(255, 255, 255, 0.6)',
+      color: theme.colors.sanctuary.countdown,
       fontStyle: 'italic',
     },
     prayedStatus: {
       fontSize: 16,
       fontWeight: '500',
-      color: 'rgba(255, 255, 255, 0.85)',
+      color: theme.colors.sanctuary.prayedStatus,
       marginTop: 4,
     },
     prepareButton: {
       borderWidth: 1,
-      borderColor: 'rgba(255, 255, 255, 0.3)',
+      borderColor: theme.colors.sanctuary.buttonBorder,
       borderRadius: 24,
       paddingVertical: 14,
       paddingHorizontal: 40,
-      backgroundColor: 'rgba(255, 255, 255, 0.1)',
+      backgroundColor: theme.colors.sanctuary.buttonBg,
     },
     alreadyPrayedButton: {
-      backgroundColor: 'rgba(255, 255, 255, 0.05)',
-      borderColor: 'rgba(255, 255, 255, 0.15)',
+      backgroundColor: theme.colors.sanctuary.buttonBgMuted,
+      borderColor: theme.colors.sanctuary.buttonBorderMuted,
     },
     prepareText: {
       fontSize: 16,
       fontWeight: '500',
-      color: '#FFFFFF',
+      color: theme.colors.sanctuary.buttonText,
       letterSpacing: 0.5,
     },
   });

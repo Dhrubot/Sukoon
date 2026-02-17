@@ -17,11 +17,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import * as Haptics from "expo-haptics";
+import { useKeepAwake } from "expo-keep-awake";
 
 // Components
 import BreathingCircle from "../../components/mindfulness/BreathingCircle";
 import MoodSelector from "../../components/mindfulness/MoodSelector";
 import ReflectionPrompts from "../../components/mindfulness/ReflectionPrompts";
+import DhikrCounter from "../../components/mindfulness/DhikrCounter";
+import { getRandomKhushuQuote } from "../../constants/khushuQuotes";
 
 // Store and Services
 import { useStore } from "../../store/useStore";
@@ -46,9 +49,10 @@ import { getLocalDateKey } from "../../utils/dateHelpers";
 
 const { width, height } = Dimensions.get("window");
 
-type FlowStep = "transition" | "breathing" | "niyyah" | "praying" | "reflection" | "complete";
+type FlowStep = "transition" | "breathing" | "niyyah" | "praying" | "dhikr" | "reflection" | "complete";
 
 const MindfulnessFlow: React.FC = () => {
+  useKeepAwake(); // Keep screen on during prayer — no dimming mid-salah
   const navigation = useNavigation();
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
@@ -85,17 +89,7 @@ const MindfulnessFlow: React.FC = () => {
   const [prayerStartTime, setPrayerStartTime] = useState<Date | null>(null);
 
   // Phase 6: Randomly selected khushu line for praying screen (picked once per session)
-  const [khushuLine] = useState(() => {
-    const lines = [
-      'Allah is facing you. Do not turn away.',
-      'Pray as if it is your last prayer.',
-      'He hears every word. He sees every prostration.',
-      'The Prophet \u2E3A said: Pray as if you see Him.',
-      'Your Lord is closer to you than your jugular vein.',
-      'This prayer may be the one that changes everything.',
-    ];
-    return lines[Math.floor(Math.random() * lines.length)];
-  });
+  const [khushuLine] = useState(() => getRandomKhushuQuote());
 
   // Animations — declared before any useEffects that reference them
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -137,8 +131,8 @@ const MindfulnessFlow: React.FC = () => {
   useEffect(() => {
     if (['transition', 'breathing', 'complete'].includes(currentStep)) return;
 
-    // Praying step gets a slower, gentler fade (no slide)
-    if (currentStep === 'praying') {
+    // Praying and dhikr steps get a slower, gentler fade (no slide)
+    if (currentStep === 'praying' || currentStep === 'dhikr') {
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 800,
@@ -336,6 +330,7 @@ const MindfulnessFlow: React.FC = () => {
   // P0-E FIX: This is where prayer completion is canonically recorded.
   // P0-F FIX: Also closes the reminder flow so Tier 2/3 notifications stop.
   const finishPrayer = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const dateKey = getLocalDateKey();
 
     // Upgrade the in_progress record to "prayed" with full tracking
@@ -364,6 +359,11 @@ const MindfulnessFlow: React.FC = () => {
     ReminderStateService.markPrayerCompleted(prayerId);
     NotificationService.cancelPrayerReminderFlow(prayerId).catch(() => {});
 
+    animateToStep("dhikr");
+  };
+
+  // ── POST-DHIKR: Transition from dhikr to reflection ──
+  const finishDhikr = () => {
     animateToStep("reflection");
   };
 
@@ -640,27 +640,34 @@ const MindfulnessFlow: React.FC = () => {
   );
 
   const renderCompleteStep = () => (
-    <Animated.View
-      style={[
-        styles.completeContainer,
-        {
-          opacity: fadeAnim,
-          transform: [{ scale: completeScale }],
-        },
-      ]}
+    <TouchableOpacity
+      activeOpacity={1}
+      onPress={() => navigation.goBack()}
+      style={{ flex: 1 }}
     >
-      <Animated.Text style={[styles.completeEmoji, { opacity: stillnessPulse }]}>✨</Animated.Text>
-      <Text style={styles.completeTitle}>Ma sha Allah!</Text>
-      <Text style={styles.completeText}>
-        You've prepared & prayed for{" "}
-        {PrayerTimeService.getPrayerDisplayName(prayer.name)} prayer.
-        {"\n\n"}
-        May your prayer be accepted and bring you peace.
-      </Text>
-      {reflectionText.length > 0 && (
-        <Text style={styles.gardenHint}>A new bloom appeared in your garden 🌱</Text>
-      )}
-    </Animated.View>
+      <Animated.View
+        style={[
+          styles.completeContainer,
+          {
+            opacity: fadeAnim,
+            transform: [{ scale: completeScale }],
+          },
+        ]}
+      >
+        <Animated.Text style={[styles.completeEmoji, { opacity: stillnessPulse }]}>✨</Animated.Text>
+        <Text style={styles.completeTitle}>Ma sha Allah!</Text>
+        <Text style={styles.completeText}>
+          You've prepared & prayed for{" "}
+          {PrayerTimeService.getPrayerDisplayName(prayer.name)} prayer.
+          {"\n\n"}
+          May your prayer be accepted and bring you peace.
+        </Text>
+        {reflectionText.length > 0 && (
+          <Text style={styles.gardenHint}>A new bloom appeared in your garden 🌱</Text>
+        )}
+        <Text style={styles.tapToDismiss}>Tap anywhere to return</Text>
+      </Animated.View>
+    </TouchableOpacity>
   );
 
   // Don't render until validation is complete
@@ -668,11 +675,11 @@ const MindfulnessFlow: React.FC = () => {
     return null;
   }
 
-  const showGradient = currentStep !== 'reflection';
-  const showHeader = currentStep !== 'praying';
-  const showDots = !['transition', 'praying', 'complete'].includes(currentStep);
+  const showGradient = !['reflection', 'dhikr'].includes(currentStep);
+  const showHeader = !['praying', 'dhikr'].includes(currentStep);
+  const showDots = !['transition', 'praying', 'dhikr', 'complete'].includes(currentStep);
 
-  // Progress: breathing=1, niyyah=2, reflection=3 (4 dots total)
+  // Progress: breathing=0, niyyah=1, reflection=2 (3 dots)
   const stepIndexMap: Record<string, number> = { breathing: 0, niyyah: 1, reflection: 2 };
   const stepIndex = stepIndexMap[currentStep] ?? -1;
 
@@ -680,9 +687,9 @@ const MindfulnessFlow: React.FC = () => {
     <View style={[
       styles.container,
       !showGradient && { backgroundColor: theme.colors.background.primary },
-      currentStep === 'praying' && { backgroundColor: theme.colors.background.primary },
+      (currentStep === 'praying' || currentStep === 'dhikr') && { backgroundColor: theme.colors.background.primary },
     ]}>
-      {showGradient && currentStep !== 'praying' && (
+      {showGradient && currentStep !== 'praying' && currentStep !== 'dhikr' && (
         <LinearGradient colors={getPrayerGradient()} style={StyleSheet.absoluteFill} />
       )}
       <SafeAreaView style={styles.safeArea}>
@@ -728,6 +735,9 @@ const MindfulnessFlow: React.FC = () => {
             {currentStep === "breathing" && renderBreathingStep()}
             {currentStep === "niyyah" && renderNiyyahStep()}
             {currentStep === "praying" && renderPrayingStep()}
+            {currentStep === "dhikr" && (
+              <DhikrCounter onComplete={finishDhikr} onSkip={finishDhikr} />
+            )}
             {currentStep === "reflection" && renderReflectionStep()}
             {currentStep === "complete" && renderCompleteStep()}
           </View>
@@ -876,7 +886,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   completeTitle: {
     fontSize: 36,
-    fontWeight: "700",
+    fontFamily: theme.typography.fontFamily.heading,
     color: theme.colors.mindfulness.textPrimary,
     marginBottom: 16,
   },
@@ -892,6 +902,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     textAlign: "center",
     fontStyle: "italic",
     marginTop: 20,
+  },
+  tapToDismiss: {
+    fontSize: 13,
+    color: theme.colors.mindfulness.textHint,
+    textAlign: "center",
+    marginTop: 32,
   },
   niyyahContainer: {
     flex: 1,

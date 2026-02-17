@@ -1,7 +1,9 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
+import { useFonts, Lora_400Regular, Lora_700Bold } from '@expo-google-fonts/lora';
+import { Amiri_400Regular, Amiri_700Bold } from '@expo-google-fonts/amiri';
 
 // Components
 import { AppInitializer } from './src/components/AppInitializer';
@@ -14,6 +16,23 @@ import ErrorBoundary from './src/components/ErrorBoundary';
 SplashScreen.preventAutoHideAsync();
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    Lora_400Regular,
+    Lora_700Bold,
+    Amiri_400Regular,
+    Amiri_700Bold,
+  });
+
+  const onLayoutRootView = useCallback(async () => {
+    if (fontsLoaded) {
+      await SplashScreen.hideAsync();
+    }
+  }, [fontsLoaded]);
+
+  if (!fontsLoaded) {
+    return null; // Splash screen remains visible
+  }
+
   return (
     <ErrorBoundary>
       <SafeAreaProvider>

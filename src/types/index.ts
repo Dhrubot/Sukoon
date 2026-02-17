@@ -105,6 +105,7 @@ export interface UserSettings {
     beforePrayer: number; // minutes
     reminderText: string;
     postPrayerCheck: boolean; // DEPRECATED - replaced by habitBuilder
+    intensity?: 'gentle' | 'balanced' | 'persistent'; // Controls follow-up reminder frequency
   };
   // Per-prayer notification toggles (individual control)
   prayerNotifications: {

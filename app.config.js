@@ -66,6 +66,7 @@ export default {
       "./plugins/withRingerMode.js",
       "./plugins/withWidget.js",
       "./plugins/withAndroidWidget.js",
+      "expo-font",
       "expo-location",
       "expo-audio",
       "expo-secure-store",

@@ -728,7 +728,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   errorText: {
     fontSize: 14,
-    color: '#E53E3E',
+    color: theme.colors.status.error,
     textAlign: 'center',
     marginBottom: 16,
   },

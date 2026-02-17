@@ -69,16 +69,16 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
 
   const getStatusColor = (): string => {
     if (record?.status === 'prayed') return theme.colors.status.success;
-    if (record?.status === 'missed' && isPast(prayer.time)) return theme.colors.status.error;
+    if (record?.status === 'missed' && isPast(prayer.time)) return theme.colors.text.muted;
 
     // Special case: Fajr is missed after Sunrise
     if (prayer.name === 'Fajr' && todaySunrise && isPast(prayer.time) && !record && isPast(todaySunrise)) {
-      return theme.colors.status.error;
+      return theme.colors.text.muted;
     }
 
     // Check if prayer is truly missed (next prayer started)
     if (isPast(prayer.time) && !record && nextPrayer && isPast(nextPrayer.time)) {
-      return theme.colors.status.error;
+      return theme.colors.text.muted;
     }
 
     if (isFuture(prayer.time)) return theme.colors.text.secondary;
@@ -90,15 +90,15 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
       return record.mindfulnessCompleted ? '✓ Prayed with Presence' : '✓ Prayed';
     }
 
-    // Check if prayer is truly missed
+    // Check if prayer time has passed — reframe as Qada (makeup), not "Missed"
     if (isPast(prayer.time) && !record) {
-      // Special case: Fajr is missed after Sunrise
+      // Special case: Fajr after Sunrise
       if (prayer.name === 'Fajr' && todaySunrise && isPast(todaySunrise)) {
-        return 'Missed';
+        return 'Qada';
       }
-      // Other prayers: Only mark as missed if the next prayer has started
+      // Other prayers: Only mark as Qada if the next prayer has started
       if (nextPrayer && isPast(nextPrayer.time)) {
-        return 'Missed';
+        return 'Qada';
       }
       // Otherwise, still in grace period
       return 'Time to Pray';

@@ -68,6 +68,7 @@ const HomeScreen = ({ navigation }: any) => {
 
   // Local state for UI features
   const [currentTime, setCurrentTime] = useState(new Date());
+  const [focusExpanded, setFocusExpanded] = useState(false);
 
   // 🎯 REMOVED: loadPrayerTimes function - now handled by provider!
   // 🎯 REMOVED: location checks - now handled by provider!
@@ -160,6 +161,15 @@ const HomeScreen = ({ navigation }: any) => {
     return [theme.colors.background.primary, theme.colors.background.secondary];
   };
 
+
+  // Focus Mode: when next prayer is within 15 minutes, sanctuary expands
+  const isFocusMode = useMemo(() => {
+    if (!nextPrayer) return false;
+    const minutesUntil = Math.floor(
+      (nextPrayer.time.getTime() - currentTime.getTime()) / (1000 * 60)
+    );
+    return minutesUntil >= 0 && minutesUntil <= 15;
+  }, [nextPrayer, currentTime]);
 
   const completedToday = todayPrayerRecords.filter(r => r.status === 'prayed').length;
 
@@ -271,8 +281,21 @@ const HomeScreen = ({ navigation }: any) => {
           </LinearGradient>
         )}
 
-        {/* Secondary content — below the fold */}
-        <View style={[styles.secondaryContent, { backgroundColor: theme.colors.background.primary }]}>
+        {/* Secondary content — collapsed in Focus Mode */}
+        {isFocusMode && !focusExpanded && (
+          <TouchableOpacity
+            style={styles.focusRevealButton}
+            onPress={() => setFocusExpanded(true)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.focusRevealText}>See today's prayers ↓</Text>
+          </TouchableOpacity>
+        )}
+        <View style={[
+          styles.secondaryContent,
+          { backgroundColor: theme.colors.background.primary },
+          isFocusMode && !focusExpanded && styles.secondaryContentHidden,
+        ]}>
           {/* Offline Banner */}
           {isOffline && (
             <View style={styles.offlineBanner}>
@@ -361,6 +384,19 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  focusRevealButton: {
+    alignItems: 'center',
+    paddingVertical: theme.spacing.md,
+    backgroundColor: theme.colors.background.primary,
+  },
+  focusRevealText: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.muted,
+    fontWeight: '500',
+  },
+  secondaryContentHidden: {
+    display: 'none',
+  },
   header: {
     paddingHorizontal: theme.spacing.xl,
     paddingTop: theme.spacing['2xl'],
@@ -370,7 +406,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   greeting: {
     fontSize: theme.typography.fontSize['3xl'],
     fontWeight: '400',
-    color: '#FFFFFF',
+    color: theme.colors.sanctuary.prayerName,
     textAlign: 'center',
     marginBottom: theme.spacing.sm,
   },
@@ -499,14 +535,14 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     textAlign: 'center',
   },
   offlineBanner: {
-    backgroundColor: 'rgba(255, 152, 0, 0.15)',
+    backgroundColor: 'rgba(245, 158, 11, 0.15)',
     borderRadius: theme.borderRadius.sm,
     paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.lg,
     marginHorizontal: theme.spacing.xl,
     marginBottom: theme.spacing.sm,
     borderWidth: 1,
-    borderColor: 'rgba(255, 152, 0, 0.3)',
+    borderColor: 'rgba(245, 158, 11, 0.3)',
     alignItems: 'center',
   },
   offlineBannerText: {
