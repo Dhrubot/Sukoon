@@ -1,5 +1,8 @@
-// src/components/prayer/QadaSheet.tsx
-// Warm bottom sheet replacing Alert.alert for Qada prayer prompts
+// src/components/prayer/PreAdhanSheet.tsx
+// Bottom sheet shown when user taps "Prepare for Prayer" before adhan has happened.
+// Islamically, fard prayer cannot be performed before its time enters.
+// Offers alternatives: make up a missed prayer or pray sunnah/nafl.
+
 import React, { useEffect, useRef } from 'react';
 import {
   View,
@@ -19,19 +22,23 @@ import { PrayerName } from '../../types';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-interface QadaSheetProps {
+interface PreAdhanSheetProps {
   visible: boolean;
+  /** The upcoming fard prayer whose adhan hasn't happened */
   prayerName: PrayerName;
-  nextPrayerName: PrayerName;
-  onPrayQada: () => void;
+  /** A previous prayer that hasn't been prayed yet (optional) */
+  missedPrayerName?: PrayerName;
+  onMakeUpPrayer?: () => void;
+  onPraySunnah: () => void;
   onDismiss: () => void;
 }
 
-const QadaSheet: React.FC<QadaSheetProps> = ({
+const PreAdhanSheet: React.FC<PreAdhanSheetProps> = ({
   visible,
   prayerName,
-  nextPrayerName,
-  onPrayQada,
+  missedPrayerName,
+  onMakeUpPrayer,
+  onPraySunnah,
   onDismiss,
 }) => {
   const { theme } = useTheme();
@@ -71,7 +78,9 @@ const QadaSheet: React.FC<QadaSheetProps> = ({
   }, [visible]);
 
   const displayName = PrayerTimeService.getPrayerDisplayName(prayerName);
-  const nextDisplayName = PrayerTimeService.getPrayerDisplayName(nextPrayerName);
+  const missedDisplayName = missedPrayerName
+    ? PrayerTimeService.getPrayerDisplayName(missedPrayerName)
+    : null;
 
   return (
     <Modal
@@ -84,45 +93,63 @@ const QadaSheet: React.FC<QadaSheetProps> = ({
       <View style={styles.modalContainer}>
         <TouchableWithoutFeedback onPress={onDismiss}>
           <Animated.View
-            style={[
-              styles.backdrop,
-              { opacity: backdropAnim },
-            ]}
+            style={[styles.backdrop, { opacity: backdropAnim }]}
           />
         </TouchableWithoutFeedback>
 
         <Animated.View
-          style={[
-            styles.sheet,
-            { transform: [{ translateY: slideAnim }] },
-          ]}
+          style={[styles.sheet, { transform: [{ translateY: slideAnim }] }]}
         >
           <View style={styles.handle} />
 
-          <Text style={styles.title}>Make Up {displayName}</Text>
+          <Text style={styles.title}>{displayName} Time Hasn't Entered</Text>
 
           <Text style={styles.message}>
-            {nextDisplayName} hasn't started yet. Would you like to make up {displayName}?
+            The adhan for {displayName} hasn't been called yet.
+            You cannot pray this fard prayer until its time enters.
             {'\n\n'}
-            The door to fulfill it is always open.
+            You can still earn reward with other prayers.
           </Text>
 
+          {/* Option A: Make up a missed prayer */}
+          {missedDisplayName && onMakeUpPrayer && (
+            <TouchableOpacity
+              style={styles.primaryButton}
+              onPress={onMakeUpPrayer}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.primaryButtonText}>
+                Make Up {missedDisplayName}
+              </Text>
+            </TouchableOpacity>
+          )}
+
+          {/* Option B: Pray Sunnah/Nafl */}
           <TouchableOpacity
-            style={styles.primaryButton}
-            onPress={onPrayQada}
+            style={[
+              missedDisplayName ? styles.outlineButton : styles.primaryButton,
+            ]}
+            onPress={onPraySunnah}
             activeOpacity={0.8}
           >
-            <Text style={styles.primaryButtonText}>
-              Make Up {displayName}
+            <Text
+              style={[
+                missedDisplayName
+                  ? styles.outlineButtonText
+                  : styles.primaryButtonText,
+              ]}
+            >
+              Pray Sunnah / Nafl
             </Text>
           </TouchableOpacity>
 
+          {/* Dismiss */}
           <TouchableOpacity
-            style={styles.secondaryButton}
+            style={styles.dismissButton}
             onPress={onDismiss}
             activeOpacity={0.7}
           >
-            <Text style={styles.secondaryButtonText}>Not Now</Text>
+            <Text style={styles.dismissButtonText}>I'll Wait</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -182,14 +209,27 @@ const createStyles = (theme: AppTheme) =>
       fontWeight: '600',
       color: theme.colors.primary.contrast,
     },
-    secondaryButton: {
+    outlineButton: {
+      borderWidth: 1.5,
+      borderColor: theme.colors.primary.DEFAULT,
+      borderRadius: 16,
+      paddingVertical: 16,
+      alignItems: 'center',
+      marginBottom: 12,
+    },
+    outlineButtonText: {
+      fontSize: theme.typography.fontSize.lg,
+      fontWeight: '600',
+      color: theme.colors.primary.DEFAULT,
+    },
+    dismissButton: {
       paddingVertical: 12,
       alignItems: 'center',
     },
-    secondaryButtonText: {
+    dismissButtonText: {
       fontSize: theme.typography.fontSize.base,
       color: theme.colors.text.muted,
     },
   });
 
-export default QadaSheet;
+export default PreAdhanSheet;

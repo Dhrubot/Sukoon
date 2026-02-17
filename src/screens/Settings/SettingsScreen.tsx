@@ -30,6 +30,7 @@ import { CalculationMethodModal, NotificationModal } from './modals';
 
 // Services
 import NotificationService from '../../services/NotificationService';
+import { getCachedHijriDate, getRawCachedHijriDate } from '../../utils/ramadan';
 
 const SettingsScreen = ({ navigation }: any) => {
   const styles = useThemedStyles(createStyles);
@@ -157,6 +158,56 @@ const SettingsScreen = ({ navigation }: any) => {
               setUserSettings(updated);
             }}
           />
+        </SettingSection>
+
+        {/* 🌙 Hijri Date Adjustment (Moon Sighting) */}
+        <SettingSection title="HIJRI CALENDAR">
+          <View style={styles.hijriAdjustRow}>
+            <View style={styles.hijriAdjustLabel}>
+              <Text style={[styles.hijriAdjustTitle, { color: theme.colors.text.primary }]}>
+                Hijri Date Adjustment
+              </Text>
+              <Text style={[styles.hijriAdjustSubtitle, { color: theme.colors.text.muted }]}>
+                Adjust if your local moon sighting differs from the calculated date
+              </Text>
+            </View>
+            <View style={[styles.segmentedControl, { borderColor: theme.colors.border.primary }]}>
+              {([-1, 0, 1] as const).map((val) => {
+                const isActive = (userSettings.hijriAdjustment ?? 0) === val;
+                const label = val === -1 ? '−1' : val === 0 ? '0' : '+1';
+                return (
+                  <TouchableOpacity
+                    key={val}
+                    style={[
+                      styles.segmentButton,
+                      isActive && { backgroundColor: theme.colors.primary.DEFAULT },
+                    ]}
+                    onPress={() => {
+                      setUserSettings({ ...userSettings, hijriAdjustment: val });
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.segmentText,
+                        { color: isActive ? theme.colors.primary.contrast : theme.colors.text.secondary },
+                      ]}
+                    >
+                      {label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
+          {(() => {
+            const hijri = getCachedHijriDate();
+            if (!hijri) return null;
+            return (
+              <Text style={[styles.hijriPreview, { color: theme.colors.text.secondary }]}>
+                Current: {hijri.day} {hijri.monthNameEn} {hijri.year} AH
+              </Text>
+            );
+          })()}
         </SettingSection>
 
         {/* Mosque Mode moved to dedicated screen via Menu > Mosque Mode */}
@@ -348,6 +399,44 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     color: theme.colors.primary.DEFAULT,
     fontSize: 14,  // md
     fontWeight: '600',  // semibold
+  },
+  hijriAdjustRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  hijriAdjustLabel: {
+    flex: 1,
+    marginRight: 12,
+  },
+  hijriAdjustTitle: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  hijriAdjustSubtitle: {
+    fontSize: 13,
+    marginTop: 4,
+  },
+  segmentedControl: {
+    flexDirection: 'row',
+    borderWidth: 1,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  segmentButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+  },
+  segmentText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  hijriPreview: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    paddingBottom: 8,
   },
 });
 

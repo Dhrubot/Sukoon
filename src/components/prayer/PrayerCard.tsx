@@ -90,15 +90,15 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
       return record.mindfulnessCompleted ? '✓ Prayed with Presence' : '✓ Prayed';
     }
 
-    // Check if prayer time has passed — reframe as Qada (makeup), not "Missed"
+    // Check if prayer time has passed — gentle "Make Up" framing instead of "Missed"
     if (isPast(prayer.time) && !record) {
       // Special case: Fajr after Sunrise
       if (prayer.name === 'Fajr' && todaySunrise && isPast(todaySunrise)) {
-        return 'Qada';
+        return 'Make Up';
       }
-      // Other prayers: Only mark as Qada if the next prayer has started
+      // Other prayers: Only mark as Make Up if the next prayer has started
       if (nextPrayer && isPast(nextPrayer.time)) {
-        return 'Qada';
+        return 'Make Up';
       }
       // Otherwise, still in grace period
       return 'Time to Pray';

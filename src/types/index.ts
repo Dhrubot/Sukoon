@@ -1,6 +1,6 @@
 // Prayer related types
 export type PrayerName = "Fajr" | "Dhuhr" | "Asr" | "Maghrib" | "Isha";
-export type ExtendedPrayerName = PrayerName | "Taraweeh" | "Tahajjud" | "Jumah";
+export type ExtendedPrayerName = PrayerName | "Taraweeh" | "Tahajjud" | "Jumah" | "Eid";
 
 export interface PrayerTime {
   name: PrayerName;
@@ -124,6 +124,7 @@ export interface UserSettings {
   jummahReminders?: {
     enabled: boolean;
   };
+  hijriAdjustment?: -1 | 0 | 1;
   theme: "light" | "dark" | "auto";
 }
 

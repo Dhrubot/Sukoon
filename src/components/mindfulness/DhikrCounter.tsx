@@ -3,7 +3,7 @@
 // Post-Fard dhikr counter — guides the user through authentic Sunnah adhkar
 // after every obligatory prayer. Minimal, serene UI matching the praying step.
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
@@ -32,6 +32,15 @@ const DhikrCounter: React.FC<DhikrCounterProps> = ({ onComplete, onSkip }) => {
   const currentDhikr: DhikrItem = POST_FARD_DHIKR[dhikrIndex];
   const isLastDhikr = dhikrIndex === POST_FARD_DHIKR.length - 1;
   const progress = currentCount / currentDhikr.count;
+  const isLongText = currentDhikr.arabic.length > 80;
+  const [translationExpanded, setTranslationExpanded] = useState(false);
+
+  const displayTranslation = useMemo(() => {
+    const full = currentDhikr.translation;
+    if (translationExpanded || full.length <= 80) return full;
+    return full.slice(0, 77).trimEnd() + '…';
+  }, [currentDhikr.translation, translationExpanded]);
+  const isTranslationTruncated = currentDhikr.translation.length > 80;
 
   const advanceToNext = useCallback(() => {
     if (isLastDhikr) {
@@ -40,6 +49,7 @@ const DhikrCounter: React.FC<DhikrCounterProps> = ({ onComplete, onSkip }) => {
     } else {
       setDhikrIndex((prev) => prev + 1);
       setCurrentCount(0);
+      setTranslationExpanded(false);
     }
   }, [isLastDhikr, onComplete]);
 
@@ -84,42 +94,69 @@ const DhikrCounter: React.FC<DhikrCounterProps> = ({ onComplete, onSkip }) => {
       </View>
 
       {/* Main dhikr content — tap target */}
-      <TouchableOpacity
-        activeOpacity={0.8}
-        onPress={handleTap}
-        style={styles.tapTarget}
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
       >
-        <Text style={styles.arabicText}>{currentDhikr.arabic}</Text>
-        <Text style={styles.transliteration}>{currentDhikr.transliteration}</Text>
-        <Text style={styles.translation}>{currentDhikr.translation}</Text>
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={handleTap}
+          style={styles.tapTarget}
+        >
+          <Text style={[styles.arabicText, isLongText && styles.arabicTextLong]}>
+            {currentDhikr.arabic}
+          </Text>
+          <Text style={[styles.transliteration, isLongText && styles.transliterationLong]}>
+            {currentDhikr.transliteration}
+          </Text>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={(e) => {
+              if (isTranslationTruncated) {
+                e.stopPropagation();
+                setTranslationExpanded((prev) => !prev);
+              }
+            }}
+            disabled={!isTranslationTruncated}
+            style={styles.translationWrapper}
+          >
+            <Text style={styles.translation}>
+              {displayTranslation}
+              {isTranslationTruncated && !translationExpanded && (
+                <Text style={styles.expandHint}> Read more</Text>
+              )}
+            </Text>
+          </TouchableOpacity>
 
-        {/* Counter or confirm button */}
-        {currentDhikr.type === 'tap' ? (
-          <View style={styles.counterContainer}>
-            {/* Arc progress */}
-            <View style={styles.counterCircle}>
-              <View
-                style={[
-                  styles.counterProgress,
-                  {
-                    width: `${Math.min(progress * 100, 100)}%`,
-                    backgroundColor: theme.colors.mindfulness.accent,
-                  },
-                ]}
-              />
+          {/* Counter or confirm button */}
+          {currentDhikr.type === 'tap' ? (
+            <View style={styles.counterContainer}>
+              {/* Arc progress */}
+              <View style={styles.counterCircle}>
+                <View
+                  style={[
+                    styles.counterProgress,
+                    {
+                      width: `${Math.min(progress * 100, 100)}%`,
+                      backgroundColor: theme.colors.mindfulness.accent,
+                    },
+                  ]}
+                />
+              </View>
+              <Text style={styles.counterText}>
+                {currentCount} / {currentDhikr.count}
+              </Text>
             </View>
-            <Text style={styles.counterText}>
-              {currentCount} / {currentDhikr.count}
-            </Text>
-          </View>
-        ) : (
-          <View style={styles.reciteConfirm}>
-            <Text style={styles.reciteConfirmText}>
-              Tap when recited
-            </Text>
-          </View>
-        )}
-      </TouchableOpacity>
+          ) : (
+            <View style={styles.reciteConfirm}>
+              <Text style={styles.reciteConfirmText}>
+                Tap when recited
+              </Text>
+            </View>
+          )}
+        </TouchableOpacity>
+      </ScrollView>
 
       {/* Reference */}
       <Text style={styles.reference}>{currentDhikr.reference}</Text>
@@ -136,9 +173,14 @@ const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: {
       flex: 1,
-      justifyContent: 'center',
       alignItems: 'center',
       paddingHorizontal: 24,
+      paddingTop: 40,
+    },
+    scrollContent: {
+      flexGrow: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     progressDots: {
       flexDirection: 'row',
@@ -172,12 +214,20 @@ const createStyles = (theme: AppTheme) =>
       marginBottom: 16,
       fontFamily: theme.typography.fontFamily.arabic,
     },
+    arabicTextLong: {
+      fontSize: 22,
+      lineHeight: 38,
+    },
     transliteration: {
       fontSize: 18,
       fontWeight: '500',
       color: theme.colors.mindfulness.textSecondary,
       textAlign: 'center',
       marginBottom: 8,
+    },
+    transliterationLong: {
+      fontSize: 14,
+      lineHeight: 20,
     },
     translation: {
       fontSize: 14,
@@ -186,6 +236,14 @@ const createStyles = (theme: AppTheme) =>
       lineHeight: 20,
       fontStyle: 'italic',
       marginBottom: 32,
+    },
+    translationWrapper: {
+      alignSelf: 'stretch',
+    },
+    expandHint: {
+      fontSize: 13,
+      color: theme.colors.mindfulness.accent,
+      fontStyle: 'normal',
     },
     counterContainer: {
       alignItems: 'center',

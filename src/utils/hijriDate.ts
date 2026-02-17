@@ -1,6 +1,7 @@
 // src/utils/hijriDate.ts
-// Umm al-Qura calendar approximation for Hijri date display.
-// Algorithmic — no API dependency. Accuracy ±1 day (sufficient for informational display).
+// Accurate Hijri date via Aladhan API with offline fallback.
+
+import StorageService from '../services/StorageService';
 
 const HIJRI_MONTHS = [
   'Muharram', 'Safar', 'Rabi al-Awwal', 'Rabi al-Thani',
@@ -8,30 +9,89 @@ const HIJRI_MONTHS = [
   'Ramadan', 'Shawwal', 'Dhul Qi\'dah', 'Dhul Hijjah',
 ] as const;
 
-/**
- * Convert a Gregorian date to an approximate Hijri date.
- * Uses the Kuwaiti algorithm (a widely-used civil approximation).
- */
-export function toHijri(date: Date): { day: number; month: number; monthName: string; year: number } {
-  const gd = date.getDate();
-  const gm = date.getMonth() + 1; // 1-indexed
-  const gy = date.getFullYear();
+interface HijriResult {
+  day: number;
+  month: number;
+  monthName: string;
+  year: number;
+}
 
-  let jd: number;
+// Simple daily cache to avoid repeated API calls
+let cachedDate: string | null = null;
+let cachedResult: HijriResult | null = null;
 
-  // Calculate Julian Day Number
-  if (gm > 2) {
-    jd = Math.floor(365.25 * (gy + 4716)) + Math.floor(30.6001 * (gm + 1)) + gd - 1524.5;
+// Hijri month lengths: odd = 30, even = 29
+const hijriMonthLen = (m: number): number => m % 2 === 1 ? 30 : 29;
+
+function readHijriAdjustment(): -1 | 0 | 1 {
+  try {
+    const raw = StorageService.getValue('user_settings');
+    if (!raw) return 0;
+    return (JSON.parse(raw).hijriAdjustment ?? 0) as -1 | 0 | 1;
+  } catch { return 0; }
+}
+
+function applyAdjustment(h: HijriResult, offset: -1 | 0 | 1): HijriResult {
+  if (offset === 0) return h;
+  let { day, month, year } = { ...h };
+  if (offset === 1) {
+    if (day < hijriMonthLen(month)) { day += 1; }
+    else { day = 1; month += 1; if (month > 12) { month = 1; year += 1; } }
   } else {
-    jd = Math.floor(365.25 * (gy - 1 + 4716)) + Math.floor(30.6001 * (gm + 12 + 1)) + gd - 1524.5;
+    if (day > 1) { day -= 1; }
+    else { month -= 1; if (month < 1) { month = 12; year -= 1; } day = hijriMonthLen(month); }
   }
+  return { day, month, monthName: HIJRI_MONTHS[month - 1] || '', year };
+}
 
-  // Adjust for Gregorian calendar
-  const a = Math.floor((jd - 1867216.25) / 36524.25);
-  jd = jd + 1 + a - Math.floor(a / 4);
+/**
+ * Fetch accurate Hijri date from Aladhan API.
+ */
+async function fetchHijriFromAPI(date: Date): Promise<HijriResult | null> {
+  try {
+    const dd = String(date.getDate()).padStart(2, '0');
+    const mm = String(date.getMonth() + 1).padStart(2, '0');
+    const yyyy = date.getFullYear();
+    const url = `https://api.aladhan.com/v1/gToH/${dd}-${mm}-${yyyy}`;
 
-  // Convert Julian Day to Hijri
-  const l = Math.floor(jd) - 1948440 + 10632;
+    const response = await fetch(url, { method: 'GET' });
+    if (!response.ok) return null;
+
+    const json = await response.json();
+    const hijri = json?.data?.hijri;
+    if (!hijri) return null;
+
+    return {
+      day: parseInt(hijri.day, 10),
+      month: parseInt(hijri.month.number, 10),
+      monthName: hijri.month.en || HIJRI_MONTHS[parseInt(hijri.month.number, 10) - 1] || '',
+      year: parseInt(hijri.year, 10),
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Offline fallback: Tabular Islamic Calendar algorithm.
+ * Uses the standard arithmetic conversion (accuracy ±1 day).
+ */
+function toHijriFallback(date: Date): HijriResult {
+  const gd = date.getDate();
+  let gm = date.getMonth() + 1;
+  let gy = date.getFullYear();
+
+  // Gregorian to Julian Day Number (correct formula)
+  if (gm <= 2) {
+    gy -= 1;
+    gm += 12;
+  }
+  const A = Math.floor(gy / 100);
+  const B = 2 - A + Math.floor(A / 4);
+  const jd = Math.floor(365.25 * (gy + 4716)) + Math.floor(30.6001 * (gm + 1)) + gd + B - 1524;
+
+  // Julian Day to Hijri (tabular algorithm)
+  const l = jd - 1948440 + 10632;
   const n = Math.floor((l - 1) / 10631);
   const remainder = l - 10631 * n + 354;
   const j =
@@ -58,9 +118,48 @@ export function toHijri(date: Date): { day: number; month: number; monthName: st
 }
 
 /**
- * Format a Hijri date as "14 Sha'ban 1447"
+ * Get Hijri date — tries API first, falls back to algorithm.
+ * Caches result for the current day.
  */
-export function formatHijriDate(date: Date = new Date()): string {
-  const h = toHijri(date);
+export async function getHijriDate(date: Date = new Date()): Promise<HijriResult> {
+  const dateKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+
+  if (cachedDate === dateKey && cachedResult) {
+    return applyAdjustment(cachedResult, readHijriAdjustment());
+  }
+
+  const apiResult = await fetchHijriFromAPI(date);
+  if (apiResult) {
+    cachedDate = dateKey;
+    cachedResult = apiResult;
+    return applyAdjustment(apiResult, readHijriAdjustment());
+  }
+
+  // Offline fallback
+  const fallback = toHijriFallback(date);
+  cachedDate = dateKey;
+  cachedResult = fallback;
+  return applyAdjustment(fallback, readHijriAdjustment());
+}
+
+/**
+ * Format a Hijri date as "1 Ramadan 1447"
+ * Returns a promise — use with useEffect + state.
+ */
+export async function formatHijriDate(date: Date = new Date()): Promise<string> {
+  const h = await getHijriDate(date);
+  return `${h.day} ${h.monthName} ${h.year}`;
+}
+
+/**
+ * Synchronous fallback formatter (for initial render before API resolves).
+ */
+export function formatHijriDateSync(date: Date = new Date()): string {
+  const adj = readHijriAdjustment();
+  if (cachedDate === `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}` && cachedResult) {
+    const h = applyAdjustment(cachedResult, adj);
+    return `${h.day} ${h.monthName} ${h.year}`;
+  }
+  const h = applyAdjustment(toHijriFallback(date), adj);
   return `${h.day} ${h.monthName} ${h.year}`;
 }

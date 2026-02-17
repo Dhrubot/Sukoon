@@ -78,8 +78,6 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
     if (todayPrayers.length === 0) return null;
 
     const now = new Date();
-    logger.log('🔍 Calculating next prayer...');
-
     // First pass: find the first prayer whose TIME hasn't arrived yet (upcoming)
     for (let i = 0; i < todayPrayers.length; i++) {
       if (todayPrayers[i].time > now) {

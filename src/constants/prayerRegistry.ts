@@ -24,7 +24,7 @@ export interface PrayerDefinition {
   order: number;
   /** When this prayer is available. Fard = always. */
   availability?: {
-    condition: 'always' | 'ramadan' | 'friday';
+    condition: 'always' | 'ramadan' | 'friday' | 'eid';
   };
   /** How to derive the time from the API response or other prayers */
   timeSource: {
@@ -94,6 +94,12 @@ export const OPTIONAL_PRAYERS: readonly PrayerDefinition[] = [
     availability: { condition: 'friday' },
     timeSource: { type: 'api', apiField: 'Dhuhr' },
   },
+  {
+    name: 'Eid', key: 'eid', icon: '🎉', arabic: 'صلاة العيد',
+    category: 'seasonal', order: 1,
+    availability: { condition: 'eid' },
+    timeSource: { type: 'relative', relativeTo: 'Fajr', offsetMinutes: 60 },
+  },
 ] as const;
 
 // ─── Combined Registry ──────────────────────────────────────────
@@ -132,13 +138,15 @@ export function getPrayerDefinition(name: string): PrayerDefinition | undefined 
 export function getAvailablePrayers(options: {
   isRamadan?: boolean;
   isFriday?: boolean;
+  isEid?: boolean;
   includeSunnah?: boolean;
 }): PrayerDefinition[] {
-  const { isRamadan = false, isFriday = false, includeSunnah = false } = options;
+  const { isRamadan = false, isFriday = false, isEid = false, includeSunnah = false } = options;
 
   return ALL_PRAYERS.filter(p => {
     if (p.category === 'fard') return true;
     if (p.category === 'seasonal' && p.availability?.condition === 'ramadan' && isRamadan) return true;
+    if (p.category === 'seasonal' && p.availability?.condition === 'eid' && isEid) return true;
     if (p.category === 'weekly' && p.availability?.condition === 'friday' && isFriday) return true;
     if (p.category === 'sunnah' && includeSunnah) return true;
     return false;

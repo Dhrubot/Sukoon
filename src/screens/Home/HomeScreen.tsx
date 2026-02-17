@@ -38,7 +38,7 @@ import GardenTeaser from "../../components/garden/GardenTeaser";
 // Types
 import { PrayerTime, OptionalPrayerTime } from "../../types";
 
-import { isRamadan, getRamadanDay, isFriday } from "../../utils/ramadan";
+import { isRamadan, getRamadanDay, isFriday, isEidDay, getEidName, isTashreeqDays, getTashreeqDayLabel } from "../../utils/ramadan";
 
 const { width } = Dimensions.get("window");
 
@@ -116,6 +116,18 @@ const HomeScreen = ({ navigation }: any) => {
       }
     }
 
+    // Eid greeting (day 1 only)
+    const eidName = getEidName();
+    if (eidName) {
+      return `Eid Mubarak, ${name}! 🌙`;
+    }
+
+    // Takbirat during Ayyam al-Tashreeq (9-13 Dhul Hijjah)
+    const tashreeqLabel = getTashreeqDayLabel();
+    if (tashreeqLabel) {
+      return `${tashreeqLabel} — Allahu Akbar, ${name}`;
+    }
+
     // Ramadan-aware greeting
     if (isRamadan()) {
       const day = getRamadanDay();
@@ -155,6 +167,17 @@ const HomeScreen = ({ navigation }: any) => {
       isNext: false,
     };
     navigation.navigate("MindfulnessFlow", { prayer: serializablePrayer });
+  };
+
+  const handleSunnahPrayer = () => {
+    const prayerName = nextPrayer?.name ?? 'Fajr';
+    const sunnahPrayer = {
+      name: prayerName,
+      time: new Date().toISOString(),
+      timestamp: Date.now(),
+      isNext: false,
+    };
+    navigation.navigate("MindfulnessFlow", { prayer: sunnahPrayer, isSunnah: true });
   };
 
   const getBackgroundGradient = (): readonly [ColorValue, ColorValue] => {
@@ -272,6 +295,8 @@ const HomeScreen = ({ navigation }: any) => {
             missedPrayer={missedPreviousPrayer}
             onPrepare={() => handlePrayerComplete(nextPrayer)}
             onPrepareQada={missedPreviousPrayer ? () => handlePrayerComplete(missedPreviousPrayer) : undefined}
+            onPraySunnah={handleSunnahPrayer}
+            isFocusMode={isFocusMode}
           />
         ) : (
           <LinearGradient colors={getBackgroundGradient()} style={styles.noNextPrayer}>

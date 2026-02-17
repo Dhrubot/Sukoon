@@ -12,7 +12,7 @@ interface OptionalPrayerCardProps {
 
 const CATEGORY_LABELS: Record<string, string> = {
   sunnah: 'Sunnah',
-  seasonal: 'Ramadan',
+  seasonal: 'Seasonal',
   weekly: 'Weekly',
 };
 
@@ -56,7 +56,7 @@ const OptionalPrayerCard: React.FC<OptionalPrayerCardProps> = ({ prayer, onPrepa
 
       <View style={styles.rightSection}>
         <Text style={[styles.time, { color: theme.colors.text.secondary }]}>
-          {format(prayer.time, 'h:mm a')}
+          {prayer.name === 'Taraweeh' ? 'After Isha' : prayer.name === 'Eid' ? 'After Sunrise' : format(prayer.time, 'h:mm a')}
         </Text>
         <Text style={[styles.cta, { color: accentColor }]}>
           Prepare

@@ -8,16 +8,15 @@ import {
   StyleSheet,
   Animated,
   Dimensions,
-  Alert,
 } from 'react-native';
-import QadaSheet from './QadaSheet';
+import PreAdhanSheet from './PreAdhanSheet';
 import { LinearGradient } from 'expo-linear-gradient';
 import { PrayerTime, PrayerRecord } from '../../types';
 import PrayerTimeService from '../../services/PrayerTimeService';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
-import { formatHijriDate } from '../../utils/hijriDate';
+import { formatHijriDate, formatHijriDateSync } from '../../utils/hijriDate';
 
 const { height } = Dimensions.get('window');
 
@@ -29,6 +28,8 @@ interface SanctuaryViewProps {
   missedPrayer?: PrayerTime;
   onPrepare: () => void;
   onPrepareQada?: () => void;
+  onPraySunnah?: () => void;
+  isFocusMode?: boolean;
 }
 
 const SanctuaryView: React.FC<SanctuaryViewProps> = ({
@@ -39,11 +40,19 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
   missedPrayer,
   onPrepare,
   onPrepareQada,
+  onPraySunnah,
+  isFocusMode = false,
 }) => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const [timeRemaining, setTimeRemaining] = useState('');
+  const [hijriDateStr, setHijriDateStr] = useState(formatHijriDateSync());
   const pulseAnim = useRef(new Animated.Value(0.6)).current;
+
+  // Fetch accurate Hijri date from API on mount
+  useEffect(() => {
+    formatHijriDate().then(setHijriDateStr).catch(() => {});
+  }, []);
 
   useEffect(() => {
     const updateTimer = () => {
@@ -89,32 +98,14 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
   }, []);
 
   const isAlreadyPrayed = record?.status === 'prayed';
-  const [showQadaSheet, setShowQadaSheet] = useState(false);
+  const [showPreAdhanSheet, setShowPreAdhanSheet] = useState(false);
 
   const handlePress = () => {
     if (isAlreadyPrayed) {
-      // Already prayed — offer to repeat the mindfulness flow
-      Alert.alert(
-        'Already Prayed',
-        'You\'ve already recorded this prayer. Would you like to go through the mindfulness flow again?',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Yes, Repeat Flow', onPress: onPrepare },
-        ]
-      );
-    } else if (!isTimeEntered && missedPrayer && onPrepareQada) {
-      // Show warm bottom sheet instead of clinical Alert
-      setShowQadaSheet(true);
+      onPrepare();
     } else if (!isTimeEntered) {
-      // Adhan hasn't happened yet but no missed prayers — confirm early preparation
-      Alert.alert(
-        'Adhan Hasn\'t Happened Yet',
-        `${PrayerTimeService.getPrayerDisplayName(prayer.name)} time hasn\'t entered yet. Would you like to prepare for prayer anyway?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Yes, Prepare', onPress: onPrepare },
-        ]
-      );
+      // Adhan hasn't happened — show PreAdhanSheet with alternatives
+      setShowPreAdhanSheet(true);
     } else {
       onPrepare();
     }
@@ -131,20 +122,18 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
     return (gradients as any)[prayer.name] || gradients.default;
   };
 
-  const showQadaSheetElement = missedPrayer != null && onPrepareQada != null;
-
   return (
     <>
       <LinearGradient
         colors={getPrayerGradient()}
-        style={styles.container}
+        style={[styles.container, isFocusMode && { minHeight: height * 0.82 }]}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
       >
         {/* Greeting + Hijri date */}
         <View style={styles.greetingContainer}>
           <Text style={styles.greeting}>{greeting}</Text>
-          <Text style={styles.hijriDate}>{formatHijriDate()}</Text>
+          <Text style={styles.hijriDate}>{hijriDateStr}</Text>
         </View>
 
         {/* Prayer name — the focal point */}
@@ -182,19 +171,25 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
         </Animated.View>
       </LinearGradient>
 
-      {/* Qada Bottom Sheet — replaces Alert.alert for missed prayer prompts */}
-      {showQadaSheetElement && (
-        <QadaSheet
-          visible={showQadaSheet}
-          prayerName={missedPrayer!.name}
-          nextPrayerName={prayer.name}
-          onPrayQada={() => {
-            setShowQadaSheet(false);
-            onPrepareQada!();
-          }}
-          onDismiss={() => setShowQadaSheet(false)}
-        />
-      )}
+      {/* Pre-Adhan Sheet — blocks fard prayer before its time, offers alternatives */}
+      <PreAdhanSheet
+        visible={showPreAdhanSheet}
+        prayerName={prayer.name}
+        missedPrayerName={missedPrayer?.name}
+        onMakeUpPrayer={
+          missedPrayer && onPrepareQada
+            ? () => {
+                setShowPreAdhanSheet(false);
+                onPrepareQada();
+              }
+            : undefined
+        }
+        onPraySunnah={() => {
+          setShowPreAdhanSheet(false);
+          onPraySunnah?.();
+        }}
+        onDismiss={() => setShowPreAdhanSheet(false)}
+      />
     </>
   );
 };

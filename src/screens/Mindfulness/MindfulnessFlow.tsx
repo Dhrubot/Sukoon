@@ -74,6 +74,8 @@ const MindfulnessFlow: React.FC = () => {
     ...serializedPrayer,
     time: new Date(serializedPrayer.time) // Convert ISO string back to Date object
   };
+  const isSunnah = route.params.isSunnah ?? false;
+  const displayName = isSunnah ? 'Sunnah / Nafl' : PrayerTimeService.getPrayerDisplayName(prayer.name);
 
   const { setCurrentMindfulnessSession, addPrayerRecord } = useStore();
 
@@ -310,8 +312,11 @@ const MindfulnessFlow: React.FC = () => {
 
     // Save in_progress record — if user closes app during prayer,
     // a background job or next open can reconcile incomplete records.
-    StorageService.savePrayerRecord(prayerRecord);
-    addPrayerRecord(prayerRecord);
+    // Skip record saving for sunnah/nafl prayers (no fard tracking)
+    if (!isSunnah) {
+      StorageService.savePrayerRecord(prayerRecord);
+      addPrayerRecord(prayerRecord);
+    }
 
     setSavedRecordId(recordId);
     setPrayerStartTime(new Date());
@@ -334,7 +339,8 @@ const MindfulnessFlow: React.FC = () => {
     const dateKey = getLocalDateKey();
 
     // Upgrade the in_progress record to "prayed" with full tracking
-    if (savedRecordId) {
+    // Skip for sunnah/nafl prayers (no fard tracking)
+    if (!isSunnah && savedRecordId) {
       const prayerRecord: PrayerRecord = {
         id: savedRecordId,
         date: dateKey,
@@ -353,18 +359,71 @@ const MindfulnessFlow: React.FC = () => {
       AnalyticsService.logPrayerCompleted(prayer.name, true);
     }
 
-    // P0-F FIX: Close the reminder flow for this prayer.
-    // Mark reminder state as completed + cancel pending Tier2/Tier3/snoozes.
-    const prayerId = `${prayer.name}-${dateKey}`;
-    ReminderStateService.markPrayerCompleted(prayerId);
-    NotificationService.cancelPrayerReminderFlow(prayerId).catch(() => {});
+    if (!isSunnah) {
+      // P0-F FIX: Close the reminder flow for this prayer.
+      // Mark reminder state as completed + cancel pending Tier2/Tier3/snoozes.
+      const prayerId = `${prayer.name}-${dateKey}`;
+      ReminderStateService.markPrayerCompleted(prayerId);
+      NotificationService.cancelPrayerReminderFlow(prayerId).catch(() => {});
+    }
 
     animateToStep("dhikr");
   };
 
   // ── POST-DHIKR: Transition from dhikr to reflection ──
   const finishDhikr = () => {
+    if (isSunnah) {
+      // Sunnah/nafl: skip reflection/garden, go straight to complete
+      completeSunnahFlow();
+      return;
+    }
     animateToStep("reflection");
+  };
+
+  // Lightweight completion for sunnah/nafl — no record, no reflection
+  const completeSunnahFlow = () => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: -50,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setCurrentStep("complete");
+      requestAnimationFrame(() => {
+        Animated.parallel([
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.spring(completeScale, {
+            toValue: 1,
+            friction: 4,
+            tension: 40,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          setTimeout(() => {
+            Animated.timing(fadeAnim, {
+              toValue: 0,
+              duration: 1000,
+              useNativeDriver: true,
+            }).start(() => {
+              if (navigation.canGoBack()) {
+                navigation.goBack();
+              }
+            });
+          }, 4000);
+        });
+      });
+    });
   };
 
   // ── POST-PRAYER: Save reflection + session after mood/text ──
@@ -470,7 +529,9 @@ const MindfulnessFlow: React.FC = () => {
               duration: 1000,
               useNativeDriver: true,
             }).start(() => {
-              navigation.goBack();
+              if (navigation.canGoBack()) {
+                navigation.goBack();
+              }
             });
           }, 8000);
         });
@@ -533,7 +594,7 @@ const MindfulnessFlow: React.FC = () => {
         <Text style={styles.stepTitle}>Set Your Intention</Text>
         <Text style={styles.niyyahText}>
           I intend to pray{" "}
-          {PrayerTimeService.getPrayerDisplayName(prayer.name)}
+          {displayName}
           {"\n"}for the sake of Allah
         </Text>
 
@@ -566,7 +627,7 @@ const MindfulnessFlow: React.FC = () => {
       ]}
     >
       <Text style={styles.prayingLabel}>
-        {PrayerTimeService.getPrayerDisplayName(prayer.name)}
+        {displayName}
       </Text>
       <Text style={styles.prayingText}>You are in prayer</Text>
       <Animated.Text style={[styles.prayingSubtext, { opacity: stillnessPulse }]}>
@@ -658,7 +719,7 @@ const MindfulnessFlow: React.FC = () => {
         <Text style={styles.completeTitle}>Ma sha Allah!</Text>
         <Text style={styles.completeText}>
           You've prepared & prayed for{" "}
-          {PrayerTimeService.getPrayerDisplayName(prayer.name)} prayer.
+          {displayName} prayer.
           {"\n\n"}
           May your prayer be accepted and bring you peace.
         </Text>
@@ -701,7 +762,7 @@ const MindfulnessFlow: React.FC = () => {
           {showHeader && (
             <View style={styles.header}>
               <Text style={styles.prayerName}>
-                {PrayerTimeService.getPrayerDisplayName(prayer.name)} Prayer
+                {displayName} Prayer
               </Text>
               {currentStep !== "complete" && (
                 <TouchableOpacity

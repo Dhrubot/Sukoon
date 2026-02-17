@@ -17,6 +17,7 @@ import DonationService from '../services/monetization/DonationService';
 import AnalyticsService from '../services/AnalyticsService';
 import RamadanCountdownService from '../services/RamadanCountdownService';
 import JummahNotificationService from '../services/JummahNotificationService';
+import EidNotificationService from '../services/EidNotificationService';
 
 export const useServiceInitialization = () => {
   const { todayPrayerTimes, nextPrayer, isLoading, hasValidLocation } =
@@ -161,11 +162,12 @@ export const useServiceInitialization = () => {
     todayPrayerTimes.length,
   ]);
 
-  // 🌙 Schedule Ramadan countdown/encouragement notifications
+  // 🌙 Schedule Ramadan countdown/encouragement + Eid notifications
   // Triggers after prayer times load (which caches the Hijri date)
   useEffect(() => {
     if (hasValidLocation && !isLoading && todayPrayerTimes.length > 0) {
       RamadanCountdownService.scheduleRamadanNotifications();
+      EidNotificationService.scheduleEidNotifications();
     }
   }, [hasValidLocation, isLoading, todayPrayerTimes.length]);
 

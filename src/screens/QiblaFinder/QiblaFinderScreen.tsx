@@ -484,11 +484,13 @@ const QiblaFinderScreen: React.FC = () => {
     lastHeadingTimeRef.current = 0;
     velocityRef.current = 0;
 
+    // Re-resolve location on every focus so settings changes are picked up
+    resolveLocation();
     startHeading();
     return () => {
       stopHeading();
     };
-  }, [isFocused, startHeading, stopHeading]);
+  }, [isFocused, startHeading, stopHeading, resolveLocation]);
 
   const turnText = useMemo(() => {
     const abs = Math.abs(directionOffset);

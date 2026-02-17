@@ -14,7 +14,7 @@ export type TabParamList = {
 export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<TabParamList>;
   // Modal screens
-  MindfulnessFlow: { prayer: PrayerTime };
+  MindfulnessFlow: { prayer: PrayerTime; isSunnah?: boolean };
   // Debug screens
   NotificationDebug: undefined;
 };
