@@ -104,7 +104,8 @@ export const IqamahTimeConfig: React.FC = () => {
               selectedValue={offset}
               onValueChange={(value) => handleOffsetChange(prayer, value as number)}
               style={[styles.picker, { color: theme.colors.text.primary }]}
-              itemStyle={styles.pickerItem}
+              itemStyle={[styles.pickerItem, { color: theme.colors.text.primary }]}
+              dropdownIconColor={theme.colors.text.primary}
             >
               {OFFSET_OPTIONS.map((minutes) => (
                 <Picker.Item

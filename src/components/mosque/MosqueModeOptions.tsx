@@ -57,7 +57,8 @@ export const MosqueModeOptions: React.FC = () => {
               setShowDurationPicker(false);
             }}
             style={{ color: theme.colors.text.primary }}
-            itemStyle={{ fontSize: 16 }}
+            itemStyle={{ fontSize: 16, color: theme.colors.text.primary }}
+            dropdownIconColor={theme.colors.text.primary}
           >
             {DURATION_OPTIONS.map((min) => (
               <Picker.Item key={min} label={`${min} minutes`} value={min} />

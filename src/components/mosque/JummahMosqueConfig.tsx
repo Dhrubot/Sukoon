@@ -122,6 +122,7 @@ const JummahMosqueConfig: React.FC = () => {
               onValueChange={(v) => handleDurationChange(v as number)}
               style={[styles.picker, { color: theme.colors.text.primary }]}
               itemStyle={{ color: theme.colors.text.primary }}
+              dropdownIconColor={theme.colors.text.primary}
             >
               {DURATION_OPTIONS.map((min) => (
                 <Picker.Item
@@ -187,6 +188,7 @@ const JummahMosqueConfig: React.FC = () => {
                     onValueChange={(v) => handleOffsetChange(v as number)}
                     style={[styles.picker, { color: theme.colors.text.primary }]}
                     itemStyle={{ color: theme.colors.text.primary }}
+                    dropdownIconColor={theme.colors.text.primary}
                   >
                     {OFFSET_OPTIONS.map((min) => (
                       <Picker.Item
