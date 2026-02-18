@@ -50,6 +50,9 @@ export default {
         "MODIFY_AUDIO_SETTINGS",
         "android.permission.PACKAGE_USAGE_STATS",
       ],
+      blockedPermissions: [
+        "android.permission.RECORD_AUDIO",
+      ],
       config: {
         googleMobileAds: {
           app_id: "ca-app-pub-5474984690525462~6816196886",
