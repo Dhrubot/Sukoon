@@ -17,6 +17,7 @@ import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import { formatHijriDate, formatHijriDateSync } from '../../utils/hijriDate';
+import { useStore } from '../../store/useStore';
 
 const { height } = Dimensions.get('window');
 
@@ -45,14 +46,17 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
 }) => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
+  const { userSettings } = useStore();
+  const hijriAdjustment = userSettings?.hijriAdjustment ?? 0;
   const [timeRemaining, setTimeRemaining] = useState('');
   const [hijriDateStr, setHijriDateStr] = useState(formatHijriDateSync());
   const pulseAnim = useRef(new Animated.Value(0.6)).current;
 
-  // Fetch accurate Hijri date from API on mount
+  // Fetch accurate Hijri date — re-run when hijriAdjustment changes
   useEffect(() => {
+    setHijriDateStr(formatHijriDateSync());
     formatHijriDate().then(setHijriDateStr).catch(() => {});
-  }, []);
+  }, [hijriAdjustment]);
 
   useEffect(() => {
     const updateTimer = () => {

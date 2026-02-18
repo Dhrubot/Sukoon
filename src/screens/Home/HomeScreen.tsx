@@ -39,6 +39,9 @@ import GardenTeaser from "../../components/garden/GardenTeaser";
 import { PrayerTime, OptionalPrayerTime } from "../../types";
 
 import { isRamadan, getRamadanDay, isFriday, isEidDay, getEidName, isTashreeqDays, getTashreeqDayLabel } from "../../utils/ramadan";
+import { getMoonSightingEvent, getDeferredMoonSightingEvent, MoonSightingEvent } from "../../utils/moonSighting";
+import MoonSightingPrompt from "../../components/MoonSightingPrompt";
+import MoonSightingCard from "../../components/MoonSightingCard";
 
 const { width } = Dimensions.get("window");
 
@@ -69,6 +72,8 @@ const HomeScreen = ({ navigation }: any) => {
   // Local state for UI features
   const [currentTime, setCurrentTime] = useState(new Date());
   const [focusExpanded, setFocusExpanded] = useState(false);
+  const [moonSightingEvent, setMoonSightingEvent] = useState<MoonSightingEvent | null>(null);
+  const [deferredMoonEvent, setDeferredMoonEvent] = useState<MoonSightingEvent | null>(null);
 
   // 🎯 REMOVED: loadPrayerTimes function - now handled by provider!
   // 🎯 REMOVED: location checks - now handled by provider!
@@ -85,6 +90,30 @@ const HomeScreen = ({ navigation }: any) => {
 
     return () => clearInterval(timer);
   }, []);
+
+  // Check for moon sighting prompt — gates on Maghrib time for eve dates
+  // Re-checks every minute (via currentTime) to catch the Maghrib crossover
+  useEffect(() => {
+    if (todayPrayerTimes.length === 0) return;
+
+    // Find today's Maghrib time
+    const maghrib = todayPrayerTimes.find(p => p.name === 'Maghrib');
+    const maghribTime = maghrib?.time;
+
+    // Check for active prompt (not yet shown or deferred wanting re-trigger)
+    if (!moonSightingEvent) {
+      const event = getMoonSightingEvent(maghribTime);
+      if (event) {
+        setMoonSightingEvent(event);
+        setDeferredMoonEvent(null);
+        return;
+      }
+    }
+
+    // Check for deferred card (user said "Not yet" previously)
+    const deferred = getDeferredMoonSightingEvent();
+    setDeferredMoonEvent(deferred);
+  }, [todayPrayerTimes, currentTime]);
 
   const loadTodayRecords = () => {
     const today = format(new Date(), "yyyy-MM-dd");
@@ -344,6 +373,17 @@ const HomeScreen = ({ navigation }: any) => {
             return <RamadanTimesCard fajrTime={fajr.time} maghribTime={maghrib.time} />;
           })()}
 
+          {/* 🌙 Deferred moon sighting card — re-trigger prompt */}
+          {deferredMoonEvent && !moonSightingEvent && (
+            <MoonSightingCard
+              title={deferredMoonEvent.title.replace('The Crescent of ', '')}
+              onPress={() => {
+                setMoonSightingEvent(deferredMoonEvent);
+                setDeferredMoonEvent(null);
+              }}
+            />
+          )}
+
           {/* Garden Teaser — subtle entry point to Reflection Garden */}
           <GardenTeaser />
 
@@ -398,6 +438,19 @@ const HomeScreen = ({ navigation }: any) => {
 
       {/* 4c: Mosque mode activation overlay */}
       <MosqueModeOverlay />
+
+      {/* Moon sighting confirmation — shows once per critical Hijri transition */}
+      {moonSightingEvent && (
+        <MoonSightingPrompt
+          event={moonSightingEvent}
+          onDismiss={() => {
+            setMoonSightingEvent(null);
+            // Refresh deferred state after modal closes
+            const deferred = getDeferredMoonSightingEvent();
+            setDeferredMoonEvent(deferred);
+          }}
+        />
+      )}
     </SafeAreaView>
   );
 };
