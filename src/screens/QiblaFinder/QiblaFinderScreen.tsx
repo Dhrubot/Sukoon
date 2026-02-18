@@ -696,6 +696,22 @@ const QiblaFinderScreen: React.FC = () => {
               <Text style={[styles.intercardinal, styles.intercardinalSE, { color: theme.colors.qibla.cardinalMuted }]}>SE</Text>
               <Text style={[styles.intercardinal, styles.intercardinalSW, { color: theme.colors.qibla.cardinalMuted }]}>SW</Text>
               <Text style={[styles.intercardinal, styles.intercardinalNW, { color: theme.colors.qibla.cardinalMuted }]}>NW</Text>
+
+              {/* Qibla bearing marker — green dot at exact Qibla angle on compass ring */}
+              {qiblaDirection > 0 && (
+                <View
+                  style={[
+                    styles.qiblaMarker,
+                    {
+                      backgroundColor: theme.colors.qibla.compassRingAligned,
+                      transform: [
+                        { translateX: Math.sin((qiblaDirection * Math.PI) / 180) * (COMPASS_SIZE / 2 - 8) },
+                        { translateY: -Math.cos((qiblaDirection * Math.PI) / 180) * (COMPASS_SIZE / 2 - 8) },
+                      ],
+                    },
+                  ]}
+                />
+              )}
             </Animated.View>
 
             {/* Animated gradient beam needle — rotates to Qibla offset */}
@@ -940,6 +956,12 @@ const styles = StyleSheet.create({
   tickMark: {
     position: 'absolute',
     borderRadius: 1,
+  },
+  qiblaMarker: {
+    position: 'absolute',
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   cardinal: {
     position: 'absolute',
