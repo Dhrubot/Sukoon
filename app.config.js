@@ -68,7 +68,7 @@ export default {
       "./plugins/withAndroidWidget.js",
       "expo-font",
       "expo-location",
-      "expo-audio",
+      ["expo-audio", { microphonePermission: false }],
       "expo-secure-store",
       [
         "expo-notifications",

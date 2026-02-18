@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Magnetometer, Accelerometer } from 'expo-sensors';
+import { Magnetometer } from 'expo-sensors';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useIsFocused } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
@@ -105,7 +105,7 @@ const CONFIG = {
   
   // Animation (spring config)
   SPRING_STIFFNESS: 120,
-  SPRING_DAMPING: 16,
+  SPRING_DAMPING: 20,
   SPRING_MASS: 1,
 };
 
@@ -123,6 +123,7 @@ const QiblaFinderScreen: React.FC = () => {
   const [calibrationStatus, setCalibrationStatus] = useState<'good' | 'fair' | 'poor'>('good');
   const [interference, setInterference] = useState<InterferenceLevel>('none');
   const [distanceToKaaba, setDistanceToKaaba] = useState<number | null>(null);
+  const [displayHeading, setDisplayHeading] = useState<number>(0);
   const isFocused = useIsFocused();
 
   // Animation values
@@ -148,12 +149,11 @@ const QiblaFinderScreen: React.FC = () => {
   const calibrationStatusRef = useRef<'good' | 'fair' | 'poor'>('good');
   // Ref to track interference level and avoid unnecessary setState calls
   const interferenceRef = useRef<InterferenceLevel>('none');
-
-  // Sensor refs for tilt-compensated compass
+  // Cumulative compass rose rotation (avoids 360° wrap-around spin)
+  const compassTargetRef = useRef<number>(0);
+  const prevHeadingForCompassRef = useRef<number | null>(null);
+  // Sensor ref for magnetometer (interference detection only)
   const magSubscription = useRef<ReturnType<typeof Magnetometer.addListener> | null>(null);
-  const accelSubscription = useRef<ReturnType<typeof Accelerometer.addListener> | null>(null);
-  const latestMag = useRef({ x: 0, y: 0, z: 0 });
-  const latestAccel = useRef({ x: 0, y: 0, z: 0 });
 
   const openAppSettings = () => {
     if (Platform.OS === 'ios') {
@@ -171,10 +171,6 @@ const QiblaFinderScreen: React.FC = () => {
     if (magSubscription.current) {
       magSubscription.current.remove();
       magSubscription.current = null;
-    }
-    if (accelSubscription.current) {
-      accelSubscription.current.remove();
-      accelSubscription.current = null;
     }
   }, []);
 
@@ -194,8 +190,16 @@ const QiblaFinderScreen: React.FC = () => {
       }).start();
 
       // Animate the compass rose (rotates opposite to heading so N tracks true north)
+      // Use cumulative tracking to avoid 360° reverse-spin when heading wraps past north
+      if (prevHeadingForCompassRef.current != null) {
+        const headingDelta = shortestAngleDelta(prevHeadingForCompassRef.current, heading);
+        compassTargetRef.current -= headingDelta;
+      } else {
+        compassTargetRef.current = -heading;
+      }
+      prevHeadingForCompassRef.current = heading;
       Animated.spring(compassRotateAnim, {
-        toValue: -heading,
+        toValue: compassTargetRef.current,
         stiffness: CONFIG.SPRING_STIFFNESS,
         damping: CONFIG.SPRING_DAMPING,
         mass: CONFIG.SPRING_MASS,
@@ -208,6 +212,7 @@ const QiblaFinderScreen: React.FC = () => {
       lastUiUpdateMsRef.current = now;
 
       setDirectionOffset(diff);
+      setDisplayHeading(Math.round(normalizeAngle(heading)));
 
       // Alignment hysteresis: enter at ENTER threshold, exit at EXIT threshold
       const absDiff = Math.abs(diff);
@@ -281,49 +286,6 @@ const QiblaFinderScreen: React.FC = () => {
     [rotateAnim, compassRotateAnim, alignGlowAnim, alignPulseAnim, kaabaScaleAnim, kaabaOpacityAnim]
   );
 
-  /**
-   * Tilt-compensated heading from raw magnetometer + accelerometer.
-   * Works in any phone orientation (held upright, tilted, or flat).
-   */
-  const computeTiltCompensatedHeading = useCallback(
-    (mag: { x: number; y: number; z: number }, accel: { x: number; y: number; z: number }): number => {
-      const { x: ax, y: ay, z: az } = accel;
-      const { x: mx, y: my, z: mz } = mag;
-
-      // Normalize accelerometer
-      const aNorm = Math.sqrt(ax * ax + ay * ay + az * az) || 1;
-      const nax = ax / aNorm;
-      const nay = ay / aNorm;
-      const naz = az / aNorm;
-
-      // East = Mag x Gravity (cross product)
-      const ex = my * naz - mz * nay;
-      const ey = mz * nax - mx * naz;
-      const ez = mx * nay - my * nax;
-
-      // Normalize East
-      const eNorm = Math.sqrt(ex * ex + ey * ey + ez * ez) || 1;
-      const nex = ex / eNorm;
-      const ney = ey / eNorm;
-      const nez = ez / eNorm;
-
-      // North = Gravity x NormalizedEast (cross product)
-      const ny = naz * nex - nax * nez;
-
-      // Heading = atan2(East.y, North.y) — Y is the device forward axis
-      let heading = Math.atan2(ney, ny) * (180 / Math.PI);
-
-      // iOS accelerometer z-axis is inverted relative to Android,
-      // which mirrors the East vector and thus the heading
-      if (Platform.OS === 'ios') {
-        heading = -heading;
-      }
-
-      return normalizeAngle(heading);
-    },
-    []
-  );
-
   // Process a new heading sample with smoothing + throttling
   const processHeading = useCallback(
     (rawHeading: number) => {
@@ -360,27 +322,41 @@ const QiblaFinderScreen: React.FC = () => {
     [updateNeedle]
   );
 
-  // Start heading — try tilt-compensated sensors first, fall back to Location heading
+  // Start heading — use OS-level watchHeadingAsync for accurate trueHeading,
+  // optionally subscribe to Magnetometer for interference detection only
   const startHeading = useCallback(async () => {
     try {
-      if (headingSubscription.current || magSubscription.current) return;
+      if (headingSubscription.current) return;
 
-      // Try tilt-compensated approach first (Magnetometer + Accelerometer)
+      // Primary: OS heading via expo-location (trueHeading with sensor fusion)
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setError('Location permission is required to find Qibla direction');
+        return;
+      }
+
+      headingSubscription.current = await Location.watchHeadingAsync((newHeading) => {
+        const rawHeading = newHeading.trueHeading >= 0 ? newHeading.trueHeading : newHeading.magHeading;
+        const accuracy = newHeading.accuracy;
+
+        if (accuracy !== undefined && accuracy >= 0) {
+          const newStatus: 'good' | 'fair' | 'poor' =
+            accuracy <= CONFIG.ACCURACY_GOOD ? 'good' :
+            accuracy <= CONFIG.ACCURACY_FAIR ? 'fair' : 'poor';
+          if (newStatus !== calibrationStatusRef.current) {
+            calibrationStatusRef.current = newStatus;
+            setCalibrationStatus(newStatus);
+          }
+        }
+
+        processHeading(rawHeading);
+      });
+
+      // Auxiliary: Magnetometer for interference detection only (no heading computation)
       const magAvailable = await Magnetometer.isAvailableAsync();
-      const accelAvailable = await Accelerometer.isAvailableAsync();
-
-      if (magAvailable && accelAvailable) {
-        Magnetometer.setUpdateInterval(CONFIG.UPDATE_INTERVAL_MOVING);
-        Accelerometer.setUpdateInterval(CONFIG.UPDATE_INTERVAL_MOVING);
-
-        accelSubscription.current = Accelerometer.addListener((data) => {
-          latestAccel.current = data;
-        });
-
+      if (magAvailable) {
+        Magnetometer.setUpdateInterval(CONFIG.UPDATE_INTERVAL_STABLE);
         magSubscription.current = Magnetometer.addListener((data) => {
-          latestMag.current = data;
-
-          // Magnetic interference detection
           const bTotal = Math.sqrt(data.x * data.x + data.y * data.y + data.z * data.z);
           let newInterference: InterferenceLevel = 'none';
           if (bTotal > CONFIG.INTERFERENCE_HIGH) {
@@ -392,42 +368,6 @@ const QiblaFinderScreen: React.FC = () => {
             interferenceRef.current = newInterference;
             setInterference(newInterference);
           }
-
-          // Derive calibration from interference (sensors don't give accuracy)
-          const newCalib: 'good' | 'fair' | 'poor' =
-            newInterference === 'none' ? 'good' :
-            newInterference === 'anomaly' ? 'fair' : 'poor';
-          if (newCalib !== calibrationStatusRef.current) {
-            calibrationStatusRef.current = newCalib;
-            setCalibrationStatus(newCalib);
-          }
-
-          const heading = computeTiltCompensatedHeading(data, latestAccel.current);
-          processHeading(heading);
-        });
-      } else {
-        // Fallback: expo-location heading (requires phone flat)
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status !== 'granted') {
-          setError('Location permission is required to find Qibla direction');
-          return;
-        }
-
-        headingSubscription.current = await Location.watchHeadingAsync((newHeading) => {
-          const rawHeading = newHeading.trueHeading >= 0 ? newHeading.trueHeading : newHeading.magHeading;
-          const accuracy = newHeading.accuracy;
-
-          if (accuracy !== undefined && accuracy >= 0) {
-            const newStatus: 'good' | 'fair' | 'poor' =
-              accuracy <= CONFIG.ACCURACY_GOOD ? 'good' :
-              accuracy <= CONFIG.ACCURACY_FAIR ? 'fair' : 'poor';
-            if (newStatus !== calibrationStatusRef.current) {
-              calibrationStatusRef.current = newStatus;
-              setCalibrationStatus(newStatus);
-            }
-          }
-
-          processHeading(rawHeading);
         });
       }
 
@@ -436,7 +376,7 @@ const QiblaFinderScreen: React.FC = () => {
       setError('Unable to get location or compass data. Please check settings.');
       setIsLoading(false);
     }
-  }, [computeTiltCompensatedHeading, processHeading]);
+  }, [processHeading]);
 
   const resolveLocation = useCallback(async () => {
     try {
@@ -500,6 +440,7 @@ const QiblaFinderScreen: React.FC = () => {
     lastHeadingRef.current = 0;
     lastHeadingTimeRef.current = 0;
     velocityRef.current = 0;
+    prevHeadingForCompassRef.current = null;
 
     // Re-resolve location on every focus so settings changes are picked up
     resolveLocation();
@@ -573,13 +514,18 @@ const QiblaFinderScreen: React.FC = () => {
     });
   }, [location]);
 
-  // Phase 4: Generate degree tick marks
+  // Generate degree tick marks — every 10° with three visual tiers
   const degreeMarks = useMemo(() => {
     const marks = [];
-    for (let i = 0; i < 360; i += 30) {
+    for (let i = 0; i < 360; i += 10) {
       const angle = (i * Math.PI) / 180;
       const isCardinal = i % 90 === 0;
-      const innerRadius = isCardinal ? COMPASS_SIZE / 2 - 28 : COMPASS_SIZE / 2 - 18;
+      const isIntercardinal = i % 45 === 0 && !isCardinal;
+      const innerRadius = isCardinal
+        ? COMPASS_SIZE / 2 - 28
+        : isIntercardinal
+          ? COMPASS_SIZE / 2 - 22
+          : COMPASS_SIZE / 2 - 16;
       const outerRadius = COMPASS_SIZE / 2 - 8;
       marks.push({
         angle: i,
@@ -588,6 +534,7 @@ const QiblaFinderScreen: React.FC = () => {
         x2: Math.sin(angle) * outerRadius,
         y2: -Math.cos(angle) * outerRadius,
         isCardinal,
+        isIntercardinal,
       });
     }
     return marks;
@@ -704,8 +651,9 @@ const QiblaFinderScreen: React.FC = () => {
                   transform: [
                     {
                       rotate: compassRotateAnim.interpolate({
-                        inputRange: [-360, 360],
-                        outputRange: ['-360deg', '360deg'],
+                        inputRange: [-1, 0, 1],
+                        outputRange: ['-1deg', '0deg', '1deg'],
+                        extrapolate: 'extend',
                       }),
                     },
                   ],
@@ -719,11 +667,13 @@ const QiblaFinderScreen: React.FC = () => {
                   style={[
                     styles.tickMark,
                     {
-                      width: mark.isCardinal ? 3 : 1,
-                      height: mark.isCardinal ? 12 : 8,
+                      width: mark.isCardinal ? 3 : mark.isIntercardinal ? 2 : 1,
+                      height: mark.isCardinal ? 12 : mark.isIntercardinal ? 10 : 6,
                       backgroundColor: mark.isCardinal
                         ? theme.colors.qibla.tickCardinal
-                        : theme.colors.qibla.tickMinor,
+                        : mark.isIntercardinal
+                          ? theme.colors.qibla.tickCardinal
+                          : theme.colors.qibla.tickMinor,
                       transform: [
                         { translateX: mark.x2 },
                         { translateY: mark.y2 },
@@ -741,6 +691,11 @@ const QiblaFinderScreen: React.FC = () => {
               <Text style={[styles.cardinal, styles.cardinalE, { color: theme.colors.qibla.cardinalMuted }]}>E</Text>
               <Text style={[styles.cardinal, styles.cardinalS, { color: theme.colors.qibla.cardinalMuted }]}>S</Text>
               <Text style={[styles.cardinal, styles.cardinalW, { color: theme.colors.qibla.cardinalMuted }]}>W</Text>
+              {/* Intercardinal directions */}
+              <Text style={[styles.intercardinal, styles.intercardinalNE, { color: theme.colors.qibla.cardinalMuted }]}>NE</Text>
+              <Text style={[styles.intercardinal, styles.intercardinalSE, { color: theme.colors.qibla.cardinalMuted }]}>SE</Text>
+              <Text style={[styles.intercardinal, styles.intercardinalSW, { color: theme.colors.qibla.cardinalMuted }]}>SW</Text>
+              <Text style={[styles.intercardinal, styles.intercardinalNW, { color: theme.colors.qibla.cardinalMuted }]}>NW</Text>
             </Animated.View>
 
             {/* Animated gradient beam needle — rotates to Qibla offset */}
@@ -792,7 +747,7 @@ const QiblaFinderScreen: React.FC = () => {
                 },
               ]}
             >
-              <View style={[styles.kaabaCube, { borderColor: theme.colors.qibla.kaabaGold }]} />
+              <View style={[styles.kaabaCube, { backgroundColor: theme.colors.qibla.kaabaIcon, borderColor: theme.colors.qibla.kaabaGold }]} />
               <Text style={[styles.kaabaLabel, { color: theme.colors.qibla.kaabaGold }]}>Qibla</Text>
             </Animated.View>
 
@@ -816,9 +771,21 @@ const QiblaFinderScreen: React.FC = () => {
 
         {/* Direction info — overlaid below compass */}
         <View style={styles.directionInfo}>
-          <Text style={[styles.directionValue, { color: theme.colors.qibla.bearingText }]}>
-            {Math.round(qiblaDirection)}°
-          </Text>
+          <View style={styles.bearingRow}>
+            <View style={styles.bearingItem}>
+              <Text style={[styles.bearingLabel, { color: theme.colors.qibla.hintText }]}>Heading</Text>
+              <Text style={[styles.directionValue, { color: theme.colors.text.primary }]}>
+                {displayHeading}°
+              </Text>
+            </View>
+            <View style={[styles.bearingDivider, { backgroundColor: theme.colors.qibla.tickMinor }]} />
+            <View style={styles.bearingItem}>
+              <Text style={[styles.bearingLabel, { color: theme.colors.qibla.hintText }]}>Qibla</Text>
+              <Text style={[styles.directionValue, { color: theme.colors.qibla.bearingText }]}>
+                {Math.round(qiblaDirection)}°
+              </Text>
+            </View>
+          </View>
           <View style={styles.turnHintContainer}>
             {isAligned && <Text style={[styles.alignedIcon, { color: theme.colors.qibla.compassRingAligned }]}>✓</Text>}
             <Text
@@ -839,7 +806,7 @@ const QiblaFinderScreen: React.FC = () => {
       {/* Subtle footer hint */}
       <View style={styles.footer}>
         <Text style={[styles.footerHint, { color: theme.colors.text.muted }]}>
-          Hold phone upright and rotate slowly
+          Rotate slowly to find Qibla
         </Text>
       </View>
     </SafeAreaView>
@@ -991,6 +958,28 @@ const styles = StyleSheet.create({
   cardinalW: {
     left: 12,
   },
+  intercardinal: {
+    position: 'absolute',
+    fontSize: 9,
+    fontWeight: '600',
+    opacity: 0.7,
+  },
+  intercardinalNE: {
+    top: 28,
+    right: 24,
+  },
+  intercardinalSE: {
+    bottom: 28,
+    right: 24,
+  },
+  intercardinalSW: {
+    bottom: 28,
+    left: 24,
+  },
+  intercardinalNW: {
+    top: 28,
+    left: 24,
+  },
   needleContainer: {
     position: 'absolute',
     width: '100%',
@@ -1024,7 +1013,6 @@ const styles = StyleSheet.create({
   kaabaCube: {
     width: 32,
     height: 32,
-    backgroundColor: '#1A1A1A',
     borderRadius: 4,
     borderWidth: 1.5,
   },
@@ -1045,8 +1033,28 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 24,
   },
+  bearingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  bearingItem: {
+    alignItems: 'center',
+  },
+  bearingLabel: {
+    fontSize: 11,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  bearingDivider: {
+    width: 1,
+    height: 28,
+    opacity: 0.3,
+  },
   directionValue: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: '700',
   },
   turnHintContainer: {

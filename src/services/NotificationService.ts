@@ -21,11 +21,17 @@ import AnalyticsService from './AnalyticsService';
 // Configure notification behavior
 Notifications.setNotificationHandler({
   handleNotification: async (notification) => {
-    const isTest = notification.request.content.data?.type === 'test';
+    const data = notification.request.content.data;
+    const isTest = data?.type === 'test';
+    const isAdhan = data?.type === 'prayer-time' || isTest;
+
+    // On Android foreground, suppress channel sound for adhan notifications
+    // because AdhanPlayer.play() handles full playback (avoids double-audio)
+    const suppressSound = Platform.OS === 'android' && isAdhan;
 
     return {
       shouldShowAlert: !isTest || Platform.OS === 'ios',
-      shouldPlaySound: true,
+      shouldPlaySound: !suppressSound,
       shouldSetBadge: false,
       shouldShowBanner: true,
       shouldShowList: true,
