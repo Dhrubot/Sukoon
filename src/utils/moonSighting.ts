@@ -129,8 +129,9 @@ export function getMoonSightingEvent(maghribTime?: Date): MoonSightingEvent | nu
   for (const w of WINDOWS) {
     if (month !== w.month || day !== w.day) continue;
 
-    // Already permanently confirmed → skip
-    if (getState(w.type, year) === 'confirmed') return null;
+    // Already handled (confirmed or deferred) → skip auto-popup
+    const state = getState(w.type, year);
+    if (state === 'confirmed' || state === 'deferred') return null;
 
     const isEve = month === w.eveMonth && day === 29;
 

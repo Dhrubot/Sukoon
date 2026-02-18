@@ -260,7 +260,7 @@ const HomeScreen = ({ navigation }: any) => {
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
         <LinearGradient colors={getBackgroundGradient()} style={styles.container}>
           <View style={styles.locationSetupContainer}>
-            <Text style={styles.setupTitle}>🕌 Welcome to Sukoon</Text>
+            <Text style={styles.setupTitle}>Welcome to Sukoon</Text>
             <Text style={styles.setupSubtitle}>
               To show accurate prayer times, we need your location
             </Text>

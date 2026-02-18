@@ -939,7 +939,7 @@ class NotificationService {
     logger.log('🔔 Sending Test Adhan...');
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: '🕌 Adhan Test',
+        title: 'Adhan Test',
         body: 'This should play the full Adhan sound.',
         data: { type: 'test' },
         ...(Platform.OS === 'android' && {

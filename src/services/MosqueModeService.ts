@@ -211,7 +211,7 @@ class MosqueModeService {
 
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: `🕌 ${prayer.name} Iqamah`,
+        title: `${prayer.name} Iqamah`,
         body: `Mosque Mode ${scheduled ? 'enabled' : 'could not auto-enable'} (${targetMode.toLowerCase()})`,
         data: {
           type: 'mosque_mode_enable',
@@ -281,7 +281,7 @@ class MosqueModeService {
 
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: `🕌 ${prayer.name} Iqamah in 2 minutes`,
+          title: `${prayer.name} Iqamah in 2 minutes`,
           body: 'Silence your phone — swipe down from top-right to enable Do Not Disturb.',
           data: {
             type: 'mosque_mode_reminder',

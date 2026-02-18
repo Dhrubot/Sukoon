@@ -8,8 +8,6 @@ import {
   ScrollView,
   Alert,
   Platform,
-  Modal,
-  TextInput,
 } from 'react-native';
 import Slider from '@react-native-community/slider';
 import * as Haptics from 'expo-haptics';
@@ -19,6 +17,7 @@ import { UserSettings, HabitBuilderSettings } from '../../types';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
+import ThemedTimePicker from '../common/ThemedTimePicker';
 
 interface PrayerHabitBuilderSettingsProps {
   userSettings: UserSettings;
@@ -57,9 +56,8 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
     }
   );
 
-  const [showTimePickerModal, setShowTimePickerModal] = useState<'start' | 'end' | null>(null);
-  const [tempHour, setTempHour] = useState('22');
-  const [tempMinute, setTempMinute] = useState('00');
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
@@ -96,36 +94,22 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
     }
   };
 
-  const openTimePicker = (type: 'start' | 'end') => {
-    const time = type === 'start' ? localSettings.quietHours.start : localSettings.quietHours.end;
-    const [hours, minutes] = time.split(':');
-    setTempHour(hours);
-    setTempMinute(minutes);
-    setShowTimePickerModal(type);
+  const handleQuietTimeChange = (type: 'start' | 'end', value: string) => {
+    if (type === 'start') {
+      updateSettings({ quietHours: { ...localSettings.quietHours, start: value } });
+    } else {
+      updateSettings({ quietHours: { ...localSettings.quietHours, end: value } });
+    }
   };
 
-  const saveTime = () => {
-    const hour = parseInt(tempHour) || 0;
-    const minute = parseInt(tempMinute) || 0;
-    
-    if (hour < 0 || hour > 23 || minute < 0 || minute > 59) {
-      Alert.alert('Invalid Time', 'Please enter a valid time (Hours: 0-23, Minutes: 0-59)');
-      return;
-    }
-    
-    const formattedTime = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-    
-    if (showTimePickerModal === 'start') {
-      updateSettings({
-        quietHours: { ...localSettings.quietHours, start: formattedTime },
-      });
-    } else {
-      updateSettings({
-        quietHours: { ...localSettings.quietHours, end: formattedTime },
-      });
-    }
-    
-    setShowTimePickerModal(null);
+  const formatQuietTime = (time: string) => {
+    const [hStr, mStr] = time.split(':');
+    let h = parseInt(hStr, 10) || 0;
+    const m = parseInt(mStr, 10) || 0;
+    const period = h >= 12 ? 'PM' : 'AM';
+    let h12 = h % 12;
+    if (h12 === 0) h12 = 12;
+    return `${h12}:${m.toString().padStart(2, '0')} ${period}`;
   };
 
   return (
@@ -462,10 +446,10 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
                   <Text style={styles.timeLabel}>Start Time</Text>
                   <TouchableOpacity
                     style={styles.timeButton}
-                    onPress={() => openTimePicker('start')}
+                    onPress={() => setShowStartPicker(true)}
                   >
                     <Text style={styles.timeButtonText}>
-                      {localSettings.quietHours.start}
+                      {formatQuietTime(localSettings.quietHours.start)}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -475,10 +459,10 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
                   <Text style={styles.timeLabel}>End Time</Text>
                   <TouchableOpacity
                     style={styles.timeButton}
-                    onPress={() => openTimePicker('end')}
+                    onPress={() => setShowEndPicker(true)}
                   >
                     <Text style={styles.timeButtonText}>
-                      {localSettings.quietHours.end}
+                      {formatQuietTime(localSettings.quietHours.end)}
                     </Text>
                   </TouchableOpacity>
                 </View>
@@ -515,67 +499,23 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
         </>
       )}
 
-      {/* Custom Time Picker Modal */}
-      <Modal
-        visible={showTimePickerModal !== null}
-        transparent
-        animationType="fade"
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.timePickerModal}>
-            <Text style={styles.timePickerTitle}>
-              Set {showTimePickerModal === 'start' ? 'Start' : 'End'} Time
-            </Text>
-            
-            <View style={styles.timeInputContainer}>
-              <View style={styles.timeInputGroup}>
-                <Text style={styles.timeInputLabel}>Hour</Text>
-                <TextInput
-                  style={styles.timeInput}
-                  value={tempHour}
-                  onChangeText={setTempHour}
-                  keyboardType="number-pad"
-                  maxLength={2}
-                  placeholder="HH"
-                />
-              </View>
-              
-              <Text style={styles.timeSeparator}>:</Text>
-              
-              <View style={styles.timeInputGroup}>
-                <Text style={styles.timeInputLabel}>Minute</Text>
-                <TextInput
-                  style={styles.timeInput}
-                  value={tempMinute}
-                  onChangeText={setTempMinute}
-                  keyboardType="number-pad"
-                  maxLength={2}
-                  placeholder="MM"
-                />
-              </View>
-            </View>
-            
-            <Text style={styles.timeInputHint}>
-              24-hour format (e.g., 22:00 for 10 PM)
-            </Text>
-            
-            <View style={styles.timePickerButtons}>
-              <TouchableOpacity
-                style={[styles.timePickerButton, styles.cancelButton]}
-                onPress={() => setShowTimePickerModal(null)}
-              >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.timePickerButton, styles.saveButton]}
-                onPress={saveTime}
-              >
-                <Text style={styles.saveButtonText}>Save</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
+      {/* Themed Time Pickers */}
+      <ThemedTimePicker
+        visible={showStartPicker}
+        title="Quiet Hours Start"
+        value={localSettings.quietHours.start}
+        onChange={(v) => handleQuietTimeChange('start', v)}
+        onClose={() => setShowStartPicker(false)}
+        minuteInterval={5}
+      />
+      <ThemedTimePicker
+        visible={showEndPicker}
+        title="Quiet Hours End"
+        value={localSettings.quietHours.end}
+        onChange={(v) => handleQuietTimeChange('end', v)}
+        onClose={() => setShowEndPicker(false)}
+        minuteInterval={5}
+      />
     </ScrollView>
   );
 };
@@ -741,101 +681,6 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontSize: 13,
     color: theme.colors.settings.infoText,
     lineHeight: 18,
-  },
-  // Time Picker Modal Styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: theme.colors.settings.modalOverlay,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-  },
-  timePickerModal: {
-    backgroundColor: theme.colors.settings.modalBg,
-    borderRadius: 16,
-    padding: 24,
-    width: '100%',
-    maxWidth: 320,
-    shadowColor: theme.colors.settings.modalShadow,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  timePickerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: theme.colors.settings.modalTitle,
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  timeInputContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  timeInputGroup: {
-    alignItems: 'center',
-  },
-  timeInputLabel: {
-    fontSize: 13,
-    color: theme.colors.settings.labelSecondary,
-    marginBottom: 8,
-    fontWeight: '500',
-  },
-  timeInput: {
-    width: 70,
-    height: 60,
-    borderWidth: 2,
-    borderColor: theme.colors.settings.inputBorder,
-    borderRadius: 12,
-    fontSize: 28,
-    fontWeight: '600',
-    color: theme.colors.settings.inputText,
-    textAlign: 'center',
-    backgroundColor: theme.colors.settings.inputBg,
-  },
-  timeSeparator: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: theme.colors.primary.DEFAULT,
-    marginHorizontal: 12,
-  },
-  timeInputHint: {
-    fontSize: 13,
-    color: theme.colors.settings.labelMuted,
-    textAlign: 'center',
-    marginBottom: 24,
-    fontStyle: 'italic',
-  },
-  timePickerButtons: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  timePickerButton: {
-    flex: 1,
-    paddingVertical: 14,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  cancelButton: {
-    backgroundColor: theme.colors.settings.cancelBg,
-    borderWidth: 1,
-    borderColor: theme.colors.settings.cancelBorder,
-  },
-  cancelButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: theme.colors.settings.cancelText,
-  },
-  saveButton: {
-    backgroundColor: theme.colors.settings.buttonPrimaryBg,
-  },
-  saveButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: theme.colors.settings.buttonPrimaryText,
   },
 });
 

@@ -81,18 +81,19 @@ const calculateDistanceToKaaba = (lat: number, lng: number): number => {
 // Configuration constants
 const CONFIG = {
   // Smoothing
-  SMOOTH_ALPHA_STABLE: 0.12,
-  SMOOTH_ALPHA_MOVING: 0.25,
+  SMOOTH_ALPHA_STABLE: 0.18,
+  SMOOTH_ALPHA_MOVING: 0.30,
   VELOCITY_THRESHOLD: 15, // deg/sec to switch between stable/moving
-  DEAD_ZONE: 0.5, // ignore changes smaller than this
+  DEAD_ZONE: 0.3, // ignore changes smaller than this
   
   // Throttling (adaptive)
-  UPDATE_INTERVAL_STABLE: 150, // ms when stable
-  UPDATE_INTERVAL_MOVING: 80, // ms when rotating
-  UI_UPDATE_INTERVAL: 150, // ms for React state updates
+  UPDATE_INTERVAL_STABLE: 100, // ms when stable
+  UPDATE_INTERVAL_MOVING: 60, // ms when rotating
+  UI_UPDATE_INTERVAL: 120, // ms for React state updates
   
-  // Alignment
-  ALIGNMENT_THRESHOLD: 3, // degrees
+  // Alignment (hysteresis: enter at ENTER, exit at EXIT to prevent flicker)
+  ALIGNMENT_ENTER: 3, // degrees — snap into aligned
+  ALIGNMENT_EXIT: 6,  // degrees — must move this far to un-align
   
   // Calibration
   ACCURACY_GOOD: 10, // degrees
@@ -103,8 +104,8 @@ const CONFIG = {
   INTERFERENCE_LOW: 15,   // < 15 µT = sensor anomaly
   
   // Animation (spring config)
-  SPRING_STIFFNESS: 90,
-  SPRING_DAMPING: 14,
+  SPRING_STIFFNESS: 120,
+  SPRING_DAMPING: 16,
   SPRING_MASS: 1,
 };
 
@@ -126,6 +127,7 @@ const QiblaFinderScreen: React.FC = () => {
 
   // Animation values
   const rotateAnim = useRef(new Animated.Value(0)).current;
+  const compassRotateAnim = useRef(new Animated.Value(0)).current; // rotates the entire compass rose
   const alignGlowAnim = useRef(new Animated.Value(0)).current;
   const alignPulseAnim = useRef(new Animated.Value(1)).current;
   const kaabaOpacityAnim = useRef(new Animated.Value(0)).current;
@@ -176,15 +178,24 @@ const QiblaFinderScreen: React.FC = () => {
     }
   }, []);
 
-  // Phase 1: Spring animation for smoother needle movement
+  // Spring animation for smoother needle + compass rose movement
   // Uses qiblaDirectionRef so this callback is stable and doesn't restart subscription
   const updateNeedle = useCallback(
     (heading: number) => {
       const diff = shortestAngleDelta(heading, qiblaDirectionRef.current);
 
-      // Use spring animation instead of timing for natural feel
+      // Animate the Qibla needle (offset from heading to Qibla)
       Animated.spring(rotateAnim, {
         toValue: diff,
+        stiffness: CONFIG.SPRING_STIFFNESS,
+        damping: CONFIG.SPRING_DAMPING,
+        mass: CONFIG.SPRING_MASS,
+        useNativeDriver: true,
+      }).start();
+
+      // Animate the compass rose (rotates opposite to heading so N tracks true north)
+      Animated.spring(compassRotateAnim, {
+        toValue: -heading,
         stiffness: CONFIG.SPRING_STIFFNESS,
         damping: CONFIG.SPRING_DAMPING,
         mass: CONFIG.SPRING_MASS,
@@ -197,11 +208,17 @@ const QiblaFinderScreen: React.FC = () => {
       lastUiUpdateMsRef.current = now;
 
       setDirectionOffset(diff);
-      const aligned = Math.abs(diff) <= CONFIG.ALIGNMENT_THRESHOLD;
+
+      // Alignment hysteresis: enter at ENTER threshold, exit at EXIT threshold
+      const absDiff = Math.abs(diff);
+      const wasAligned = alignedRef.current;
+      const aligned = wasAligned
+        ? absDiff <= CONFIG.ALIGNMENT_EXIT   // must exceed EXIT to un-align
+        : absDiff <= CONFIG.ALIGNMENT_ENTER; // must be within ENTER to align
       setIsAligned(aligned);
 
       // Haptic feedback, glow, and Kaaba lock-in on alignment
-      if (aligned && !alignedRef.current) {
+      if (aligned && !wasAligned) {
         alignedRef.current = true;
         Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
         
@@ -239,7 +256,7 @@ const QiblaFinderScreen: React.FC = () => {
           }),
         ]).start();
       }
-      if (!aligned && alignedRef.current) {
+      if (!aligned && wasAligned) {
         alignedRef.current = false;
         Animated.timing(alignGlowAnim, {
           toValue: 0,
@@ -261,7 +278,7 @@ const QiblaFinderScreen: React.FC = () => {
         ]).start();
       }
     },
-    [rotateAnim, alignGlowAnim, alignPulseAnim, kaabaScaleAnim, kaabaOpacityAnim]
+    [rotateAnim, compassRotateAnim, alignGlowAnim, alignPulseAnim, kaabaScaleAnim, kaabaOpacityAnim]
   );
 
   /**
@@ -494,7 +511,7 @@ const QiblaFinderScreen: React.FC = () => {
 
   const turnText = useMemo(() => {
     const abs = Math.abs(directionOffset);
-    if (abs <= CONFIG.ALIGNMENT_THRESHOLD) return 'Aligned with Qibla';
+    if (abs <= CONFIG.ALIGNMENT_EXIT) return 'Aligned with Qibla';
     const dir = directionOffset > 0 ? 'Turn right' : 'Turn left';
     return `${dir} • ${Math.round(abs)}°`;
   }, [directionOffset]);
@@ -679,37 +696,54 @@ const QiblaFinderScreen: React.FC = () => {
               },
             ]}
           >
-            {/* Degree tick marks */}
-            {degreeMarks.map((mark) => (
-              <View
-                key={mark.angle}
-                style={[
-                  styles.tickMark,
-                  {
-                    width: mark.isCardinal ? 3 : 1,
-                    height: mark.isCardinal ? 12 : 8,
-                    backgroundColor: mark.isCardinal
-                      ? theme.colors.qibla.tickCardinal
-                      : theme.colors.qibla.tickMinor,
-                    transform: [
-                      { translateX: mark.x2 },
-                      { translateY: mark.y2 },
-                      { rotate: `${mark.angle}deg` },
-                    ],
-                  },
-                ]}
-              />
-            ))}
+            {/* Rotating compass rose — tracks true north */}
+            <Animated.View
+              style={[
+                styles.compassRoseRotator,
+                {
+                  transform: [
+                    {
+                      rotate: compassRotateAnim.interpolate({
+                        inputRange: [-360, 360],
+                        outputRange: ['-360deg', '360deg'],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            >
+              {/* Degree tick marks */}
+              {degreeMarks.map((mark) => (
+                <View
+                  key={mark.angle}
+                  style={[
+                    styles.tickMark,
+                    {
+                      width: mark.isCardinal ? 3 : 1,
+                      height: mark.isCardinal ? 12 : 8,
+                      backgroundColor: mark.isCardinal
+                        ? theme.colors.qibla.tickCardinal
+                        : theme.colors.qibla.tickMinor,
+                      transform: [
+                        { translateX: mark.x2 },
+                        { translateY: mark.y2 },
+                        { rotate: `${mark.angle}deg` },
+                      ],
+                    },
+                  ]}
+                />
+              ))}
 
-            {/* Cardinal directions */}
-            <Text style={[styles.cardinal, styles.cardinalN, { color: theme.colors.qibla.cardinalN, fontWeight: '700' }]}>
-              N
-            </Text>
-            <Text style={[styles.cardinal, styles.cardinalE, { color: theme.colors.qibla.cardinalMuted }]}>E</Text>
-            <Text style={[styles.cardinal, styles.cardinalS, { color: theme.colors.qibla.cardinalMuted }]}>S</Text>
-            <Text style={[styles.cardinal, styles.cardinalW, { color: theme.colors.qibla.cardinalMuted }]}>W</Text>
+              {/* Cardinal directions */}
+              <Text style={[styles.cardinal, styles.cardinalN, { color: theme.colors.qibla.cardinalN, fontWeight: '700' }]}>
+                N
+              </Text>
+              <Text style={[styles.cardinal, styles.cardinalE, { color: theme.colors.qibla.cardinalMuted }]}>E</Text>
+              <Text style={[styles.cardinal, styles.cardinalS, { color: theme.colors.qibla.cardinalMuted }]}>S</Text>
+              <Text style={[styles.cardinal, styles.cardinalW, { color: theme.colors.qibla.cardinalMuted }]}>W</Text>
+            </Animated.View>
 
-            {/* Animated gradient beam needle */}
+            {/* Animated gradient beam needle — rotates to Qibla offset */}
             <Animated.View
               style={[
                 styles.needleContainer,
@@ -907,6 +941,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
   },
   compassWrapper: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  compassRoseRotator: {
+    position: 'absolute',
+    width: COMPASS_SIZE,
+    height: COMPASS_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
   },

@@ -3,7 +3,7 @@
 // Post-Fard dhikr counter — guides the user through authentic Sunnah adhkar
 // after every obligatory prayer. Minimal, serene UI matching the praying step.
 
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -28,6 +28,8 @@ const DhikrCounter: React.FC<DhikrCounterProps> = ({ onComplete, onSkip }) => {
 
   const [dhikrIndex, setDhikrIndex] = useState(0);
   const [currentCount, setCurrentCount] = useState(0);
+  const countRef = useRef(0);
+  const advancingRef = useRef(false);
 
   const currentDhikr: DhikrItem = POST_FARD_DHIKR[dhikrIndex];
   const isLastDhikr = dhikrIndex === POST_FARD_DHIKR.length - 1;
@@ -43,6 +45,8 @@ const DhikrCounter: React.FC<DhikrCounterProps> = ({ onComplete, onSkip }) => {
   const isTranslationTruncated = currentDhikr.translation.length > 80;
 
   const advanceToNext = useCallback(() => {
+    advancingRef.current = false;
+    countRef.current = 0;
     if (isLastDhikr) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       onComplete();
@@ -61,17 +65,20 @@ const DhikrCounter: React.FC<DhikrCounterProps> = ({ onComplete, onSkip }) => {
       return;
     }
 
-    const nextCount = currentCount + 1;
+    // Guard: already advancing to next dhikr
+    if (advancingRef.current) return;
+
+    countRef.current += 1;
+    const nextCount = countRef.current;
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    setCurrentCount(nextCount);
 
     if (nextCount >= currentDhikr.count) {
-      setCurrentCount(nextCount);
+      advancingRef.current = true;
       // Brief pause before advancing so user sees the completed count
       setTimeout(advanceToNext, 300);
-    } else {
-      setCurrentCount(nextCount);
     }
-  }, [currentCount, currentDhikr, advanceToNext]);
+  }, [currentDhikr, advanceToNext]);
 
   // Overall progress across all dhikr items
   const totalItems = POST_FARD_DHIKR.length;
