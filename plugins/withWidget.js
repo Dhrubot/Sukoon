@@ -428,6 +428,102 @@ struct MediumWidgetView: View {
     }
 }
 
+// MARK: - Lock Screen: Inline
+
+struct AccessoryInlineView: View {
+    let data: WidgetPrayerData
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "moon.stars.fill")
+            Text(data.nextPrayerName.isEmpty ? "\u2014" : "\(data.nextPrayerName) \u00B7 \(DateHelper.formatTime(data.nextPrayerTime))")
+        }
+    }
+}
+
+// MARK: - Lock Screen: Circular
+
+struct AccessoryCircularView: View {
+    let data: WidgetPrayerData
+
+    private var progress: Double {
+        guard data.totalPrayers > 0 else { return 0 }
+        return Double(data.completedCount) / Double(data.totalPrayers)
+    }
+
+    var body: some View {
+        Gauge(value: progress) {
+            Image(systemName: "moon.stars.fill")
+        } currentValueLabel: {
+            Text("\(data.completedCount)")
+                .font(.system(size: 20, weight: .bold, design: .rounded))
+        }
+        .gaugeStyle(.accessoryCircular)
+    }
+}
+
+// MARK: - Lock Screen: Rectangular
+
+struct AccessoryRectangularView: View {
+    let data: WidgetPrayerData
+
+    private var nextDate: Date? { DateHelper.parseISO(data.nextPrayerTime) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("NEXT PRAYER")
+                .font(.system(size: 10, weight: .semibold))
+                .textCase(.uppercase)
+                .opacity(0.6)
+
+            HStack(spacing: 6) {
+                Text(data.nextPrayerName.isEmpty ? "\u2014" : data.nextPrayerName)
+                    .font(.system(size: 16, weight: .bold, design: .serif))
+                    .lineLimit(1)
+
+                Text(DateHelper.formatTime(data.nextPrayerTime))
+                    .font(.system(size: 14, weight: .medium))
+                    .opacity(0.8)
+            }
+
+            HStack(spacing: 4) {
+                ForEach(data.prayerTimes) { p in
+                    lockScreenDot(status: p.status)
+                }
+
+                Spacer(minLength: 0)
+
+                if let nd = nextDate, nd > Date() {
+                    Text(nd, style: .relative)
+                        .font(.system(size: 10, weight: .medium))
+                        .opacity(0.6)
+                        .lineLimit(1)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func lockScreenDot(status: String) -> some View {
+        if status == "prayed" {
+            Circle().fill(.primary)
+                .frame(width: 6, height: 6)
+        } else if status == "current" {
+            Circle().fill(.primary)
+                .frame(width: 6, height: 6)
+                .opacity(0.8)
+        } else if status == "missed" {
+            Circle().stroke(.primary, lineWidth: 1.5)
+                .frame(width: 6, height: 6)
+                .opacity(0.5)
+        } else {
+            Circle().stroke(.primary, lineWidth: 1)
+                .frame(width: 6, height: 6)
+                .opacity(0.3)
+        }
+    }
+}
+
 // MARK: - Widget Definition
 
 struct SukoonWidget: Widget {
@@ -445,7 +541,7 @@ struct SukoonWidget: Widget {
         }
         .configurationDisplayName("Prayer Times")
         .description("Your next prayer, daily progress, and a Quranic reminder.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular, .accessoryRectangular, .accessoryInline])
     }
 }
 
@@ -457,6 +553,12 @@ struct WidgetEntryView: View {
         switch family {
         case .systemMedium:
             MediumWidgetView(data: entry.data)
+        case .accessoryInline:
+            AccessoryInlineView(data: entry.data)
+        case .accessoryCircular:
+            AccessoryCircularView(data: entry.data)
+        case .accessoryRectangular:
+            AccessoryRectangularView(data: entry.data)
         default:
             SmallWidgetView(data: entry.data)
         }
