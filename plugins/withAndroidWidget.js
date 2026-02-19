@@ -454,10 +454,10 @@ const LAYOUT_SMALL = `<?xml version="1.0" encoding="utf-8"?>
         <ImageView android:id="@+id/dot5" android:layout_width="8dp" android:layout_height="8dp"
             android:src="@drawable/widget_dot_inactive"/>
 
-        <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
+        <FrameLayout android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
     </LinearLayout>
 
-    <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
+    <FrameLayout android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
 
     <TextView android:id="@+id/prayer_name"
         android:layout_width="wrap_content" android:layout_height="wrap_content"
@@ -474,18 +474,18 @@ const LAYOUT_SMALL = `<?xml version="1.0" encoding="utf-8"?>
         android:text="" android:textColor="#2D8B6F"
         android:textSize="13sp" android:layout_marginTop="1dp"/>
 
-    <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
+    <FrameLayout android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
 
     <!-- Brand -->
     <LinearLayout
         android:layout_width="match_parent" android:layout_height="wrap_content"
         android:gravity="center_vertical">
-        <View android:layout_width="0dp" android:layout_height="1px"
+        <FrameLayout android:layout_width="0dp" android:layout_height="1px"
             android:layout_weight="1" android:background="#332D8B6F"/>
         <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
             android:text="Sukoon" android:textColor="#64748B" android:textSize="9sp"
             android:paddingStart="8dp" android:paddingEnd="8dp"/>
-        <View android:layout_width="0dp" android:layout_height="1px"
+        <FrameLayout android:layout_width="0dp" android:layout_height="1px"
             android:layout_weight="1" android:background="#332D8B6F"/>
     </LinearLayout>
 </LinearLayout>
@@ -588,7 +588,7 @@ const LAYOUT_MEDIUM = `<?xml version="1.0" encoding="utf-8"?>
     </LinearLayout>
 
     <!-- Divider -->
-    <View android:layout_width="match_parent" android:layout_height="1px"
+    <FrameLayout android:layout_width="match_parent" android:layout_height="1px"
         android:background="#2E2D8B6F" android:layout_marginTop="6dp" android:layout_marginBottom="6dp"/>
 
     <!-- Verse -->
