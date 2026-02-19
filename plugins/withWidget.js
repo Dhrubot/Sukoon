@@ -188,19 +188,35 @@ struct SukoonEntry: TimelineEntry {
 
 // MARK: - Helper
 
-private func parseISO(_ iso: String) -> Date? {
-    let f = ISO8601DateFormatter()
-    f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-    if let d = f.date(from: iso) { return d }
-    f.formatOptions = [.withInternetDateTime]
-    return f.date(from: iso)
-}
+struct DateHelper {
+    static let isoFormatterFrac: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
 
-private func formatTime(_ iso: String) -> String {
-    guard let date = parseISO(iso) else { return "--:--" }
-    let f = DateFormatter()
-    f.dateFormat = "h:mm a"
-    return f.string(from: date)
+    static let isoFormatter: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        return f
+    }()
+
+    static let timeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "h:mm a"
+        return f
+    }()
+
+    static func parseISO(_ iso: String) -> Date? {
+        if iso.isEmpty { return nil }
+        if let d = isoFormatterFrac.date(from: iso) { return d }
+        return isoFormatter.date(from: iso)
+    }
+
+    static func formatTime(_ iso: String) -> String {
+        guard let date = parseISO(iso) else { return "--:--" }
+        return timeFormatter.string(from: date)
+    }
 }
 
 // MARK: - Small Widget
@@ -208,7 +224,7 @@ private func formatTime(_ iso: String) -> String {
 struct SmallWidgetView: View {
     let data: WidgetPrayerData
 
-    private var nextDate: Date? { parseISO(data.nextPrayerTime) }
+    private var nextDate: Date? { DateHelper.parseISO(data.nextPrayerTime) }
 
     var body: some View {
         VStack(spacing: 6) {
@@ -223,13 +239,14 @@ struct SmallWidgetView: View {
             Spacer()
 
             // Prayer name
-            Text(data.nextPrayerName.isEmpty ? "—" : data.nextPrayerName)
+            Text(data.nextPrayerName.isEmpty ? "\u2014" : data.nextPrayerName)
                 .font(.system(size: 28, weight: .bold, design: .serif))
                 .foregroundColor(SukoonColors.prayerColor(data.nextPrayerName))
+                .lineLimit(1)
                 .minimumScaleFactor(0.7)
 
             // Time
-            Text(formatTime(data.nextPrayerTime))
+            Text(DateHelper.formatTime(data.nextPrayerTime))
                 .font(.system(size: 16, weight: .medium))
                 .foregroundColor(SukoonColors.textPrimary)
 
@@ -287,7 +304,7 @@ struct SmallWidgetView: View {
 struct MediumWidgetView: View {
     let data: WidgetPrayerData
 
-    private var nextDate: Date? { parseISO(data.nextPrayerTime) }
+    private var nextDate: Date? { DateHelper.parseISO(data.nextPrayerTime) }
 
     private static let verses: [(String, String)] = [
         ("Indeed, prayer prohibits immorality and wrongdoing", "29:45"),
@@ -320,13 +337,14 @@ struct MediumWidgetView: View {
                         .foregroundColor(SukoonColors.textMuted)
                         .tracking(0.5)
 
-                    Text(data.nextPrayerName.isEmpty ? "—" : data.nextPrayerName)
+                    Text(data.nextPrayerName.isEmpty ? "\u2014" : data.nextPrayerName)
                         .font(.system(size: 28, weight: .bold, design: .serif))
                         .foregroundColor(SukoonColors.prayerColor(data.nextPrayerName))
+                        .lineLimit(1)
                         .minimumScaleFactor(0.7)
 
                     HStack(spacing: 8) {
-                        Text(formatTime(data.nextPrayerTime))
+                        Text(DateHelper.formatTime(data.nextPrayerTime))
                             .font(.system(size: 15, weight: .medium))
                             .foregroundColor(SukoonColors.textPrimary)
 
