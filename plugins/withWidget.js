@@ -233,10 +233,10 @@ struct SmallWidgetView: View {
                 ForEach(data.prayerTimes) { p in
                     prayerDot(status: p.status)
                 }
-                Spacer()
+                Spacer(minLength: 0)
             }
 
-            Spacer()
+            Spacer(minLength: 0)
 
             // Prayer name
             Text(data.nextPrayerName.isEmpty ? "\u2014" : data.nextPrayerName)
@@ -261,7 +261,7 @@ struct SmallWidgetView: View {
                     .foregroundColor(SukoonColors.sage)
             }
 
-            Spacer()
+            Spacer(minLength: 0)
 
             // Brand line
             HStack(spacing: 4) {
@@ -277,8 +277,9 @@ struct SmallWidgetView: View {
 
     private var line: some View {
         Rectangle()
-            .fill(SukoonColors.sage.opacity(0.25))
+            .fill(SukoonColors.sage)
             .frame(height: 0.5)
+            .opacity(0.25)
     }
 
     @ViewBuilder
@@ -387,8 +388,9 @@ struct MediumWidgetView: View {
 
             // Divider
             Rectangle()
-                .fill(SukoonColors.sage.opacity(0.18))
+                .fill(SukoonColors.sage)
                 .frame(height: 0.5)
+                .opacity(0.18)
 
             Spacer(minLength: 6)
 
