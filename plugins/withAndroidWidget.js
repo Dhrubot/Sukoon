@@ -248,42 +248,46 @@ public class SukoonSmallWidget extends AppWidgetProvider {
     }
 
     static void update(Context ctx, AppWidgetManager mgr, int id) {
-        RemoteViews v = new RemoteViews(ctx.getPackageName(), R.layout.widget_small);
-        JSONObject data = SukoonWidgetHelper.loadData(ctx);
+        try {
+            RemoteViews v = new RemoteViews(ctx.getPackageName(), R.layout.widget_small);
+            JSONObject data = SukoonWidgetHelper.loadData(ctx);
 
-        if (data != null) {
-            try {
-                String name = data.optString("nextPrayerName", "");
-                String time = data.optString("nextPrayerTime", "");
-                JSONArray prayers = data.optJSONArray("prayerTimes");
+            if (data != null) {
+                try {
+                    String name = data.optString("nextPrayerName", "");
+                    String time = data.optString("nextPrayerTime", "");
+                    JSONArray prayers = data.optJSONArray("prayerTimes");
 
-                v.setTextViewText(R.id.prayer_name, name);
-                v.setTextColor(R.id.prayer_name, SukoonWidgetHelper.getPrayerColor(name));
-                v.setTextViewText(R.id.prayer_time, SukoonWidgetHelper.formatTime(time));
-                v.setTextViewText(R.id.countdown, SukoonWidgetHelper.getCountdown(time));
+                    v.setTextViewText(R.id.prayer_name, name);
+                    v.setTextColor(R.id.prayer_name, SukoonWidgetHelper.getPrayerColor(name));
+                    v.setTextViewText(R.id.prayer_time, SukoonWidgetHelper.formatTime(time));
+                    v.setTextViewText(R.id.countdown, SukoonWidgetHelper.getCountdown(time));
 
-                int[] dots = {R.id.dot1, R.id.dot2, R.id.dot3, R.id.dot4, R.id.dot5};
-                if (prayers != null) {
-                    for (int i = 0; i < Math.min(prayers.length(), 5); i++) {
-                        String status = prayers.getJSONObject(i).optString("status", "upcoming");
-                        v.setImageViewResource(dots[i], SukoonWidgetHelper.getDotDrawable(status));
+                    int[] dots = {R.id.dot1, R.id.dot2, R.id.dot3, R.id.dot4, R.id.dot5};
+                    if (prayers != null) {
+                        for (int i = 0; i < Math.min(prayers.length(), 5); i++) {
+                            String status = prayers.getJSONObject(i).optString("status", "upcoming");
+                            v.setImageViewResource(dots[i], SukoonWidgetHelper.getDotDrawable(status));
+                        }
                     }
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
             }
-        }
 
-        // Tap → open app
-        Intent launch = ctx.getPackageManager().getLaunchIntentForPackage(ctx.getPackageName());
-        if (launch != null) {
-            int flags = PendingIntent.FLAG_UPDATE_CURRENT;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) flags |= PendingIntent.FLAG_IMMUTABLE;
-            v.setOnClickPendingIntent(R.id.widget_root,
-                PendingIntent.getActivity(ctx, 0, launch, flags));
-        }
+            // Tap → open app
+            Intent launch = ctx.getPackageManager().getLaunchIntentForPackage(ctx.getPackageName());
+            if (launch != null) {
+                int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) flags |= PendingIntent.FLAG_IMMUTABLE;
+                v.setOnClickPendingIntent(R.id.widget_root,
+                    PendingIntent.getActivity(ctx, 0, launch, flags));
+            }
 
-        mgr.updateAppWidget(id, v);
+            mgr.updateAppWidget(id, v);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
 `;
@@ -312,56 +316,64 @@ public class SukoonMediumWidget extends AppWidgetProvider {
     }
 
     static void update(Context ctx, AppWidgetManager mgr, int id) {
-        RemoteViews v = new RemoteViews(ctx.getPackageName(), R.layout.widget_medium);
-        JSONObject data = SukoonWidgetHelper.loadData(ctx);
+        try {
+            RemoteViews v = new RemoteViews(ctx.getPackageName(), R.layout.widget_medium);
+            JSONObject data = SukoonWidgetHelper.loadData(ctx);
 
-        if (data != null) {
-            try {
-                String name = data.optString("nextPrayerName", "");
-                String time = data.optString("nextPrayerTime", "");
-                JSONArray prayers = data.optJSONArray("prayerTimes");
+            if (data != null) {
+                try {
+                    String name = data.optString("nextPrayerName", "");
+                    String time = data.optString("nextPrayerTime", "");
+                    JSONArray prayers = data.optJSONArray("prayerTimes");
 
-                v.setTextViewText(R.id.prayer_name, name);
-                v.setTextColor(R.id.prayer_name, SukoonWidgetHelper.getPrayerColor(name));
-                v.setTextViewText(R.id.prayer_time, SukoonWidgetHelper.formatTime(time));
-                v.setTextViewText(R.id.countdown, SukoonWidgetHelper.getCountdown(time));
+                    v.setTextViewText(R.id.prayer_name, name);
+                    v.setTextColor(R.id.prayer_name, SukoonWidgetHelper.getPrayerColor(name));
+                    v.setTextViewText(R.id.prayer_time, SukoonWidgetHelper.formatTime(time));
+                    v.setTextViewText(R.id.countdown, SukoonWidgetHelper.getCountdown(time));
 
-                // Prayer list with dots (4-state)
-                int[] dots  = {R.id.dot1, R.id.dot2, R.id.dot3, R.id.dot4, R.id.dot5};
-                int[] names = {R.id.pname1, R.id.pname2, R.id.pname3, R.id.pname4, R.id.pname5};
-                if (prayers != null) {
-                    for (int i = 0; i < Math.min(prayers.length(), 5); i++) {
-                        JSONObject p = prayers.getJSONObject(i);
-                        String status = p.optString("status", "upcoming");
-                        String pName = p.optString("name", "");
+                    // Prayer list with dots (4-state)
+                    int[] dots  = {R.id.dot1, R.id.dot2, R.id.dot3, R.id.dot4, R.id.dot5};
+                    int[] names = {R.id.pname1, R.id.pname2, R.id.pname3, R.id.pname4, R.id.pname5};
+                    if (prayers != null) {
+                        for (int i = 0; i < Math.min(prayers.length(), 5); i++) {
+                            JSONObject p = prayers.getJSONObject(i);
+                            String status = p.optString("status", "upcoming");
+                            String pName = p.optString("name", "");
 
-                        v.setImageViewResource(dots[i], SukoonWidgetHelper.getDotDrawable(status));
-                        v.setTextViewText(names[i], pName.length() > 3 ? pName.substring(0, 3) : pName);
-                        v.setTextColor(names[i], SukoonWidgetHelper.getDotTextColor(status));
+                            v.setImageViewResource(dots[i], SukoonWidgetHelper.getDotDrawable(status));
+                            v.setTextViewText(names[i], pName.length() > 3 ? pName.substring(0, 3) : pName);
+                            v.setTextColor(names[i], SukoonWidgetHelper.getDotTextColor(status));
+                        }
                     }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            // Daily verse
+            try {
+                String[] verse = SukoonWidgetHelper.getDailyVerse();
+                if (verse != null && verse.length >= 2) {
+                    v.setTextViewText(R.id.verse_text, "\\u201C" + verse[0] + "\\u201D");
+                    v.setTextViewText(R.id.verse_ref, "\\u2014 Quran " + verse[1]);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }
 
-        // Daily verse
-        String[] verse = SukoonWidgetHelper.getDailyVerse();
-        if (verse.length >= 2) {
-            v.setTextViewText(R.id.verse_text, "\\u201C" + verse[0] + "\\u201D");
-            v.setTextViewText(R.id.verse_ref, "\\u2014 Quran " + verse[1]);
-        }
+            // Tap → open app
+            Intent launch = ctx.getPackageManager().getLaunchIntentForPackage(ctx.getPackageName());
+            if (launch != null) {
+                int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) flags |= PendingIntent.FLAG_IMMUTABLE;
+                v.setOnClickPendingIntent(R.id.widget_root,
+                    PendingIntent.getActivity(ctx, 0, launch, flags));
+            }
 
-        // Tap → open app
-        Intent launch = ctx.getPackageManager().getLaunchIntentForPackage(ctx.getPackageName());
-        if (launch != null) {
-            int flags = PendingIntent.FLAG_UPDATE_CURRENT;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) flags |= PendingIntent.FLAG_IMMUTABLE;
-            v.setOnClickPendingIntent(R.id.widget_root,
-                PendingIntent.getActivity(ctx, 0, launch, flags));
+            mgr.updateAppWidget(id, v);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-
-        mgr.updateAppWidget(id, v);
     }
 }
 `;

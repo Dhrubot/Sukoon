@@ -111,8 +111,8 @@ struct SukoonColors {
     static let sage       = Color(red: 0.176, green: 0.545, blue: 0.435)
     // Gold accent — gold400 (#D4AF37) for current/active state
     static let gold       = Color(red: 0.831, green: 0.686, blue: 0.216)
-    // Missed state — soft red at 40% opacity (pre-baked for strokeBorder compatibility)
-    static let missedRed  = Color(.sRGB, red: 0.937, green: 0.267, blue: 0.267, opacity: 0.4)
+    // Missed state — pre-baked RGBA to avoid .opacity() issues in widget extensions
+    static let missedRed  = Color(red: 0.562, green: 0.160, blue: 0.160)
     static let textPrimary   = Color.white
     // slate400 (#94A3B8)
     static let textSecondary = Color(red: 0.580, green: 0.639, blue: 0.722)
@@ -264,20 +264,21 @@ struct SmallWidgetView: View {
             .frame(height: 0.5)
     }
 
+    @ViewBuilder
     private func prayerDot(status: String) -> some View {
-        Group {
-            switch status {
-            case "prayed":
-                Circle().fill(SukoonColors.sage)
-            case "current":
-                Circle().fill(SukoonColors.gold)
-            case "missed":
-                Circle().strokeBorder(SukoonColors.missedRed, lineWidth: 1.5)
-            default:
-                Circle().strokeBorder(SukoonColors.textMuted, lineWidth: 1)
-            }
+        if status == "prayed" {
+            Circle().fill(SukoonColors.sage)
+                .frame(width: 8, height: 8)
+        } else if status == "current" {
+            Circle().fill(SukoonColors.gold)
+                .frame(width: 8, height: 8)
+        } else if status == "missed" {
+            Circle().stroke(SukoonColors.missedRed, lineWidth: 1.5)
+                .frame(width: 8, height: 8)
+        } else {
+            Circle().stroke(SukoonColors.textMuted, lineWidth: 1)
+                .frame(width: 8, height: 8)
         }
-        .frame(width: 8, height: 8)
     }
 }
 
@@ -356,7 +357,7 @@ struct MediumWidgetView: View {
                                     : p.status == "current"
                                       ? SukoonColors.gold
                                       : p.status == "missed"
-                                        ? SukoonColors.textMuted.opacity(0.6)
+                                        ? SukoonColors.missedRed
                                         : SukoonColors.textMuted
                                 )
                         }
@@ -389,20 +390,21 @@ struct MediumWidgetView: View {
         .padding(16)
     }
 
+    @ViewBuilder
     private func mediumDot(status: String) -> some View {
-        Group {
-            switch status {
-            case "prayed":
-                Circle().fill(SukoonColors.sage)
-            case "current":
-                Circle().fill(SukoonColors.gold)
-            case "missed":
-                Circle().strokeBorder(SukoonColors.missedRed, lineWidth: 1.5)
-            default:
-                Circle().strokeBorder(SukoonColors.textMuted, lineWidth: 1)
-            }
+        if status == "prayed" {
+            Circle().fill(SukoonColors.sage)
+                .frame(width: 7, height: 7)
+        } else if status == "current" {
+            Circle().fill(SukoonColors.gold)
+                .frame(width: 7, height: 7)
+        } else if status == "missed" {
+            Circle().stroke(SukoonColors.missedRed, lineWidth: 1.5)
+                .frame(width: 7, height: 7)
+        } else {
+            Circle().stroke(SukoonColors.textMuted, lineWidth: 1)
+                .frame(width: 7, height: 7)
         }
-        .frame(width: 7, height: 7)
     }
 }
 
