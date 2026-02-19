@@ -95,7 +95,46 @@ struct WidgetPrayerData: Codable {
     let completedCount: Int
     let totalPrayers: Int
     let streak: Int
+    let hijriDate: String
+    let dailyVerse: String
+    let dailyVerseRef: String
     let lastUpdated: String
+
+    enum CodingKeys: String, CodingKey {
+        case prayerTimes, nextPrayerName, nextPrayerTime
+        case completedCount, totalPrayers, streak
+        case hijriDate, dailyVerse, dailyVerseRef, lastUpdated
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        prayerTimes = try c.decode([PrayerInfo].self, forKey: .prayerTimes)
+        nextPrayerName = try c.decode(String.self, forKey: .nextPrayerName)
+        nextPrayerTime = try c.decode(String.self, forKey: .nextPrayerTime)
+        completedCount = try c.decode(Int.self, forKey: .completedCount)
+        totalPrayers = try c.decode(Int.self, forKey: .totalPrayers)
+        streak = try c.decode(Int.self, forKey: .streak)
+        hijriDate = (try? c.decode(String.self, forKey: .hijriDate)) ?? ""
+        dailyVerse = (try? c.decode(String.self, forKey: .dailyVerse)) ?? ""
+        dailyVerseRef = (try? c.decode(String.self, forKey: .dailyVerseRef)) ?? ""
+        lastUpdated = try c.decode(String.self, forKey: .lastUpdated)
+    }
+
+    init(prayerTimes: [PrayerInfo], nextPrayerName: String, nextPrayerTime: String,
+         completedCount: Int, totalPrayers: Int, streak: Int,
+         hijriDate: String = "", dailyVerse: String = "", dailyVerseRef: String = "",
+         lastUpdated: String) {
+        self.prayerTimes = prayerTimes
+        self.nextPrayerName = nextPrayerName
+        self.nextPrayerTime = nextPrayerTime
+        self.completedCount = completedCount
+        self.totalPrayers = totalPrayers
+        self.streak = streak
+        self.hijriDate = hijriDate
+        self.dailyVerse = dailyVerse
+        self.dailyVerseRef = dailyVerseRef
+        self.lastUpdated = lastUpdated
+    }
 }
 
 // MARK: - Colors
@@ -174,6 +213,9 @@ struct SukoonProvider: TimelineProvider {
             completedCount: 2,
             totalPrayers: 5,
             streak: 7,
+            hijriDate: "15 Rajab 1447",
+            dailyVerse: "Indeed, prayer prohibits immorality and wrongdoing",
+            dailyVerseRef: "29:45",
             lastUpdated: "2025-01-15T12:00:00Z"
         )
     }
@@ -307,36 +349,28 @@ struct MediumWidgetView: View {
 
     private var nextDate: Date? { DateHelper.parseISO(data.nextPrayerTime) }
 
-    private static let verses: [(String, String)] = [
-        ("Indeed, prayer prohibits immorality and wrongdoing", "29:45"),
-        ("And seek help through patience and prayer", "2:45"),
-        ("Indeed, Allah is with the patient", "2:153"),
-        ("So remember Me; I will remember you", "2:152"),
-        ("In the remembrance of Allah do hearts find rest", "13:28"),
-        ("And He is with you wherever you are", "57:4"),
-        ("Allah does not burden a soul beyond that it can bear", "2:286"),
-        ("Whoever puts their trust in Allah, He will be enough for them", "65:3"),
-        ("And whoever fears Allah, He will make for them a way out", "65:2"),
-        ("My mercy encompasses all things", "7:156"),
-        ("Call upon Me; I will respond to you", "40:60"),
-        ("Do not lose hope in the mercy of Allah", "39:53"),
-    ]
-
-    private var verse: (String, String) {
-        let day = Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 1
-        return Self.verses[day % Self.verses.count]
-    }
-
     var body: some View {
         VStack(spacing: 0) {
             // Top row
             HStack(alignment: .top) {
                 // Left: next prayer
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("NEXT PRAYER")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundColor(SukoonColors.textMuted)
-                        .tracking(0.5)
+                    HStack(spacing: 6) {
+                        Text("NEXT PRAYER")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundColor(SukoonColors.textMuted)
+                            .tracking(0.5)
+
+                        if !data.hijriDate.isEmpty {
+                            Text("\u00B7")
+                                .font(.system(size: 10))
+                                .foregroundColor(SukoonColors.textMuted)
+                            Text(data.hijriDate)
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(SukoonColors.textMuted)
+                                .lineLimit(1)
+                        }
+                    }
 
                     Text(data.nextPrayerName.isEmpty ? "\u2014" : data.nextPrayerName)
                         .font(.system(size: 28, weight: .bold, design: .serif))
@@ -394,17 +428,29 @@ struct MediumWidgetView: View {
 
             Spacer(minLength: 6)
 
-            // Verse
+            // Verse (from RN data, with fallback)
             VStack(spacing: 2) {
-                Text("\\u{201C}\\(verse.0)\\u{201D}")
-                    .font(.system(size: 11, weight: .regular))
-                    .foregroundColor(SukoonColors.textSecondary)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.center)
+                if !data.dailyVerse.isEmpty {
+                    Text("\\u{201C}\(data.dailyVerse)\\u{201D}")
+                        .font(.system(size: 11, weight: .regular))
+                        .foregroundColor(SukoonColors.textSecondary)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.center)
 
-                Text("— Quran \\(verse.1)")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(SukoonColors.textMuted)
+                    Text("— \(data.dailyVerseRef)")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(SukoonColors.textMuted)
+                } else {
+                    Text("\\u{201C}In the remembrance of Allah do hearts find rest\\u{201D}")
+                        .font(.system(size: 11, weight: .regular))
+                        .foregroundColor(SukoonColors.textSecondary)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.center)
+
+                    Text("— 13:28")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(SukoonColors.textMuted)
+                }
             }
         }
         .padding(16)

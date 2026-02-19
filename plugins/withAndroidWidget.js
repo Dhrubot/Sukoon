@@ -331,6 +331,12 @@ public class SukoonMediumWidget extends AppWidgetProvider {
                     v.setTextViewText(R.id.prayer_time, SukoonWidgetHelper.formatTime(time));
                     v.setTextViewText(R.id.countdown, SukoonWidgetHelper.getCountdown(time));
 
+                    // Hijri date
+                    String hijri = data.optString("hijriDate", "");
+                    if (!hijri.isEmpty()) {
+                        v.setTextViewText(R.id.hijri_date, "\u00B7 " + hijri);
+                    }
+
                     // Prayer list with dots (4-state)
                     int[] dots  = {R.id.dot1, R.id.dot2, R.id.dot3, R.id.dot4, R.id.dot5};
                     int[] names = {R.id.pname1, R.id.pname2, R.id.pname3, R.id.pname4, R.id.pname5};
@@ -350,12 +356,19 @@ public class SukoonMediumWidget extends AppWidgetProvider {
                 }
             }
 
-            // Daily verse
+            // Daily verse (from RN data, with fallback)
             try {
-                String[] verse = SukoonWidgetHelper.getDailyVerse();
-                if (verse != null && verse.length >= 2) {
-                    v.setTextViewText(R.id.verse_text, "\\u201C" + verse[0] + "\\u201D");
-                    v.setTextViewText(R.id.verse_ref, "\\u2014 Quran " + verse[1]);
+                String verse = data != null ? data.optString("dailyVerse", "") : "";
+                String verseRef = data != null ? data.optString("dailyVerseRef", "") : "";
+                if (!verse.isEmpty()) {
+                    v.setTextViewText(R.id.verse_text, "\u201C" + verse + "\u201D");
+                    v.setTextViewText(R.id.verse_ref, "\u2014 " + verseRef);
+                } else {
+                    String[] fallback = SukoonWidgetHelper.getDailyVerse();
+                    if (fallback != null && fallback.length >= 2) {
+                        v.setTextViewText(R.id.verse_text, "\u201C" + fallback[0] + "\u201D");
+                        v.setTextViewText(R.id.verse_ref, "\u2014 " + fallback[1]);
+                    }
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -516,9 +529,16 @@ const LAYOUT_MEDIUM = `<?xml version="1.0" encoding="utf-8"?>
             android:layout_width="0dp" android:layout_height="wrap_content"
             android:layout_weight="1" android:orientation="vertical">
 
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="NEXT PRAYER" android:textColor="#64748B"
-                android:textSize="10sp" android:letterSpacing="0.05" android:textStyle="bold"/>
+            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
+                android:gravity="center_vertical">
+                <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="NEXT PRAYER" android:textColor="#64748B"
+                    android:textSize="10sp" android:letterSpacing="0.05" android:textStyle="bold"/>
+                <TextView android:id="@+id/hijri_date"
+                    android:layout_width="wrap_content" android:layout_height="wrap_content"
+                    android:text="" android:textColor="#64748B"
+                    android:textSize="10sp" android:layout_marginStart="6dp"/>
+            </LinearLayout>
 
             <TextView android:id="@+id/prayer_name"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
