@@ -689,7 +689,7 @@ const withAndroidWidgetManifest = (config) => {
         receivers.push({
           $: {
             'android:name': name,
-            'android:exported': 'false',
+            'android:exported': 'true',
           },
           'intent-filter': [
             {
