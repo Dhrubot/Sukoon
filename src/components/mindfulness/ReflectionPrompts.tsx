@@ -156,6 +156,7 @@ const ReflectionPrompts: React.FC<ReflectionPromptsProps> = ({
         multiline
         placeholder="Share your thoughts... (optional)"
         placeholderTextColor={theme.colors.mindfulness.textHint}
+        selectionColor={theme.colors.primary.DEFAULT}
         value={reflectionText}
         onChangeText={handleTextChange}
         numberOfLines={4}

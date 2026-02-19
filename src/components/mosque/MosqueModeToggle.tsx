@@ -179,10 +179,10 @@ export const MosqueModeToggle: React.FC = () => {
           value={isEnabled}
           onValueChange={handleToggle}
           trackColor={{
-            false: theme.colors.border.primary,
-            true: theme.colors.primary.DEFAULT,
+            false: theme.colors.switch.trackFalse,
+            true: theme.colors.switch.trackTrue,
           }}
-          thumbColor={theme.colors.card.background}
+          thumbColor={theme.colors.switch.thumb}
           disabled={isLoading || !nativeAvailable}
         />
       </View>

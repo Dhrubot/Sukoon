@@ -23,6 +23,7 @@ import { AppTheme } from "../../theme";
 
 // NEW: Use our centralized prayer times hook
 import { usePrayerTimes } from "../../providers/PrayerTimesProvider";
+import { useMosqueMode } from "../../hooks/useMosqueMode";
 
 // Components
 import PrayerCard from "../../components/prayer/PrayerCard";
@@ -68,6 +69,9 @@ const HomeScreen = ({ navigation }: any) => {
     todaySunrise,
     todaySunset
   } = useStore();
+
+  // Mosque mode state for focus mode + pill badge
+  const { isActive: isMosqueModeActive, activeState: mosqueModeState } = useMosqueMode();
 
   // Local state for UI features
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -195,7 +199,7 @@ const HomeScreen = ({ navigation }: any) => {
       timestamp: prayer.time.getTime(),
       isNext: false,
     };
-    navigation.navigate("MindfulnessFlow", { prayer: serializablePrayer });
+    navigation.navigate("MindfulnessFlow", { prayer: serializablePrayer, isSunnah: true });
   };
 
   const handleSunnahPrayer = () => {
@@ -214,14 +218,22 @@ const HomeScreen = ({ navigation }: any) => {
   };
 
 
-  // Focus Mode: when next prayer is within 15 minutes, sanctuary expands
+  // Focus Mode: sanctuary expands during prayer window or active mosque mode
   const isFocusMode = useMemo(() => {
+    // Mosque mode active: stay in sanctuary from iqamah until ringer restores
+    if (isMosqueModeActive && mosqueModeState) {
+      const now = currentTime.getTime();
+      return now >= mosqueModeState.iqamahTime.getTime()
+          && now < mosqueModeState.restoreTime.getTime();
+    }
+
+    // General prayer window: 15 min before → 30 min after prayer time
     if (!nextPrayer) return false;
     const minutesUntil = Math.floor(
       (nextPrayer.time.getTime() - currentTime.getTime()) / (1000 * 60)
     );
-    return minutesUntil >= 0 && minutesUntil <= 15;
-  }, [nextPrayer, currentTime]);
+    return minutesUntil >= -30 && minutesUntil <= 15;
+  }, [nextPrayer, currentTime, isMosqueModeActive, mosqueModeState]);
 
   const completedToday = todayPrayerRecords.filter(r => r.status === 'prayed').length;
 
@@ -326,6 +338,10 @@ const HomeScreen = ({ navigation }: any) => {
             onPrepareQada={missedPreviousPrayer ? () => handlePrayerComplete(missedPreviousPrayer) : undefined}
             onPraySunnah={handleSunnahPrayer}
             isFocusMode={isFocusMode}
+            mosqueModeActive={isMosqueModeActive && mosqueModeState ? {
+              prayer: mosqueModeState.prayer,
+              restoreTime: mosqueModeState.restoreTime,
+            } : undefined}
           />
         ) : (
           <LinearGradient colors={getBackgroundGradient()} style={styles.noNextPrayer}>

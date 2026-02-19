@@ -723,7 +723,7 @@ const MindfulnessFlow: React.FC = () => {
           {"\n\n"}
           May your prayer be accepted and bring you peace.
         </Text>
-        {reflectionText.length > 0 && (
+        {!isSunnah && reflectionText.length > 0 && (
           <Text style={styles.gardenHint}>A new bloom appeared in your garden 🌱</Text>
         )}
         <Text style={styles.tapToDismiss}>Tap anywhere to return</Text>

@@ -157,8 +157,8 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
           <Switch
             value={localSettings.enabled}
             onValueChange={handleToggleNotifications}
-            trackColor={{ false: theme.colors.settings.sliderMax, true: theme.colors.settings.sliderMin }}
-            thumbColor={localSettings.enabled ? theme.colors.settings.sliderThumb : theme.colors.switch.thumb}
+            trackColor={{ false: theme.colors.switch.trackFalse, true: theme.colors.switch.trackTrue }}
+            thumbColor={theme.colors.switch.thumb}
             disabled={isUpdating}
           />
         </View>
@@ -208,8 +208,8 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
               <Switch
                 value={localSettings.soundEnabled}
                 onValueChange={(value) => updateSettings({ soundEnabled: value })}
-                trackColor={{ false: theme.colors.settings.sliderMax, true: theme.colors.settings.sliderMin }}
-                thumbColor={localSettings.soundEnabled ? theme.colors.settings.sliderThumb : theme.colors.switch.thumb}
+                trackColor={{ false: theme.colors.switch.trackFalse, true: theme.colors.switch.trackTrue }}
+                thumbColor={theme.colors.switch.thumb}
               />
             </View>
           </View>
@@ -226,8 +226,8 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
               <Switch
                 value={localSettings.vibrationEnabled}
                 onValueChange={(value) => updateSettings({ vibrationEnabled: value })}
-                trackColor={{ false: theme.colors.settings.sliderMax, true: theme.colors.settings.sliderMin }}
-                thumbColor={localSettings.vibrationEnabled ? theme.colors.settings.sliderThumb : theme.colors.switch.thumb}
+                trackColor={{ false: theme.colors.switch.trackFalse, true: theme.colors.switch.trackTrue }}
+                thumbColor={theme.colors.switch.thumb}
               />
             </View>
           </View>
@@ -244,8 +244,8 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
               <Switch
                 value={localSettings.postPrayerCheck}
                 onValueChange={(value) => updateSettings({ postPrayerCheck: value })}
-                trackColor={{ false: theme.colors.settings.sliderMax, true: theme.colors.settings.sliderMin }}
-                thumbColor={localSettings.postPrayerCheck ? theme.colors.settings.sliderThumb : theme.colors.switch.thumb}
+                trackColor={{ false: theme.colors.switch.trackFalse, true: theme.colors.switch.trackTrue }}
+                thumbColor={theme.colors.switch.thumb}
               />
             </View>
           </View>

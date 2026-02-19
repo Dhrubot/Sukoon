@@ -7,7 +7,6 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useMosqueMode } from '../../hooks/useMosqueMode';
 
@@ -50,20 +49,36 @@ export const MosqueModeOptions: React.FC = () => {
           <Text style={[styles.pickerLabel, { color: theme.colors.text.secondary }]}>
             How long should silent mode stay on?
           </Text>
-          <Picker
-            selectedValue={settings.silentDuration}
-            onValueChange={(value) => {
-              updateMosqueModeSettings({ silentDuration: value as number });
-              setShowDurationPicker(false);
-            }}
-            style={{ color: theme.colors.text.primary }}
-            itemStyle={{ fontSize: 16, color: theme.colors.text.primary }}
-            dropdownIconColor={theme.colors.text.primary}
-          >
-            {DURATION_OPTIONS.map((min) => (
-              <Picker.Item key={min} label={`${min} minutes`} value={min} />
-            ))}
-          </Picker>
+          <View style={styles.chipGrid}>
+            {DURATION_OPTIONS.map((min) => {
+              const isSelected = settings.silentDuration === min;
+              return (
+                <TouchableOpacity
+                  key={min}
+                  style={[
+                    styles.chip,
+                    { borderColor: theme.colors.border.primary },
+                    isSelected && { backgroundColor: theme.colors.primary.DEFAULT, borderColor: theme.colors.primary.DEFAULT },
+                  ]}
+                  onPress={() => {
+                    updateMosqueModeSettings({ silentDuration: min });
+                    setShowDurationPicker(false);
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    style={[
+                      styles.chipText,
+                      { color: theme.colors.text.secondary },
+                      isSelected && { color: '#FFFFFF', fontWeight: '700' },
+                    ]}
+                  >
+                    {min} min
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </View>
       )}
 
@@ -82,8 +97,8 @@ export const MosqueModeOptions: React.FC = () => {
         <Switch
           value={settings.autoRestore}
           onValueChange={(value) => updateMosqueModeSettings({ autoRestore: value })}
-          trackColor={{ false: theme.colors.border.primary, true: theme.colors.primary.DEFAULT }}
-          thumbColor={theme.colors.card.background}
+          trackColor={{ false: theme.colors.switch.trackFalse, true: theme.colors.switch.trackTrue }}
+          thumbColor={theme.colors.switch.thumb}
         />
       </View>
 
@@ -102,8 +117,8 @@ export const MosqueModeOptions: React.FC = () => {
         <Switch
           value={settings.useVibrateInsteadOfSilent}
           onValueChange={(value) => updateMosqueModeSettings({ useVibrateInsteadOfSilent: value })}
-          trackColor={{ false: theme.colors.border.primary, true: theme.colors.primary.DEFAULT }}
-          thumbColor={theme.colors.card.background}
+          trackColor={{ false: theme.colors.switch.trackFalse, true: theme.colors.switch.trackTrue }}
+          thumbColor={theme.colors.switch.thumb}
         />
       </View>
     </View>
@@ -155,5 +170,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     marginBottom: 8,
+  },
+  chipGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  chip: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  chipText: {
+    fontSize: 14,
+    fontWeight: '500',
   },
 });

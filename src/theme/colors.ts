@@ -213,12 +213,12 @@ const onboardingGradient = {
 const switchColors = {
   dark: {
     trackFalse: palette.slate600,
-    trackTrue:  palette.gold400,
+    trackTrue:  palette.green500,
     thumb:      palette.slate100,
   },
   light: {
     trackFalse: palette.slate300,
-    trackTrue:  palette.gold500,
+    trackTrue:  palette.green600,
     thumb:      palette.white,
   },
 } as const;

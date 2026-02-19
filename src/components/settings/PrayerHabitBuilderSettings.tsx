@@ -126,8 +126,8 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
           <Switch
             value={localSettings.enabled}
             onValueChange={(value) => updateSettings({ enabled: value })}
-            trackColor={{ false: theme.colors.settings.sliderMax, true: theme.colors.settings.sliderMin }}
-            thumbColor={localSettings.enabled ? theme.colors.settings.sliderThumb : theme.colors.switch.thumb}
+            trackColor={{ false: theme.colors.switch.trackFalse, true: theme.colors.switch.trackTrue }}
+            thumbColor={theme.colors.switch.thumb}
             disabled={isUpdating}
           />
         </View>
@@ -149,8 +149,8 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
                     },
                   })
                 }
-                trackColor={{ false: theme.colors.settings.sliderMax, true: theme.colors.settings.sliderMin }}
-                thumbColor={localSettings.persistentReminders.enabled ? theme.colors.settings.sliderThumb : theme.colors.switch.thumb}
+                trackColor={{ false: theme.colors.switch.trackFalse, true: theme.colors.switch.trackTrue }}
+                thumbColor={theme.colors.switch.thumb}
               />
             </View>
             <Text style={styles.settingDescription}>
@@ -296,8 +296,8 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
                     },
                   })
                 }
-                trackColor={{ false: theme.colors.settings.sliderMax, true: theme.colors.settings.sliderMin }}
-                thumbColor={localSettings.gracePeriodWarning.enabled ? theme.colors.settings.sliderThumb : theme.colors.switch.thumb}
+                trackColor={{ false: theme.colors.switch.trackFalse, true: theme.colors.switch.trackTrue }}
+                thumbColor={theme.colors.switch.thumb}
               />
             </View>
             <Text style={styles.settingDescription}>
@@ -431,8 +431,8 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
                     quietHours: { ...localSettings.quietHours, enabled: value },
                   })
                 }
-                trackColor={{ false: theme.colors.settings.sliderMax, true: theme.colors.settings.sliderMin }}
-                thumbColor={localSettings.quietHours.enabled ? theme.colors.settings.sliderThumb : theme.colors.switch.thumb}
+                trackColor={{ false: theme.colors.switch.trackFalse, true: theme.colors.switch.trackTrue }}
+                thumbColor={theme.colors.switch.thumb}
               />
             </View>
             <Text style={styles.settingDescription}>

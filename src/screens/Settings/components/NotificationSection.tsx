@@ -104,7 +104,8 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
           onValueChange={toggleAdhan}
           // Only allow toggling if master notifications are enabled
           disabled={!userSettings.notifications.enabled || permissionStatus !== 'granted'}
-          trackColor={{ false: theme.colors.settings.sliderMax, true: theme.colors.primary.DEFAULT }}
+          trackColor={{ false: theme.colors.switch.trackFalse, true: theme.colors.switch.trackTrue }}
+          thumbColor={theme.colors.switch.thumb}
         />
       </View>
     </SettingSection>

@@ -11,7 +11,8 @@ import {
 } from 'react-native';
 import PreAdhanSheet from './PreAdhanSheet';
 import { LinearGradient } from 'expo-linear-gradient';
-import { PrayerTime, PrayerRecord } from '../../types';
+import { PrayerTime, PrayerRecord, PrayerName } from '../../types';
+import { format } from 'date-fns';
 import PrayerTimeService from '../../services/PrayerTimeService';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
@@ -20,6 +21,11 @@ import { formatHijriDate, formatHijriDateSync } from '../../utils/hijriDate';
 import { useStore } from '../../store/useStore';
 
 const { height } = Dimensions.get('window');
+
+interface MosqueModeInfo {
+  prayer: PrayerName;
+  restoreTime: Date;
+}
 
 interface SanctuaryViewProps {
   prayer: PrayerTime;
@@ -31,6 +37,7 @@ interface SanctuaryViewProps {
   onPrepareQada?: () => void;
   onPraySunnah?: () => void;
   isFocusMode?: boolean;
+  mosqueModeActive?: MosqueModeInfo;
 }
 
 const SanctuaryView: React.FC<SanctuaryViewProps> = ({
@@ -43,6 +50,7 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
   onPrepareQada,
   onPraySunnah,
   isFocusMode = false,
+  mosqueModeActive,
 }) => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
@@ -157,6 +165,15 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
             <Text style={styles.countdown}>in {timeRemaining}</Text>
           )}
         </View>
+
+        {/* Mosque Mode Pill Badge — subtle awareness, no emoji */}
+        {mosqueModeActive && (
+          <View style={styles.mosqueModePill}>
+            <Text style={styles.mosqueModePillText}>
+              Mosque Mode · {PrayerTimeService.getPrayerDisplayName(mosqueModeActive.prayer)} · until {format(mosqueModeActive.restoreTime, 'h:mm a')}
+            </Text>
+          </View>
+        )}
 
         {/* CTA */}
         <Animated.View style={{ opacity: isAlreadyPrayed ? 1 : pulseAnim }}>
@@ -277,6 +294,19 @@ const createStyles = (theme: AppTheme) =>
       fontWeight: '500',
       color: theme.colors.sanctuary.buttonText,
       letterSpacing: 0.5,
+    },
+    mosqueModePill: {
+      backgroundColor: 'rgba(255, 255, 255, 0.12)',
+      borderRadius: 16,
+      paddingVertical: 6,
+      paddingHorizontal: 14,
+      marginBottom: 12,
+    },
+    mosqueModePillText: {
+      fontSize: 12,
+      fontWeight: '500',
+      color: theme.colors.sanctuary.label,
+      opacity: 0.85,
     },
   });
 
