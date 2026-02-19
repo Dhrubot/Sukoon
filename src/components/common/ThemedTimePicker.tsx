@@ -68,8 +68,12 @@ const ThemedTimePicker: React.FC<ThemedTimePickerProps> = ({
   onClose,
   minuteInterval = 5,
 }) => {
-  const { theme } = useTheme();
+  const { theme, themeMode } = useTheme();
   const styles = useThemedStyles(createStyles);
+
+  // Colors used by native Picker on both platforms
+  const pickerTextColor = theme.colors.text.primary;
+  const pickerBgColor = theme.colors.card.background;
 
   const parsed = parse24h(value);
   const [hour, setHour] = useState(parsed.hour12);
@@ -209,10 +213,14 @@ const ThemedTimePicker: React.FC<ThemedTimePickerProps> = ({
               selectedValue={hour}
               onValueChange={(v) => setHour(v as number)}
               style={styles.picker}
-              itemStyle={[styles.pickerItem, { color: theme.colors.text.primary }]}
+              itemStyle={[styles.pickerItem, { color: pickerTextColor }]}
+              dropdownIconColor={pickerTextColor}
+              selectionColor={theme.colors.primary.DEFAULT + '30'}
+              // @ts-ignore — themeVariant is typed on PickerIOS but forwarded by cross-platform Picker
+              themeVariant={themeMode}
             >
               {HOURS_12.map((h) => (
-                <Picker.Item key={h} label={h.toString()} value={h} />
+                <Picker.Item key={h} label={h.toString()} value={h} color={pickerTextColor} />
               ))}
             </Picker>
           </View>
@@ -225,14 +233,14 @@ const ThemedTimePicker: React.FC<ThemedTimePickerProps> = ({
               selectedValue={minute}
               onValueChange={(v) => setMinute(v as number)}
               style={styles.picker}
-              itemStyle={[styles.pickerItem, { color: theme.colors.text.primary }]}
+              itemStyle={[styles.pickerItem, { color: pickerTextColor }]}
+              dropdownIconColor={pickerTextColor}
+              selectionColor={theme.colors.primary.DEFAULT + '30'}
+              // @ts-ignore
+              themeVariant={themeMode}
             >
               {minuteOptions.map((m) => (
-                <Picker.Item
-                  key={m}
-                  label={m.toString().padStart(2, '0')}
-                  value={m}
-                />
+                <Picker.Item key={m} label={m.toString().padStart(2, '0')} value={m} color={pickerTextColor} />
               ))}
             </Picker>
           </View>
@@ -243,10 +251,14 @@ const ThemedTimePicker: React.FC<ThemedTimePickerProps> = ({
               selectedValue={period}
               onValueChange={(v) => setPeriod(v as 'AM' | 'PM')}
               style={styles.picker}
-              itemStyle={[styles.pickerItem, { color: theme.colors.text.primary }]}
+              itemStyle={[styles.pickerItem, { color: pickerTextColor }]}
+              dropdownIconColor={pickerTextColor}
+              selectionColor={theme.colors.primary.DEFAULT + '30'}
+              // @ts-ignore
+              themeVariant={themeMode}
             >
-              <Picker.Item label="AM" value="AM" />
-              <Picker.Item label="PM" value="PM" />
+              <Picker.Item label="AM" value="AM" color={pickerTextColor} />
+              <Picker.Item label="PM" value="PM" color={pickerTextColor} />
             </Picker>
           </View>
         </View>
