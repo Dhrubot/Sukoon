@@ -180,7 +180,7 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
               <Text style={styles.sunnahText}>Ghusl</Text>
             </View>
             <View style={styles.sunnahChip}>
-              <Text style={styles.sunnahText}>com Salawat</Text>
+              <Text style={styles.sunnahText}>Salawat</Text>
             </View>
           </View>
         )}
