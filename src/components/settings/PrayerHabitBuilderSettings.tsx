@@ -118,7 +118,7 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
       <View style={styles.section}>
         <View style={styles.headerRow}>
           <View style={styles.headerInfo}>
-            <Text style={styles.sectionTitle}>🏗️ Prayer Habit Builder</Text>
+            <Text style={styles.sectionTitle}>Prayer Habit Builder</Text>
             <Text style={styles.settingDescription}>
               Advanced reminders to help build consistent prayer habits
             </Text>

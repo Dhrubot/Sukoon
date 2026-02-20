@@ -129,7 +129,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
           onPress={() => setActiveTab('basic')}
         >
           <Text style={[styles.tabText, activeTab === 'basic' && styles.tabTextActive]}>
-            🔔 Basic
+            Basic
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -137,7 +137,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
           onPress={() => setActiveTab('habit')}
         >
           <Text style={[styles.tabText, activeTab === 'habit' && styles.tabTextActive]}>
-            🏗️ Habit Builder
+            Habit Builder
           </Text>
         </TouchableOpacity>
       </View>
