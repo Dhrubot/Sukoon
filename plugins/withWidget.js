@@ -370,11 +370,11 @@ struct MediumWidgetView: View {
                     HStack(spacing: 4) {
                         Text("\u2014 \(data.dailyVerseRef)")
                             .font(.system(size: 10, weight: .medium))
-                            .foregroundColor(.tertiary)
+                            .foregroundColor(Color.secondary.opacity(0.6))
                         if !data.hijriDate.isEmpty {
                             Text("\u00B7 \(data.hijriDate)")
                                 .font(.system(size: 10, weight: .medium))
-                                .foregroundColor(.tertiary)
+                                .foregroundColor(Color.secondary.opacity(0.6))
                         }
                     }
                 } else {
@@ -386,7 +386,7 @@ struct MediumWidgetView: View {
 
                     Text("\u2014 13:28")
                         .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(.tertiary)
+                        .foregroundColor(Color.secondary.opacity(0.6))
                 }
             }
         }
