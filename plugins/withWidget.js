@@ -140,35 +140,12 @@ struct WidgetPrayerData: Codable {
 // MARK: - Colors
 
 struct SukoonColors {
-    // Background — navy900 (#181D38) deep night sky with purple undertone
-    static let navy       = Color(red: 0.094, green: 0.114, blue: 0.220)
-    // navy700 (#252B47)
-    static let navyLight  = Color(red: 0.145, green: 0.169, blue: 0.278)
-    // navy600 (#2D3454)
-    static let navyCard   = Color(red: 0.176, green: 0.204, blue: 0.329)
     // Primary accent — sage green500 (#2D8B6F) warm, organic, Jannah green
     static let sage       = Color(red: 0.176, green: 0.545, blue: 0.435)
     // Gold accent — gold400 (#D4AF37) for current/active state
     static let gold       = Color(red: 0.831, green: 0.686, blue: 0.216)
     // Missed state — pre-baked RGBA to avoid .opacity() issues in widget extensions
     static let missedRed  = Color(red: 0.562, green: 0.160, blue: 0.160)
-    static let textPrimary   = Color.white
-    // slate400 (#94A3B8)
-    static let textSecondary = Color(red: 0.580, green: 0.639, blue: 0.722)
-    // slate500 (#64748B)
-    static let textMuted     = Color(red: 0.392, green: 0.455, blue: 0.545)
-
-    // Sky-inspired prayer identity colors (from prayerColors.dark)
-    static func prayerColor(_ name: String) -> Color {
-        switch name {
-        case "Fajr":    return Color(red: 0.475, green: 0.525, blue: 0.796)  // #7986CB soft indigo
-        case "Dhuhr":   return Color(red: 0.506, green: 0.780, blue: 0.518)  // #81C784 soft green
-        case "Asr":     return Color(red: 0.863, green: 0.906, blue: 0.459)  // #DCE775 olive-gold
-        case "Maghrib": return Color(red: 0.808, green: 0.576, blue: 0.847)  // #CE93D8 soft plum
-        case "Isha":    return Color(red: 0.624, green: 0.659, blue: 0.855)  // #9FA8DA soft lavender
-        default:        return sage
-        }
-    }
 }
 
 // MARK: - Timeline Provider
@@ -269,28 +246,22 @@ struct SmallWidgetView: View {
     private var nextDate: Date? { DateHelper.parseISO(data.nextPrayerTime) }
 
     var body: some View {
-        VStack(spacing: 6) {
-            // Progress dots (4-state: prayed/current/missed/upcoming)
-            HStack(spacing: 5) {
-                ForEach(data.prayerTimes) { p in
-                    prayerDot(status: p.status)
-                }
-                Spacer(minLength: 0)
-            }
-
+        VStack(spacing: 4) {
             Spacer(minLength: 0)
 
             // Prayer name
             Text(data.nextPrayerName.isEmpty ? "\u2014" : data.nextPrayerName)
-                .font(.system(size: 28, weight: .bold, design: .serif))
-                .foregroundColor(SukoonColors.prayerColor(data.nextPrayerName))
+                .font(.system(size: 26, weight: .semibold, design: .rounded))
+                .foregroundColor(.primary)
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
 
             // Time
             Text(DateHelper.formatTime(data.nextPrayerTime))
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(SukoonColors.textPrimary)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(.secondary)
+
+            Spacer().frame(height: 2)
 
             // Countdown
             if let nd = nextDate, nd > Date() {
@@ -305,23 +276,14 @@ struct SmallWidgetView: View {
 
             Spacer(minLength: 0)
 
-            // Brand line
-            HStack(spacing: 4) {
-                line
-                Text("Sukoon")
-                    .font(.system(size: 9, weight: .medium))
-                    .foregroundColor(SukoonColors.textMuted)
-                line
+            // Progress dots at bottom
+            HStack(spacing: 6) {
+                ForEach(data.prayerTimes) { p in
+                    prayerDot(status: p.status)
+                }
             }
         }
-        .padding(14)
-    }
-
-    private var line: some View {
-        Rectangle()
-            .fill(SukoonColors.sage)
-            .frame(height: 0.5)
-            .opacity(0.25)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     @ViewBuilder
@@ -336,7 +298,7 @@ struct SmallWidgetView: View {
             Circle().stroke(SukoonColors.missedRed, lineWidth: 1.5)
                 .frame(width: 8, height: 8)
         } else {
-            Circle().stroke(SukoonColors.textMuted, lineWidth: 1)
+            Circle().stroke(.secondary, lineWidth: 1)
                 .frame(width: 8, height: 8)
         }
     }
@@ -351,37 +313,19 @@ struct MediumWidgetView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Top row
-            HStack(alignment: .top) {
-                // Left: next prayer
+            // Top: prayer info + dots
+            HStack(alignment: .center) {
                 VStack(alignment: .leading, spacing: 3) {
-                    HStack(spacing: 6) {
-                        Text("NEXT PRAYER")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundColor(SukoonColors.textMuted)
-                            .tracking(0.5)
-
-                        if !data.hijriDate.isEmpty {
-                            Text("\u00B7")
-                                .font(.system(size: 10))
-                                .foregroundColor(SukoonColors.textMuted)
-                            Text(data.hijriDate)
-                                .font(.system(size: 10, weight: .medium))
-                                .foregroundColor(SukoonColors.textMuted)
-                                .lineLimit(1)
-                        }
-                    }
-
                     Text(data.nextPrayerName.isEmpty ? "\u2014" : data.nextPrayerName)
-                        .font(.system(size: 28, weight: .bold, design: .serif))
-                        .foregroundColor(SukoonColors.prayerColor(data.nextPrayerName))
+                        .font(.system(size: 26, weight: .semibold, design: .rounded))
+                        .foregroundColor(SukoonColors.sage)
                         .lineLimit(1)
                         .minimumScaleFactor(0.7)
 
-                    HStack(spacing: 8) {
+                    HStack(spacing: 6) {
                         Text(DateHelper.formatTime(data.nextPrayerTime))
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundColor(SukoonColors.textPrimary)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.primary)
 
                         if let nd = nextDate, nd > Date() {
                             Text(nd, style: .relative)
@@ -397,23 +341,10 @@ struct MediumWidgetView: View {
 
                 Spacer()
 
-                // Right: prayer list with dots
-                VStack(alignment: .leading, spacing: 5) {
+                // Inline progress dots
+                HStack(spacing: 5) {
                     ForEach(data.prayerTimes) { p in
-                        HStack(spacing: 5) {
-                            mediumDot(status: p.status)
-                            Text(String(p.name.prefix(3)))
-                                .font(.system(size: 10, weight: .medium, design: .serif))
-                                .foregroundColor(
-                                    p.status == "prayed"
-                                    ? SukoonColors.sage
-                                    : p.status == "current"
-                                      ? SukoonColors.gold
-                                      : p.status == "missed"
-                                        ? SukoonColors.missedRed
-                                        : SukoonColors.textMuted
-                                )
-                        }
+                        mediumDot(status: p.status)
                     }
                 }
             }
@@ -422,54 +353,60 @@ struct MediumWidgetView: View {
 
             // Divider
             Rectangle()
-                .fill(SukoonColors.sage)
+                .fill(.quaternary)
                 .frame(height: 0.5)
-                .opacity(0.18)
 
             Spacer(minLength: 6)
 
             // Verse (from RN data, with fallback)
-            VStack(spacing: 2) {
+            VStack(spacing: 3) {
                 if !data.dailyVerse.isEmpty {
                     Text("\\u{201C}\(data.dailyVerse)\\u{201D}")
-                        .font(.system(size: 11, weight: .regular))
-                        .foregroundColor(SukoonColors.textSecondary)
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundColor(.secondary)
                         .lineLimit(2)
                         .multilineTextAlignment(.center)
 
-                    Text("— \(data.dailyVerseRef)")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(SukoonColors.textMuted)
+                    HStack(spacing: 4) {
+                        Text("\u2014 \(data.dailyVerseRef)")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(.tertiary)
+                        if !data.hijriDate.isEmpty {
+                            Text("\u00B7 \(data.hijriDate)")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(.tertiary)
+                        }
+                    }
                 } else {
                     Text("\\u{201C}In the remembrance of Allah do hearts find rest\\u{201D}")
-                        .font(.system(size: 11, weight: .regular))
-                        .foregroundColor(SukoonColors.textSecondary)
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundColor(.secondary)
                         .lineLimit(2)
                         .multilineTextAlignment(.center)
 
-                    Text("— 13:28")
+                    Text("\u2014 13:28")
                         .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(SukoonColors.textMuted)
+                        .foregroundColor(.tertiary)
                 }
             }
         }
-        .padding(16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     @ViewBuilder
     private func mediumDot(status: String) -> some View {
         if status == "prayed" {
             Circle().fill(SukoonColors.sage)
-                .frame(width: 7, height: 7)
+                .frame(width: 9, height: 9)
         } else if status == "current" {
             Circle().fill(SukoonColors.gold)
-                .frame(width: 7, height: 7)
+                .frame(width: 9, height: 9)
         } else if status == "missed" {
             Circle().stroke(SukoonColors.missedRed, lineWidth: 1.5)
-                .frame(width: 7, height: 7)
+                .frame(width: 9, height: 9)
         } else {
-            Circle().stroke(SukoonColors.textMuted, lineWidth: 1)
-                .frame(width: 7, height: 7)
+            Circle().stroke(.secondary, lineWidth: 1)
+                .frame(width: 9, height: 9)
         }
     }
 }
@@ -579,10 +516,10 @@ struct SukoonWidget: Widget {
         StaticConfiguration(kind: kind, provider: SukoonProvider()) { entry in
             if #available(iOS 17.0, *) {
                 WidgetEntryView(entry: entry)
-                    .containerBackground(SukoonColors.navy, for: .widget)
+                    .containerBackground(for: .widget) { }
             } else {
                 WidgetEntryView(entry: entry)
-                    .background(SukoonColors.navy)
+                    .background(.ultraThinMaterial)
             }
         }
         .configurationDisplayName("Prayer Times")
