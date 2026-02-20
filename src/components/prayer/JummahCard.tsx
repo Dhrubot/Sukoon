@@ -52,13 +52,13 @@ const JummahCard: React.FC<JummahCardProps> = ({ dhuhrTime, onPrepare }) => {
         {/* Sunnah reminders */}
         <View style={styles.sunnahRow}>
           <View style={styles.sunnahChip}>
-            <Text style={styles.sunnahText}>📖 Surah Al-Kahf</Text>
+            <Text style={styles.sunnahText}>Surah Al-Kahf</Text>
           </View>
           <View style={styles.sunnahChip}>
-            <Text style={styles.sunnahText}>🧼 Ghusl</Text>
+            <Text style={styles.sunnahText}>Ghusl</Text>
           </View>
           <View style={styles.sunnahChip}>
-            <Text style={styles.sunnahText}>🤲 Salawat</Text>
+            <Text style={styles.sunnahText}>Salawat</Text>
           </View>
         </View>
 

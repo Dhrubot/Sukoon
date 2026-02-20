@@ -45,7 +45,7 @@ export function getTier2Messages(urgency: 'first' | 'middle' | 'final'): string[
       "Have you prayed {prayer} yet?",
       "Checking in: Did you complete {prayer}?",
       "Quick reminder about {prayer} prayer ✨",
-      "Come to the Prayer, Come to Success {prayer}"
+      "Come to the Prayer, Come to Success"
     ],
     middle: [
       "Still waiting for {prayer}! Everything okay?",

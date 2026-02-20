@@ -174,13 +174,13 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
         {isJummah && !isAlreadyPrayed && (
           <View style={styles.sunnahRow}>
             <View style={styles.sunnahChip}>
-              <Text style={styles.sunnahText}>📖 Al-Kahf</Text>
+              <Text style={styles.sunnahText}>Al-Kahf</Text>
             </View>
             <View style={styles.sunnahChip}>
-              <Text style={styles.sunnahText}>🧼 Ghusl</Text>
+              <Text style={styles.sunnahText}>Ghusl</Text>
             </View>
             <View style={styles.sunnahChip}>
-              <Text style={styles.sunnahText}>🤲 Salawat</Text>
+              <Text style={styles.sunnahText}>com Salawat</Text>
             </View>
           </View>
         )}
