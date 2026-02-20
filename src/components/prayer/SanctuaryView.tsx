@@ -19,6 +19,7 @@ import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import { formatHijriDate, formatHijriDateSync } from '../../utils/hijriDate';
 import { useStore } from '../../store/useStore';
+import { isFriday } from '../../utils/ramadan';
 
 const { height } = Dimensions.get('window');
 
@@ -110,6 +111,7 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
   }, []);
 
   const isAlreadyPrayed = record?.status === 'prayed';
+  const isJummah = prayer.name === 'Dhuhr' && isFriday();
   const [showPreAdhanSheet, setShowPreAdhanSheet] = useState(false);
 
   const handlePress = () => {
@@ -125,12 +127,14 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
 
   const getButtonText = (): string => {
     if (isAlreadyPrayed) return 'Already Prayed';
+    if (isJummah) return "Prepare for Jumu'ah";
     if (!isTimeEntered) return 'Prepare For Prayer';
     return 'Prepare for Prayer';
   };
 
   const getPrayerGradient = (): readonly [string, string, string] => {
     const gradients = theme.colors.prayerGradients;
+    if (isJummah) return (gradients as any).Jumah || gradients.default;
     return (gradients as any)[prayer.name] || gradients.default;
   };
 
@@ -165,6 +169,21 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
             <Text style={styles.countdown}>in {timeRemaining}</Text>
           )}
         </View>
+
+        {/* Jumu'ah sunnah reminders */}
+        {isJummah && !isAlreadyPrayed && (
+          <View style={styles.sunnahRow}>
+            <View style={styles.sunnahChip}>
+              <Text style={styles.sunnahText}>📖 Al-Kahf</Text>
+            </View>
+            <View style={styles.sunnahChip}>
+              <Text style={styles.sunnahText}>🧼 Ghusl</Text>
+            </View>
+            <View style={styles.sunnahChip}>
+              <Text style={styles.sunnahText}>🤲 Salawat</Text>
+            </View>
+          </View>
+        )}
 
         {/* Mosque Mode Pill Badge — subtle awareness, no emoji */}
         {mosqueModeActive && (
@@ -294,6 +313,26 @@ const createStyles = (theme: AppTheme) =>
       fontWeight: '500',
       color: theme.colors.sanctuary.buttonText,
       letterSpacing: 0.5,
+    },
+    sunnahRow: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      justifyContent: 'center',
+      gap: 8,
+      marginTop: 4,
+    },
+    sunnahChip: {
+      backgroundColor: 'rgba(212, 175, 55, 0.15)',
+      borderRadius: 12,
+      paddingHorizontal: 10,
+      paddingVertical: 5,
+      borderWidth: 1,
+      borderColor: 'rgba(212, 175, 55, 0.25)',
+    },
+    sunnahText: {
+      fontSize: 12,
+      color: theme.colors.sanctuary.label,
+      fontWeight: '500',
     },
     mosqueModePill: {
       backgroundColor: 'rgba(255, 255, 255, 0.12)',

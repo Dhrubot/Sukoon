@@ -33,13 +33,12 @@ import { SunTimesDisplay } from "../../components/common/SunTimesDisplay";
 import { MosqueModeStatus, MosqueModeOverlay } from "../../components/mosque";
 import RamadanTimesCard from "../../components/prayer/RamadanTimesCard";
 import OptionalPrayersSection from "../../components/prayer/OptionalPrayersSection";
-import JummahCard from "../../components/prayer/JummahCard";
 import GardenTeaser from "../../components/garden/GardenTeaser";
 
 // Types
 import { PrayerTime, OptionalPrayerTime } from "../../types";
 
-import { isRamadan, getRamadanDay, isFriday, isEidDay, getEidName, isTashreeqDays, getTashreeqDayLabel } from "../../utils/ramadan";
+import { isRamadan, getRamadanDay, isEidDay, getEidName, isTashreeqDays, getTashreeqDayLabel } from "../../utils/ramadan";
 import { getMoonSightingEvent, getDeferredMoonSightingEvent, MoonSightingEvent } from "../../utils/moonSighting";
 import MoonSightingPrompt from "../../components/MoonSightingPrompt";
 import MoonSightingCard from "../../components/MoonSightingCard";
@@ -403,17 +402,6 @@ const HomeScreen = ({ navigation }: any) => {
           {/* Garden Teaser — subtle entry point to Reflection Garden */}
           <GardenTeaser />
 
-          {/* Jummah Card — prominently displayed on Fridays */}
-          {isFriday() && todayPrayerTimes.length > 0 && (() => {
-            const dhuhr = todayPrayerTimes.find(p => p.name === 'Dhuhr');
-            if (!dhuhr) return null;
-            return (
-              <JummahCard
-                dhuhrTime={dhuhr.time}
-                onPrepare={() => handlePrayerComplete(dhuhr)}
-              />
-            );
-          })()}
 
           {/* Today's Prayer Times */}
           <View style={styles.section}>

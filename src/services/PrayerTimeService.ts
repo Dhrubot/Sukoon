@@ -6,6 +6,7 @@ import {
   addDays,
   startOfDay,
 } from "date-fns";
+import { isFriday } from "../utils/ramadan";
 import { toZonedTime, formatInTimeZone } from "date-fns-tz";
 import {
   PrayerTimes,
@@ -633,6 +634,11 @@ export class PrayerTimeService {
     prayer: PrayerName,
     language: "en" | "ar" = "en"
   ): string {
+    // On Fridays, Jumu'ah replaces Dhuhr
+    if (prayer === "Dhuhr" && isFriday()) {
+      return language === "ar" ? "الجمعة" : "Jumu'ah";
+    }
+
     const names = {
       en: {
         Fajr: "Fajr",

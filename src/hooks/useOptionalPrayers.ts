@@ -29,8 +29,8 @@ export const useOptionalPrayers = (): OptionalPrayerTime[] => {
       includeSunnah: true,
     });
 
-    // Only optional prayers (not fard)
-    const optionalDefs = available.filter(p => p.category !== 'fard');
+    // Only optional prayers (not fard, not Jumah — Jumah is handled by the hero)
+    const optionalDefs = available.filter(p => p.category !== 'fard' && p.key !== 'jumah');
     if (optionalDefs.length === 0) return [];
 
     const results: OptionalPrayerTime[] = [];
