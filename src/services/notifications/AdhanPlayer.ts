@@ -7,6 +7,7 @@ import logger from '../../utils/logger';
 class AdhanPlayer {
   private audioPlayer: AudioPlayer | null = null;
   private audioPlayerListener: (() => void) | null = null;
+  private onCompleteCallback: (() => void) | null = null;
 
   /**
    * Configure audio mode for Adhan playback (allows playing in silent mode).
@@ -24,10 +25,11 @@ class AdhanPlayer {
   /**
    * Play the full Adhan audio clip.
    */
-  play(): void {
+  play(onComplete?: () => void): void {
     try {
       this.stop(); // Stop any existing sound first
 
+      this.onCompleteCallback = onComplete || null;
       const source = require('../../../assets/sounds/adhan_full.mp3');
       this.audioPlayer = createAudioPlayer(source);
       this.audioPlayer.play();
@@ -43,6 +45,13 @@ class AdhanPlayer {
     } catch (error) {
       logger.error('❌ Error playing Adhan:', error);
     }
+  }
+
+  /**
+   * Check if Adhan is currently playing.
+   */
+  get playing(): boolean {
+    return this.audioPlayer !== null;
   }
 
   /**
@@ -68,6 +77,11 @@ class AdhanPlayer {
         // Ignore errors if already cleaned up
       }
     }
+
+    // Fire completion callback
+    const cb = this.onCompleteCallback;
+    this.onCompleteCallback = null;
+    if (cb) cb();
   }
 }
 

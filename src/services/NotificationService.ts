@@ -377,12 +377,16 @@ class NotificationService {
   }
 
   // 🎵 AUDIO PLAYBACK — delegated to AdhanPlayer
-  playFullAdhan() {
-    AdhanPlayer.play();
+  playFullAdhan(onComplete?: () => void) {
+    AdhanPlayer.play(onComplete);
   }
 
   stopAdhan() {
     AdhanPlayer.stop();
+  }
+
+  get isAdhanPlaying(): boolean {
+    return AdhanPlayer.playing;
   }
 
   // 🚀 MAIN ENTRY POINT - Now simply delegates to the 14-day batch scheduler

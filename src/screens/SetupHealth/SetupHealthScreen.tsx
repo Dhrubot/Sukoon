@@ -26,6 +26,7 @@ const SetupHealthScreen: React.FC<SetupHealthScreenProps> = ({ onDone, navigatio
   const [scheduledCount, setScheduledCount] = useState<number>(0);
   const [lastReschedule, setLastReschedule] = useState<string | null>(null);
   const [canModifyDnd, setCanModifyDnd] = useState<boolean | null>(null);
+  const [isAdhanPlaying, setIsAdhanPlaying] = useState(false);
 
   const calculationMethodLabel = useMemo(() => userSettings?.calculationMethod || 'Unknown', [userSettings?.calculationMethod]);
 
@@ -65,6 +66,13 @@ const SetupHealthScreen: React.FC<SetupHealthScreenProps> = ({ onDone, navigatio
     refresh();
   }, [refresh]);
 
+  // Stop adhan when leaving the screen
+  useEffect(() => {
+    return () => {
+      NotificationService.stopAdhan();
+    };
+  }, []);
+
   // Re-check statuses when app returns to foreground (e.g. after granting DND access)
   useEffect(() => {
     const subscription = AppState.addEventListener('change', (nextState) => {
@@ -76,12 +84,24 @@ const SetupHealthScreen: React.FC<SetupHealthScreenProps> = ({ onDone, navigatio
   }, [refresh]);
 
   const handleBackOrDone = () => {
+    NotificationService.stopAdhan();
+    setIsAdhanPlaying(false);
     if (onDone) {
       onDone();
       return;
     }
     if (navigation?.goBack) {
       navigation.goBack();
+    }
+  };
+
+  const toggleAdhanPlayback = () => {
+    if (isAdhanPlaying) {
+      NotificationService.stopAdhan();
+      setIsAdhanPlaying(false);
+    } else {
+      setIsAdhanPlaying(true);
+      NotificationService.playFullAdhan(() => setIsAdhanPlaying(false));
     }
   };
 
@@ -143,14 +163,11 @@ const SetupHealthScreen: React.FC<SetupHealthScreenProps> = ({ onDone, navigatio
 
           <View style={styles.rowButtons}>
             <TouchableOpacity
-              style={[styles.buttonSecondary, { borderColor: theme.colors.border.primary }]}
-              onPress={async () => {
-                await NotificationService.sendTestAdhanNotification();
-                await refresh();
-              }}
+              style={[styles.buttonSecondary, isAdhanPlaying && { borderColor: theme.colors.status?.error || '#FF6B6B', backgroundColor: (theme.colors.status?.error || '#FF6B6B') + '15' }, { borderColor: theme.colors.border.primary }]}
+              onPress={toggleAdhanPlayback}
               activeOpacity={0.8}
             >
-              <Text style={[styles.buttonSecondaryText, { color: theme.colors.text.primary }]}>Test Adhan</Text>
+              <Text style={[styles.buttonSecondaryText, { color: isAdhanPlaying ? (theme.colors.status?.error || '#FF6B6B') : theme.colors.text.primary }]}>{isAdhanPlaying ? '⏹ Stop Adhan' : 'Test Adhan'}</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.buttonSecondary, { borderColor: theme.colors.border.primary }]}

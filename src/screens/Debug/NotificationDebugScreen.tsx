@@ -22,12 +22,20 @@ export const NotificationDebugScreen = () => {
   const [debugInfo, setDebugInfo] = useState<any>(null);
   const [permissionStatus, setPermissionStatus] = useState<string>('unknown');
   const [scheduledCount, setScheduledCount] = useState(0);
+  const [isAdhanPlaying, setIsAdhanPlaying] = useState(false);
   const { userSettings } = useStore();
   const { todayPrayerTimes, nextPrayer } = usePrayerTimes();
 
   useEffect(() => {
     checkPermissions();
     loadDebugInfo();
+  }, []);
+
+  // Stop adhan when leaving the screen
+  useEffect(() => {
+    return () => {
+      NotificationService.stopAdhan();
+    };
   }, []);
 
   const checkPermissions = async () => {
@@ -72,32 +80,15 @@ export const NotificationDebugScreen = () => {
     }
   };
 
-  // 🧪 Test 3: Test with Adhan sound (30 seconds)
-  const testAdhanNotification = async () => {
-    // try {
-    //   const soundAsset = Platform.OS === 'ios' ? 'adhan_short.wav' : 'adhan_full';
-    //   const channelId = Platform.OS === 'android' ? 'prayer-times-adhan' : undefined;
-
-    //   await Notifications.scheduleNotificationAsync({
-    //     content: {
-    //       title: '🕌 Adhan Test',
-    //       body: 'Testing Adhan sound',
-    //       sound: Platform.OS === 'ios' ? soundAsset : undefined,
-    //       ...(Platform.OS === 'android' && {
-    //         channelId: channelId,
-    //       }),
-    //     },
-    //     trigger: {
-    //       type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
-    //       seconds: 30,
-    //       repeats: false,
-    //     },
-    //   });
-    //   Alert.alert('Scheduled', 'Adhan notification will sound in 30 seconds');
-    // } catch (error) {
-    //   Alert.alert('Error', `Failed: ${error}`);
-    // }
-    NotificationService.sendTestAdhanNotification()
+  // 🧪 Test 3: Play/Stop full Adhan in-app
+  const toggleAdhanPlayback = () => {
+    if (isAdhanPlaying) {
+      NotificationService.stopAdhan();
+      setIsAdhanPlaying(false);
+    } else {
+      setIsAdhanPlaying(true);
+      NotificationService.playFullAdhan(() => setIsAdhanPlaying(false));
+    }
   };
 
   // 🧪 Test 4: Request permissions
@@ -246,9 +237,10 @@ export const NotificationDebugScreen = () => {
         />
         
         <TestButton
-          title="3. Test Adhan Sound (30s)"
-          onPress={testAdhanNotification}
-          description="Test adhan audio in 30 seconds"
+          title={isAdhanPlaying ? '3. ⏹ Stop Adhan' : '3. Test Adhan Sound'}
+          onPress={toggleAdhanPlayback}
+          description={isAdhanPlaying ? 'Tap to stop playback' : 'Play full adhan in-app'}
+          danger={isAdhanPlaying}
         />
         
         <TestButton
