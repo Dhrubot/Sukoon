@@ -47,7 +47,7 @@ export const MosqueModeStatus: React.FC = () => {
   const handleManualRestore = () => {
     if (Platform.OS !== 'android') {
       Alert.alert(
-        '📱 iOS Note',
+        'iOS Note',
         'You can manually disable Do Not Disturb by swiping down from the top-right corner.',
         [{ text: 'Got it' }]
       );
@@ -55,7 +55,7 @@ export const MosqueModeStatus: React.FC = () => {
     }
 
     Alert.alert(
-      '🔊 Restore Ringer?',
+      'Restore Ringer?',
       'This will end mosque mode early and restore your ringer to normal.',
       [
         {

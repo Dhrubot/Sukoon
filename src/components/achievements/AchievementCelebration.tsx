@@ -146,7 +146,7 @@ const AchievementCelebration: React.FC<AchievementCelebrationProps> = ({
               </View>
 
               <TouchableOpacity style={styles.continueButton} onPress={onClose}>
-                <Text style={styles.continueText}>Alhamdulillah! 🤲</Text>
+                <Text style={styles.continueText}>Alhamdulillah!</Text>
               </TouchableOpacity>
             </LinearGradient>
           </Animated.View>

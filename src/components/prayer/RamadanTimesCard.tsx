@@ -16,7 +16,7 @@ const RamadanTimesCard: React.FC<RamadanTimesCardProps> = ({ fajrTime, maghribTi
 
   return (
     <View style={styles.ramadanCard}>
-      <Text style={styles.ramadanTitle}>🌙 Ramadan Times</Text>
+      <Text style={styles.ramadanTitle}>Ramadan Times</Text>
       <View style={styles.ramadanRow}>
         <View style={styles.ramadanItem}>
           <Text style={styles.ramadanLabel}>Suhoor ends</Text>

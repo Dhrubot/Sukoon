@@ -138,7 +138,7 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
           {/* TIER 2: Persistent Reminders */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>🔔 Persistent Reminders</Text>
+              <Text style={styles.sectionTitle}>Persistent Reminders</Text>
               <Switch
                 value={localSettings.persistentReminders.enabled}
                 onValueChange={(value) =>
@@ -285,7 +285,7 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
           {/* TIER 3: Grace Period Warning */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>⚠️ Grace Period Warning</Text>
+              <Text style={styles.sectionTitle}>Grace Period Warning</Text>
               <Switch
                 value={localSettings.gracePeriodWarning.enabled}
                 onValueChange={(value) =>
@@ -423,7 +423,7 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
           {/* Quiet Hours */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>🌙 Quiet Hours</Text>
+              <Text style={styles.sectionTitle}>Quiet Hours</Text>
               <Switch
                 value={localSettings.quietHours.enabled}
                 onValueChange={(value) =>
@@ -468,7 +468,7 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
                 </View>
 
                 <Text style={styles.quietHoursHint}>
-                  💡 Quiet hours work across midnight (e.g., 22:00 to 06:00)
+                  Quiet hours work across midnight (e.g., 22:00 to 06:00)
                 </Text>
               </View>
             )}
@@ -476,7 +476,7 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
 
           {/* Info Section */}
           <View style={styles.infoSection}>
-            <Text style={styles.infoTitle}>ℹ️ How it Works</Text>
+            <Text style={styles.infoTitle}>How it Works</Text>
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Tier 1: Main Notification</Text>
               <Text style={styles.infoText}>

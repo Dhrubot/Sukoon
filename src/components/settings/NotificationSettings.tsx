@@ -35,7 +35,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
     beforePrayer: 10,
     vibrationEnabled: true,
     postPrayerCheck: true,
-    reminderText: "Time for {prayer} prayer 🕌",
+    reminderText: "Time for {prayer} prayer",
   });
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -305,7 +305,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
 
           {/* Tips */}
           <View style={styles.tipsSection}>
-            <Text style={styles.tipsTitle}>💡 Tips</Text>
+            <Text style={styles.tipsTitle}>Tips</Text>
             <Text style={styles.tipText}>
               • Notifications work best when the app has been opened recently
             </Text>

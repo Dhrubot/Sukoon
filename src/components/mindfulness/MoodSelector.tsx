@@ -97,11 +97,11 @@ const MoodSelector: React.FC<MoodSelectorProps> = ({
       {selectedMood > 0 && (
         <View style={styles.feedbackContainer}>
           <Text style={styles.feedbackText}>
-            {selectedMood === 1 && "It's okay, tomorrow is a new opportunity 💚"}
-            {selectedMood === 2 && "Every prayer is a step forward 🌱"}
-            {selectedMood === 3 && "Ma sha Allah! Keep building focus 🌟"}
-            {selectedMood === 4 && "Beautiful! Your khushoo is growing ✨"}
-            {selectedMood === 5 && "Alhamdulillah! May Allah accept your prayer 🤲"}
+            {selectedMood === 1 && "It's okay, tomorrow is a new opportunity"}
+            {selectedMood === 2 && "Every prayer is a step forward"}
+            {selectedMood === 3 && "Ma sha Allah! Keep building focus"}
+            {selectedMood === 4 && "Beautiful! Your khushoo is growing"}
+            {selectedMood === 5 && "Alhamdulillah! May Allah accept your prayer"}
           </Text>
         </View>
       )}

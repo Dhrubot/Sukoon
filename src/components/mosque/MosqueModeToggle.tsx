@@ -99,7 +99,7 @@ export const MosqueModeToggle: React.FC = () => {
           const canModify = await RingerControlService.canModify();
           if (!canModify) {
             Alert.alert(
-              '🛑 Permission Required',
+              'Permission Required',
               'To auto-silence your phone at iqamah time, Sukoon needs Do Not Disturb access.\n\nYou will be taken to Android settings. Find "Sukoon" and toggle it ON, then come back.',
               [
                 { text: 'Not Now', style: 'cancel' },

@@ -173,7 +173,7 @@ export const NotificationDebugScreen = () => {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>🔧 Notification Debugger</Text>
+        <Text style={styles.title}>Notification Debugger</Text>
         <Text style={styles.subtitle}>
           Test notification system on {Platform.OS === 'ios' ? 'iOS' : 'Android'}
         </Text>
@@ -181,7 +181,7 @@ export const NotificationDebugScreen = () => {
 
       {/* Device Info */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>📱 Device Info</Text>
+        <Text style={styles.sectionTitle}>Device Info</Text>
         <InfoRow label="Is Physical Device" value={Device.isDevice ? 'Yes' : 'No (Emulator)'} />
         <InfoRow label="Platform" value={Platform.OS} />
         <InfoRow label="Permission Status" value={permissionStatus} />
@@ -190,7 +190,7 @@ export const NotificationDebugScreen = () => {
 
       {/* Prayer Times Info */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>🕌 Prayer Times</Text>
+        <Text style={styles.sectionTitle}>Prayer Times</Text>
         <InfoRow label="Today's Prayers" value={todayPrayerTimes.length.toString()} />
         <InfoRow label="Next Prayer" value={nextPrayer?.name || 'None'} />
         <InfoRow label="Notifications Enabled" value={userSettings?.notifications?.enabled ? 'Yes' : 'No'} />
@@ -200,7 +200,7 @@ export const NotificationDebugScreen = () => {
       {/* Debug Info */}
       {debugInfo && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🔍 Debug Info</Text>
+          <Text style={styles.sectionTitle}>Debug Info</Text>
           <InfoRow label="Has Prayer Source" value={debugInfo.hasSource ? 'Yes' : 'No'} />
           <InfoRow label="Has Location" value={debugInfo.sourceHasLocation ? 'Yes' : 'No'} />
           <InfoRow label="Loading" value={debugInfo.sourceLoading ? 'Yes' : 'No'} />
@@ -277,7 +277,7 @@ export const NotificationDebugScreen = () => {
         )}
         
         <TestButton
-          title="🔄 Refresh Debug Info"
+          title="Refresh Debug Info"
           onPress={loadDebugInfo}
           description="Reload debug information"
         />
@@ -285,7 +285,7 @@ export const NotificationDebugScreen = () => {
 
       {/* Important Notes */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>⚠️ Important Notes</Text>
+        <Text style={styles.sectionTitle}>Important Notes</Text>
         <View style={styles.noteBox}>
           <Text style={styles.noteText}>
             • On emulator: Notifications may not work perfectly{'\n'}

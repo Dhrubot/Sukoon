@@ -20,7 +20,7 @@ export const AppNavigator: React.FC = () => {
       <Stack.Screen
         name="NotificationDebug"
         component={NotificationDebugScreen}
-        options={{ title: '🔧 Notification Debugger' }}
+        options={{ title: 'Notification Debugger' }}
       />
       
       {/* Modal Screens */}

@@ -105,7 +105,7 @@ const SupportScreen: React.FC = () => {
       const success = await AdService.showRewardedAd();
       if (success) {
         Alert.alert(
-          'JazakAllah Khair! 💚',
+          'JazakAllah Khair!',
           'Your support helps keep Sukoon free for the Ummah. May Allah reward your generosity.',
           [{ text: 'Alhamdulillah' }]
         );
@@ -279,7 +279,7 @@ const SupportScreen: React.FC = () => {
         </View>
 
         <View style={styles.privacyNote}>
-          <Text style={styles.privacyTitle}>🔒 Our Promise</Text>
+          <Text style={styles.privacyTitle}>Our Promise</Text>
           <Text style={styles.privacyText}>
             • We will NEVER show popup or forced ads{'\n'}
             • All ads are screened for halal content{'\n'}
