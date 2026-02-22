@@ -365,7 +365,7 @@ const createStyles = (theme: AppTheme) =>
       borderTopRightRadius: theme.borderRadius.lg,
     },
     arabicText: {
-      fontSize: 36,
+      fontSize: theme.typography.fontSize['5xl'] + 4,
       color: theme.colors.text.primary,
       textAlign: 'center',
       lineHeight: 56,

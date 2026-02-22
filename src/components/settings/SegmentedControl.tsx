@@ -86,8 +86,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     elevation: 3,
   },
   segmentText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: theme.typography.fontSize.base,
+    fontWeight: theme.typography.fontWeight.semibold,
     color: theme.colors.text.secondary,
     textAlign: 'center',
     marginBottom: 4,
@@ -96,7 +96,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     color: theme.colors.primary.DEFAULT,
   },
   segmentDesc: {
-    fontSize: 13,
+    fontSize: theme.typography.fontSize.sm,
     color: theme.colors.text.muted,
     textAlign: 'center',
     lineHeight: 16,

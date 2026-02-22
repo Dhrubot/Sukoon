@@ -274,7 +274,7 @@ const createStyles = (theme: AppTheme) =>
       marginBottom: theme.spacing.sm,
     },
     duaArabic: {
-      fontSize: 22,
+      fontSize: theme.typography.fontSize['2xl'] + 2,
       color: theme.colors.text.primary,
       textAlign: 'right',
       lineHeight: 38,

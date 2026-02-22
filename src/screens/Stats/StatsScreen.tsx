@@ -479,8 +479,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderBottomColor: theme.colors.border.primary,
   },
   title: {
-    fontSize: 28,  // 4xl
-    fontWeight: '700',  // bold
+    fontSize: theme.typography.fontSize['4xl'],
+    fontWeight: theme.typography.fontWeight.bold,
     fontFamily: theme.typography.fontFamily.heading,
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.xl,
@@ -502,8 +502,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     backgroundColor: theme.colors.primary.DEFAULT,
   },
   timeRangeText: {
-    fontSize: 14,  // md
-    fontWeight: '500',  // medium
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.medium,
     color: theme.colors.text.secondary,
   },
   timeRangeTextActive: {
@@ -604,8 +604,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     padding: theme.spacing.xl,
   },
   sectionTitle: {
-    fontSize: 20,  // 2xl
-    fontWeight: '600',  // semibold
+    fontSize: theme.typography.fontSize['2xl'],
+    fontWeight: theme.typography.fontWeight.semibold,
     fontFamily: theme.typography.fontFamily.headingRegular,
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.lg,

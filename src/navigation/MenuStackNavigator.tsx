@@ -45,7 +45,7 @@ export const MenuStackNavigator: React.FC = () => {
         headerTintColor: theme.colors.text.primary,
         headerTitleStyle: {
           fontWeight: '600',
-          fontSize: 18,
+          fontSize: theme.typography.fontSize.xl,
         },
         headerBackTitle: '',
         cardStyle: { backgroundColor: theme.colors.background.primary },

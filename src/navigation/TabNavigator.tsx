@@ -62,8 +62,8 @@ export const TabNavigator: React.FC = () => {
           height: 72,
         },
         tabBarLabelStyle: {
-          fontSize: 11,
-          fontWeight: '600',
+          fontSize: theme.typography.fontSize.xs,
+          fontWeight: theme.typography.fontWeight.semibold,
           marginTop: 4,
         },
         tabBarItemStyle: {

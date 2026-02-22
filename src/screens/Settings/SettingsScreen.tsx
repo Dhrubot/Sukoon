@@ -318,8 +318,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderBottomColor: theme.colors.border.secondary,
   },
   title: {
-    fontSize: 32,  // 5xl
-    fontWeight: '700',  // bold
+    fontSize: theme.typography.fontSize['5xl'],
+    fontWeight: theme.typography.fontWeight.bold,
     fontFamily: theme.typography.fontFamily.heading,
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.sm,

@@ -128,12 +128,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginRight: 16,
   },
   label: {
-    fontSize: 16,
+    fontSize: theme.typography.fontSize.lg,
     color: theme.colors.text.primary,
-    marginBottom: 4,
+    marginBottom: theme.spacing.xs,
   },
   subtitle: {
-    fontSize: 13,
+    fontSize: theme.typography.fontSize.sm,
     color: theme.colors.text.secondary,
   },
 });
