@@ -472,8 +472,8 @@ const createStyles = (theme: AppTheme) =>
       right: 0,
       height: SHEET_HEIGHT,
       backgroundColor: theme.colors.card.background,
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
+      borderTopLeftRadius: theme.borderRadius.xl,
+      borderTopRightRadius: theme.borderRadius.xl,
       paddingBottom: 34, // safe area
       // Shadow
       shadowColor: '#000',
@@ -484,7 +484,7 @@ const createStyles = (theme: AppTheme) =>
     },
     handleArea: {
       alignItems: 'center',
-      paddingVertical: 10,
+      paddingVertical: theme.spacing.md - 2,
     },
     handle: {
       width: 36,
@@ -496,29 +496,29 @@ const createStyles = (theme: AppTheme) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      paddingHorizontal: 20,
-      paddingBottom: 8,
+      paddingHorizontal: theme.spacing.xl,
+      paddingBottom: theme.spacing.sm,
     },
     title: {
-      fontSize: 17,
-      fontWeight: '600',
+      fontSize: theme.typography.fontSize.lg + 1,
+      fontWeight: theme.typography.fontWeight.semibold,
       color: theme.colors.text.primary,
     },
     cancelText: {
-      fontSize: 16,
-      fontWeight: '400',
+      fontSize: theme.typography.fontSize.lg,
+      fontWeight: theme.typography.fontWeight.regular,
       color: theme.colors.text.secondary,
     },
     confirmText: {
-      fontSize: 16,
-      fontWeight: '600',
+      fontSize: theme.typography.fontSize.lg,
+      fontWeight: theme.typography.fontWeight.semibold,
       color: theme.colors.primary.DEFAULT,
     },
     pickerRow: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: 16,
+      paddingHorizontal: theme.spacing.lg,
       flex: 1,
     },
     pickerColumn: {
@@ -534,12 +534,12 @@ const createStyles = (theme: AppTheme) =>
       height: 200,
     },
     pickerItem: {
-      fontSize: 22,
-      fontWeight: '500',
+      fontSize: theme.typography.fontSize['2xl'] + 2,
+      fontWeight: theme.typography.fontWeight.medium,
     },
     colonSeparator: {
-      fontSize: 24,
-      fontWeight: '700',
+      fontSize: theme.typography.fontSize['3xl'],
+      fontWeight: theme.typography.fontWeight.bold,
       color: theme.colors.text.primary,
       marginHorizontal: -4,
       marginTop: -4,
