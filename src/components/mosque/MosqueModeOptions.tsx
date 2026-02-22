@@ -8,11 +8,14 @@ import {
   StyleSheet,
 } from 'react-native';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 import { useMosqueMode } from '../../hooks/useMosqueMode';
 
 const DURATION_OPTIONS = [5, 10, 15, 20, 25, 30, 45, 60];
 
 export const MosqueModeOptions: React.FC = () => {
+  const styles = useThemedStyles(createStyles);
   const { theme } = useTheme();
   const { settings, updateMosqueModeSettings } = useMosqueMode();
   const [showDurationPicker, setShowDurationPicker] = useState(false);
@@ -147,65 +150,65 @@ export const MosqueModeOptions: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
-    marginTop: 8,
+    marginTop: theme.spacing.sm,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 12,
-    paddingHorizontal: 4,
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.bold,
+    marginBottom: theme.spacing.md,
+    paddingHorizontal: theme.spacing.xs,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
-    borderRadius: 12,
+    padding: theme.spacing.lg,
+    borderRadius: theme.borderRadius.md,
     borderWidth: 1,
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
   },
   rowInfo: {
     flex: 1,
-    marginRight: 12,
+    marginRight: theme.spacing.md,
   },
   rowLabel: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: theme.typography.fontSize.base,
+    fontWeight: theme.typography.fontWeight.semibold,
     marginBottom: 3,
   },
   rowValue: {
-    fontSize: 13,
+    fontSize: theme.typography.fontSize.sm,
     lineHeight: 18,
   },
   chevron: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.semibold,
   },
   pickerContainer: {
-    padding: 16,
-    borderRadius: 12,
-    marginBottom: 8,
+    padding: theme.spacing.lg,
+    borderRadius: theme.borderRadius.md,
+    marginBottom: theme.spacing.sm,
   },
   pickerLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 8,
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.medium,
+    marginBottom: theme.spacing.sm,
   },
   chipGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: theme.spacing.sm,
   },
   chip: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 10,
+    paddingVertical: theme.spacing.md - 2,
+    paddingHorizontal: theme.spacing.lg,
+    borderRadius: theme.borderRadius.sm + 2,
     borderWidth: 1,
   },
   chipText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.medium,
   },
 });

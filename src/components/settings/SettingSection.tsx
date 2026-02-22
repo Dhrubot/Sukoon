@@ -2,6 +2,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 
 interface SettingSectionProps {
   title: string;
@@ -10,29 +12,30 @@ interface SettingSectionProps {
 
 export const SettingSection: React.FC<SettingSectionProps> = ({ title, children }) => {
   const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   
   return (
-    <View style={[styles.section, { 
-      backgroundColor: theme.colors.background.secondary,
-      borderBottomColor: theme.colors.border.primary 
-    }]}>
-      {title && <Text style={[styles.sectionTitle, { color: theme.colors.text.secondary }]}>{title}</Text>}
+    <View style={styles.section}>
+      {title && <Text style={styles.sectionTitle}>{title}</Text>}
       {children}
     </View>
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   section: {
-    marginBottom: 16,
-    padding: 20,
+    marginBottom: theme.spacing.lg,
+    padding: theme.spacing.xl,
     borderBottomWidth: 1,
+    backgroundColor: theme.colors.background.secondary,
+    borderBottomColor: theme.colors.border.primary,
   },
   sectionTitle: {
-    fontSize: 14,  // md
-    fontWeight: '600',  // semibold
-    marginBottom: 12,
-    paddingHorizontal: 20,
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.semibold,
+    marginBottom: theme.spacing.md,
+    paddingHorizontal: theme.spacing.xl,
     letterSpacing: 0.5,
+    color: theme.colors.text.secondary,
   },
 });

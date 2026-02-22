@@ -7,6 +7,8 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 
 interface QuickStatsProps {
   prayersToday: number;
@@ -16,6 +18,7 @@ const QuickStats: React.FC<QuickStatsProps> = ({
   prayersToday,
 }) => {
   const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const navigation = useNavigation();
 
   const handlePress = () => {
@@ -32,38 +35,41 @@ const QuickStats: React.FC<QuickStatsProps> = ({
 
   return (
     <TouchableOpacity
-      style={[styles.container, { borderColor: theme.colors.border.primary }]}
+      style={styles.container}
       onPress={handlePress}
       activeOpacity={0.8}
     >
-      <Text style={[styles.count, { color: theme.colors.text.primary }]}>
+      <Text style={styles.count}>
         {prayersToday}/5 prayers today
       </Text>
-      <Text style={[styles.message, { color: theme.colors.text.muted }]}>
+      <Text style={styles.message}>
         {getMessage()}
       </Text>
     </TouchableOpacity>
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
-    marginHorizontal: 20,
-    marginVertical: 12,
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-    borderRadius: 12,
+    marginHorizontal: theme.spacing.xl,
+    marginVertical: theme.spacing.md,
+    paddingVertical: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.xl,
+    borderRadius: theme.borderRadius.md,
     alignItems: 'center',
+    borderColor: theme.colors.border.primary,
   },
   count: {
-    fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 4,
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.medium,
+    marginBottom: theme.spacing.xs,
+    color: theme.colors.text.primary,
   },
   message: {
-    fontSize: 14,
+    fontSize: theme.typography.fontSize.md,
     fontStyle: 'italic',
     fontWeight: '300',
+    color: theme.colors.text.muted,
   },
 });
 

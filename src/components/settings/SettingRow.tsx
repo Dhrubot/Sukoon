@@ -8,6 +8,8 @@ import {
   Switch,
 } from 'react-native';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 
 interface SettingRowProps {
   label: string;
@@ -29,6 +31,7 @@ export const SettingRow: React.FC<SettingRowProps> = ({
   disabled = false,
 }) => {
   const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   const Component = onPress ? TouchableOpacity : View;
 
@@ -59,12 +62,12 @@ export const SettingRow: React.FC<SettingRowProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   settingRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: theme.spacing.md,
   },
   leftContent: {
     flex: 1,
@@ -72,22 +75,22 @@ const styles = StyleSheet.create({
   rightContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: theme.spacing.sm,
   },
   settingLabel: {
-    fontSize: 16,  // lg
-    fontWeight: '500',  // medium
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.medium,
   },
   settingSubtext: {
-    fontSize: 13,  // sm
-    marginTop: 4,
+    fontSize: theme.typography.fontSize.sm,
+    marginTop: theme.spacing.xs,
   },
   settingValue: {
-    fontSize: 15,  // base
-    marginRight: 8,
+    fontSize: theme.typography.fontSize.base,
+    marginRight: theme.spacing.sm,
   },
   chevron: {
-    fontSize: 24,  // 3xl
+    fontSize: theme.typography.fontSize['3xl'],
     fontWeight: '300',
   },
   dangerText: {

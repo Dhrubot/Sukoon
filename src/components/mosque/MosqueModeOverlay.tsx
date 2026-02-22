@@ -2,6 +2,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, Animated, Modal } from 'react-native';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 import { useMosqueMode } from '../../hooks/useMosqueMode';
 
 /**
@@ -11,6 +13,7 @@ import { useMosqueMode } from '../../hooks/useMosqueMode';
  */
 export const MosqueModeOverlay: React.FC = () => {
   const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const { isActive } = useMosqueMode();
   const [overlayType, setOverlayType] = useState<'activation' | 'deactivation' | null>(null);
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -76,7 +79,7 @@ export const MosqueModeOverlay: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   overlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.75)',
@@ -85,11 +88,12 @@ const styles = StyleSheet.create({
   },
   emoji: {
     fontSize: 64,
-    marginBottom: 20,
+    marginBottom: theme.spacing.xl,
   },
   text: {
-    fontSize: 24,
+    fontSize: theme.typography.fontSize['3xl'],
     fontWeight: '300',
+    fontFamily: theme.typography.fontFamily.headingRegular,
     letterSpacing: 0.5,
   },
 });

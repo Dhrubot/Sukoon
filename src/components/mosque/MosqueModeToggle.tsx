@@ -10,12 +10,15 @@ import {
   AppState,
 } from 'react-native';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 import { useMosqueMode } from '../../hooks/useMosqueMode';
 import RingerControlService from '../../services/RingerControlService';
 import MosqueModeService from '../../services/MosqueModeService';
 
 export const MosqueModeToggle: React.FC = () => {
   const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const { isEnabled, enableMosqueMode } = useMosqueMode();
   const [isLoading, setIsLoading] = useState(false);
   const pendingEnable = useRef(false);
@@ -190,11 +193,11 @@ export const MosqueModeToggle: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
   },
   content: {
     flexDirection: 'row',
@@ -203,15 +206,15 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     flex: 1,
-    marginRight: 12,
+    marginRight: theme.spacing.md,
   },
   title: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.semibold,
+    marginBottom: theme.spacing.xs,
   },
   description: {
-    fontSize: 13,
+    fontSize: theme.typography.fontSize.sm,
     lineHeight: 18,
   },
 });

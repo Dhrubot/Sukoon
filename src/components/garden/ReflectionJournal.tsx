@@ -2,6 +2,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 import { ReflectionEntry } from '../../types/garden';
 
 interface ReflectionJournalProps {
@@ -10,6 +12,7 @@ interface ReflectionJournalProps {
 
 const ReflectionJournal: React.FC<ReflectionJournalProps> = ({ reflections }) => {
   const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   if (reflections.length === 0) return null;
 
@@ -64,47 +67,47 @@ const ReflectionJournal: React.FC<ReflectionJournalProps> = ({ reflections }) =>
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
-    marginHorizontal: 20,
-    marginTop: 24,
+    marginHorizontal: theme.spacing.xl,
+    marginTop: theme.spacing['2xl'],
   },
   title: {
-    fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 12,
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.medium,
+    marginBottom: theme.spacing.md,
   },
   entry: {
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 10,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md + 2,
+    marginBottom: theme.spacing.md - 2,
     borderWidth: 1,
     borderLeftWidth: 3,
   },
   entryHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: theme.spacing.xs + 2,
   },
   entryEmoji: {
-    fontSize: 18,
-    marginRight: 8,
+    fontSize: theme.typography.fontSize.xl,
+    marginRight: theme.spacing.sm,
   },
   entryPrayer: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.semibold,
   },
   entryDate: {
-    fontSize: 12,
-    marginLeft: 6,
+    fontSize: theme.typography.fontSize.xs,
+    marginLeft: theme.spacing.xs + 2,
   },
   entryText: {
-    fontSize: 14,
+    fontSize: theme.typography.fontSize.md,
     fontStyle: 'italic',
     lineHeight: 20,
   },
   entryFallback: {
-    fontSize: 13,
+    fontSize: theme.typography.fontSize.sm,
   },
 });
 
