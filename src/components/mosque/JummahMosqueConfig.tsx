@@ -10,7 +10,6 @@ import {
   StyleSheet,
   Switch,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
@@ -93,7 +92,7 @@ const JummahMosqueConfig: React.FC = () => {
           onValueChange={handleToggle}
           trackColor={{
             false: theme.colors.switch.trackFalse,
-            true: theme.colors.switch.trackTrue,
+            true: '#D4AF37',
           }}
           thumbColor={theme.colors.switch.thumb}
         />
@@ -117,20 +116,36 @@ const JummahMosqueConfig: React.FC = () => {
           </TouchableOpacity>
 
           {showDurationPicker && (
-            <Picker
-              selectedValue={jummah.silentDuration}
-              onValueChange={(v) => handleDurationChange(v as number)}
-              style={[styles.picker, { color: theme.colors.text.primary }]}
-              itemStyle={{ color: theme.colors.text.primary }}
-            >
-              {DURATION_OPTIONS.map((min) => (
-                <Picker.Item
-                  key={min}
-                  label={`${min} minutes`}
-                  value={min}
-                />
-              ))}
-            </Picker>
+            <View style={styles.chipGrid}>
+              {DURATION_OPTIONS.map((min) => {
+                const isSelected = jummah.silentDuration === min;
+                return (
+                  <TouchableOpacity
+                    key={min}
+                    style={[
+                      styles.chip,
+                      { borderColor: theme.colors.border.primary },
+                      isSelected && { backgroundColor: '#D4AF37', borderColor: '#D4AF37' },
+                    ]}
+                    onPress={() => {
+                      handleDurationChange(min);
+                      setShowDurationPicker(false);
+                    }}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.chipText,
+                        { color: theme.colors.text.secondary },
+                        isSelected && { color: '#FFFFFF', fontWeight: '700' },
+                      ]}
+                    >
+                      {min} min
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           )}
 
           {/* Iqamah Time — Offset / Exact toggle */}
@@ -182,20 +197,36 @@ const JummahMosqueConfig: React.FC = () => {
                 </TouchableOpacity>
 
                 {showOffsetPicker && (
-                  <Picker
-                    selectedValue={jummah.iqamahOffset}
-                    onValueChange={(v) => handleOffsetChange(v as number)}
-                    style={[styles.picker, { color: theme.colors.text.primary }]}
-                    itemStyle={{ color: theme.colors.text.primary }}
-                  >
-                    {OFFSET_OPTIONS.map((min) => (
-                      <Picker.Item
-                        key={min}
-                        label={`${min} minutes after adhan`}
-                        value={min}
-                      />
-                    ))}
-                  </Picker>
+                  <View style={styles.chipGrid}>
+                    {OFFSET_OPTIONS.map((min) => {
+                      const isSelected = jummah.iqamahOffset === min;
+                      return (
+                        <TouchableOpacity
+                          key={min}
+                          style={[
+                            styles.chip,
+                            { borderColor: theme.colors.border.primary },
+                            isSelected && { backgroundColor: '#D4AF37', borderColor: '#D4AF37' },
+                          ]}
+                          onPress={() => {
+                            handleOffsetChange(min);
+                            setShowOffsetPicker(false);
+                          }}
+                          activeOpacity={0.7}
+                        >
+                          <Text
+                            style={[
+                              styles.chipText,
+                              { color: theme.colors.text.secondary },
+                              isSelected && { color: '#FFFFFF', fontWeight: '700' },
+                            ]}
+                          >
+                            {min} min
+                          </Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
                 )}
               </>
             ) : (
@@ -270,9 +301,22 @@ const createStyles = (theme: AppTheme) =>
       fontWeight: '600',
       color: '#D4AF37',
     },
-    picker: {
-      marginTop: -8,
-      marginBottom: 4,
+    chipGrid: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: 8,
+      marginTop: 4,
+      marginBottom: 8,
+    },
+    chip: {
+      paddingVertical: 10,
+      paddingHorizontal: 16,
+      borderRadius: 10,
+      borderWidth: 1,
+    },
+    chipText: {
+      fontSize: 14,
+      fontWeight: '500',
     },
     iqamahSection: {
       marginTop: 8,

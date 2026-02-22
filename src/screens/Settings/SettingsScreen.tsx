@@ -1,5 +1,5 @@
 // src/screens/Settings/SettingsScreen.tsx (ENHANCED)
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, ScrollView, StyleSheet, Alert, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LocationModal } from '../../components/LocationModal';
@@ -26,15 +26,17 @@ import { PrayerSettingsSection } from './components/PrayerSettingsSection';
 // Mosque Mode now has its own dedicated screen via MenuStack
 
 // Modal Components
-import { CalculationMethodModal, NotificationModal } from './modals';
+import { CalculationMethodModal, NotificationModal, HijriAdjustmentModal } from './modals';
 
 // Services
 import NotificationService from '../../services/NotificationService';
+import { getCachedHijriDate, getRawCachedHijriDate } from '../../utils/ramadan';
 
 const SettingsScreen = ({ navigation }: any) => {
   const styles = useThemedStyles(createStyles);
   const { theme, themeMode, toggleTheme } = useTheme();
-  
+  const [showHijriModal, setShowHijriModal] = useState(false);
+
   const {
     // Existing state
     userSettings,
@@ -159,6 +161,24 @@ const SettingsScreen = ({ navigation }: any) => {
           />
         </SettingSection>
 
+        {/* 🌙 Hijri Date Adjustment (Moon Sighting) */}
+        <SettingSection title="HIJRI CALENDAR">
+          <SettingRow
+            label="Hijri Date Adjustment"
+            subtitle={(() => {
+              const hijri = getCachedHijriDate();
+              return hijri
+                ? `Current: ${hijri.day} ${hijri.monthNameEn} ${hijri.year} AH`
+                : 'Adjust if your local date differs';
+            })()}
+            value={(() => {
+              const adj = userSettings.hijriAdjustment ?? 0;
+              return adj === 0 ? 'Default' : adj === -1 ? '−1 Day' : '+1 Day';
+            })()}
+            onPress={() => setShowHijriModal(true)}
+          />
+        </SettingSection>
+
         {/* Mosque Mode moved to dedicated screen via Menu > Mosque Mode */}
 
         {/* 🎯 ENHANCED: Location Section with manual selection */}
@@ -242,6 +262,16 @@ const SettingsScreen = ({ navigation }: any) => {
         previewPrayerTimes={previewPrayerTimes}
         onPreviewMethod={previewCalculationMethod}
         isUpdatingMethod={isUpdatingMethod}
+      />
+
+      {/* Hijri Adjustment Modal */}
+      <HijriAdjustmentModal
+        visible={showHijriModal}
+        onClose={() => setShowHijriModal(false)}
+        currentAdjustment={(userSettings.hijriAdjustment ?? 0) as -1 | 0 | 1}
+        onAdjustmentChange={(val) => {
+          setUserSettings({ ...userSettings, hijriAdjustment: val });
+        }}
       />
 
       {/* Notification Modal */}

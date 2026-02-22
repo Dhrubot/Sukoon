@@ -3,6 +3,7 @@ import { useShallow } from 'zustand/react/shallow';
 import { 
   UserSettings, 
   PrayerTime, 
+  PrayerName,
   PrayerRecord, 
   Location,
   DailyStats,
@@ -61,6 +62,10 @@ interface AppState {
   setIsRefreshing: (refreshing: boolean) => void;
   activeTab: string;
   setActiveTab: (tab: string) => void;
+
+  // Mosque mode prompt (set when user taps notification)
+  pendingMosquePromptPrayer: PrayerName | null;
+  setPendingMosquePromptPrayer: (prayer: PrayerName | null) => void;
 }
 
 export const useStore = create<AppState>((set) => ({
@@ -155,6 +160,10 @@ export const useStore = create<AppState>((set) => ({
   setIsRefreshing: (refreshing) => set({ isRefreshing: refreshing }),
   activeTab: 'Home',
   setActiveTab: (tab) => set({ activeTab: tab }),
+
+  // Mosque mode prompt
+  pendingMosquePromptPrayer: null,
+  setPendingMosquePromptPrayer: (prayer) => set({ pendingMosquePromptPrayer: prayer }),
 }));
 
 // 🎯 SELECTIVE HOOKS - Prevent unnecessary re-renders by subscribing to specific state slices

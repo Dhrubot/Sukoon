@@ -274,7 +274,7 @@ export const useSettingsManager = () => {
     try {
       const PrayerTimeService = (await import('../../../services/PrayerTimeService')).default;
       
-      const previewTimes = await PrayerTimeService.getPrayerTimesList(
+      const { prayerTimes } = await PrayerTimeService.getPrayerTimesList(
         userSettings.location,
         new Date(),
         method.value,
@@ -283,7 +283,7 @@ export const useSettingsManager = () => {
 
       setPreviewPrayerTimes({
         method: method.label,
-        times: previewTimes,
+        times: prayerTimes,
       });
     } catch (error) {
       console.error('Failed to preview prayer times:', error);

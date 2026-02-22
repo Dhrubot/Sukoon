@@ -23,9 +23,7 @@ import { PrayerRecord, DailyStats } from '../../types';
 import { usePrayerTimes } from '../../providers/PrayerTimesProvider';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
-import { usePremium } from '../../hooks/usePremium';
 import { AppTheme } from '../../theme';
-import GoPremiumCard from '../../components/monetization/GoPremiumCard';
 
 const { width } = Dimensions.get('window');
 
@@ -34,8 +32,6 @@ type TimeRange = 'week' | 'month' | 'all';
 const StatsScreen: React.FC = ({ navigation }: any) => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
-  const { isPremium } = usePremium();
-  
   // 🎯 NEW: Use centralized prayer times hook
   const { 
     todayPrayerTimes, 
@@ -332,11 +328,6 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
             <Text style={styles.statSubtext}>average rating</Text>
           </View>
         </View>
-
-        {/* Go Premium Card — only for free users */}
-        {!isPremium && (
-          <GoPremiumCard onPress={() => navigation.navigate('Menu', { screen: 'Support' })} />
-        )}
 
         {/* Today's Progress */}
         <View style={styles.section}>

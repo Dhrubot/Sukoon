@@ -213,12 +213,12 @@ const onboardingGradient = {
 const switchColors = {
   dark: {
     trackFalse: palette.slate600,
-    trackTrue:  palette.gold400,
+    trackTrue:  palette.green500,
     thumb:      palette.slate100,
   },
   light: {
     trackFalse: palette.slate300,
-    trackTrue:  palette.gold500,
+    trackTrue:  palette.green600,
     thumb:      palette.white,
   },
 } as const;
@@ -404,6 +404,21 @@ export const darkTheme = {
     tickCardinal:           palette.slate400,
     tickMinor:              palette.navy500,
     verifyLink:             palette.green400,
+  },
+
+  // SanctuaryView — text/overlays on prayer gradient backgrounds
+  sanctuary: {
+    greeting:        palette.whiteAlpha70,
+    label:           palette.whiteAlpha50,
+    prayerName:      palette.white,
+    prayerTime:      palette.whiteAlpha80,
+    countdown:       palette.whiteAlpha60,
+    prayedStatus:    palette.whiteAlpha80,
+    buttonBg:        palette.whiteAlpha10,
+    buttonBorder:    palette.whiteAlpha30,
+    buttonBgMuted:   palette.whiteAlpha05,
+    buttonBorderMuted: palette.whiteAlpha15,
+    buttonText:      palette.white,
   },
 
   // Prayer gradients for MindfulnessFlow / SanctuaryView
@@ -624,6 +639,21 @@ export const lightTheme = {
     tickCardinal:           palette.ink500,
     tickMinor:              palette.cream400,
     verifyLink:             palette.green600,
+  },
+
+  // SanctuaryView — same white overlays on gradient (gradients are vivid in both themes)
+  sanctuary: {
+    greeting:        palette.whiteAlpha70,
+    label:           palette.whiteAlpha50,
+    prayerName:      palette.white,
+    prayerTime:      palette.whiteAlpha80,
+    countdown:       palette.whiteAlpha60,
+    prayedStatus:    palette.whiteAlpha80,
+    buttonBg:        palette.whiteAlpha10,
+    buttonBorder:    palette.whiteAlpha30,
+    buttonBgMuted:   palette.whiteAlpha05,
+    buttonBorderMuted: palette.whiteAlpha15,
+    buttonText:      palette.white,
   },
 
   prayerGradients: prayerGradients.light,

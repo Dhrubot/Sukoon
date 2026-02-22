@@ -10,12 +10,26 @@ import {
 } from '../assets/icons';
 
 import HomeScreen from '../screens/Home/HomeScreen';
+import ReflectionGardenScreen from '../screens/ReflectionGarden/ReflectionGardenScreen';
 import QiblaFinderScreen from '../screens/QiblaFinder/QiblaFinderScreen';
 import { MenuStackNavigator } from './MenuStackNavigator';
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
-import Svg, { Circle } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
+
+// Garden icon component (leaf/plant)
+const GardenIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 22V12M12 12C12 8 9 5 5 3c0 4 2 8 7 9M12 12c0-4 3-7 7-9 0 4-2 8-7 9"
+      stroke={color}
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
 
 // More menu icon component (three dots)
 const MoreIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
@@ -28,7 +42,7 @@ const MoreIcon: React.FC<{ color: string; size: number }> = ({ color, size }) =>
 
 export const TabNavigator: React.FC = () => {
   const { theme } = useTheme();
-  
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -43,9 +57,9 @@ export const TabNavigator: React.FC = () => {
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.1,
           shadowRadius: 8,
-          paddingBottom: 8,
+          paddingBottom: 14,
           paddingTop: 8,
-          height: 65,
+          height: 72,
         },
         tabBarLabelStyle: {
           fontSize: 11,
@@ -64,7 +78,7 @@ export const TabNavigator: React.FC = () => {
         name="Home"
         component={HomeScreen}
         options={{
-          tabBarLabel: 'Prayer Times',
+          tabBarLabel: 'Home',
           tabBarIcon: ({ color }) => (
             <Icon source={HomeTabIcon} size={26} color={color} />
           ),
@@ -77,6 +91,16 @@ export const TabNavigator: React.FC = () => {
           tabBarLabel: 'Qibla',
           tabBarIcon: ({ color }) => (
             <Icon source={QiblaTabIcon} size={22} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Garden"
+        component={ReflectionGardenScreen}
+        options={{
+          tabBarLabel: 'Garden',
+          tabBarIcon: ({ color }) => (
+            <GardenIcon color={color} size={24} />
           ),
         }}
       />

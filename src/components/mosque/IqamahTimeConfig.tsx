@@ -6,9 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
-  Platform,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useMosqueMode } from '../../hooks/useMosqueMode';
 import { usePrayerTimes } from '../../providers/PrayerTimesProvider';
@@ -100,20 +98,33 @@ export const IqamahTimeConfig: React.FC = () => {
             <Text style={[styles.pickerLabel, { color: theme.colors.text.secondary }]}>
               Iqamah starts after:
             </Text>
-            <Picker
-              selectedValue={offset}
-              onValueChange={(value) => handleOffsetChange(prayer, value as number)}
-              style={[styles.picker, { color: theme.colors.text.primary }]}
-              itemStyle={styles.pickerItem}
-            >
-              {OFFSET_OPTIONS.map((minutes) => (
-                <Picker.Item
-                  key={minutes}
-                  label={`${minutes} minutes`}
-                  value={minutes}
-                />
-              ))}
-            </Picker>
+            <View style={styles.chipGrid}>
+              {OFFSET_OPTIONS.map((minutes) => {
+                const isSelected = offset === minutes;
+                return (
+                  <TouchableOpacity
+                    key={minutes}
+                    style={[
+                      styles.chip,
+                      { borderColor: theme.colors.border.primary },
+                      isSelected && { backgroundColor: theme.colors.primary.DEFAULT, borderColor: theme.colors.primary.DEFAULT },
+                    ]}
+                    onPress={() => handleOffsetChange(prayer, minutes)}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.chipText,
+                        { color: theme.colors.text.secondary },
+                        isSelected && { color: '#FFFFFF', fontWeight: '700' },
+                      ]}
+                    >
+                      {minutes} min
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
         )}
 
@@ -256,11 +267,20 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginBottom: 8,
   },
-  picker: {
-    width: '100%',
+  chipGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
   },
-  pickerItem: {
-    fontSize: 16,
+  chip: {
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  chipText: {
+    fontSize: 14,
+    fontWeight: '500',
   },
   modeToggle: {
     flexDirection: 'row',

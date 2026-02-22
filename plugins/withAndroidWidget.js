@@ -150,14 +150,35 @@ public class SukoonWidgetHelper {
         }
     }
 
+    // Sky-inspired prayer identity colors (from prayerColors.dark)
     public static int getPrayerColor(String name) {
         switch (name) {
-            case "Fajr":    return 0xFF3949AB;
-            case "Dhuhr":   return 0xFFFFB74D;
-            case "Asr":     return 0xFFFF9800;
-            case "Maghrib": return 0xFFE91E63;
-            case "Isha":    return 0xFF512DA8;
-            default:        return 0xFF00C9A7;
+            case "Fajr":    return 0xFF7986CB;  // soft indigo — pre-dawn
+            case "Dhuhr":   return 0xFF81C784;  // soft green — midday
+            case "Asr":     return 0xFFDCE775;  // olive-gold — afternoon
+            case "Maghrib": return 0xFFCE93D8;  // soft plum — sunset
+            case "Isha":    return 0xFF9FA8DA;  // soft lavender — night
+            default:        return 0xFF2D8B6F;  // sage green500
+        }
+    }
+
+    // 4-state dot drawable selector
+    public static int getDotDrawable(String status) {
+        switch (status) {
+            case "prayed":  return R.drawable.widget_dot_active;
+            case "current": return R.drawable.widget_dot_current;
+            case "missed":  return R.drawable.widget_dot_missed;
+            default:        return R.drawable.widget_dot_inactive;
+        }
+    }
+
+    // 4-state text color for prayer names in medium widget
+    public static int getDotTextColor(String status) {
+        switch (status) {
+            case "prayed":  return 0xFF2D8B6F;  // sage
+            case "current": return 0xFFD4AF37;  // gold
+            case "missed":  return 0x66EF4444;  // soft red 40%
+            default:        return 0xFF64748B;  // slate500
         }
     }
 
@@ -227,45 +248,46 @@ public class SukoonSmallWidget extends AppWidgetProvider {
     }
 
     static void update(Context ctx, AppWidgetManager mgr, int id) {
-        RemoteViews v = new RemoteViews(ctx.getPackageName(), R.layout.widget_small);
-        JSONObject data = SukoonWidgetHelper.loadData(ctx);
+        try {
+            RemoteViews v = new RemoteViews(ctx.getPackageName(), R.layout.widget_small);
+            JSONObject data = SukoonWidgetHelper.loadData(ctx);
 
-        if (data != null) {
-            try {
-                String name = data.optString("nextPrayerName", "");
-                String time = data.optString("nextPrayerTime", "");
-                int done = data.optInt("completedCount", 0);
-                JSONArray prayers = data.optJSONArray("prayerTimes");
+            if (data != null) {
+                try {
+                    String name = data.optString("nextPrayerName", "");
+                    String time = data.optString("nextPrayerTime", "");
+                    JSONArray prayers = data.optJSONArray("prayerTimes");
 
-                v.setTextViewText(R.id.prayer_name, name);
-                v.setTextColor(R.id.prayer_name, SukoonWidgetHelper.getPrayerColor(name));
-                v.setTextViewText(R.id.prayer_time, SukoonWidgetHelper.formatTime(time));
-                v.setTextViewText(R.id.countdown, SukoonWidgetHelper.getCountdown(time));
-                v.setTextViewText(R.id.progress_text, done + "/5");
+                    v.setTextViewText(R.id.prayer_name, name);
+                    v.setTextColor(R.id.prayer_name, 0xFFFFFFFF);
+                    v.setTextViewText(R.id.prayer_time, SukoonWidgetHelper.formatTime(time));
+                    v.setTextViewText(R.id.countdown, SukoonWidgetHelper.getCountdown(time));
 
-                int[] dots = {R.id.dot1, R.id.dot2, R.id.dot3, R.id.dot4, R.id.dot5};
-                if (prayers != null) {
-                    for (int i = 0; i < Math.min(prayers.length(), 5); i++) {
-                        boolean prayed = "prayed".equals(prayers.getJSONObject(i).optString("status"));
-                        v.setImageViewResource(dots[i],
-                            prayed ? R.drawable.widget_dot_active : R.drawable.widget_dot_inactive);
+                    int[] dots = {R.id.dot1, R.id.dot2, R.id.dot3, R.id.dot4, R.id.dot5};
+                    if (prayers != null) {
+                        for (int i = 0; i < Math.min(prayers.length(), 5); i++) {
+                            String status = prayers.getJSONObject(i).optString("status", "upcoming");
+                            v.setImageViewResource(dots[i], SukoonWidgetHelper.getDotDrawable(status));
+                        }
                     }
+                } catch (Exception e) {
+                    e.printStackTrace();
                 }
-            } catch (Exception e) {
-                e.printStackTrace();
             }
-        }
 
-        // Tap → open app
-        Intent launch = ctx.getPackageManager().getLaunchIntentForPackage(ctx.getPackageName());
-        if (launch != null) {
-            int flags = PendingIntent.FLAG_UPDATE_CURRENT;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) flags |= PendingIntent.FLAG_IMMUTABLE;
-            v.setOnClickPendingIntent(R.id.widget_root,
-                PendingIntent.getActivity(ctx, 0, launch, flags));
-        }
+            // Tap → open app
+            Intent launch = ctx.getPackageManager().getLaunchIntentForPackage(ctx.getPackageName());
+            if (launch != null) {
+                int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) flags |= PendingIntent.FLAG_IMMUTABLE;
+                v.setOnClickPendingIntent(R.id.widget_root,
+                    PendingIntent.getActivity(ctx, 0, launch, flags));
+            }
 
-        mgr.updateAppWidget(id, v);
+            mgr.updateAppWidget(id, v);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 }
 `;
@@ -294,61 +316,70 @@ public class SukoonMediumWidget extends AppWidgetProvider {
     }
 
     static void update(Context ctx, AppWidgetManager mgr, int id) {
-        RemoteViews v = new RemoteViews(ctx.getPackageName(), R.layout.widget_medium);
-        JSONObject data = SukoonWidgetHelper.loadData(ctx);
+        try {
+            RemoteViews v = new RemoteViews(ctx.getPackageName(), R.layout.widget_medium);
+            JSONObject data = SukoonWidgetHelper.loadData(ctx);
 
-        if (data != null) {
+            if (data != null) {
+                try {
+                    String name = data.optString("nextPrayerName", "");
+                    String time = data.optString("nextPrayerTime", "");
+                    JSONArray prayers = data.optJSONArray("prayerTimes");
+
+                    v.setTextViewText(R.id.prayer_name, name);
+                    v.setTextColor(R.id.prayer_name, 0xFFFFFFFF);
+                    v.setTextViewText(R.id.prayer_time, SukoonWidgetHelper.formatTime(time));
+                    v.setTextViewText(R.id.countdown, SukoonWidgetHelper.getCountdown(time));
+
+                    // Dots (4-state)
+                    int[] dots = {R.id.dot1, R.id.dot2, R.id.dot3, R.id.dot4, R.id.dot5};
+                    if (prayers != null) {
+                        for (int i = 0; i < Math.min(prayers.length(), 5); i++) {
+                            String status = prayers.getJSONObject(i).optString("status", "upcoming");
+                            v.setImageViewResource(dots[i], SukoonWidgetHelper.getDotDrawable(status));
+                        }
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
+            // Daily verse (from RN data, with fallback) + hijri date
             try {
-                String name = data.optString("nextPrayerName", "");
-                String time = data.optString("nextPrayerTime", "");
-                JSONArray prayers = data.optJSONArray("prayerTimes");
-
-                v.setTextViewText(R.id.prayer_name, name);
-                v.setTextColor(R.id.prayer_name, SukoonWidgetHelper.getPrayerColor(name));
-                v.setTextViewText(R.id.prayer_time, SukoonWidgetHelper.formatTime(time));
-                v.setTextViewText(R.id.countdown, SukoonWidgetHelper.getCountdown(time));
-
-                // Prayer list with dots
-                int[] dots  = {R.id.dot1, R.id.dot2, R.id.dot3, R.id.dot4, R.id.dot5};
-                int[] names = {R.id.pname1, R.id.pname2, R.id.pname3, R.id.pname4, R.id.pname5};
-                if (prayers != null) {
-                    for (int i = 0; i < Math.min(prayers.length(), 5); i++) {
-                        JSONObject p = prayers.getJSONObject(i);
-                        boolean prayed = "prayed".equals(p.optString("status"));
-                        boolean current = "current".equals(p.optString("status"));
-                        String pName = p.optString("name", "");
-
-                        v.setImageViewResource(dots[i],
-                            prayed ? R.drawable.widget_dot_active : R.drawable.widget_dot_inactive);
-                        v.setTextViewText(names[i], pName.length() > 3 ? pName.substring(0, 3) : pName);
-                        v.setTextColor(names[i],
-                            prayed  ? 0xFF00C9A7 :
-                            current ? 0xFFFFFFFF :
-                                      0xFF6C7A89);
+                String verse = data != null ? data.optString("dailyVerse", "") : "";
+                String verseRef = data != null ? data.optString("dailyVerseRef", "") : "";
+                String hijri = data != null ? data.optString("hijriDate", "") : "";
+                if (!verse.isEmpty()) {
+                    v.setTextViewText(R.id.verse_text, "\u201C" + verse + "\u201D");
+                    String refLine = "\u2014 " + verseRef;
+                    if (!hijri.isEmpty()) refLine += " \u00B7 " + hijri;
+                    v.setTextViewText(R.id.verse_ref, refLine);
+                } else {
+                    String[] fallback = SukoonWidgetHelper.getDailyVerse();
+                    if (fallback != null && fallback.length >= 2) {
+                        v.setTextViewText(R.id.verse_text, "\u201C" + fallback[0] + "\u201D");
+                        String refLine = "\u2014 " + fallback[1];
+                        if (!hijri.isEmpty()) refLine += " \u00B7 " + hijri;
+                        v.setTextViewText(R.id.verse_ref, refLine);
                     }
                 }
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }
 
-        // Daily verse
-        String[] verse = SukoonWidgetHelper.getDailyVerse();
-        if (verse.length >= 2) {
-            v.setTextViewText(R.id.verse_text, "\\u201C" + verse[0] + "\\u201D");
-            v.setTextViewText(R.id.verse_ref, "\\u2014 Quran " + verse[1]);
-        }
+            // Tap → open app
+            Intent launch = ctx.getPackageManager().getLaunchIntentForPackage(ctx.getPackageName());
+            if (launch != null) {
+                int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) flags |= PendingIntent.FLAG_IMMUTABLE;
+                v.setOnClickPendingIntent(R.id.widget_root,
+                    PendingIntent.getActivity(ctx, 0, launch, flags));
+            }
 
-        // Tap → open app
-        Intent launch = ctx.getPackageManager().getLaunchIntentForPackage(ctx.getPackageName());
-        if (launch != null) {
-            int flags = PendingIntent.FLAG_UPDATE_CURRENT;
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) flags |= PendingIntent.FLAG_IMMUTABLE;
-            v.setOnClickPendingIntent(R.id.widget_root,
-                PendingIntent.getActivity(ctx, 0, launch, flags));
+            mgr.updateAppWidget(id, v);
+        } catch (Exception e) {
+            e.printStackTrace();
         }
-
-        mgr.updateAppWidget(id, v);
     }
 }
 `;
@@ -359,21 +390,41 @@ public class SukoonMediumWidget extends AppWidgetProvider {
 
 const DRAWABLE_BG = `<?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
-    <solid android:color="#1A1F3A"/>
-    <corners android:radius="16dp"/>
+    <solid android:color="#CC1A1A2E"/>
+    <corners android:radius="24dp"/>
 </shape>
 `;
 
+// Prayed — filled sage green
 const DRAWABLE_DOT_ACTIVE = `<?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
-    <solid android:color="#00C9A7"/>
+    <solid android:color="#2D8B6F"/>
     <size android:width="8dp" android:height="8dp"/>
 </shape>
 `;
 
+// Current/Next — filled gold
+const DRAWABLE_DOT_CURRENT = `<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+    <solid android:color="#D4AF37"/>
+    <size android:width="8dp" android:height="8dp"/>
+</shape>
+`;
+
+// Missed — hollow red ring
+const DRAWABLE_DOT_MISSED = `<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+    <solid android:color="#00000000"/>
+    <stroke android:width="1.5dp" android:color="#66EF4444"/>
+    <size android:width="8dp" android:height="8dp"/>
+</shape>
+`;
+
+// Upcoming — hollow slate ring
 const DRAWABLE_DOT_INACTIVE = `<?xml version="1.0" encoding="utf-8"?>
 <shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
-    <solid android:color="#2D3454"/>
+    <solid android:color="#00000000"/>
+    <stroke android:width="1dp" android:color="#64748B"/>
     <size android:width="8dp" android:height="8dp"/>
 </shape>
 `;
@@ -390,62 +441,43 @@ const LAYOUT_SMALL = `<?xml version="1.0" encoding="utf-8"?>
     android:background="@drawable/widget_bg"
     android:gravity="center_horizontal"
     android:orientation="vertical"
-    android:padding="14dp">
+    android:padding="16dp">
 
-    <!-- Progress dots row -->
-    <LinearLayout
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:gravity="center_vertical">
-
-        <ImageView android:id="@+id/dot1" android:layout_width="8dp" android:layout_height="8dp"
-            android:src="@drawable/widget_dot_inactive" android:layout_marginEnd="4dp"/>
-        <ImageView android:id="@+id/dot2" android:layout_width="8dp" android:layout_height="8dp"
-            android:src="@drawable/widget_dot_inactive" android:layout_marginEnd="4dp"/>
-        <ImageView android:id="@+id/dot3" android:layout_width="8dp" android:layout_height="8dp"
-            android:src="@drawable/widget_dot_inactive" android:layout_marginEnd="4dp"/>
-        <ImageView android:id="@+id/dot4" android:layout_width="8dp" android:layout_height="8dp"
-            android:src="@drawable/widget_dot_inactive" android:layout_marginEnd="4dp"/>
-        <ImageView android:id="@+id/dot5" android:layout_width="8dp" android:layout_height="8dp"
-            android:src="@drawable/widget_dot_inactive"/>
-
-        <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
-
-        <TextView android:id="@+id/progress_text"
-            android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="0/5" android:textColor="#6C7A89" android:textSize="11sp"/>
-    </LinearLayout>
-
-    <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
+    <FrameLayout android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
 
     <TextView android:id="@+id/prayer_name"
         android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="Fajr" android:textColor="#00C9A7"
-        android:textSize="28sp" android:textStyle="bold"/>
+        android:text="Fajr" android:textColor="#FFFFFF"
+        android:textSize="26sp" android:textStyle="bold"/>
 
     <TextView android:id="@+id/prayer_time"
         android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="5:15 AM" android:textColor="#FFFFFF"
-        android:textSize="16sp" android:layout_marginTop="2dp"/>
+        android:text="5:15 AM" android:textColor="#B0BEC5"
+        android:textSize="15sp" android:layout_marginTop="2dp"/>
 
     <TextView android:id="@+id/countdown"
         android:layout_width="wrap_content" android:layout_height="wrap_content"
-        android:text="" android:textColor="#00C9A7"
-        android:textSize="13sp" android:layout_marginTop="1dp"/>
+        android:text="" android:textColor="#2D8B6F"
+        android:textSize="13sp" android:layout_marginTop="4dp"/>
 
-    <View android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
+    <FrameLayout android:layout_width="0dp" android:layout_height="0dp" android:layout_weight="1"/>
 
-    <!-- Brand -->
+    <!-- Progress dots at bottom -->
     <LinearLayout
-        android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:gravity="center_vertical">
-        <View android:layout_width="0dp" android:layout_height="1px"
-            android:layout_weight="1" android:background="#3300C9A7"/>
-        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:text="Sukoon" android:textColor="#6C7A89" android:textSize="9sp"
-            android:paddingStart="8dp" android:paddingEnd="8dp"/>
-        <View android:layout_width="0dp" android:layout_height="1px"
-            android:layout_weight="1" android:background="#3300C9A7"/>
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center">
+
+        <ImageView android:id="@+id/dot1" android:layout_width="8dp" android:layout_height="8dp"
+            android:src="@drawable/widget_dot_inactive" android:layout_marginEnd="6dp"/>
+        <ImageView android:id="@+id/dot2" android:layout_width="8dp" android:layout_height="8dp"
+            android:src="@drawable/widget_dot_inactive" android:layout_marginEnd="6dp"/>
+        <ImageView android:id="@+id/dot3" android:layout_width="8dp" android:layout_height="8dp"
+            android:src="@drawable/widget_dot_inactive" android:layout_marginEnd="6dp"/>
+        <ImageView android:id="@+id/dot4" android:layout_width="8dp" android:layout_height="8dp"
+            android:src="@drawable/widget_dot_inactive" android:layout_marginEnd="6dp"/>
+        <ImageView android:id="@+id/dot5" android:layout_width="8dp" android:layout_height="8dp"
+            android:src="@drawable/widget_dot_inactive"/>
     </LinearLayout>
 </LinearLayout>
 `;
@@ -461,28 +493,25 @@ const LAYOUT_MEDIUM = `<?xml version="1.0" encoding="utf-8"?>
     android:layout_height="match_parent"
     android:background="@drawable/widget_bg"
     android:orientation="vertical"
-    android:padding="14dp">
+    android:padding="16dp">
 
-    <!-- Top: next prayer + prayer list -->
+    <!-- Top: prayer info + inline dots -->
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
         android:layout_weight="1"
+        android:gravity="center_vertical"
         android:orientation="horizontal">
 
-        <!-- Left: next prayer -->
+        <!-- Left: prayer info -->
         <LinearLayout
             android:layout_width="0dp" android:layout_height="wrap_content"
             android:layout_weight="1" android:orientation="vertical">
 
-            <TextView android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="NEXT PRAYER" android:textColor="#6C7A89"
-                android:textSize="10sp" android:letterSpacing="0.05" android:textStyle="bold"/>
-
             <TextView android:id="@+id/prayer_name"
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:text="Asr" android:textColor="#00C9A7"
-                android:textSize="28sp" android:textStyle="bold" android:layout_marginTop="1dp"/>
+                android:text="Asr" android:textColor="#FFFFFF"
+                android:textSize="26sp" android:textStyle="bold"/>
 
             <LinearLayout
                 android:layout_width="wrap_content" android:layout_height="wrap_content"
@@ -490,76 +519,47 @@ const LAYOUT_MEDIUM = `<?xml version="1.0" encoding="utf-8"?>
 
                 <TextView android:id="@+id/prayer_time"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="3:45 PM" android:textColor="#FFFFFF" android:textSize="15sp"/>
+                    android:text="3:45 PM" android:textColor="#FFFFFF" android:textSize="14sp"/>
 
                 <TextView android:id="@+id/countdown"
                     android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="" android:textColor="#00C9A7"
-                    android:textSize="13sp" android:layout_marginStart="8dp"/>
+                    android:text="" android:textColor="#2D8B6F"
+                    android:textSize="13sp" android:layout_marginStart="6dp"/>
             </LinearLayout>
         </LinearLayout>
 
-        <!-- Right: prayer dot list -->
+        <!-- Right: inline progress dots -->
         <LinearLayout
             android:layout_width="wrap_content" android:layout_height="wrap_content"
-            android:orientation="vertical" android:gravity="end">
+            android:gravity="center_vertical">
 
-            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:gravity="center_vertical" android:layout_marginBottom="3dp">
-                <ImageView android:id="@+id/dot1" android:layout_width="7dp" android:layout_height="7dp"
-                    android:src="@drawable/widget_dot_inactive" android:layout_marginEnd="5dp"/>
-                <TextView android:id="@+id/pname1" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Faj" android:textColor="#6C7A89" android:textSize="10sp"/>
-            </LinearLayout>
-
-            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:gravity="center_vertical" android:layout_marginBottom="3dp">
-                <ImageView android:id="@+id/dot2" android:layout_width="7dp" android:layout_height="7dp"
-                    android:src="@drawable/widget_dot_inactive" android:layout_marginEnd="5dp"/>
-                <TextView android:id="@+id/pname2" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Dhu" android:textColor="#6C7A89" android:textSize="10sp"/>
-            </LinearLayout>
-
-            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:gravity="center_vertical" android:layout_marginBottom="3dp">
-                <ImageView android:id="@+id/dot3" android:layout_width="7dp" android:layout_height="7dp"
-                    android:src="@drawable/widget_dot_inactive" android:layout_marginEnd="5dp"/>
-                <TextView android:id="@+id/pname3" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Asr" android:textColor="#6C7A89" android:textSize="10sp"/>
-            </LinearLayout>
-
-            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:gravity="center_vertical" android:layout_marginBottom="3dp">
-                <ImageView android:id="@+id/dot4" android:layout_width="7dp" android:layout_height="7dp"
-                    android:src="@drawable/widget_dot_inactive" android:layout_marginEnd="5dp"/>
-                <TextView android:id="@+id/pname4" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Mag" android:textColor="#6C7A89" android:textSize="10sp"/>
-            </LinearLayout>
-
-            <LinearLayout android:layout_width="wrap_content" android:layout_height="wrap_content"
-                android:gravity="center_vertical">
-                <ImageView android:id="@+id/dot5" android:layout_width="7dp" android:layout_height="7dp"
-                    android:src="@drawable/widget_dot_inactive" android:layout_marginEnd="5dp"/>
-                <TextView android:id="@+id/pname5" android:layout_width="wrap_content" android:layout_height="wrap_content"
-                    android:text="Ish" android:textColor="#6C7A89" android:textSize="10sp"/>
-            </LinearLayout>
+            <ImageView android:id="@+id/dot1" android:layout_width="9dp" android:layout_height="9dp"
+                android:src="@drawable/widget_dot_inactive" android:layout_marginEnd="5dp"/>
+            <ImageView android:id="@+id/dot2" android:layout_width="9dp" android:layout_height="9dp"
+                android:src="@drawable/widget_dot_inactive" android:layout_marginEnd="5dp"/>
+            <ImageView android:id="@+id/dot3" android:layout_width="9dp" android:layout_height="9dp"
+                android:src="@drawable/widget_dot_inactive" android:layout_marginEnd="5dp"/>
+            <ImageView android:id="@+id/dot4" android:layout_width="9dp" android:layout_height="9dp"
+                android:src="@drawable/widget_dot_inactive" android:layout_marginEnd="5dp"/>
+            <ImageView android:id="@+id/dot5" android:layout_width="9dp" android:layout_height="9dp"
+                android:src="@drawable/widget_dot_inactive"/>
         </LinearLayout>
     </LinearLayout>
 
     <!-- Divider -->
-    <View android:layout_width="match_parent" android:layout_height="1px"
-        android:background="#2E00C9A7" android:layout_marginTop="6dp" android:layout_marginBottom="6dp"/>
+    <FrameLayout android:layout_width="match_parent" android:layout_height="1px"
+        android:background="#20FFFFFF" android:layout_marginTop="6dp" android:layout_marginBottom="6dp"/>
 
     <!-- Verse -->
     <TextView android:id="@+id/verse_text"
         android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:textColor="#A0AEC0" android:textSize="11sp"
+        android:textColor="#B0BEC5" android:textSize="12sp"
         android:gravity="center" android:maxLines="2" android:ellipsize="end"/>
 
     <TextView android:id="@+id/verse_ref"
         android:layout_width="match_parent" android:layout_height="wrap_content"
-        android:textColor="#6C7A89" android:textSize="10sp"
-        android:gravity="center" android:layout_marginTop="2dp"/>
+        android:textColor="#78909C" android:textSize="10sp"
+        android:gravity="center" android:layout_marginTop="3dp"/>
 </LinearLayout>
 `;
 
@@ -643,6 +643,8 @@ const withAndroidWidgetFiles = (config) => {
       // Drawables
       fs.writeFileSync(path.join(resDir, 'drawable', 'widget_bg.xml'), DRAWABLE_BG, 'utf-8');
       fs.writeFileSync(path.join(resDir, 'drawable', 'widget_dot_active.xml'), DRAWABLE_DOT_ACTIVE, 'utf-8');
+      fs.writeFileSync(path.join(resDir, 'drawable', 'widget_dot_current.xml'), DRAWABLE_DOT_CURRENT, 'utf-8');
+      fs.writeFileSync(path.join(resDir, 'drawable', 'widget_dot_missed.xml'), DRAWABLE_DOT_MISSED, 'utf-8');
       fs.writeFileSync(path.join(resDir, 'drawable', 'widget_dot_inactive.xml'), DRAWABLE_DOT_INACTIVE, 'utf-8');
 
       // Layouts
@@ -689,7 +691,7 @@ const withAndroidWidgetManifest = (config) => {
         receivers.push({
           $: {
             'android:name': name,
-            'android:exported': 'false',
+            'android:exported': 'true',
           },
           'intent-filter': [
             {

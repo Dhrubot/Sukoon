@@ -1,5 +1,12 @@
 // src/theme/typography.ts
 export const typography = {
+  fontFamily: {
+    heading: 'Lora_700Bold',        // Serif — "ink on parchment" feel for headings
+    headingRegular: 'Lora_400Regular', // Serif regular — subtitles, quotes
+    body: undefined as string | undefined, // System sans-serif — clean readability
+    arabic: 'Amiri_400Regular',     // Calligraphic — Quranic text, dhikr
+    arabicBold: 'Amiri_700Bold',    // Calligraphic bold — Arabic headings
+  },
   fontSize: {
     xs: 11,      // Tiny labels, timestamps
     sm: 13,      // Body text, descriptions

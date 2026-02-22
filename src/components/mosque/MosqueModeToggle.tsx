@@ -36,7 +36,7 @@ export const MosqueModeToggle: React.FC = () => {
           if (canModify) {
             await enableMosqueMode(true);
             Alert.alert(
-              '🕌 Mosque Mode Enabled',
+              'Mosque Mode Enabled',
               'Your phone will automatically go silent at iqamah time for each prayer.',
               [
                 { text: 'Great!' },
@@ -113,7 +113,7 @@ export const MosqueModeToggle: React.FC = () => {
         await enableMosqueMode(true);
 
         Alert.alert(
-          '🕌 Mosque Mode Enabled',
+          'Mosque Mode Enabled',
           Platform.OS === 'android'
             ? 'Your phone will automatically go silent at iqamah time for each prayer.'
             : 'You will receive a reminder before each iqamah to silence your phone.',
@@ -179,10 +179,10 @@ export const MosqueModeToggle: React.FC = () => {
           value={isEnabled}
           onValueChange={handleToggle}
           trackColor={{
-            false: theme.colors.border.primary,
-            true: theme.colors.primary.DEFAULT,
+            false: theme.colors.switch.trackFalse,
+            true: theme.colors.switch.trackTrue,
           }}
-          thumbColor={theme.colors.card.background}
+          thumbColor={theme.colors.switch.thumb}
           disabled={isLoading || !nativeAvailable}
         />
       </View>

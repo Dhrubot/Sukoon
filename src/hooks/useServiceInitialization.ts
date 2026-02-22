@@ -17,6 +17,7 @@ import DonationService from '../services/monetization/DonationService';
 import AnalyticsService from '../services/AnalyticsService';
 import RamadanCountdownService from '../services/RamadanCountdownService';
 import JummahNotificationService from '../services/JummahNotificationService';
+import EidNotificationService from '../services/EidNotificationService';
 
 export const useServiceInitialization = () => {
   const { todayPrayerTimes, nextPrayer, isLoading, hasValidLocation } =
@@ -140,14 +141,19 @@ export const useServiceInitialization = () => {
   }, [setLocation, updateUserSettings]);
 
   useEffect(() => {
-    const shouldAutoScheduleMosqueMode =
+    const mosqueEnabled =
       hasValidLocation &&
       !isLoading &&
       userSettings?.mosqueMode?.enabled &&
-      userSettings?.mosqueMode?.promptBeforeEnable === false &&
       todayPrayerTimes.length > 0;
 
-    if (shouldAutoScheduleMosqueMode) {
+    if (!mosqueEnabled) return;
+
+    if (userSettings?.mosqueMode?.promptBeforeEnable) {
+      // Confirm mode (opt-in): schedule "Heading to mosque?" notifications
+      MosqueModeService.schedulePreIqamahPrompts(todayPrayerTimes);
+    } else {
+      // Auto mode (default): schedule silent mode directly
       MosqueModeService.scheduleUpcomingMosqueModes(todayPrayerTimes);
     }
   }, [
@@ -161,11 +167,12 @@ export const useServiceInitialization = () => {
     todayPrayerTimes.length,
   ]);
 
-  // 🌙 Schedule Ramadan countdown/encouragement notifications
+  // 🌙 Schedule Ramadan countdown/encouragement + Eid notifications
   // Triggers after prayer times load (which caches the Hijri date)
   useEffect(() => {
     if (hasValidLocation && !isLoading && todayPrayerTimes.length > 0) {
       RamadanCountdownService.scheduleRamadanNotifications();
+      EidNotificationService.scheduleEidNotifications();
     }
   }, [hasValidLocation, isLoading, todayPrayerTimes.length]);
 

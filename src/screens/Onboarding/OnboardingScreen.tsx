@@ -295,6 +295,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
               style={styles.input}
               placeholder="Your name"
               placeholderTextColor={theme.colors.onboarding.placeholder}
+              selectionColor={theme.colors.primary.DEFAULT}
               value={name}
               onChangeText={setName}
               autoFocus
@@ -340,6 +341,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
                   style={styles.input}
                   placeholder="City (e.g. London)"
                   placeholderTextColor={theme.colors.onboarding.placeholder}
+                  selectionColor={theme.colors.primary.DEFAULT}
                   value={manualCity}
                   onChangeText={setManualCity}
                   autoCapitalize="words"
@@ -349,6 +351,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
                   style={styles.input}
                   placeholder="Country (e.g. United Kingdom)"
                   placeholderTextColor={theme.colors.onboarding.placeholder}
+                  selectionColor={theme.colors.primary.DEFAULT}
                   value={manualCountry}
                   onChangeText={setManualCountry}
                   autoCapitalize="words"
@@ -728,7 +731,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   errorText: {
     fontSize: 14,
-    color: '#E53E3E',
+    color: theme.colors.status.error,
     textAlign: 'center',
     marginBottom: 16,
   },

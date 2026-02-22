@@ -5,7 +5,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   Share,
-  Platform,
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useTheme } from '../../providers/ThemeProvider';
@@ -144,7 +143,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 16,
     lineHeight: 36,
-    fontFamily: Platform.OS === 'ios' ? 'Damascus' : 'serif',
+    fontFamily: 'Amiri_400Regular',
   },
   translation: {
     fontSize: 16,  // lg

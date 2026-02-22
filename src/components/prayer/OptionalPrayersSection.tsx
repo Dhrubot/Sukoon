@@ -4,7 +4,7 @@ import { View, Text, StyleSheet } from 'react-native';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import { useOptionalPrayers } from '../../hooks/useOptionalPrayers';
-import { isRamadan } from '../../utils/ramadan';
+import { isRamadan, isEidDay } from '../../utils/ramadan';
 import OptionalPrayerCard from './OptionalPrayerCard';
 import { OptionalPrayerTime } from '../../types';
 
@@ -18,16 +18,19 @@ const OptionalPrayersSection: React.FC<OptionalPrayersSectionProps> = ({ onPrepa
 
   if (optionalPrayers.length === 0) return null;
 
-  const sectionTitle = isRamadan() ? 'Ramadan Prayers' : 'Optional Prayers';
+  const sectionTitle = isEidDay() ? 'Eid Prayers' : isRamadan() ? 'Ramadan Prayers' : 'Optional Prayers';
+  const sectionSubtitle = isEidDay()
+    ? 'Eid Mubarak — may Allah accept your worship'
+    : isRamadan()
+      ? 'Blessed nights of Ramadan'
+      : 'Earn extra reward with voluntary prayers';
 
   return (
     <View style={styles.section}>
       <View style={styles.divider} />
       <Text style={styles.sectionTitle}>{sectionTitle}</Text>
       <Text style={styles.sectionSubtitle}>
-        {isRamadan()
-          ? 'Blessed nights of Ramadan'
-          : 'Earn extra reward with voluntary prayers'}
+        {sectionSubtitle}
       </Text>
       <View style={styles.cardList}>
         {optionalPrayers.map((prayer) => (

@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { useStore } from '../store/useStore';
 import { usePrayerTimes } from '../providers/PrayerTimesProvider';
 import { getAvailablePrayers, PrayerDefinition } from '../constants/prayerRegistry';
-import { isRamadan, isFriday } from '../utils/ramadan';
+import { isRamadan, isFriday, isEidDay } from '../utils/ramadan';
 import { OptionalPrayerTime } from '../types';
 
 /**
@@ -25,11 +25,12 @@ export const useOptionalPrayers = (): OptionalPrayerTime[] => {
     const available = getAvailablePrayers({
       isRamadan: isRamadan(),
       isFriday: isFriday(),
+      isEid: isEidDay(),
       includeSunnah: true,
     });
 
-    // Only optional prayers (not fard)
-    const optionalDefs = available.filter(p => p.category !== 'fard');
+    // Only optional prayers (not fard, not Jumah — Jumah is handled by the hero)
+    const optionalDefs = available.filter(p => p.category !== 'fard' && p.key !== 'jumah');
     if (optionalDefs.length === 0) return [];
 
     const results: OptionalPrayerTime[] = [];

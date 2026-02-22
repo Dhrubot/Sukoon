@@ -5,6 +5,7 @@ import { MenuStackParamList } from '../navigation/MenuStackNavigator';
 // Tab navigator parameter types (only visible tabs)
 export type TabParamList = {
   Home: undefined;
+  Garden: undefined;
   QiblaFinder: undefined;
   Menu: NavigatorScreenParams<MenuStackParamList>; // Nested stack
 };
@@ -13,7 +14,7 @@ export type TabParamList = {
 export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<TabParamList>;
   // Modal screens
-  MindfulnessFlow: { prayer: PrayerTime };
+  MindfulnessFlow: { prayer: PrayerTime; isSunnah?: boolean };
   // Debug screens
   NotificationDebug: undefined;
 };

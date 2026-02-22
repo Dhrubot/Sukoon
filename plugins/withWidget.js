@@ -95,30 +95,57 @@ struct WidgetPrayerData: Codable {
     let completedCount: Int
     let totalPrayers: Int
     let streak: Int
+    let hijriDate: String
+    let dailyVerse: String
+    let dailyVerseRef: String
     let lastUpdated: String
+
+    enum CodingKeys: String, CodingKey {
+        case prayerTimes, nextPrayerName, nextPrayerTime
+        case completedCount, totalPrayers, streak
+        case hijriDate, dailyVerse, dailyVerseRef, lastUpdated
+    }
+
+    init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        prayerTimes = try c.decode([PrayerInfo].self, forKey: .prayerTimes)
+        nextPrayerName = try c.decode(String.self, forKey: .nextPrayerName)
+        nextPrayerTime = try c.decode(String.self, forKey: .nextPrayerTime)
+        completedCount = try c.decode(Int.self, forKey: .completedCount)
+        totalPrayers = try c.decode(Int.self, forKey: .totalPrayers)
+        streak = try c.decode(Int.self, forKey: .streak)
+        hijriDate = (try? c.decode(String.self, forKey: .hijriDate)) ?? ""
+        dailyVerse = (try? c.decode(String.self, forKey: .dailyVerse)) ?? ""
+        dailyVerseRef = (try? c.decode(String.self, forKey: .dailyVerseRef)) ?? ""
+        lastUpdated = try c.decode(String.self, forKey: .lastUpdated)
+    }
+
+    init(prayerTimes: [PrayerInfo], nextPrayerName: String, nextPrayerTime: String,
+         completedCount: Int, totalPrayers: Int, streak: Int,
+         hijriDate: String = "", dailyVerse: String = "", dailyVerseRef: String = "",
+         lastUpdated: String) {
+        self.prayerTimes = prayerTimes
+        self.nextPrayerName = nextPrayerName
+        self.nextPrayerTime = nextPrayerTime
+        self.completedCount = completedCount
+        self.totalPrayers = totalPrayers
+        self.streak = streak
+        self.hijriDate = hijriDate
+        self.dailyVerse = dailyVerse
+        self.dailyVerseRef = dailyVerseRef
+        self.lastUpdated = lastUpdated
+    }
 }
 
 // MARK: - Colors
 
 struct SukoonColors {
-    static let navy       = Color(red: 0.102, green: 0.122, blue: 0.227)
-    static let navyLight  = Color(red: 0.145, green: 0.169, blue: 0.278)
-    static let navyCard   = Color(red: 0.176, green: 0.204, blue: 0.329)
-    static let turquoise  = Color(red: 0.0,   green: 0.788, blue: 0.655)
-    static let textPrimary   = Color.white
-    static let textSecondary = Color(red: 0.627, green: 0.682, blue: 0.753)
-    static let textMuted     = Color(red: 0.424, green: 0.478, blue: 0.537)
-
-    static func prayerColor(_ name: String) -> Color {
-        switch name {
-        case "Fajr":    return Color(red: 0.224, green: 0.286, blue: 0.671)
-        case "Dhuhr":   return Color(red: 1.0,   green: 0.718, blue: 0.302)
-        case "Asr":     return Color(red: 1.0,   green: 0.596, blue: 0.0)
-        case "Maghrib": return Color(red: 0.914, green: 0.118, blue: 0.388)
-        case "Isha":    return Color(red: 0.318, green: 0.176, blue: 0.659)
-        default:        return turquoise
-        }
-    }
+    // Primary accent — sage green500 (#2D8B6F) warm, organic, Jannah green
+    static let sage       = Color(red: 0.176, green: 0.545, blue: 0.435)
+    // Gold accent — gold400 (#D4AF37) for current/active state
+    static let gold       = Color(red: 0.831, green: 0.686, blue: 0.216)
+    // Missed state — pre-baked RGBA to avoid .opacity() issues in widget extensions
+    static let missedRed  = Color(red: 0.562, green: 0.160, blue: 0.160)
 }
 
 // MARK: - Timeline Provider
@@ -163,6 +190,9 @@ struct SukoonProvider: TimelineProvider {
             completedCount: 2,
             totalPrayers: 5,
             streak: 7,
+            hijriDate: "15 Rajab 1447",
+            dailyVerse: "Indeed, prayer prohibits immorality and wrongdoing",
+            dailyVerseRef: "29:45",
             lastUpdated: "2025-01-15T12:00:00Z"
         )
     }
@@ -177,19 +207,35 @@ struct SukoonEntry: TimelineEntry {
 
 // MARK: - Helper
 
-private func parseISO(_ iso: String) -> Date? {
-    let f = ISO8601DateFormatter()
-    f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-    if let d = f.date(from: iso) { return d }
-    f.formatOptions = [.withInternetDateTime]
-    return f.date(from: iso)
-}
+struct DateHelper {
+    static let isoFormatterFrac: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return f
+    }()
 
-private func formatTime(_ iso: String) -> String {
-    guard let date = parseISO(iso) else { return "--:--" }
-    let f = DateFormatter()
-    f.dateFormat = "h:mm a"
-    return f.string(from: date)
+    static let isoFormatter: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withInternetDateTime]
+        return f
+    }()
+
+    static let timeFormatter: DateFormatter = {
+        let f = DateFormatter()
+        f.dateFormat = "h:mm a"
+        return f
+    }()
+
+    static func parseISO(_ iso: String) -> Date? {
+        if iso.isEmpty { return nil }
+        if let d = isoFormatterFrac.date(from: iso) { return d }
+        return isoFormatter.date(from: iso)
+    }
+
+    static func formatTime(_ iso: String) -> String {
+        guard let date = parseISO(iso) else { return "--:--" }
+        return timeFormatter.string(from: date)
+    }
 }
 
 // MARK: - Small Widget
@@ -197,67 +243,64 @@ private func formatTime(_ iso: String) -> String {
 struct SmallWidgetView: View {
     let data: WidgetPrayerData
 
-    private var nextDate: Date? { parseISO(data.nextPrayerTime) }
+    private var nextDate: Date? { DateHelper.parseISO(data.nextPrayerTime) }
 
     var body: some View {
-        VStack(spacing: 6) {
-            // Progress dots
-            HStack(spacing: 5) {
-                ForEach(data.prayerTimes) { p in
-                    Circle()
-                        .fill(p.status == "prayed"
-                              ? SukoonColors.turquoise
-                              : SukoonColors.navyCard)
-                        .frame(width: 8, height: 8)
-                }
-                Spacer()
-                Text("\\(data.completedCount)/5")
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundColor(SukoonColors.textMuted)
-            }
-
-            Spacer()
+        VStack(spacing: 4) {
+            Spacer(minLength: 0)
 
             // Prayer name
-            Text(data.nextPrayerName.isEmpty ? "—" : data.nextPrayerName)
-                .font(.system(size: 28, weight: .bold, design: .rounded))
-                .foregroundColor(SukoonColors.prayerColor(data.nextPrayerName))
+            Text(data.nextPrayerName.isEmpty ? "\u2014" : data.nextPrayerName)
+                .font(.system(size: 26, weight: .semibold, design: .rounded))
+                .foregroundColor(.primary)
+                .lineLimit(1)
                 .minimumScaleFactor(0.7)
 
             // Time
-            Text(formatTime(data.nextPrayerTime))
-                .font(.system(size: 16, weight: .medium))
-                .foregroundColor(SukoonColors.textPrimary)
+            Text(DateHelper.formatTime(data.nextPrayerTime))
+                .font(.system(size: 15, weight: .medium))
+                .foregroundColor(.secondary)
+
+            Spacer().frame(height: 2)
 
             // Countdown
             if let nd = nextDate, nd > Date() {
                 Text(nd, style: .relative)
                     .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(SukoonColors.turquoise)
+                    .foregroundColor(SukoonColors.sage)
             } else {
                 Text("Now")
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(SukoonColors.turquoise)
+                    .foregroundColor(SukoonColors.sage)
             }
 
-            Spacer()
+            Spacer(minLength: 0)
 
-            // Brand line
-            HStack(spacing: 4) {
-                line
-                Text("Sukoon")
-                    .font(.system(size: 9, weight: .medium))
-                    .foregroundColor(SukoonColors.textMuted)
-                line
+            // Progress dots at bottom
+            HStack(spacing: 6) {
+                ForEach(data.prayerTimes) { p in
+                    prayerDot(status: p.status)
+                }
             }
         }
-        .padding(14)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private var line: some View {
-        Rectangle()
-            .fill(SukoonColors.turquoise.opacity(0.25))
-            .frame(height: 0.5)
+    @ViewBuilder
+    private func prayerDot(status: String) -> some View {
+        if status == "prayed" {
+            Circle().fill(SukoonColors.sage)
+                .frame(width: 8, height: 8)
+        } else if status == "current" {
+            Circle().fill(SukoonColors.gold)
+                .frame(width: 8, height: 8)
+        } else if status == "missed" {
+            Circle().stroke(SukoonColors.missedRed, lineWidth: 1.5)
+                .frame(width: 8, height: 8)
+        } else {
+            Circle().stroke(.secondary, lineWidth: 1)
+                .frame(width: 8, height: 8)
+        }
     }
 }
 
@@ -266,82 +309,42 @@ struct SmallWidgetView: View {
 struct MediumWidgetView: View {
     let data: WidgetPrayerData
 
-    private var nextDate: Date? { parseISO(data.nextPrayerTime) }
-
-    private static let verses: [(String, String)] = [
-        ("Indeed, prayer prohibits immorality and wrongdoing", "29:45"),
-        ("And seek help through patience and prayer", "2:45"),
-        ("Indeed, Allah is with the patient", "2:153"),
-        ("So remember Me; I will remember you", "2:152"),
-        ("In the remembrance of Allah do hearts find rest", "13:28"),
-        ("And He is with you wherever you are", "57:4"),
-        ("Allah does not burden a soul beyond that it can bear", "2:286"),
-        ("Whoever puts their trust in Allah, He will be enough for them", "65:3"),
-        ("And whoever fears Allah, He will make for them a way out", "65:2"),
-        ("My mercy encompasses all things", "7:156"),
-        ("Call upon Me; I will respond to you", "40:60"),
-        ("Do not lose hope in the mercy of Allah", "39:53"),
-    ]
-
-    private var verse: (String, String) {
-        let day = Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 1
-        return Self.verses[day % Self.verses.count]
-    }
+    private var nextDate: Date? { DateHelper.parseISO(data.nextPrayerTime) }
 
     var body: some View {
         VStack(spacing: 0) {
-            // Top row
-            HStack(alignment: .top) {
-                // Left: next prayer
+            // Top: prayer info + dots
+            HStack(alignment: .center) {
                 VStack(alignment: .leading, spacing: 3) {
-                    Text("NEXT PRAYER")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundColor(SukoonColors.textMuted)
-                        .tracking(0.5)
-
-                    Text(data.nextPrayerName.isEmpty ? "—" : data.nextPrayerName)
-                        .font(.system(size: 28, weight: .bold, design: .rounded))
-                        .foregroundColor(SukoonColors.prayerColor(data.nextPrayerName))
+                    Text(data.nextPrayerName.isEmpty ? "\u2014" : data.nextPrayerName)
+                        .font(.system(size: 26, weight: .semibold, design: .rounded))
+                        .foregroundColor(SukoonColors.sage)
+                        .lineLimit(1)
                         .minimumScaleFactor(0.7)
 
-                    HStack(spacing: 8) {
-                        Text(formatTime(data.nextPrayerTime))
-                            .font(.system(size: 15, weight: .medium))
-                            .foregroundColor(SukoonColors.textPrimary)
+                    HStack(spacing: 6) {
+                        Text(DateHelper.formatTime(data.nextPrayerTime))
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundColor(.primary)
 
                         if let nd = nextDate, nd > Date() {
                             Text(nd, style: .relative)
                                 .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(SukoonColors.turquoise)
+                                .foregroundColor(SukoonColors.sage)
                         } else {
                             Text("Now")
                                 .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(SukoonColors.turquoise)
+                                .foregroundColor(SukoonColors.sage)
                         }
                     }
                 }
 
                 Spacer()
 
-                // Right: prayer list with dots
-                VStack(alignment: .leading, spacing: 5) {
+                // Inline progress dots
+                HStack(spacing: 5) {
                     ForEach(data.prayerTimes) { p in
-                        HStack(spacing: 5) {
-                            Circle()
-                                .fill(p.status == "prayed"
-                                      ? SukoonColors.turquoise
-                                      : SukoonColors.navyCard)
-                                .frame(width: 7, height: 7)
-                            Text(String(p.name.prefix(3)))
-                                .font(.system(size: 10, weight: .medium, design: .rounded))
-                                .foregroundColor(
-                                    p.status == "prayed"
-                                    ? SukoonColors.turquoise
-                                    : p.status == "current"
-                                      ? SukoonColors.textPrimary
-                                      : SukoonColors.textMuted
-                                )
-                        }
+                        mediumDot(status: p.status)
                     }
                 }
             }
@@ -350,25 +353,157 @@ struct MediumWidgetView: View {
 
             // Divider
             Rectangle()
-                .fill(SukoonColors.turquoise.opacity(0.18))
+                .fill(.quaternary)
                 .frame(height: 0.5)
 
             Spacer(minLength: 6)
 
-            // Verse
-            VStack(spacing: 2) {
-                Text("\\u{201C}\\(verse.0)\\u{201D}")
-                    .font(.system(size: 11, weight: .regular))
-                    .foregroundColor(SukoonColors.textSecondary)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.center)
+            // Verse (from RN data, with fallback)
+            VStack(spacing: 3) {
+                if !data.dailyVerse.isEmpty {
+                    Text("\\u{201C}\(data.dailyVerse)\\u{201D}")
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundColor(.secondary)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.center)
 
-                Text("— Quran \\(verse.1)")
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(SukoonColors.textMuted)
+                    HStack(spacing: 4) {
+                        Text("\u2014 \(data.dailyVerseRef)")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundColor(Color.secondary.opacity(0.6))
+                        if !data.hijriDate.isEmpty {
+                            Text("\u00B7 \(data.hijriDate)")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundColor(Color.secondary.opacity(0.6))
+                        }
+                    }
+                } else {
+                    Text("\\u{201C}In the remembrance of Allah do hearts find rest\\u{201D}")
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundColor(.secondary)
+                        .lineLimit(2)
+                        .multilineTextAlignment(.center)
+
+                    Text("\u2014 13:28")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundColor(Color.secondary.opacity(0.6))
+                }
             }
         }
-        .padding(16)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    @ViewBuilder
+    private func mediumDot(status: String) -> some View {
+        if status == "prayed" {
+            Circle().fill(SukoonColors.sage)
+                .frame(width: 9, height: 9)
+        } else if status == "current" {
+            Circle().fill(SukoonColors.gold)
+                .frame(width: 9, height: 9)
+        } else if status == "missed" {
+            Circle().stroke(SukoonColors.missedRed, lineWidth: 1.5)
+                .frame(width: 9, height: 9)
+        } else {
+            Circle().stroke(.secondary, lineWidth: 1)
+                .frame(width: 9, height: 9)
+        }
+    }
+}
+
+// MARK: - Lock Screen: Inline
+
+struct AccessoryInlineView: View {
+    let data: WidgetPrayerData
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Image(systemName: "moon.stars.fill")
+            Text(data.nextPrayerName.isEmpty ? "\u2014" : "\(data.nextPrayerName) \u00B7 \(DateHelper.formatTime(data.nextPrayerTime))")
+        }
+    }
+}
+
+// MARK: - Lock Screen: Circular
+
+struct AccessoryCircularView: View {
+    let data: WidgetPrayerData
+
+    private var progress: Double {
+        guard data.totalPrayers > 0 else { return 0 }
+        return Double(data.completedCount) / Double(data.totalPrayers)
+    }
+
+    var body: some View {
+        Gauge(value: progress) {
+            Image(systemName: "moon.stars.fill")
+        } currentValueLabel: {
+            Text("\(data.completedCount)")
+                .font(.system(size: 20, weight: .bold, design: .rounded))
+        }
+        .gaugeStyle(.accessoryCircular)
+    }
+}
+
+// MARK: - Lock Screen: Rectangular
+
+struct AccessoryRectangularView: View {
+    let data: WidgetPrayerData
+
+    private var nextDate: Date? { DateHelper.parseISO(data.nextPrayerTime) }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text("NEXT PRAYER")
+                .font(.system(size: 10, weight: .semibold))
+                .textCase(.uppercase)
+                .opacity(0.6)
+
+            HStack(spacing: 6) {
+                Text(data.nextPrayerName.isEmpty ? "\u2014" : data.nextPrayerName)
+                    .font(.system(size: 16, weight: .bold, design: .serif))
+                    .lineLimit(1)
+
+                Text(DateHelper.formatTime(data.nextPrayerTime))
+                    .font(.system(size: 14, weight: .medium))
+                    .opacity(0.8)
+            }
+
+            HStack(spacing: 4) {
+                ForEach(data.prayerTimes) { p in
+                    lockScreenDot(status: p.status)
+                }
+
+                Spacer(minLength: 0)
+
+                if let nd = nextDate, nd > Date() {
+                    Text(nd, style: .relative)
+                        .font(.system(size: 10, weight: .medium))
+                        .opacity(0.6)
+                        .lineLimit(1)
+                }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func lockScreenDot(status: String) -> some View {
+        if status == "prayed" {
+            Circle().fill(.primary)
+                .frame(width: 6, height: 6)
+        } else if status == "current" {
+            Circle().fill(.primary)
+                .frame(width: 6, height: 6)
+                .opacity(0.8)
+        } else if status == "missed" {
+            Circle().stroke(.primary, lineWidth: 1.5)
+                .frame(width: 6, height: 6)
+                .opacity(0.5)
+        } else {
+            Circle().stroke(.primary, lineWidth: 1)
+                .frame(width: 6, height: 6)
+                .opacity(0.3)
+        }
     }
 }
 
@@ -381,15 +516,15 @@ struct SukoonWidget: Widget {
         StaticConfiguration(kind: kind, provider: SukoonProvider()) { entry in
             if #available(iOS 17.0, *) {
                 WidgetEntryView(entry: entry)
-                    .containerBackground(SukoonColors.navy, for: .widget)
+                    .containerBackground(for: .widget) { }
             } else {
                 WidgetEntryView(entry: entry)
-                    .background(SukoonColors.navy)
+                    .background(.ultraThinMaterial)
             }
         }
         .configurationDisplayName("Prayer Times")
         .description("Your next prayer, daily progress, and a Quranic reminder.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular, .accessoryRectangular, .accessoryInline])
     }
 }
 
@@ -401,6 +536,12 @@ struct WidgetEntryView: View {
         switch family {
         case .systemMedium:
             MediumWidgetView(data: entry.data)
+        case .accessoryInline:
+            AccessoryInlineView(data: entry.data)
+        case .accessoryCircular:
+            AccessoryCircularView(data: entry.data)
+        case .accessoryRectangular:
+            AccessoryRectangularView(data: entry.data)
         default:
             SmallWidgetView(data: entry.data)
         }

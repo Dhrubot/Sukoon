@@ -30,17 +30,9 @@ const AchievementCelebration: React.FC<AchievementCelebrationProps> = ({
 }) => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
-  const scaleAnim = useRef(new Animated.Value(0)).current;
-  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(100)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const confettiAnims = useRef(
-    Array(12).fill(0).map(() => ({
-      translateY: new Animated.Value(0),
-      translateX: new Animated.Value(0),
-      rotate: new Animated.Value(0),
-      opacity: new Animated.Value(0),
-    }))
-  ).current;
+  const glowAnim = useRef(new Animated.Value(0.3)).current;
 
   useEffect(() => {
     if (isVisible && achievement) {
@@ -54,75 +46,48 @@ const AchievementCelebration: React.FC<AchievementCelebrationProps> = ({
     // Haptic feedback
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-    // Main animation
+    // Gentle slide-up + fade
     Animated.parallel([
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        friction: 4,
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        friction: 8,
         tension: 40,
         useNativeDriver: true,
       }),
       Animated.timing(fadeAnim, {
         toValue: 1,
-        duration: 300,
-        useNativeDriver: true,
-      }),
-      Animated.timing(rotateAnim, {
-        toValue: 1,
-        duration: 1000,
+        duration: 400,
         useNativeDriver: true,
       }),
     ]).start();
 
-    // Confetti animation
-    confettiAnims.forEach((anim, index) => {
-      const delay = index * 50;
-      const angle = (index / 12) * Math.PI * 2;
-      const distance = 150 + Math.random() * 100;
-      
+    // Soft pulsing glow
+    Animated.loop(
       Animated.sequence([
-        Animated.delay(delay),
-        Animated.parallel([
-          Animated.timing(anim.opacity, {
-            toValue: 1,
-            duration: 200,
-            useNativeDriver: true,
-          }),
-          Animated.timing(anim.translateX, {
-            toValue: Math.cos(angle) * distance,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(anim.translateY, {
-            toValue: Math.sin(angle) * distance - 50,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(anim.rotate, {
-            toValue: Math.random() * 4,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-        ]),
-        Animated.timing(anim.opacity, {
-          toValue: 0,
-          duration: 500,
+        Animated.timing(glowAnim, {
+          toValue: 0.8,
+          duration: 2000,
           useNativeDriver: true,
         }),
-      ]).start();
-    });
+        Animated.timing(glowAnim, {
+          toValue: 0.3,
+          duration: 2000,
+          useNativeDriver: true,
+        }),
+      ])
+    ).start();
   };
 
   const animateOut = () => {
     Animated.parallel([
-      Animated.timing(scaleAnim, {
-        toValue: 0,
-        duration: 200,
+      Animated.timing(slideAnim, {
+        toValue: 100,
+        duration: 250,
         useNativeDriver: true,
       }),
       Animated.timing(fadeAnim, {
         toValue: 0,
-        duration: 200,
+        duration: 250,
         useNativeDriver: true,
       }),
     ]).start();
@@ -134,17 +99,7 @@ const AchievementCelebration: React.FC<AchievementCelebrationProps> = ({
     return [t.from, t.to];
   };
 
-  const getConfettiColor = (index: number): string => {
-    const colors = theme.colors.achievement.confetti;
-    return colors[index % colors.length];
-  };
-
   if (!achievement) return null;
-
-  const spin = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
-  });
 
   return (
     <Modal
@@ -163,50 +118,22 @@ const AchievementCelebration: React.FC<AchievementCelebrationProps> = ({
             style={[
               styles.celebrationContainer,
               {
-                transform: [{ scale: scaleAnim }],
+                transform: [{ translateY: slideAnim }],
               },
             ]}
           >
-            {/* Confetti */}
-            {confettiAnims.map((anim, index) => (
-              <Animated.View
-                key={index}
-                style={[
-                  styles.confetti,
-                  {
-                    backgroundColor: getConfettiColor(index),
-                    opacity: anim.opacity,
-                    transform: [
-                      { translateX: anim.translateX },
-                      { translateY: anim.translateY },
-                      {
-                        rotate: anim.rotate.interpolate({
-                          inputRange: [0, 4],
-                          outputRange: ['0deg', '1440deg'],
-                        }),
-                      },
-                    ],
-                  },
-                ]}
-              />
-            ))}
+            {/* Soft glow behind card */}
+            <Animated.View style={[styles.glow, { opacity: glowAnim }]} />
 
             <LinearGradient
               colors={getTierGradient(achievement.tier)}
               style={styles.achievementCard}
             >
-              <Animated.View
-                style={[
-                  styles.iconContainer,
-                  {
-                    transform: [{ rotate: spin }],
-                  },
-                ]}
-              >
+              <View style={styles.iconContainer}>
                 <Text style={styles.achievementIcon}>{achievement.icon}</Text>
-              </Animated.View>
+              </View>
 
-              <Text style={styles.unlockedText}>ACHIEVEMENT UNLOCKED!</Text>
+              <Text style={styles.unlockedText}>Milestone Reached</Text>
               <Text style={styles.achievementName}>{achievement.name}</Text>
               <Text style={styles.achievementDescription}>
                 {achievement.description}
@@ -246,11 +173,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  confetti: {
+  glow: {
     position: 'absolute',
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: width * 1.2,
+    height: width * 1.2,
+    borderRadius: width * 0.6,
+    backgroundColor: 'rgba(255, 255, 255, 0.06)',
   },
   achievementCard: {
     width: width * 0.85,

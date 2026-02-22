@@ -1,6 +1,7 @@
 // src/navigation/AppNavigator.tsx
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
+import { useTheme } from '../providers/ThemeProvider';
 import { TabNavigator } from './TabNavigator';
 import MindfulnessFlow from '../screens/Mindfulness/MindfulnessFlow';
 import { NotificationDebugScreen } from '../screens/Debug/NotificationDebugScreen';
@@ -8,8 +9,10 @@ import { NotificationDebugScreen } from '../screens/Debug/NotificationDebugScree
 const Stack = createStackNavigator();
 
 export const AppNavigator: React.FC = () => {
+  const { theme } = useTheme();
+
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false }}>
+    <Stack.Navigator screenOptions={{ headerShown: false, cardStyle: { backgroundColor: theme.colors.background.primary } }}>
       {/* Main Tab Navigator (includes all tab screens, visible and hidden) */}
       <Stack.Screen name="MainTabs" component={TabNavigator} />
       

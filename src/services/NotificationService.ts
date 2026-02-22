@@ -21,11 +21,17 @@ import AnalyticsService from './AnalyticsService';
 // Configure notification behavior
 Notifications.setNotificationHandler({
   handleNotification: async (notification) => {
-    const isTest = notification.request.content.data?.type === 'test';
+    const data = notification.request.content.data;
+    const isTest = data?.type === 'test';
+    const isAdhan = data?.type === 'prayer-time' || isTest;
+
+    // On Android foreground, suppress channel sound for adhan notifications
+    // because AdhanPlayer.play() handles full playback (avoids double-audio)
+    const suppressSound = Platform.OS === 'android' && isAdhan;
 
     return {
       shouldShowAlert: !isTest || Platform.OS === 'ios',
-      shouldPlaySound: true,
+      shouldPlaySound: !suppressSound,
       shouldSetBadge: false,
       shouldShowBanner: true,
       shouldShowList: true,
@@ -257,10 +263,19 @@ class NotificationService {
         type: (data?.type as string) || 'unknown',
       });
 
-      // If user taps the notification itself, play full Adhan
+      // If user taps the notification itself
       if (actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER) {
+        // Mosque mode prompt: store pending prayer and navigate to Home
+        if (data?.type === 'mosque_mode_prompt' && data?.prayer) {
+          const { useStore } = require('../store/useStore');
+          useStore.getState().setPendingMosquePromptPrayer(data.prayer as PrayerName);
+          if (this.navigationHandler) {
+            this.navigationHandler(data.prayer as PrayerName, 'default');
+          }
+          logger.log('🕌 Mosque mode prompt tapped for:', data.prayer);
+        }
         // Play adhan for both prayer-time and test notifications
-        if ((data?.type === 'prayer-time' || data?.type === 'test') && (data?.prayer || data?.type === 'test')) {
+        else if ((data?.type === 'prayer-time' || data?.type === 'test') && (data?.prayer || data?.type === 'test')) {
           // Play full adhan inside app (for immersive experience)
           this.playFullAdhan();
 
@@ -371,12 +386,16 @@ class NotificationService {
   }
 
   // 🎵 AUDIO PLAYBACK — delegated to AdhanPlayer
-  playFullAdhan() {
-    AdhanPlayer.play();
+  playFullAdhan(onComplete?: () => void) {
+    AdhanPlayer.play(onComplete);
   }
 
   stopAdhan() {
     AdhanPlayer.stop();
+  }
+
+  get isAdhanPlaying(): boolean {
+    return AdhanPlayer.playing;
   }
 
   // 🚀 MAIN ENTRY POINT - Now simply delegates to the 14-day batch scheduler
@@ -479,9 +498,8 @@ class NotificationService {
 
     // Hybrid Audio Logic
     if (notifications.enabled && notifications.adhanEnabled) {
-      // iOS: Use short clip (limitation < 30s)
-      soundAsset = Platform.OS === 'ios' ? SOUNDS.IOS_SHORT : undefined;
-      // Android: Use specific Adhan channel (plays full sound)
+      // iOS: short clip (<30s limit); Android: full adhan via channel + explicit sound
+      soundAsset = Platform.OS === 'ios' ? SOUNDS.IOS_SHORT : SOUNDS.ANDROID_SHORT;
       androidChannel = CHANNELS.ADHAN;
     } else if (notifications.enabled && notifications.soundEnabled) {
       // Standard Beep
@@ -939,7 +957,7 @@ class NotificationService {
     logger.log('🔔 Sending Test Adhan...');
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: '🕌 Adhan Test',
+        title: 'Adhan Test',
         body: 'This should play the full Adhan sound.',
         data: { type: 'test' },
         ...(Platform.OS === 'android' && {

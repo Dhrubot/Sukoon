@@ -1,6 +1,6 @@
 // Prayer related types
 export type PrayerName = "Fajr" | "Dhuhr" | "Asr" | "Maghrib" | "Isha";
-export type ExtendedPrayerName = PrayerName | "Taraweeh" | "Tahajjud" | "Jumah";
+export type ExtendedPrayerName = PrayerName | "Taraweeh" | "Tahajjud" | "Jumah" | "Eid";
 
 export interface PrayerTime {
   name: PrayerName;
@@ -105,6 +105,7 @@ export interface UserSettings {
     beforePrayer: number; // minutes
     reminderText: string;
     postPrayerCheck: boolean; // DEPRECATED - replaced by habitBuilder
+    intensity?: 'gentle' | 'balanced' | 'persistent'; // Controls follow-up reminder frequency
   };
   // Per-prayer notification toggles (individual control)
   prayerNotifications: {
@@ -123,6 +124,7 @@ export interface UserSettings {
   jummahReminders?: {
     enabled: boolean;
   };
+  hijriAdjustment?: -1 | 0 | 1;
   theme: "light" | "dark" | "auto";
 }
 
@@ -195,7 +197,7 @@ export interface MosqueModeSettings {
   autoRestore: boolean; // Automatically restore normal mode (default: true)
   
   // Ask before enabling (show "Heading to mosque?" prompt)
-  promptBeforeEnable: boolean; // Show confirmation dialog (default: true)
+  promptBeforeEnable: boolean; // Show confirmation dialog (default: false — auto-silence)
   
   // Platform-specific settings
   useVibrateInsteadOfSilent: boolean; // Use vibrate instead of complete silence (default: false)

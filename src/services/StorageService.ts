@@ -148,7 +148,7 @@ class StorageService {
       },
       silentDuration: 10, // 10 minutes of silent mode
       autoRestore: true,  // Automatically restore ringer
-      promptBeforeEnable: true, // Ask "Heading to mosque?" before enabling
+      promptBeforeEnable: false, // Auto-silence by default; user can opt into per-prayer confirmation
       useVibrateInsteadOfSilent: false, // Use complete silence by default
       jummah: {
         enabled: true,         // Enable Jummah silent mode by default

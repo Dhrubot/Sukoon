@@ -72,13 +72,6 @@ const MosqueIcon: React.FC<{ color: string; size: number }> = ({ color, size }) 
 );
 
 const allMenuItems: MenuItem[] = [
-   {
-    icon: null, // Emoji-based icon handled below
-    title: 'My Garden',
-    subtitle: 'Your reflections, growing quietly',
-    screen: 'ReflectionGarden',
-    iconType: 'emoji',
-  },
   {
     icon: MosqueIcon,
     title: 'Mosque Mode',

@@ -1,6 +1,7 @@
 // src/providers/NavigationProvider.tsx
-import React, { createRef, useEffect } from 'react';
-import { NavigationContainer, NavigationContainerRef } from '@react-navigation/native';
+import React, { createRef, useEffect, useMemo } from 'react';
+import { NavigationContainer, NavigationContainerRef, DefaultTheme } from '@react-navigation/native';
+import { useTheme } from './ThemeProvider';
 import NotificationService from '../services/NotificationService';
 import StorageService from '../services/StorageService';
 import ReminderStateService from '../services/ReminderStateService';
@@ -17,6 +18,22 @@ interface NavigationProviderProps {
 }
 
 export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children }) => {
+  const { theme, themeMode } = useTheme();
+
+  const navTheme = useMemo(() => ({
+    ...DefaultTheme,
+    dark: themeMode === 'dark',
+    colors: {
+      ...DefaultTheme.colors,
+      background: theme.colors.background.primary,
+      card: theme.colors.background.primary,
+      text: theme.colors.text.primary,
+      border: theme.colors.border.primary,
+      primary: theme.colors.primary.DEFAULT,
+      notification: theme.colors.primary.DEFAULT,
+    },
+  }), [theme, themeMode]);
+
   useEffect(() => {
     // Register navigation handler for notifications
     const handleNotificationNavigation = (prayer: PrayerName, action: string) => {
@@ -91,7 +108,7 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
   }, []);
 
   return (
-    <NavigationContainer ref={navigationRef}>
+    <NavigationContainer ref={navigationRef} theme={navTheme}>
       {children}
     </NavigationContainer>
   );

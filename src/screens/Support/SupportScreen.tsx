@@ -105,8 +105,8 @@ const SupportScreen: React.FC = () => {
       const success = await AdService.showRewardedAd();
       if (success) {
         Alert.alert(
-          'Thank You! 💚',
-          'You now have 24 hours of premium access. Enjoy all features!',
+          'JazakAllah Khair! 💚',
+          'Your support helps keep Sukoon free for the Ummah. May Allah reward your generosity.',
           [{ text: 'Alhamdulillah' }]
         );
         await initializeServices();
@@ -240,7 +240,7 @@ const SupportScreen: React.FC = () => {
           <Text style={styles.adEmoji}>📺</Text>
           <Text style={styles.adTitle}>Support by Watching</Text>
           <Text style={styles.adDescription}>
-            Watch a short ad when You choose to support the app
+            Watch a short ad to help cover our server and development costs
           </Text>
 
           <Text style={styles.adNote}>
@@ -261,7 +261,7 @@ const SupportScreen: React.FC = () => {
                 style={styles.watchAdGradient}
               >
                 <Text style={styles.watchAdButtonText}>
-                  {isProcessing ? 'Loading...' : 'Watch Ad & Support'}
+                  {isProcessing ? 'Loading...' : 'Watch Ad — JazakAllah Khair'}
                 </Text>
               </LinearGradient>
             </TouchableOpacity>
@@ -271,7 +271,7 @@ const SupportScreen: React.FC = () => {
                 {hoursUntilNextAd > 0
                   ? `You can watch another ad in ${hoursUntilNextAd} hours`
                   : AdService.isAdReady()
-                    ? 'Premium features already active!'
+                    ? 'You\'ve already supported today — JazakAllah Khair!'
                     : 'Ad is loading... please wait a moment'}
               </Text>
             </View>
@@ -319,30 +319,11 @@ const SupportScreen: React.FC = () => {
         ))}
       </View>
 
-      {/* Alternative Donation Methods */}
-      <View style={styles.alternativeMethods}>
-        <Text style={styles.alternativeTitle}>Other Ways to Support</Text>
-        
-        <TouchableOpacity
-          style={styles.alternativeButton}
-          onPress={() => DonationService.openPayPalDonation()}
-        >
-          <Text style={styles.alternativeButtonText}>PayPal</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.alternativeButton}
-          onPress={() => DonationService.openCryptoDonation()}
-        >
-          <Text style={styles.alternativeButtonText}>Cryptocurrency</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Zakat Note */}
+      {/* Sadaqah Jariyah Note */}
       <View style={styles.zakatNote}>
-        <Text style={styles.zakatTitle}>📿 Zakat Eligible</Text>
+        <Text style={styles.zakatTitle}>📿 Sadaqah Jariyah</Text>
         <Text style={styles.zakatText}>
-          If you're calculating your annual Zakat, supporting Islamic apps that benefit the Ummah can be considered as Fi Sabilillah (in the way of Allah).
+          Supporting Islamic tools can be a form of Sadaqah Jariyah — ongoing charity whose reward continues even after you've given.
         </Text>
       </View>
     </ScrollView>
@@ -363,9 +344,9 @@ const SupportScreen: React.FC = () => {
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={styles.title}>Support Sukoon</Text>
+          <Text style={styles.title}>Keep Sukoon Free</Text>
           <Text style={styles.subtitle}>
-            Choose how you'd like to support continued development
+            Sukoon is built with love for the Ummah. Your support keeps it alive.
           </Text>
         </View>
 

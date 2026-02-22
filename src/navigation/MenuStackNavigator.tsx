@@ -42,6 +42,7 @@ export const MenuStackNavigator: React.FC = () => {
           fontSize: 18,
         },
         headerBackTitle: '',
+        cardStyle: { backgroundColor: theme.colors.background.primary },
       }}
     >
       <Stack.Screen
