@@ -684,6 +684,9 @@ class StorageService {
   }
 
   // Premium features
+  // TODO: Replace local-only entitlement check with server-side receipt validation
+  // (RevenueCat / Superwall) before launching paid tiers. Local MMKV booleans are
+  // trivially bypassable on jailbroken/rooted devices even with encryption.
   async isPremiumActive(): Promise<boolean> {
     const subscription = this.getSubscription();
     const tempPremium = this.getTemporaryPremium();

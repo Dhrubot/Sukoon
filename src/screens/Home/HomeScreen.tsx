@@ -1,5 +1,5 @@
 // src/screens/Home/HomeScreen.tsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Dimensions,
   ColorValue,
   ActivityIndicator,
+  AppState,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -100,16 +101,41 @@ const HomeScreen = ({ navigation }: any) => {
   // 🎯 REMOVED: location checks - now handled by provider!
   // 🎯 REMOVED: prayer time error handling - now handled by provider!
 
+  // AppState-aware timer: pause on background, immediate sync on foreground
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   useEffect(() => {
     // Only load non-prayer-time related data
     loadTodayRecords();
 
-    // Update time every minute
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 60000);
+    const startTimer = () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = setInterval(() => {
+        setCurrentTime(new Date());
+      }, 60000);
+    };
 
-    return () => clearInterval(timer);
+    startTimer();
+
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        // Immediately sync stale time and restart interval
+        setCurrentTime(new Date());
+        loadTodayRecords();
+        startTimer();
+      } else {
+        // Pause interval when backgrounded/inactive
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+      }
+    });
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      subscription.remove();
+    };
   }, []);
 
   // Check for moon sighting prompt — gates on Maghrib time for eve dates

@@ -7,7 +7,7 @@ import StorageService from './StorageService';
 import PrayerTimeService from './PrayerTimeService';
 import ReminderStateService from './ReminderStateService';
 import { format } from 'date-fns';
-import { CHANNELS, SOUNDS, NOTIFICATION_CHANNEL_VERSION, NOTIFICATION_SCHEDULING_DAYS, NOTIFICATION_MAX_FUTURE_DAYS } from '../constants/NotificationConstants';
+import { CHANNELS, SOUNDS, NOTIFICATION_CHANNEL_VERSION, NOTIFICATION_SCHEDULING_DAYS, NOTIFICATION_MAX_FUTURE_DAYS, IOS_NOTIFICATION_CAP } from '../constants/NotificationConstants';
 import MosqueModeService from './MosqueModeService';
 import { NOTIFICATION_CATEGORIES, initializeChannelsAndCategories } from './notifications/NotificationChannels';
 import AdhanPlayer from './notifications/AdhanPlayer';
@@ -427,7 +427,8 @@ class NotificationService {
     settings: UserSettings,
     nextPrayer?: PrayerTime | null,
     existingIdentifiers?: Set<string>,
-    sunrise?: Date
+    sunrise?: Date,
+    iosCounter?: { count: number }
   ) {
     const { notifications, prayerNotifications } = settings;
     const prayerName = PrayerTimeService.getPrayerDisplayName(prayer.name);
@@ -465,29 +466,35 @@ class NotificationService {
         if (!existingIdentifiers?.has(preIdentifier)) {
           const content = this.getPrePrayerContent(prayerName, notifications.beforePrayer);
 
-          await Notifications.scheduleNotificationAsync({
-            content: {
-              ...content,
-              data: {
-                prayer: prayer.name,
-                prayerId,
-                type: 'pre-prayer',
-                time: prayer.time.toISOString(),
-                scheduledAt: new Date().toISOString(),
+          // iOS cap check: skip low-priority notifications when approaching limit
+          if (Platform.OS === 'ios' && iosCounter && iosCounter.count >= IOS_NOTIFICATION_CAP) {
+            logger.log(`🚫 iOS cap reached (${iosCounter.count}), skipping pre-prayer ${prayer.name}`);
+          } else {
+            await Notifications.scheduleNotificationAsync({
+              content: {
+                ...content,
+                data: {
+                  prayer: prayer.name,
+                  prayerId,
+                  type: 'pre-prayer',
+                  time: prayer.time.toISOString(),
+                  scheduledAt: new Date().toISOString(),
+                },
+                categoryIdentifier: NOTIFICATION_CATEGORIES.PRE_PRAYER,
+                ...(Platform.OS === 'android' && {
+                  channelId: CHANNELS.PRE_PRAYER,
+                }),
               },
-              categoryIdentifier: NOTIFICATION_CATEGORIES.PRE_PRAYER,
-              ...(Platform.OS === 'android' && {
-                channelId: CHANNELS.PRE_PRAYER,
-              }),
-            },
-            trigger: {
-              type: 'date',
-              date: preNotificationTime,
-            } as Notifications.NotificationTriggerInput,
-            identifier: preIdentifier,
-          });
+              trigger: {
+                type: 'date',
+                date: preNotificationTime,
+              } as Notifications.NotificationTriggerInput,
+              identifier: preIdentifier,
+            });
 
-          existingIdentifiers?.add(preIdentifier);
+            existingIdentifiers?.add(preIdentifier);
+            if (iosCounter) iosCounter.count++;
+          }
         }
       }
     }
@@ -511,6 +518,12 @@ class NotificationService {
 
     const prayerIdentifier = `prayer-${prayer.name}-${dateStr}`;
     if (!existingIdentifiers?.has(prayerIdentifier)) {
+      // Main prayer notification is highest priority — always schedule if cap not hit
+      if (Platform.OS === 'ios' && iosCounter && iosCounter.count >= IOS_NOTIFICATION_CAP) {
+        logger.log(`🚫 iOS cap reached (${iosCounter.count}), skipping main ${prayer.name}`);
+        return; // If we can't schedule the main notification, skip the whole prayer
+      }
+
       await Notifications.scheduleNotificationAsync({
         content: {
           ...mainContent,
@@ -536,6 +549,7 @@ class NotificationService {
       });
 
       existingIdentifiers?.add(prayerIdentifier);
+      if (iosCounter) iosCounter.count++;
     }
 
     // Compute effective deadline for this prayer's reminders:
@@ -546,13 +560,13 @@ class NotificationService {
 
     // PRAYER HABIT BUILDER: Schedule Tier 2 & Tier 3 reminders
     if (settings.habitBuilder?.enabled) {
-      // TIER 2: Persistent "Have you prayed?" reminders
-      await scheduleTier2PersistentReminders(prayer, prayerId, settings, existingIdentifiers, deadline);
-
-      // TIER 3: Grace period warning (only if we have next prayer)
+      // TIER 3: Grace period warning (higher priority than Tier 2, schedule first)
       if (nextPrayer) {
-        await scheduleTier3GracePeriodWarning(prayer, nextPrayer, prayerId, settings, existingIdentifiers, deadline);
+        await scheduleTier3GracePeriodWarning(prayer, nextPrayer, prayerId, settings, existingIdentifiers, deadline, iosCounter);
       }
+
+      // TIER 2: Persistent "Have you prayed?" reminders (lowest priority — shed first)
+      await scheduleTier2PersistentReminders(prayer, prayerId, settings, existingIdentifiers, deadline, iosCounter);
 
       logger.log(`🏗️ Prayer Habit Builder scheduled for ${prayerName}`);
     } else if (notifications.postPrayerCheck) {
@@ -568,30 +582,35 @@ class NotificationService {
         return;
       }
 
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: `Did you pray ${prayerName}? 🤲`,
-          body: 'Tap to mark your prayer and add a reflection',
-          data: {
-            prayer: prayer.name,
-            prayerId,
-            type: 'post-prayer-check',
-            time: prayer.time.toISOString(),
-            scheduledAt: new Date().toISOString(),
+      if (Platform.OS === 'ios' && iosCounter && iosCounter.count >= IOS_NOTIFICATION_CAP) {
+        logger.log(`🚫 iOS cap reached (${iosCounter.count}), skipping post-prayer check ${prayer.name}`);
+      } else {
+        await Notifications.scheduleNotificationAsync({
+          content: {
+            title: `Did you pray ${prayerName}? 🤲`,
+            body: 'Tap to mark your prayer and add a reflection',
+            data: {
+              prayer: prayer.name,
+              prayerId,
+              type: 'post-prayer-check',
+              time: prayer.time.toISOString(),
+              scheduledAt: new Date().toISOString(),
+            },
+            categoryIdentifier: NOTIFICATION_CATEGORIES.POST_PRAYER_CHECK,
+            ...(Platform.OS === 'android' && {
+              channelId: CHANNELS.DEFAULT,
+            }),
           },
-          categoryIdentifier: NOTIFICATION_CATEGORIES.POST_PRAYER_CHECK,
-          ...(Platform.OS === 'android' && {
-            channelId: CHANNELS.DEFAULT,
-          }),
-        },
-        trigger: {
-          type: 'date',
-          date: postCheckTime,
-        } as Notifications.NotificationTriggerInput,
-        identifier: checkIdentifier,
-      });
+          trigger: {
+            type: 'date',
+            date: postCheckTime,
+          } as Notifications.NotificationTriggerInput,
+          identifier: checkIdentifier,
+        });
 
-      existingIdentifiers?.add(checkIdentifier);
+        existingIdentifiers?.add(checkIdentifier);
+        if (iosCounter) iosCounter.count++;
+      }
     }
   }
 
@@ -785,7 +804,7 @@ class NotificationService {
   // Scheduling progress (0-1) for UI progress indicators
   schedulingProgress: number = 0;
 
-  // 📅 EXTENDED 14-DAY BATCH SCHEDULING
+  // 📅 EXTENDED 7-DAY BATCH SCHEDULING
   // This is called by your useNotificationRescheduler hook every 24 hours
   // onProgress(day, total) is called after each day is scheduled
   async scheduleExtendedNotifications(
@@ -798,7 +817,7 @@ class NotificationService {
     this.isScheduling = true;
     this.schedulingProgress = 0;
     try {
-      logger.log('🗓️ Starting 14-day batch scheduling...');
+      logger.log('🗓️ Starting 7-day batch scheduling...');
 
       const settings = StorageService.getUserSettings();
       if (!settings?.notifications.enabled || !isValidCoordinates(settings.location)) {
@@ -825,6 +844,11 @@ class NotificationService {
         if (!this.isPrayerNotificationType(data?.type)) continue;
         existingIdentifiers.add(notif.identifier);
       }
+
+      // iOS notification cap: count already-scheduled notifications to avoid exceeding 64
+      const iosCounter = Platform.OS === 'ios'
+        ? { count: existingIdentifiers.size }
+        : undefined;
 
       const today = new Date();
 
@@ -859,7 +883,7 @@ class NotificationService {
             const nextPrayer = prayers[j + 1] || null;
 
             if (prayer.time > new Date()) {
-              await this.schedulePrayerNotification(prayer, settings, nextPrayer, existingIdentifiers, sunrise);
+              await this.schedulePrayerNotification(prayer, settings, nextPrayer, existingIdentifiers, sunrise, iosCounter);
             }
           }
         } catch (error) {
@@ -869,6 +893,10 @@ class NotificationService {
         // Report progress after each day
         this.schedulingProgress = (i + 1) / NOTIFICATION_SCHEDULING_DAYS;
         onProgress?.(i + 1, NOTIFICATION_SCHEDULING_DAYS);
+      }
+
+      if (iosCounter) {
+        logger.log(`📊 iOS notification count: ${iosCounter.count}/${IOS_NOTIFICATION_CAP}`);
       }
     } catch (error) {
       logger.error('❌ Extended scheduling failed:', error);

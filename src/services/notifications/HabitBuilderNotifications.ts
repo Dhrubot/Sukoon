@@ -5,7 +5,7 @@ import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { PrayerTime, UserSettings } from '../../types';
 import PrayerTimeService from '../PrayerTimeService';
-import { CHANNELS } from '../../constants/NotificationConstants';
+import { CHANNELS, IOS_NOTIFICATION_CAP } from '../../constants/NotificationConstants';
 import { NOTIFICATION_CATEGORIES } from './NotificationChannels';
 import { format } from 'date-fns';
 import logger from '../../utils/logger';
@@ -70,7 +70,8 @@ export async function scheduleTier2PersistentReminders(
   prayerId: string,
   settings: UserSettings,
   existingIdentifiers?: Set<string>,
-  deadline?: Date
+  deadline?: Date,
+  iosCounter?: { count: number }
 ): Promise<void> {
   const habitSettings = settings.habitBuilder;
 
@@ -111,6 +112,12 @@ export async function scheduleTier2PersistentReminders(
     const tier2Identifier = `tier2-${prayerId}-${i}`;
     if (existingIdentifiers?.has(tier2Identifier)) continue;
 
+    // iOS cap check: Tier 2 is lowest priority — shed first
+    if (Platform.OS === 'ios' && iosCounter && iosCounter.count >= IOS_NOTIFICATION_CAP) {
+      logger.log(`🚫 iOS cap reached (${iosCounter.count}), skipping Tier 2 #${i} for ${prayerDisplayName}`);
+      break; // No point continuing if cap is hit
+    }
+
     await Notifications.scheduleNotificationAsync({
       content: {
         title: `${prayerDisplayName} Prayer Check-in 🤲`,
@@ -137,6 +144,7 @@ export async function scheduleTier2PersistentReminders(
     });
 
     existingIdentifiers?.add(tier2Identifier);
+    if (iosCounter) iosCounter.count++;
     logger.log(`🔔 Tier 2 reminder #${i} scheduled for ${prayerDisplayName} at ${format(reminderTime, 'HH:mm')}`);
   }
 }
@@ -150,7 +158,8 @@ export async function scheduleTier3GracePeriodWarning(
   prayerId: string,
   settings: UserSettings,
   existingIdentifiers?: Set<string>,
-  deadline?: Date
+  deadline?: Date,
+  iosCounter?: { count: number }
 ): Promise<void> {
   const habitSettings = settings.habitBuilder;
 
@@ -179,6 +188,12 @@ export async function scheduleTier3GracePeriodWarning(
   const tier3Identifier = `tier3-${prayerId}`;
   if (existingIdentifiers?.has(tier3Identifier)) return;
 
+  // iOS cap check
+  if (Platform.OS === 'ios' && iosCounter && iosCounter.count >= IOS_NOTIFICATION_CAP) {
+    logger.log(`🚫 iOS cap reached (${iosCounter.count}), skipping Tier 3 for ${prayerDisplayName}`);
+    return;
+  }
+
   await Notifications.scheduleNotificationAsync({
     content: {
       title: `⚠️ ${prayerDisplayName} Grace Period Ending`,
@@ -205,5 +220,6 @@ export async function scheduleTier3GracePeriodWarning(
   });
 
   existingIdentifiers?.add(tier3Identifier);
+  if (iosCounter) iosCounter.count++;
   logger.log(`⚠️ Tier 3 warning scheduled for ${prayerDisplayName} at ${format(warningTime, 'HH:mm')}`);
 }

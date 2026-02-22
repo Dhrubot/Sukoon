@@ -98,7 +98,17 @@ export class PrayerTimeService {
       const url = `${ALADHAN_API_BASE}/timings/${dateStr}?latitude=${coordinates.latitude}&longitude=${coordinates.longitude}&method=${methodId}&school=${school}`;
 
       logger.log(`Fetching prayer times from: ${url}`);
-      const response = await fetch(url);
+
+      // AbortController with 8s timeout to prevent indefinite hangs on poor network
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+
+      let response: Response;
+      try {
+        response = await fetch(url, { signal: controller.signal });
+      } finally {
+        clearTimeout(timeoutId);
+      }
 
       if (!response.ok) {
         throw new Error(`API responded with status: ${response.status}`);

@@ -1,6 +1,7 @@
 // src/providers/PrayerTimesProvider.tsx
 
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { AppState } from 'react-native';
 import { useStore } from '../store/useStore';
 import PrayerTimeService from '../services/PrayerTimeService';
 import { PrayerTime, Location } from '../types';
@@ -230,36 +231,58 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
 
   // Periodic recalculation: re-evaluate nextPrayer every 60 seconds so the
   // hero auto-transitions when prayer time boundaries are crossed.
+  // AppState-aware: pauses on background, immediate recalc on foreground.
   const recalcRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  const runRecalc = () => {
+    if (todayPrayerTimes.length === 0) return;
+
+    const { todaySunrise: sunrise, todayMidnight: midnight } = useStore.getState();
+    const updated = calculateNextPrayer(todayPrayerTimes, tomorrowFajr, sunrise, midnight);
+
+    // Only update store if the next prayer actually changed
+    const currentName = nextPrayer?.name;
+    const updatedName = updated?.name;
+    if (currentName !== updatedName) {
+      logger.log(`🔄 Next prayer changed: ${currentName} → ${updatedName}`);
+      setNextPrayer(updated);
+
+      // Sync isNext flags
+      if (updated) {
+        const syncedTimes = todayPrayerTimes.map(p => ({
+          ...p,
+          isNext: p.name === updated.name,
+        }));
+        setTodayPrayerTimes(syncedTimes);
+      }
+    }
+  };
+
   useEffect(() => {
-    if (recalcRef.current) clearInterval(recalcRef.current);
+    const startInterval = () => {
+      if (recalcRef.current) clearInterval(recalcRef.current);
+      recalcRef.current = setInterval(runRecalc, 60_000);
+    };
 
-    recalcRef.current = setInterval(() => {
-      if (todayPrayerTimes.length === 0) return;
+    startInterval();
 
-      const { todaySunrise: sunrise, todayMidnight: midnight } = useStore.getState();
-      const updated = calculateNextPrayer(todayPrayerTimes, tomorrowFajr, sunrise, midnight);
-
-      // Only update store if the next prayer actually changed
-      const currentName = nextPrayer?.name;
-      const updatedName = updated?.name;
-      if (currentName !== updatedName) {
-        logger.log(`🔄 Next prayer changed: ${currentName} → ${updatedName}`);
-        setNextPrayer(updated);
-
-        // Sync isNext flags
-        if (updated) {
-          const syncedTimes = todayPrayerTimes.map(p => ({
-            ...p,
-            isNext: p.name === updated.name,
-          }));
-          setTodayPrayerTimes(syncedTimes);
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        // Immediately recalculate stale nextPrayer and restart interval
+        runRecalc();
+        startInterval();
+      } else {
+        // Pause interval when backgrounded/inactive
+        if (recalcRef.current) {
+          clearInterval(recalcRef.current);
+          recalcRef.current = null;
         }
       }
-    }, 60_000);
+    });
 
     return () => {
       if (recalcRef.current) clearInterval(recalcRef.current);
+      subscription.remove();
     };
   }, [todayPrayerTimes, tomorrowFajr, nextPrayer?.name]);
 
