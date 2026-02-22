@@ -3,7 +3,7 @@
 // Slides up from bottom with a drag handle. Fully integrated with the app theme.
 // Supports both exact time (hour/minute/AM-PM) and offset (minutes) modes.
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View,
   Text,
@@ -14,6 +14,9 @@ import {
   Dimensions,
   PanResponder,
   Platform,
+  FlatList,
+  NativeSyntheticEvent,
+  NativeScrollEvent,
 } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { useTheme } from '../../providers/ThemeProvider';
@@ -23,6 +26,9 @@ import * as Haptics from 'expo-haptics';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SHEET_HEIGHT = 380;
+const WHEEL_ITEM_HEIGHT = 44;
+const WHEEL_VISIBLE_ITEMS = 5;
+const WHEEL_HEIGHT = WHEEL_ITEM_HEIGHT * WHEEL_VISIBLE_ITEMS;
 
 // ─── Data ────────────────────────────────────────────────────────
 
@@ -46,6 +52,148 @@ function to24h(hour12: number, minute: number, period: 'AM' | 'PM'): string {
   let h = hour12 % 12;
   if (period === 'PM') h += 12;
   return `${h.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+}
+
+// ─── Android Wheel Picker ────────────────────────────────────────
+
+interface WheelPickerProps<T extends string | number> {
+  data: T[];
+  selectedValue: T;
+  onValueChange: (value: T) => void;
+  labelFn?: (value: T) => string;
+  textColor: string;
+  selectedBgColor: string;
+  style?: object;
+}
+
+function AndroidWheelPicker<T extends string | number>({
+  data,
+  selectedValue,
+  onValueChange,
+  labelFn,
+  textColor,
+  selectedBgColor,
+  style,
+}: WheelPickerProps<T>) {
+  const flatListRef = useRef<FlatList>(null);
+  const isUserScrolling = useRef(false);
+  const pendingScroll = useRef(false);
+
+  // Padding items so the first/last real item can be centered
+  const padCount = Math.floor(WHEEL_VISIBLE_ITEMS / 2);
+  const paddedData: (T | null)[] = [
+    ...Array(padCount).fill(null),
+    ...data,
+    ...Array(padCount).fill(null),
+  ];
+
+  const selectedIndex = data.indexOf(selectedValue);
+
+  // Scroll to selected item on mount or when selectedValue changes externally
+  useEffect(() => {
+    if (selectedIndex >= 0 && flatListRef.current && !isUserScrolling.current) {
+      pendingScroll.current = true;
+      setTimeout(() => {
+        flatListRef.current?.scrollToOffset({
+          offset: selectedIndex * WHEEL_ITEM_HEIGHT,
+          animated: false,
+        });
+        pendingScroll.current = false;
+      }, 50);
+    }
+  }, [selectedIndex]);
+
+  const handleMomentumScrollEnd = useCallback(
+    (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+      isUserScrolling.current = false;
+      const offsetY = e.nativeEvent.contentOffset.y;
+      const index = Math.round(offsetY / WHEEL_ITEM_HEIGHT);
+      const clampedIndex = Math.max(0, Math.min(index, data.length - 1));
+      if (data[clampedIndex] !== selectedValue) {
+        onValueChange(data[clampedIndex]);
+      }
+    },
+    [data, selectedValue, onValueChange]
+  );
+
+  const handleScrollBeginDrag = useCallback(() => {
+    isUserScrolling.current = true;
+  }, []);
+
+  const getLabel = (item: T): string => {
+    if (labelFn) return labelFn(item);
+    return String(item);
+  };
+
+  const renderItem = useCallback(
+    ({ item, index: flatIndex }: { item: T | null; index: number }) => {
+      if (item === null) {
+        return <View style={{ height: WHEEL_ITEM_HEIGHT }} />;
+      }
+      const realIndex = flatIndex - padCount;
+      const isSelected = realIndex === selectedIndex;
+      return (
+        <View
+          style={[
+            {
+              height: WHEEL_ITEM_HEIGHT,
+              justifyContent: 'center',
+              alignItems: 'center',
+            },
+            isSelected && {
+              backgroundColor: selectedBgColor,
+              borderRadius: 10,
+            },
+          ]}
+        >
+          <Text
+            style={{
+              fontSize: isSelected ? 22 : 18,
+              fontWeight: isSelected ? '600' : '400',
+              color: textColor,
+              opacity: isSelected ? 1 : 0.4,
+            }}
+          >
+            {getLabel(item)}
+          </Text>
+        </View>
+      );
+    },
+    [selectedIndex, textColor, selectedBgColor, padCount]
+  );
+
+  const keyExtractor = useCallback(
+    (_: T | null, index: number) => `wheel-${index}`,
+    []
+  );
+
+  const getItemLayout = useCallback(
+    (_: any, index: number) => ({
+      length: WHEEL_ITEM_HEIGHT,
+      offset: WHEEL_ITEM_HEIGHT * index,
+      index,
+    }),
+    []
+  );
+
+  return (
+    <View style={[{ height: WHEEL_HEIGHT, overflow: 'hidden' }, style]}>
+      <FlatList
+        ref={flatListRef}
+        data={paddedData}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
+        getItemLayout={getItemLayout}
+        showsVerticalScrollIndicator={false}
+        snapToInterval={WHEEL_ITEM_HEIGHT}
+        decelerationRate="fast"
+        onScrollBeginDrag={handleScrollBeginDrag}
+        onMomentumScrollEnd={handleMomentumScrollEnd}
+        bounces={false}
+        nestedScrollEnabled
+      />
+    </View>
+  );
 }
 
 // ─── Props ───────────────────────────────────────────────────────
@@ -73,12 +221,8 @@ const ThemedTimePicker: React.FC<ThemedTimePickerProps> = ({
   const styles = useThemedStyles(createStyles);
 
   // Colors used by native Picker on both platforms
-  // Android native picker dialog always has a light background,
-  // so force dark text there regardless of theme mode.
-  const pickerTextColor =
-    Platform.OS === 'android' && themeMode === 'dark'
-      ? '#1C1C1E'
-      : theme.colors.text.primary;
+  const pickerTextColor = theme.colors.text.primary;
+  const pickerBgColor = theme.colors.card.background;
 
   const parsed = parse24h(value);
   const [hour, setHour] = useState(parsed.hour12);
@@ -212,63 +356,101 @@ const ThemedTimePicker: React.FC<ThemedTimePickerProps> = ({
 
         {/* Picker wheels */}
         <View style={styles.pickerRow}>
-          {/* Hour */}
-          <View style={styles.pickerColumn}>
-            <Picker
-              selectedValue={hour}
-              onValueChange={(v) => setHour(v as number)}
-              style={styles.picker}
-              itemStyle={[styles.pickerItem, { color: pickerTextColor }]}
-              dropdownIconColor={pickerTextColor}
-              selectionColor={theme.colors.primary.DEFAULT + '30'}
-              // @ts-ignore — themeVariant is typed on PickerIOS but forwarded by cross-platform Picker
-              themeVariant={themeMode}
-              mode={Platform.OS === 'android' ? 'dropdown' : undefined}
-            >
-              {HOURS_12.map((h) => (
-                <Picker.Item key={h} label={h.toString()} value={h} color={pickerTextColor} />
-              ))}
-            </Picker>
-          </View>
+          {Platform.OS === 'ios' ? (
+            <>
+              {/* Hour */}
+              <View style={styles.pickerColumn}>
+                <Picker
+                  selectedValue={hour}
+                  onValueChange={(v) => setHour(v as number)}
+                  style={styles.picker}
+                  itemStyle={[styles.pickerItem, { color: pickerTextColor }]}
+                  dropdownIconColor={pickerTextColor}
+                  selectionColor={theme.colors.primary.DEFAULT + '30'}
+                  // @ts-ignore — themeVariant is typed on PickerIOS but forwarded by cross-platform Picker
+                  themeVariant={themeMode}
+                >
+                  {HOURS_12.map((h) => (
+                    <Picker.Item key={h} label={h.toString()} value={h} />
+                  ))}
+                </Picker>
+              </View>
 
-          <Text style={styles.colonSeparator}>:</Text>
+              <Text style={styles.colonSeparator}>:</Text>
 
-          {/* Minute */}
-          <View style={styles.pickerColumn}>
-            <Picker
-              selectedValue={minute}
-              onValueChange={(v) => setMinute(v as number)}
-              style={styles.picker}
-              itemStyle={[styles.pickerItem, { color: pickerTextColor }]}
-              dropdownIconColor={pickerTextColor}
-              selectionColor={theme.colors.primary.DEFAULT + '30'}
-              // @ts-ignore
-              themeVariant={themeMode}
-              mode={Platform.OS === 'android' ? 'dropdown' : undefined}
-            >
-              {minuteOptions.map((m) => (
-                <Picker.Item key={m} label={m.toString().padStart(2, '0')} value={m} color={pickerTextColor} />
-              ))}
-            </Picker>
-          </View>
+              {/* Minute */}
+              <View style={styles.pickerColumn}>
+                <Picker
+                  selectedValue={minute}
+                  onValueChange={(v) => setMinute(v as number)}
+                  style={styles.picker}
+                  itemStyle={[styles.pickerItem, { color: pickerTextColor }]}
+                  dropdownIconColor={pickerTextColor}
+                  selectionColor={theme.colors.primary.DEFAULT + '30'}
+                  // @ts-ignore
+                  themeVariant={themeMode}
+                >
+                  {minuteOptions.map((m) => (
+                    <Picker.Item key={m} label={m.toString().padStart(2, '0')} value={m} />
+                  ))}
+                </Picker>
+              </View>
 
-          {/* AM / PM */}
-          <View style={styles.pickerColumnNarrow}>
-            <Picker
-              selectedValue={period}
-              onValueChange={(v) => setPeriod(v as 'AM' | 'PM')}
-              style={styles.picker}
-              itemStyle={[styles.pickerItem, { color: pickerTextColor }]}
-              dropdownIconColor={pickerTextColor}
-              selectionColor={theme.colors.primary.DEFAULT + '30'}
-              // @ts-ignore
-              themeVariant={themeMode}
-              mode={Platform.OS === 'android' ? 'dropdown' : undefined}
-            >
-              <Picker.Item label="AM" value="AM" color={pickerTextColor} />
-              <Picker.Item label="PM" value="PM" color={pickerTextColor} />
-            </Picker>
-          </View>
+              {/* AM / PM */}
+              <View style={styles.pickerColumnNarrow}>
+                <Picker
+                  selectedValue={period}
+                  onValueChange={(v) => setPeriod(v as 'AM' | 'PM')}
+                  style={styles.picker}
+                  itemStyle={[styles.pickerItem, { color: pickerTextColor }]}
+                  dropdownIconColor={pickerTextColor}
+                  selectionColor={theme.colors.primary.DEFAULT + '30'}
+                  // @ts-ignore
+                  themeVariant={themeMode}
+                >
+                  <Picker.Item label="AM" value="AM" />
+                  <Picker.Item label="PM" value="PM" />
+                </Picker>
+              </View>
+            </>
+          ) : (
+            <>
+              {/* Android: custom scroll-wheel pickers */}
+              <View style={styles.pickerColumn}>
+                <AndroidWheelPicker
+                  data={HOURS_12}
+                  selectedValue={hour}
+                  onValueChange={(v) => setHour(v as number)}
+                  labelFn={(h) => h.toString()}
+                  textColor={pickerTextColor}
+                  selectedBgColor={theme.colors.primary.DEFAULT + '18'}
+                />
+              </View>
+
+              <Text style={styles.colonSeparator}>:</Text>
+
+              <View style={styles.pickerColumn}>
+                <AndroidWheelPicker
+                  data={minuteOptions}
+                  selectedValue={minute}
+                  onValueChange={(v) => setMinute(v as number)}
+                  labelFn={(m) => m.toString().padStart(2, '0')}
+                  textColor={pickerTextColor}
+                  selectedBgColor={theme.colors.primary.DEFAULT + '18'}
+                />
+              </View>
+
+              <View style={styles.pickerColumnNarrow}>
+                <AndroidWheelPicker
+                  data={['AM' as const, 'PM' as const]}
+                  selectedValue={period}
+                  onValueChange={(v) => setPeriod(v as 'AM' | 'PM')}
+                  textColor={pickerTextColor}
+                  selectedBgColor={theme.colors.primary.DEFAULT + '18'}
+                />
+              </View>
+            </>
+          )}
         </View>
       </Animated.View>
     </Modal>
