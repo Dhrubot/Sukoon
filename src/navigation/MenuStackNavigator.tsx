@@ -10,9 +10,11 @@ import SupportScreen from '../screens/Support/SupportScreen';
 import SetupHealthScreen from '../screens/SetupHealth/SetupHealthScreen';
 import ReflectionGardenScreen from '../screens/ReflectionGarden/ReflectionGardenScreen';
 import MosqueModeScreen from '../screens/MosqueMode/MosqueModeScreen';
+import AdhkarScreen from '../screens/Adhkar/AdhkarScreen';
 
 export type MenuStackParamList = {
   MenuHome: undefined;
+  Adhkar: undefined;
   MyJourney: undefined;
   ReflectionGarden: undefined;
   MosqueMode: undefined;
@@ -49,6 +51,11 @@ export const MenuStackNavigator: React.FC = () => {
         name="MenuHome"
         component={MenuScreen}
         options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="Adhkar"
+        component={AdhkarScreen}
+        options={{ title: 'Morning & Evening Adhkar' }}
       />
       <Stack.Screen
         name="MyJourney"

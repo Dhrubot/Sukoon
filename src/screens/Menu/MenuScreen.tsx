@@ -15,7 +15,7 @@ import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import { Icon } from '../../components/common/Icon';
 import { ProgressTabIcon } from '../../assets/icons';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Path, Circle } from 'react-native-svg';
 
 // Settings icon component
 const SettingsIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
@@ -58,6 +58,25 @@ interface MenuItem {
   iconType?: 'component' | 'svg' | 'png' | 'emoji';
 }
 
+// Adhkar (sunrise/remembrance) icon component
+const AdhkarIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 2L14.4 7.2L20 8L15.6 12L17 18L12 15.2L7 18L8.4 12L4 8L9.6 7.2L12 2Z"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M4 21H20"
+      stroke={color}
+      strokeWidth="2"
+      strokeLinecap="round"
+    />
+  </Svg>
+);
+
 // Mosque icon component
 const MosqueIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -74,6 +93,13 @@ const MosqueIcon: React.FC<{ color: string; size: number }> = ({ color, size }) 
 );
 
 const allMenuItems: MenuItem[] = [
+  {
+    icon: AdhkarIcon,
+    title: 'Morning & Evening Adhkar',
+    subtitle: 'Daily remembrance from the Sunnah',
+    screen: 'Adhkar',
+    iconType: 'component',
+  },
   {
     icon: MosqueIcon,
     title: 'Mosque Mode',
