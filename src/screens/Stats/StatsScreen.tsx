@@ -475,6 +475,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   title: {
     fontSize: 28,  // 4xl
     fontWeight: '700',  // bold
+    fontFamily: theme.typography.fontFamily.heading,
     color: theme.colors.text.primary,
     marginBottom: 20,
   },
@@ -599,6 +600,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   sectionTitle: {
     fontSize: 20,  // 2xl
     fontWeight: '600',  // semibold
+    fontFamily: theme.typography.fontFamily.headingRegular,
     color: theme.colors.text.primary,
     marginBottom: 16,
   },

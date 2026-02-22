@@ -26,7 +26,7 @@ const MosqueModeScreen: React.FC = () => {
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.header}>
-        <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>
+        <Text style={[styles.headerTitle, { color: theme.colors.text.primary, fontFamily: theme.typography.fontFamily.heading }]}>
           Mosque Mode
         </Text>
         <Text style={[styles.headerSubtitle, { color: theme.colors.text.secondary }]}>

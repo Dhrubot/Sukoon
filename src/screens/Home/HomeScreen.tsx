@@ -665,7 +665,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   sectionTitle: {
     fontSize: theme.typography.fontSize['2xl'],
-    fontWeight: '500',
+    fontWeight: '600',
+    fontFamily: theme.typography.fontFamily.headingRegular,
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.lg,
   },
@@ -682,6 +683,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   setupTitle: {
     fontSize: 28,
     fontWeight: '700',
+    fontFamily: theme.typography.fontFamily.heading,
     color: theme.colors.text.primary,
     textAlign: 'center',
     marginBottom: theme.spacing.lg,

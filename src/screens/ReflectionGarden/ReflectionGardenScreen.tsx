@@ -153,6 +153,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   emptyTitle: {
     fontSize: 26,
     fontWeight: '300',
+    fontFamily: theme.typography.fontFamily.headingRegular,
     color: theme.colors.text.primary,
     textAlign: 'center',
     lineHeight: 34,

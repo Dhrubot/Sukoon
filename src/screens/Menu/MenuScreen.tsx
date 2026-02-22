@@ -123,7 +123,7 @@ const MenuScreen: React.FC = () => {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
       <View style={[styles.header, { backgroundColor: theme.colors.card.background }]}>
-        <Text style={[styles.headerTitle, { color: theme.colors.text.primary }]}>More</Text>
+        <Text style={[styles.headerTitle, { color: theme.colors.text.primary, fontFamily: theme.typography.fontFamily.heading }]}>More</Text>
         <Text style={[styles.headerSubtitle, { color: theme.colors.text.secondary }]}>
           Explore more features
         </Text>

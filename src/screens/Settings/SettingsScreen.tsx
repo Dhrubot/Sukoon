@@ -320,6 +320,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   title: {
     fontSize: 32,  // 5xl
     fontWeight: '700',  // bold
+    fontFamily: theme.typography.fontFamily.heading,
     color: theme.colors.text.primary,
     marginBottom: 8,
   },
