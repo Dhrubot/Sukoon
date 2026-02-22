@@ -486,7 +486,7 @@ class NotificationService {
     // Hybrid Audio Logic
     if (notifications.enabled && notifications.adhanEnabled) {
       // iOS: short clip (<30s limit); Android: full adhan via channel + explicit sound
-      soundAsset = Platform.OS === 'ios' ? SOUNDS.IOS_SHORT : SOUNDS.ANDROID_FULL;
+      soundAsset = Platform.OS === 'ios' ? SOUNDS.IOS_SHORT : SOUNDS.ANDROID_SHORT;
       androidChannel = CHANNELS.ADHAN;
     } else if (notifications.enabled && notifications.soundEnabled) {
       // Standard Beep

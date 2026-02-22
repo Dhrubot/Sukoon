@@ -64,11 +64,11 @@ export async function setupNotificationChannels(): Promise<void> {
 
   await Notifications.setNotificationChannelAsync(CHANNELS.ADHAN, {
     name: 'Prayer Times (Adhan)',
-    description: 'Plays the full call to prayer',
+    description: 'Short call to prayer notification',
     importance: Notifications.AndroidImportance.HIGH,
     vibrationPattern: [0, 1000, 500, 1000],
     lightColor: '#1B5E3F',
-    sound: SOUNDS.ANDROID_FULL,
+    sound: SOUNDS.ANDROID_SHORT,
     bypassDnd: false,
     showBadge: true,
   });

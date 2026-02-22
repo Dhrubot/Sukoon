@@ -2,7 +2,7 @@
 
 // 🛠 BUMP THIS VERSION whenever change sound files or channel settings
 // This forces Android to create a new channel with the fresh config.
-export const NOTIFICATION_CHANNEL_VERSION = 5;
+export const NOTIFICATION_CHANNEL_VERSION = 6;
 
 export const NOTIFICATION_SCHEDULING_DAYS = 7;
 export const NOTIFICATION_MAX_FUTURE_DAYS = NOTIFICATION_SCHEDULING_DAYS + 1;
@@ -20,7 +20,7 @@ export const CHANNELS = {
 };
 
 export const SOUNDS = {
-  // iOS needs short (<30s), Android can play long
+  // Both platforms use the short (<30s) clip for lock-screen notifications
   IOS_SHORT: 'adhan_short.wav', 
-  ANDROID_FULL: 'adhan_full',
+  ANDROID_SHORT: 'adhan_short',
 };
