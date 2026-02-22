@@ -114,17 +114,18 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: theme.typography.fontSize.xl,
+    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.headingRegular,
     color: theme.colors.mindfulness.textPrimary,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: theme.spacing['2xl'],
   },
   moodContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 12,
-    marginBottom: 24,
+    gap: theme.spacing.md,
+    marginBottom: theme.spacing['2xl'],
   },
   moodWrapper: {
     alignItems: 'center',
@@ -138,7 +139,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     alignItems: 'center',
     borderWidth: 2,
     borderColor: theme.colors.mindfulness.dotInactive,
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
   },
   moodButtonActive: {
     backgroundColor: theme.colors.mindfulness.timingInfoBg,
@@ -150,10 +151,10 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     elevation: 5,
   },
   moodEmoji: {
-    fontSize: 32,
+    fontSize: theme.typography.fontSize['5xl'],
   },
   moodLabel: {
-    fontSize: 13,
+    fontSize: theme.typography.fontSize.sm,
     color: theme.colors.mindfulness.textMuted,
     textAlign: 'center',
   },
@@ -162,11 +163,11 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontWeight: '600',
   },
   feedbackContainer: {
-    marginTop: 16,
-    paddingHorizontal: 32,
+    marginTop: theme.spacing.lg,
+    paddingHorizontal: theme.spacing['3xl'],
   },
   feedbackText: {
-    fontSize: 16,
+    fontSize: theme.typography.fontSize.lg,
     color: theme.colors.mindfulness.textSecondary,
     textAlign: 'center',
     fontStyle: 'italic',
