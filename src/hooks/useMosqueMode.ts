@@ -123,7 +123,8 @@ export const useMosqueMode = () => {
     (prayer: PrayerTime) => {
       return MosqueModeService.getIqamahTime(prayer);
     },
-    []
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [userSettings?.mosqueMode?.iqamahOffsets]
   );
 
   // Check if enabled for a specific prayer

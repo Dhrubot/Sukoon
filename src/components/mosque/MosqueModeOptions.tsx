@@ -121,6 +121,28 @@ export const MosqueModeOptions: React.FC = () => {
           thumbColor={theme.colors.switch.thumb}
         />
       </View>
+
+      {/* Confirm Before Each Prayer Toggle */}
+      <View
+        style={[styles.row, { backgroundColor: theme.colors.card.background, borderColor: theme.colors.border.primary }]}
+      >
+        <View style={styles.rowInfo}>
+          <Text style={[styles.rowLabel, { color: theme.colors.text.primary }]}>
+            Confirm Before Each Prayer
+          </Text>
+          <Text style={[styles.rowValue, { color: theme.colors.text.secondary }]}>
+            {settings.promptBeforeEnable
+              ? 'You\'ll be asked before your phone goes silent'
+              : 'Phone silences automatically at iqamah time'}
+          </Text>
+        </View>
+        <Switch
+          value={settings.promptBeforeEnable}
+          onValueChange={(value) => updateMosqueModeSettings({ promptBeforeEnable: value })}
+          trackColor={{ false: theme.colors.switch.trackFalse, true: theme.colors.switch.trackTrue }}
+          thumbColor={theme.colors.switch.thumb}
+        />
+      </View>
     </View>
   );
 };

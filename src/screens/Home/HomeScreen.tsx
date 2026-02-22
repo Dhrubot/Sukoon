@@ -12,7 +12,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
-import { format } from "date-fns";
+import { format, addMinutes } from "date-fns";
 
 // Store and Services
 import { useStore } from "../../store/useStore";
@@ -30,7 +30,7 @@ import PrayerCard from "../../components/prayer/PrayerCard";
 import SanctuaryView from "../../components/prayer/SanctuaryView";
 import DailyVerse from "../../components/common/DailyVerse";
 import { SunTimesDisplay } from "../../components/common/SunTimesDisplay";
-import { MosqueModeOverlay } from "../../components/mosque";
+import { MosqueModeOverlay, MosqueModePrompt } from "../../components/mosque";
 import RamadanTimesCard from "../../components/prayer/RamadanTimesCard";
 import OptionalPrayersSection from "../../components/prayer/OptionalPrayersSection";
 import GardenTeaser from "../../components/garden/GardenTeaser";
@@ -71,7 +71,13 @@ const HomeScreen = ({ navigation }: any) => {
   } = useStore();
 
   // Mosque mode state for focus mode + pill badge
-  const { isActive: isMosqueModeActive, activeState: mosqueModeState, isEnabled: isMosqueModeEnabled, settings: mosqueModeSettings, getIqamahTime } = useMosqueMode();
+  const { isActive: isMosqueModeActive, activeState: mosqueModeState, isEnabled: isMosqueModeEnabled, settings: mosqueModeSettings, getIqamahTime, scheduleSilentMode } = useMosqueMode();
+
+  // Mosque mode prompt (confirm mode)
+  const pendingMosquePromptPrayer = useStore((s) => s.pendingMosquePromptPrayer);
+  const setPendingMosquePromptPrayer = useStore((s) => s.setPendingMosquePromptPrayer);
+  const [mosquePromptPrayer, setMosquePromptPrayer] = useState<PrayerTime | null>(null);
+  const [dismissedMosquePrompts, setDismissedMosquePrompts] = useState<Set<string>>(new Set());
 
   // Local state for UI features
   const [currentTime, setCurrentTime] = useState(new Date());
@@ -79,6 +85,16 @@ const HomeScreen = ({ navigation }: any) => {
   const [moonSightingEvent, setMoonSightingEvent] = useState<MoonSightingEvent | null>(null);
   const [deferredMoonEvent, setDeferredMoonEvent] = useState<MoonSightingEvent | null>(null);
   const [hijriNudge, setHijriNudge] = useState<HijriNudgeEvent | null>(null);
+
+  // Mosque mode prompt: notification tap path
+  useEffect(() => {
+    if (!pendingMosquePromptPrayer) return;
+    const prayer = todayPrayerTimes.find(p => p.name === pendingMosquePromptPrayer);
+    if (prayer) {
+      setMosquePromptPrayer(prayer);
+    }
+    setPendingMosquePromptPrayer(null);
+  }, [pendingMosquePromptPrayer, todayPrayerTimes]);
 
   // 🎯 REMOVED: loadPrayerTimes function - now handled by provider!
   // 🎯 REMOVED: location checks - now handled by provider!
@@ -134,62 +150,6 @@ const HomeScreen = ({ navigation }: any) => {
   };
 
 
-  // 1c: Prayer-aware greeting
-  const getGreeting = (): string => {
-    const fullName = userSettings?.name?.trim() || 'Friend';
-    const firstName = fullName.split(/\s+/)[0];
-    const name = firstName.charAt(0).toUpperCase() + firstName.slice(1);
-    const now = currentTime;
-
-    if (nextPrayer) {
-      const minutesUntil = Math.floor(
-        (nextPrayer.time.getTime() - now.getTime()) / (1000 * 60)
-      );
-
-      // Within 30 minutes of next prayer — approaching
-      if (minutesUntil > 0 && minutesUntil <= 30) {
-        return `${nextPrayer.name} is approaching, ${name}`;
-      }
-
-      // Within active prayer window (past the time, within grace)
-      if (minutesUntil <= 0 && minutesUntil > -60) {
-        return `بِسْمِ اللَّهِ — Time for ${nextPrayer.name}`;
-      }
-    }
-
-    // Eid greeting (day 1 only)
-    const eidName = getEidName();
-    if (eidName) {
-      return `Eid Mubarak, ${name}! 🌙`;
-    }
-
-    // Takbirat during Ayyam al-Tashreeq (9-13 Dhul Hijjah)
-    const tashreeqLabel = getTashreeqDayLabel();
-    if (tashreeqLabel) {
-      return `${tashreeqLabel} — Allahu Akbar, ${name}`;
-    }
-
-    // Ramadan-aware greeting
-    if (isRamadan()) {
-      const day = getRamadanDay();
-      const dayStr = day ? ` — Day ${day}` : '';
-      const hour = now.getHours();
-      // After Isha during Ramadan, mention Taraweeh
-      if (hour >= 20) {
-        return `Time for Taraweeh${dayStr}, ${name}`;
-      }
-      return `Ramadan Mubarak${dayStr}, ${name}`;
-    }
-
-    // Default: peaceful between-prayers greeting
-    const hour = now.getHours();
-    if (hour < 5) return `Peace be upon you, ${name}`;
-    if (hour < 12) return `As Salamu Alaykum, ${name}`;
-    if (hour < 17) return `Peace be upon you, ${name}`;
-    if (hour < 20) return `As Salamu Alaykum, ${name}`;
-    return `Peace be upon you, ${name}`;
-  };
-
   const handlePrayerComplete = (prayerTime: PrayerTime) => {
     // Create a serializable version of prayerTime by converting Date to ISO string
     const serializablePrayer = {
@@ -226,30 +186,37 @@ const HomeScreen = ({ navigation }: any) => {
   };
 
 
-  // Focus Mode: sanctuary expands during prayer window or active mosque mode
-  const isFocusMode = useMemo(() => {
-    // Mosque mode active: stay in sanctuary from iqamah until ringer restores
-    if (isMosqueModeActive && mosqueModeState) {
-      const now = currentTime.getTime();
-      return now >= mosqueModeState.iqamahTime.getTime()
-          && now < mosqueModeState.restoreTime.getTime();
-    }
-
-    // General prayer window: 15 min before → 30 min after prayer time
-    if (!nextPrayer) return false;
-    const minutesUntil = Math.floor(
-      (nextPrayer.time.getTime() - currentTime.getTime()) / (1000 * 60)
-    );
-    return minutesUntil >= -30 && minutesUntil <= 15;
-  }, [nextPrayer, currentTime, isMosqueModeActive, mosqueModeState]);
-
   const completedToday = todayPrayerRecords.filter(r => r.status === 'prayed').length;
 
-  // Unified mosque mode info for the hero pill
+  // Prayer-aware hero: if the user already prayed the current fiqh-window prayer,
+  // advance the hero to the next unprayed prayer. Returns null when all are prayed.
+  const heroPrayer = useMemo(() => {
+    if (!nextPrayer) return null;
+
+    const isCurrentPrayed = todayPrayerRecords.some(
+      r => r.prayer === nextPrayer.name && r.status === 'prayed'
+    );
+    if (!isCurrentPrayed) return nextPrayer;
+
+    // Walk forward to find the next unprayed prayer
+    const currentIdx = todayPrayerTimes.findIndex(p => p.name === nextPrayer.name);
+    for (let i = currentIdx + 1; i < todayPrayerTimes.length; i++) {
+      const p = todayPrayerTimes[i];
+      const prayed = todayPrayerRecords.some(
+        r => r.prayer === p.name && r.status === 'prayed'
+      );
+      if (!prayed) return { ...p, isNext: true };
+    }
+
+    // All remaining prayers are prayed
+    return null;
+  }, [nextPrayer, todayPrayerTimes, todayPrayerRecords]);
+
+  // Unified mosque mode info for the hero pill — scoped to heroPrayer
   const mosqueModeHeroInfo = useMemo(() => {
     if (!isMosqueModeEnabled) return null;
 
-    // Active: iqamahTime + restoreTime
+    // Path 1: Storage-backed active state (manual scheduling via "heading to mosque")
     if (isMosqueModeActive && mosqueModeState) {
       return {
         iqamahTime: mosqueModeState.iqamahTime,
@@ -257,35 +224,59 @@ const HomeScreen = ({ navigation }: any) => {
       };
     }
 
-    // Scheduled: next future iqamah, no restoreTime yet
-    const now = new Date();
-    for (const p of todayPrayerTimes) {
-      const iqamah = getIqamahTime(p);
-      if (!iqamah) continue;
-      if (iqamah.getTime() <= now.getTime()) continue;
-      return { iqamahTime: iqamah };
+    // Path 2: Compute active window from settings — show pill during iqamah→restore window
+    if (mosqueModeSettings) {
+      const now = new Date();
+      for (const p of todayPrayerTimes) {
+        const iq = getIqamahTime(p);
+        if (!iq) continue;
+        const restore = addMinutes(iq, mosqueModeSettings.silentDuration);
+        if (now >= iq && now < restore) {
+          return { iqamahTime: iq, restoreTime: restore };
+        }
+      }
     }
-    return null;
-  }, [isMosqueModeEnabled, isMosqueModeActive, mosqueModeState, todayPrayerTimes, getIqamahTime, currentTime]);
+
+    // Path 3: Show hero prayer's own iqamah (SanctuaryView handles past vs future text)
+    if (!heroPrayer) return null;
+    const iqamah = getIqamahTime(heroPrayer);
+    if (!iqamah) return null;
+    return { iqamahTime: iqamah };
+  }, [isMosqueModeEnabled, isMosqueModeActive, mosqueModeState, mosqueModeSettings, heroPrayer, todayPrayerTimes, getIqamahTime, currentTime]);
+
+  // Focus Mode: sanctuary expands during prayer window or active mosque mode
+  const isFocusMode = useMemo(() => {
+    // Mosque mode active window (iqamah → restore): keep sanctuary expanded
+    if (mosqueModeHeroInfo?.restoreTime) {
+      return true;
+    }
+
+    // General prayer window: 15 min before → 30 min after prayer time
+    if (!heroPrayer) return false;
+    const minutesUntil = Math.floor(
+      (heroPrayer.time.getTime() - currentTime.getTime()) / (1000 * 60)
+    );
+    return minutesUntil >= -30 && minutesUntil <= 15;
+  }, [heroPrayer, currentTime, mosqueModeHeroInfo]);
 
   // Find the record for the current hero prayer (if already prayed)
   const heroPrayerRecord = useMemo(() => {
-    if (!nextPrayer) return undefined;
+    if (!heroPrayer) return undefined;
     return todayPrayerRecords.find(
-      r => r.prayer === nextPrayer.name && r.status === 'prayed'
+      r => r.prayer === heroPrayer.name && r.status === 'prayed'
     );
-  }, [nextPrayer, todayPrayerRecords]);
+  }, [heroPrayer, todayPrayerRecords]);
 
   // Check if the hero prayer's adhan has actually happened
   const isHeroPrayerTimeEntered = useMemo(() => {
-    if (!nextPrayer) return false;
-    return nextPrayer.time <= currentTime;
-  }, [nextPrayer, currentTime]);
+    if (!heroPrayer) return false;
+    return heroPrayer.time <= currentTime;
+  }, [heroPrayer, currentTime]);
 
   // Find the most recent MISSED prayer (before the hero prayer) for qada prompt
   const missedPreviousPrayer = useMemo(() => {
-    if (!nextPrayer || isHeroPrayerTimeEntered) return undefined;
-    const heroIdx = todayPrayerTimes.findIndex(p => p.name === nextPrayer.name);
+    if (!heroPrayer || isHeroPrayerTimeEntered) return undefined;
+    const heroIdx = todayPrayerTimes.findIndex(p => p.name === heroPrayer.name);
     // Walk backwards to find the first unprayed prayer
     for (let i = heroIdx - 1; i >= 0; i--) {
       const p = todayPrayerTimes[i];
@@ -295,7 +286,79 @@ const HomeScreen = ({ navigation }: any) => {
       if (!prayed) return p;
     }
     return undefined;
-  }, [nextPrayer, todayPrayerTimes, todayPrayerRecords, isHeroPrayerTimeEntered]);
+  }, [heroPrayer, todayPrayerTimes, todayPrayerRecords, isHeroPrayerTimeEntered]);
+
+  // Mosque mode prompt: in-app auto-show when iqamah is ≤5 min away
+  useEffect(() => {
+    if (!isMosqueModeEnabled || !mosqueModeSettings?.promptBeforeEnable) return;
+    if (isMosqueModeActive) return; // Already active
+    if (mosquePromptPrayer) return; // Already showing
+    if (!heroPrayer) return;
+
+    const iqamah = getIqamahTime(heroPrayer);
+    if (!iqamah) return;
+
+    const minsUntil = (iqamah.getTime() - currentTime.getTime()) / (1000 * 60);
+    if (minsUntil > 0 && minsUntil <= 5 && !dismissedMosquePrompts.has(heroPrayer.name)) {
+      setMosquePromptPrayer(heroPrayer);
+    }
+  }, [isMosqueModeEnabled, mosqueModeSettings?.promptBeforeEnable, isMosqueModeActive, heroPrayer, currentTime, mosquePromptPrayer, dismissedMosquePrompts]);
+
+  // 1c: Prayer-aware greeting
+  const getGreeting = (): string => {
+    const fullName = userSettings?.name?.trim() || 'Friend';
+    const firstName = fullName.split(/\s+/)[0];
+    const name = firstName.charAt(0).toUpperCase() + firstName.slice(1);
+    const now = currentTime;
+
+    if (heroPrayer) {
+      const minutesUntil = Math.floor(
+        (heroPrayer.time.getTime() - now.getTime()) / (1000 * 60)
+      );
+
+      // Within 30 minutes of next prayer — approaching
+      if (minutesUntil > 0 && minutesUntil <= 30) {
+        return `${heroPrayer.name} is approaching, ${name}`;
+      }
+
+      // Within active prayer window (past the time, within grace)
+      if (minutesUntil <= 0 && minutesUntil > -60) {
+        return `بِسْمِ اللَّهِ — Time for ${heroPrayer.name}`;
+      }
+    }
+
+    // Eid greeting (day 1 only)
+    const eidName = getEidName();
+    if (eidName) {
+      return `Eid Mubarak, ${name}! 🌙`;
+    }
+
+    // Takbirat during Ayyam al-Tashreeq (9-13 Dhul Hijjah)
+    const tashreeqLabel = getTashreeqDayLabel();
+    if (tashreeqLabel) {
+      return `${tashreeqLabel} — Allahu Akbar, ${name}`;
+    }
+
+    // Ramadan-aware greeting
+    if (isRamadan()) {
+      const day = getRamadanDay();
+      const dayStr = day ? ` — Day ${day}` : '';
+      const hour = now.getHours();
+      // After Isha during Ramadan, mention Taraweeh
+      if (hour >= 20) {
+        return `Time for Taraweeh${dayStr}, ${name}`;
+      }
+      return `Ramadan Mubarak${dayStr}, ${name}`;
+    }
+
+    // Default: peaceful between-prayers greeting
+    const hour = now.getHours();
+    if (hour < 5) return `Peace be upon you, ${name}`;
+    if (hour < 12) return `As Salamu Alaykum, ${name}`;
+    if (hour < 17) return `Peace be upon you, ${name}`;
+    if (hour < 20) return `As Salamu Alaykum, ${name}`;
+    return `Peace be upon you, ${name}`;
+  };
 
   // 🎯 NEW: Handle invalid location state
   if (!hasValidLocation) {
@@ -358,19 +421,19 @@ const HomeScreen = ({ navigation }: any) => {
         bounces={false}
       >
         {/* 1a: SanctuaryView — full-screen next prayer hero */}
-        {nextPrayer ? (
+        {heroPrayer ? (
           <SanctuaryView
-            prayer={nextPrayer}
+            prayer={heroPrayer}
             greeting={getGreeting()}
             record={heroPrayerRecord}
             isTimeEntered={isHeroPrayerTimeEntered}
             missedPrayer={missedPreviousPrayer}
-            onPrepare={() => handlePrayerComplete(nextPrayer)}
+            onPrepare={() => handlePrayerComplete(heroPrayer)}
             onPrepareQada={missedPreviousPrayer ? () => handlePrayerComplete(missedPreviousPrayer) : undefined}
             onPraySunnah={handleSunnahPrayer}
             isFocusMode={isFocusMode}
             mosqueModeInfo={mosqueModeHeroInfo ?? undefined}
-            onMosqueModeTap={() => navigation.navigate('MosqueMode')}
+            onMosqueModeTap={() => navigation.navigate('Menu', { screen: 'MosqueMode' })}
           />
         ) : (
           <LinearGradient colors={getBackgroundGradient()} style={styles.noNextPrayer}>
@@ -478,6 +541,23 @@ const HomeScreen = ({ navigation }: any) => {
 
       {/* 4c: Mosque mode activation overlay */}
       <MosqueModeOverlay />
+
+      {/* Mosque mode prompt — "Heading to the mosque?" */}
+      {mosquePromptPrayer && (
+        <MosqueModePrompt
+          visible={!!mosquePromptPrayer}
+          prayer={mosquePromptPrayer}
+          onConfirm={async () => {
+            await scheduleSilentMode(mosquePromptPrayer);
+            setDismissedMosquePrompts(prev => new Set(prev).add(mosquePromptPrayer.name));
+            setMosquePromptPrayer(null);
+          }}
+          onCancel={() => {
+            setDismissedMosquePrompts(prev => new Set(prev).add(mosquePromptPrayer.name));
+            setMosquePromptPrayer(null);
+          }}
+        />
+      )}
 
       {/* Moon sighting confirmation — shows once per critical Hijri transition */}
       {moonSightingEvent && (

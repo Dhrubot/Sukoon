@@ -263,10 +263,19 @@ class NotificationService {
         type: (data?.type as string) || 'unknown',
       });
 
-      // If user taps the notification itself, play full Adhan
+      // If user taps the notification itself
       if (actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER) {
+        // Mosque mode prompt: store pending prayer and navigate to Home
+        if (data?.type === 'mosque_mode_prompt' && data?.prayer) {
+          const { useStore } = require('../store/useStore');
+          useStore.getState().setPendingMosquePromptPrayer(data.prayer as PrayerName);
+          if (this.navigationHandler) {
+            this.navigationHandler(data.prayer as PrayerName, 'default');
+          }
+          logger.log('🕌 Mosque mode prompt tapped for:', data.prayer);
+        }
         // Play adhan for both prayer-time and test notifications
-        if ((data?.type === 'prayer-time' || data?.type === 'test') && (data?.prayer || data?.type === 'test')) {
+        else if ((data?.type === 'prayer-time' || data?.type === 'test') && (data?.prayer || data?.type === 'test')) {
           // Play full adhan inside app (for immersive experience)
           this.playFullAdhan();
 

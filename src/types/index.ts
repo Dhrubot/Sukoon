@@ -197,7 +197,7 @@ export interface MosqueModeSettings {
   autoRestore: boolean; // Automatically restore normal mode (default: true)
   
   // Ask before enabling (show "Heading to mosque?" prompt)
-  promptBeforeEnable: boolean; // Show confirmation dialog (default: true)
+  promptBeforeEnable: boolean; // Show confirmation dialog (default: false — auto-silence)
   
   // Platform-specific settings
   useVibrateInsteadOfSilent: boolean; // Use vibrate instead of complete silence (default: false)

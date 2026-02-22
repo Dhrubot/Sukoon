@@ -173,7 +173,9 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
           )}
           {mosqueModeInfo && (
             <Text style={styles.iqamahText}>
-              Iqamah at {format(mosqueModeInfo.iqamahTime, 'h:mm a')}
+              {mosqueModeInfo.iqamahTime > new Date()
+                ? `Iqamah at ${format(mosqueModeInfo.iqamahTime, 'h:mm a')}`
+                : `Iqamah was at ${format(mosqueModeInfo.iqamahTime, 'h:mm a')}`}
             </Text>
           )}
         </View>

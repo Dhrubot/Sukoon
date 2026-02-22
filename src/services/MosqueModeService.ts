@@ -393,6 +393,60 @@ class MosqueModeService {
     }
   }
 
+  /**
+   * Schedule "Heading to mosque?" prompt notifications (opt-in confirm mode).
+   * Fires ~5 min before each upcoming iqamah so the user can tap to enable silent mode.
+   */
+  async schedulePreIqamahPrompts(prayers: PrayerTime[]): Promise<void> {
+    const settings = StorageService.getUserSettings();
+    if (!settings?.mosqueMode?.enabled) return;
+    if (!settings.mosqueMode.promptBeforeEnable) return; // Only for confirm mode
+
+    const now = new Date();
+    const dateStr = format(now, 'yyyy-MM-dd');
+
+    for (const prayer of prayers) {
+      if (!this.isEnabledForPrayer(prayer.name)) continue;
+      const iqamahTime = this.getIqamahTime(prayer);
+      if (!iqamahTime) continue;
+      if (iqamahTime <= now) continue; // Iqamah already passed
+
+      // Schedule notification 5 min before iqamah (or 1 min if <5 min away)
+      const leadMinutes = (iqamahTime.getTime() - now.getTime()) / (1000 * 60);
+      const promptTime = leadMinutes > 5
+        ? addMinutes(iqamahTime, -5)
+        : addMinutes(now, 1);
+
+      // Don't schedule if prompt time is in the past
+      if (promptTime <= now) continue;
+
+      const promptId = `mosque-prompt-${prayer.name}-${dateStr}`;
+      try { await Notifications.cancelScheduledNotificationAsync(promptId); } catch { /* ignore */ }
+
+      const minsUntilIqamah = Math.round((iqamahTime.getTime() - promptTime.getTime()) / (1000 * 60));
+
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: `🕌 ${prayer.name} Iqamah in ${minsUntilIqamah} min`,
+          body: 'Heading to the mosque? Tap to enable silent mode.',
+          data: {
+            type: 'mosque_mode_prompt',
+            prayer: prayer.name,
+            iqamahTime: iqamahTime.toISOString(),
+          },
+          sound: 'default',
+        },
+        trigger: {
+          type: 'date',
+          date: promptTime,
+        } as Notifications.NotificationTriggerInput,
+        identifier: promptId,
+      });
+
+      console.log(`🕌 Mosque prompt scheduled for ${prayer.name} at ${format(promptTime, 'h:mm a')}`);
+    }
+  }
+
   async scheduleUpcomingMosqueModes(prayers: PrayerTime[]): Promise<void> {
     const settings = StorageService.getUserSettings();
     if (!settings?.mosqueMode?.enabled) return;
@@ -400,7 +454,6 @@ class MosqueModeService {
 
     const now = new Date();
     for (const prayer of prayers) {
-      if (prayer.time <= now) continue;
       if (!this.isEnabledForPrayer(prayer.name)) continue;
       const iqamahTime = this.getIqamahTime(prayer);
       if (!iqamahTime) continue;

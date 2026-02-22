@@ -141,14 +141,19 @@ export const useServiceInitialization = () => {
   }, [setLocation, updateUserSettings]);
 
   useEffect(() => {
-    const shouldAutoScheduleMosqueMode =
+    const mosqueEnabled =
       hasValidLocation &&
       !isLoading &&
       userSettings?.mosqueMode?.enabled &&
-      userSettings?.mosqueMode?.promptBeforeEnable === false &&
       todayPrayerTimes.length > 0;
 
-    if (shouldAutoScheduleMosqueMode) {
+    if (!mosqueEnabled) return;
+
+    if (userSettings?.mosqueMode?.promptBeforeEnable) {
+      // Confirm mode (opt-in): schedule "Heading to mosque?" notifications
+      MosqueModeService.schedulePreIqamahPrompts(todayPrayerTimes);
+    } else {
+      // Auto mode (default): schedule silent mode directly
       MosqueModeService.scheduleUpcomingMosqueModes(todayPrayerTimes);
     }
   }, [
