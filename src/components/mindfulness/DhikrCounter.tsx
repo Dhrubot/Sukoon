@@ -20,19 +20,22 @@ import { POST_FARD_DHIKR, DhikrItem } from '../../constants/dhikrData';
 interface DhikrCounterProps {
   onComplete: () => void;
   onSkip: () => void;
+  items?: DhikrItem[];
 }
 
-const DhikrCounter: React.FC<DhikrCounterProps> = ({ onComplete, onSkip }) => {
+const DhikrCounter: React.FC<DhikrCounterProps> = ({ onComplete, onSkip, items }) => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
+
+  const dhikrItems = items ?? POST_FARD_DHIKR;
 
   const [dhikrIndex, setDhikrIndex] = useState(0);
   const [currentCount, setCurrentCount] = useState(0);
   const countRef = useRef(0);
   const advancingRef = useRef(false);
 
-  const currentDhikr: DhikrItem = POST_FARD_DHIKR[dhikrIndex];
-  const isLastDhikr = dhikrIndex === POST_FARD_DHIKR.length - 1;
+  const currentDhikr: DhikrItem = dhikrItems[dhikrIndex];
+  const isLastDhikr = dhikrIndex === dhikrItems.length - 1;
   const progress = currentCount / currentDhikr.count;
   const isLongText = currentDhikr.arabic.length > 80;
   const [translationExpanded, setTranslationExpanded] = useState(false);
@@ -81,14 +84,14 @@ const DhikrCounter: React.FC<DhikrCounterProps> = ({ onComplete, onSkip }) => {
   }, [currentDhikr, advanceToNext]);
 
   // Overall progress across all dhikr items
-  const totalItems = POST_FARD_DHIKR.length;
+  const totalItems = dhikrItems.length;
   const completedItems = dhikrIndex;
 
   return (
     <View style={styles.container}>
       {/* Overall progress dots */}
       <View style={styles.progressDots}>
-        {POST_FARD_DHIKR.map((_, i) => (
+        {dhikrItems.map((_, i) => (
           <View
             key={i}
             style={[
