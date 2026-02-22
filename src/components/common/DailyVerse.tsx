@@ -9,6 +9,7 @@ import {
 import Svg, { Path } from 'react-native-svg';
 import { useTheme } from '../../providers/ThemeProvider';
 import { VERSES } from '../../constants';
+import { HADITH_COLLECTION, Hadith } from '../../constants/hadithCollection';
 import { isRamadan } from '../../utils/ramadan';
 
 // Quran/Book Icon Component
@@ -41,9 +42,22 @@ const QuranIcon: React.FC<{ color: string; size: number }> = ({ color, size }) =
 
 const verses = VERSES;
 
+interface DailyContent {
+  arabic: string;
+  translation: string;
+  reference: string;
+  narrator?: string;
+  isHadith: boolean;
+}
+
 const DailyVerse: React.FC = () => {
   const { theme } = useTheme();
-  const [verse, setVerse] = useState(verses[0]);
+  const [content, setContent] = useState<DailyContent>({
+    arabic: verses[0].arabic,
+    translation: verses[0].translation,
+    reference: verses[0].reference,
+    isHadith: false,
+  });
   const [showTranslation, setShowTranslation] = useState(true);
 
   useEffect(() => {
@@ -53,24 +67,35 @@ const DailyVerse: React.FC = () => {
       (1000 * 60 * 60 * 24)
     );
 
-    // During Ramadan, bias toward Ramadan-themed verses
+    // During Ramadan, bias toward Ramadan-themed verses (always Quran)
     if (isRamadan()) {
       const ramadanVerses = verses.filter((v: any) => v.theme === 'ramadan');
       if (ramadanVerses.length > 0) {
         const idx = dayOfYear % ramadanVerses.length;
-        setVerse(ramadanVerses[idx]);
+        const v = ramadanVerses[idx];
+        setContent({ arabic: v.arabic, translation: v.translation, reference: v.reference, isHadith: false });
         return;
       }
     }
 
-    const verseIndex = dayOfYear % verses.length;
-    setVerse(verses[verseIndex]);
+    // Alternate: even days = verse, odd days = hadith
+    if (dayOfYear % 2 === 0) {
+      const idx = Math.floor(dayOfYear / 2) % verses.length;
+      const v = verses[idx];
+      setContent({ arabic: v.arabic, translation: v.translation, reference: v.reference, isHadith: false });
+    } else {
+      const idx = Math.floor(dayOfYear / 2) % HADITH_COLLECTION.length;
+      const h = HADITH_COLLECTION[idx];
+      setContent({ arabic: h.arabic, translation: h.translation, reference: h.source, narrator: h.narrator, isHadith: true });
+    }
   }, []);
 
   const handleShare = async () => {
+    const label = content.isHadith ? 'Hadith' : 'Verse';
+    const narratorLine = content.narrator ? `\nNarrated by ${content.narrator}` : '';
     try {
       await Share.share({
-        message: `${verse.translation}\n\n${verse.arabic}\n\n- ${verse.reference}\n\nShared via Sukoon`,
+        message: `${content.translation}\n\n${content.arabic}${narratorLine}\n\n- ${content.reference}\n\nShared via Sukoon`,
       });
     } catch (error) {
       console.error('Error sharing:', error);
@@ -82,7 +107,9 @@ const DailyVerse: React.FC = () => {
       <View style={styles.header}>
         <View style={styles.titleRow}>
           <QuranIcon color={theme.colors.primary.DEFAULT} size={24} />
-          <Text style={[styles.title, { color: theme.colors.text.primary }]}>Daily Verse</Text>
+          <Text style={[styles.title, { color: theme.colors.text.primary }]}>
+            {content.isHadith ? 'Daily Hadith' : 'Daily Verse'}
+          </Text>
         </View>
         <TouchableOpacity onPress={handleShare}>
           <Text style={[styles.shareButton, { color: theme.colors.primary.DEFAULT }]}>Share</Text>
@@ -94,12 +121,15 @@ const DailyVerse: React.FC = () => {
         onPress={() => setShowTranslation(!showTranslation)}
         activeOpacity={0.8}
       >
-        <Text style={[styles.arabic, { color: theme.colors.text.primary }]}>{verse.arabic}</Text>
+        <Text style={[styles.arabic, { color: theme.colors.text.primary }]}>{content.arabic}</Text>
         
         {showTranslation && (
           <>
-            <Text style={[styles.translation, { color: theme.colors.text.secondary }]}>"{verse.translation}"</Text>
-            <Text style={[styles.reference, { color: theme.colors.text.muted }]}>{verse.reference}</Text>
+            <Text style={[styles.translation, { color: theme.colors.text.secondary }]}>"{content.translation}"</Text>
+            {content.narrator && (
+              <Text style={[styles.narrator, { color: theme.colors.text.muted }]}>Narrated by {content.narrator}</Text>
+            )}
+            <Text style={[styles.reference, { color: theme.colors.text.muted }]}>{content.reference}</Text>
           </>
         )}
       </TouchableOpacity>
@@ -150,6 +180,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 12,
     lineHeight: 24,
+    fontStyle: 'italic',
+  },
+  narrator: {
+    fontSize: 13,  // sm
+    textAlign: 'center',
+    marginBottom: 4,
     fontStyle: 'italic',
   },
   reference: {
