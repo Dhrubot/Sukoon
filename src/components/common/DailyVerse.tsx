@@ -8,6 +8,8 @@ import {
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 import { VERSES } from '../../constants';
 import { HADITH_COLLECTION, Hadith } from '../../constants/hadithCollection';
 import { isRamadan } from '../../utils/ramadan';
@@ -52,6 +54,7 @@ interface DailyContent {
 
 const DailyVerse: React.FC = () => {
   const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [content, setContent] = useState<DailyContent>({
     arabic: verses[0].arabic,
     translation: verses[0].translation,
@@ -107,29 +110,29 @@ const DailyVerse: React.FC = () => {
       <View style={styles.header}>
         <View style={styles.titleRow}>
           <QuranIcon color={theme.colors.primary.DEFAULT} size={24} />
-          <Text style={[styles.title, { color: theme.colors.text.primary }]}>
+          <Text style={styles.title}>
             {content.isHadith ? 'Daily Hadith' : 'Daily Verse'}
           </Text>
         </View>
         <TouchableOpacity onPress={handleShare}>
-          <Text style={[styles.shareButton, { color: theme.colors.primary.DEFAULT }]}>Share</Text>
+          <Text style={styles.shareButton}>Share</Text>
         </TouchableOpacity>
       </View>
 
       <TouchableOpacity
-        style={[styles.verseContainer, { backgroundColor: theme.colors.card.background, borderColor: theme.colors.border.primary }]}
+        style={styles.verseContainer}
         onPress={() => setShowTranslation(!showTranslation)}
         activeOpacity={0.8}
       >
-        <Text style={[styles.arabic, { color: theme.colors.text.primary }]}>{content.arabic}</Text>
+        <Text style={styles.arabic}>{content.arabic}</Text>
         
         {showTranslation && (
           <>
-            <Text style={[styles.translation, { color: theme.colors.text.secondary }]}>"{content.translation}"</Text>
+            <Text style={styles.translation}>"{content.translation}"</Text>
             {content.narrator && (
-              <Text style={[styles.narrator, { color: theme.colors.text.muted }]}>Narrated by {content.narrator}</Text>
+              <Text style={styles.narrator}>Narrated by {content.narrator}</Text>
             )}
-            <Text style={[styles.reference, { color: theme.colors.text.muted }]}>{content.reference}</Text>
+            <Text style={styles.reference}>{content.reference}</Text>
           </>
         )}
       </TouchableOpacity>
@@ -139,64 +142,73 @@ const DailyVerse: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
-    marginHorizontal: 20,
-    marginTop: 24,
+    marginHorizontal: theme.spacing.xl,
+    marginTop: theme.spacing['2xl'],
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: theme.spacing.md,
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: theme.spacing.sm,
   },
   title: {
-    fontSize: 20,  // 2xl
-    fontWeight: '600',  // semibold
+    fontSize: theme.typography.fontSize['2xl'],
+    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.headingRegular,
+    color: theme.colors.text.primary,
   },
   shareButton: {
-    fontSize: 14,  // md
-    fontWeight: '600',  // semibold
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.semibold,
+    color: theme.colors.primary.DEFAULT,
   },
   verseContainer: {
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.xl,
     borderWidth: 1,
+    backgroundColor: theme.colors.card.background,
+    borderColor: theme.colors.border.primary,
   },
   arabic: {
-    fontSize: 24,  // 3xl
+    fontSize: theme.typography.fontSize['3xl'],
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: theme.spacing.lg,
     lineHeight: 36,
-    fontFamily: 'Amiri_400Regular',
+    fontFamily: theme.typography.fontFamily.arabic,
+    color: theme.colors.text.primary,
   },
   translation: {
-    fontSize: 16,  // lg
+    fontSize: theme.typography.fontSize.lg,
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: theme.spacing.md,
     lineHeight: 24,
     fontStyle: 'italic',
+    color: theme.colors.text.secondary,
   },
   narrator: {
-    fontSize: 13,  // sm
+    fontSize: theme.typography.fontSize.sm,
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: theme.spacing.xs,
     fontStyle: 'italic',
+    color: theme.colors.text.muted,
   },
   reference: {
-    fontSize: 14,  // md
+    fontSize: theme.typography.fontSize.md,
     textAlign: 'center',
-    fontWeight: '500',  // medium
+    fontWeight: theme.typography.fontWeight.medium,
+    color: theme.colors.text.muted,
   },
   hint: {
-    fontSize: 13,  // sm (adjusted up)
+    fontSize: theme.typography.fontSize.sm,
     textAlign: 'center',
-    marginTop: 8,
+    marginTop: theme.spacing.sm,
   },
 });
 

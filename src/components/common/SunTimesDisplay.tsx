@@ -3,6 +3,8 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { format } from 'date-fns';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 import { Icon } from './Icon';
 import { SunriseIcon, SunsetIcon } from '../../assets/icons';
 
@@ -16,59 +18,65 @@ export const SunTimesDisplay: React.FC<SunTimesDisplayProps> = ({
   sunset 
 }) => {
   const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   if (!sunrise || !sunset) return null;
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.card.hover, borderColor: theme.colors.border.primary }]}>
+    <View style={styles.container}>
       {/* Sunrise */}
       <View style={styles.timeBox}>
         <Icon source={SunriseIcon} size={28} />
-        <Text style={[styles.label, { color: theme.colors.text.secondary }]}>Sunrise</Text>
-        <Text style={[styles.time, { color: theme.colors.text.primary }]}>{format(sunrise, 'h:mm a')}</Text>
+        <Text style={styles.label}>Sunrise</Text>
+        <Text style={styles.time}>{format(sunrise, 'h:mm a')}</Text>
       </View>
 
       {/* Divider */}
-      <View style={[styles.divider, { backgroundColor: theme.colors.border.primary }]} />
+      <View style={styles.divider} />
 
       {/* Sunset */}
       <View style={styles.timeBox}>
         <Icon source={SunsetIcon} size={28} />
-        <Text style={[styles.label, { color: theme.colors.text.secondary }]}>Sunset</Text>
-        <Text style={[styles.time, { color: theme.colors.text.primary }]}>{format(sunset, 'h:mm a')}</Text>
+        <Text style={styles.label}>Sunset</Text>
+        <Text style={styles.time}>{format(sunset, 'h:mm a')}</Text>
       </View>
     </View>
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 12,
-    padding: 16,
-    marginHorizontal: 20,
-    marginBottom: 16,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.lg,
+    marginHorizontal: theme.spacing.xl,
+    marginBottom: theme.spacing.lg,
     borderWidth: 1,
+    backgroundColor: theme.colors.card.hover,
+    borderColor: theme.colors.border.primary,
   },
   timeBox: {
     flex: 1,
     alignItems: 'center',
-    gap: 6,
+    gap: theme.spacing.xs + 2,
   },
   divider: {
     width: 1,
     height: 60,
-    marginHorizontal: 20,
+    marginHorizontal: theme.spacing.xl,
+    backgroundColor: theme.colors.border.primary,
   },
   label: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: theme.typography.fontSize.sm,
+    fontWeight: theme.typography.fontWeight.medium,
+    color: theme.colors.text.secondary,
   },
   time: {
-    fontSize: 16,
-    fontWeight: '700',
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.bold,
+    color: theme.colors.text.primary,
   },
 });
 

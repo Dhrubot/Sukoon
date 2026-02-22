@@ -4,10 +4,13 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 import ReflectionGardenService from '../../services/ReflectionGardenService';
 
 const GardenTeaser: React.FC = () => {
   const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const navigation = useNavigation();
   const [summary, setSummary] = useState({ total: 0, newBlooms: 0, topEmoji: '🌱' });
 
@@ -41,42 +44,45 @@ const GardenTeaser: React.FC = () => {
 
   return (
     <TouchableOpacity
-      style={[styles.container, { borderColor: theme.colors.border.primary }]}
+      style={styles.container}
       onPress={handlePress}
       activeOpacity={0.8}
     >
       <Text style={styles.emoji}>{summary.topEmoji}</Text>
-      <Text style={[styles.message, { color: theme.colors.text.muted }]}>
+      <Text style={styles.message}>
         {message}
       </Text>
-      <Text style={[styles.arrow, { color: theme.colors.text.muted }]}>→</Text>
+      <Text style={styles.arrow}>→</Text>
     </TouchableOpacity>
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
-    marginHorizontal: 20,
-    marginBottom: 4,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
+    marginHorizontal: theme.spacing.xl,
+    marginBottom: theme.spacing.xs,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+    borderRadius: theme.borderRadius.md,
     flexDirection: 'row',
     alignItems: 'center',
+    borderColor: theme.colors.border.primary,
   },
   emoji: {
-    fontSize: 18,
-    marginRight: 10,
+    fontSize: theme.typography.fontSize.xl,
+    marginRight: theme.spacing.md - 2,
   },
   message: {
-    fontSize: 14,
+    fontSize: theme.typography.fontSize.md,
     fontStyle: 'italic',
     fontWeight: '300',
     flex: 1,
+    color: theme.colors.text.muted,
   },
   arrow: {
-    fontSize: 16,
+    fontSize: theme.typography.fontSize.lg,
     fontWeight: '300',
+    color: theme.colors.text.muted,
   },
 });
 

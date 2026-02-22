@@ -3,6 +3,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { format } from 'date-fns';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 import { OptionalPrayerTime } from '../../types';
 
 interface OptionalPrayerCardProps {
@@ -18,6 +20,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 const OptionalPrayerCard: React.FC<OptionalPrayerCardProps> = ({ prayer, onPrepare }) => {
   const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   const categoryLabel = CATEGORY_LABELS[prayer.category] || prayer.category;
   const prayerColorKey = prayer.name.toLowerCase() as keyof typeof theme.colors.prayer;
@@ -66,11 +69,11 @@ const OptionalPrayerCard: React.FC<OptionalPrayerCardProps> = ({ prayer, onPrepa
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 10,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md + 2,
+    marginBottom: theme.spacing.md - 2,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
@@ -83,8 +86,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   icon: {
-    fontSize: 24,
-    marginRight: 12,
+    fontSize: theme.typography.fontSize['3xl'],
+    marginRight: theme.spacing.md,
   },
   nameSection: {
     flex: 1,
@@ -92,38 +95,39 @@ const styles = StyleSheet.create({
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: theme.spacing.sm,
   },
   name: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: theme.typography.fontSize.base,
+    fontWeight: theme.typography.fontWeight.medium,
   },
   badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xxs,
+    borderRadius: theme.borderRadius.sm + 2,
   },
   badgeText: {
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: theme.typography.fontSize.xs - 1,
+    fontWeight: theme.typography.fontWeight.semibold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   arabic: {
-    fontSize: 12,
-    marginTop: 2,
+    fontSize: theme.typography.fontSize.xs,
+    marginTop: theme.spacing.xxs,
+    fontFamily: theme.typography.fontFamily.arabic,
   },
   rightSection: {
     alignItems: 'flex-end',
   },
   time: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.medium,
   },
   cta: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 2,
+    fontSize: theme.typography.fontSize.xs,
+    fontWeight: theme.typography.fontWeight.semibold,
+    marginTop: theme.spacing.xxs,
   },
 });
 
