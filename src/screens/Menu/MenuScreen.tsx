@@ -11,6 +11,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 import { Icon } from '../../components/common/Icon';
 import { ProgressTabIcon } from '../../assets/icons';
 import Svg, { Path } from 'react-native-svg';
@@ -113,6 +115,7 @@ const menuItems = allMenuItems;
 
 const MenuScreen: React.FC = () => {
   const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const navigation = useNavigation();
 
   const handleItemPress = (screen: string) => {
@@ -121,10 +124,10 @@ const MenuScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
-      <View style={[styles.header, { backgroundColor: theme.colors.card.background }]}>
-        <Text style={[styles.headerTitle, { color: theme.colors.text.primary, fontFamily: theme.typography.fontFamily.heading }]}>More</Text>
-        <Text style={[styles.headerSubtitle, { color: theme.colors.text.secondary }]}>
+    <SafeAreaView style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>More</Text>
+        <Text style={styles.headerSubtitle}>
           Explore more features
         </Text>
       </View>
@@ -135,11 +138,11 @@ const MenuScreen: React.FC = () => {
           return (
             <TouchableOpacity
               key={item.screen}
-              style={[styles.menuItem, { backgroundColor: theme.colors.card.background, borderBottomColor: theme.colors.border.primary }]}
+              style={styles.menuItem}
               onPress={() => handleItemPress(item.screen)}
               activeOpacity={0.7}
             >
-              <View style={[styles.iconContainer, { backgroundColor: theme.colors.card.hover }]}>
+              <View style={styles.iconContainer}>
                 {item.iconType === 'emoji' ? (
                   <Text style={styles.icon}>🌿</Text>
                 ) : item.iconType === 'component' ? (
@@ -150,24 +153,24 @@ const MenuScreen: React.FC = () => {
               </View>
               
               <View style={styles.textContainer}>
-                <Text style={[styles.itemTitle, { color: theme.colors.text.primary }]}>
+                <Text style={styles.itemTitle}>
                   {item.title}
                 </Text>
-                <Text style={[styles.itemSubtitle, { color: theme.colors.text.secondary }]}>
+                <Text style={styles.itemSubtitle}>
                   {item.subtitle}
                 </Text>
               </View>
 
-              <Text style={[styles.chevron, { color: theme.colors.text.muted }]}>›</Text>
+              <Text style={styles.chevron}>›</Text>
             </TouchableOpacity>
           );
         })}
 
         <View style={styles.appInfo}>
-          <Text style={[styles.appVersion, { color: theme.colors.text.muted }]}>
+          <Text style={styles.appVersion}>
             Sukoon v1.0.0
           </Text>
-          <Text style={[styles.blessing, { color: theme.colors.text.muted }]}>
+          <Text style={styles.blessing}>
             May Allah accept our efforts
           </Text>
         </View>
@@ -176,22 +179,27 @@ const MenuScreen: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: theme.colors.background.primary,
   },
   header: {
-    paddingHorizontal: 24,
-    paddingTop: 20,
-    paddingBottom: 16,
+    paddingHorizontal: theme.spacing['2xl'],
+    paddingTop: theme.spacing.xl,
+    paddingBottom: theme.spacing.lg,
+    backgroundColor: theme.colors.card.background,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: theme.typography.fontSize['4xl'],
     fontWeight: '700',
-    marginBottom: 4,
+    fontFamily: theme.typography.fontFamily.heading,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.xs,
   },
   headerSubtitle: {
-    fontSize: 14,
+    fontSize: theme.typography.fontSize.md,
+    color: theme.colors.text.secondary,
   },
   scrollView: {
     flex: 1,
@@ -199,46 +207,54 @@ const styles = StyleSheet.create({
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.lg,
     borderBottomWidth: 1,
+    backgroundColor: theme.colors.card.background,
+    borderBottomColor: theme.colors.border.primary,
   },
   iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
+    width: theme.iconSizes['3xl'],
+    height: theme.iconSizes['3xl'],
+    borderRadius: theme.borderRadius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 16,
+    marginRight: theme.spacing.lg,
+    backgroundColor: theme.colors.card.hover,
   },
   icon: {
-    fontSize: 24,
+    fontSize: theme.typography.fontSize['3xl'],
   },
   textContainer: {
     flex: 1,
   },
   itemTitle: {
-    fontSize: 16,
+    fontSize: theme.typography.fontSize.lg,
     fontWeight: '600',
-    marginBottom: 4,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.xs,
   },
   itemSubtitle: {
-    fontSize: 13,
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.secondary,
   },
   chevron: {
-    fontSize: 28,
+    fontSize: theme.typography.fontSize['4xl'],
     fontWeight: '300',
+    color: theme.colors.text.muted,
   },
   appInfo: {
     alignItems: 'center',
-    paddingVertical: 40,
+    paddingVertical: theme.spacing['4xl'],
   },
   appVersion: {
-    fontSize: 13,
-    marginBottom: 8,
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.muted,
+    marginBottom: theme.spacing.sm,
   },
   blessing: {
-    fontSize: 13,
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.muted,
     fontStyle: 'italic',
   },
 });

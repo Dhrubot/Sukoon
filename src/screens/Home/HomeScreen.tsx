@@ -678,10 +678,10 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
+    padding: theme.spacing['4xl'],
   },
   setupTitle: {
-    fontSize: 28,
+    fontSize: theme.typography.fontSize['4xl'],
     fontWeight: '700',
     fontFamily: theme.typography.fontFamily.heading,
     color: theme.colors.text.primary,
@@ -713,7 +713,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
+    padding: theme.spacing['4xl'],
   },
   loadingText: {
     fontSize: theme.typography.fontSize.lg,
@@ -726,7 +726,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
+    padding: theme.spacing['4xl'],
   },
   errorTitle: {
     fontSize: theme.typography.fontSize['3xl'],

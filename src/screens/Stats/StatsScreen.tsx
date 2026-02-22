@@ -467,7 +467,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     backgroundColor: theme.colors.background.primary,
   },
   header: {
-    padding: 20,
+    padding: theme.spacing.xl,
     backgroundColor: theme.colors.card.background,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border.primary,
@@ -477,19 +477,19 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontWeight: '700',  // bold
     fontFamily: theme.typography.fontFamily.heading,
     color: theme.colors.text.primary,
-    marginBottom: 20,
+    marginBottom: theme.spacing.xl,
   },
   timeRangeContainer: {
     flexDirection: 'row',
     backgroundColor: theme.colors.card.hover,
-    borderRadius: 8,
-    padding: 4,
+    borderRadius: theme.borderRadius.sm,
+    padding: theme.spacing.xs,
   },
   timeRangeButton: {
     flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.borderRadius.sm,
     alignItems: 'center',
   },
   timeRangeButtonActive: {
@@ -509,28 +509,28 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
+    padding: theme.spacing['4xl'],
   },
   emptyStateIcon: {
     fontSize: 64,
-    marginBottom: 16,
+    marginBottom: theme.spacing.lg,
   },
   emptyStateTitle: {
-    fontSize: 24,  // 3xl
-    fontWeight: '700',  // bold
+    fontSize: theme.typography.fontSize['3xl'],
+    fontWeight: '700',
     color: theme.colors.text.primary,
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: theme.spacing.md,
   },
   emptyStateText: {
-    fontSize: 16,  // lg
+    fontSize: theme.typography.fontSize.lg,
     color: theme.colors.text.secondary,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
     lineHeight: 24,
   },
   emptyStateSubtext: {
-    fontSize: 14,  // md
+    fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.muted,
     textAlign: 'center',
   },
@@ -539,12 +539,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
+    padding: theme.spacing['4xl'],
   },
   loadingText: {
-    fontSize: 16,  // lg
+    fontSize: theme.typography.fontSize.lg,
     color: theme.colors.text.secondary,
-    marginTop: 16,
+    marginTop: theme.spacing.lg,
     textAlign: 'center',
   },
   
@@ -552,13 +552,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    padding: 10,
-    gap: 10,
+    padding: theme.spacing.sm,
+    gap: theme.spacing.sm,
   },
   statCard: {
     backgroundColor: theme.colors.card.background,
-    borderRadius: 12,
-    padding: 20,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.xl,
     width: (width - 40) / 2,
     alignItems: 'center',
     borderWidth: 1,
@@ -570,80 +570,80 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     elevation: 3,
   },
   statValue: {
-    fontSize: 32,  // 5xl
-    fontWeight: '700',  // bold
+    fontSize: theme.typography.fontSize['4xl'],
+    fontWeight: '700',
     color: theme.colors.primary.DEFAULT,
-    marginBottom: 4,
+    marginBottom: theme.spacing.xs,
   },
   statLabel: {
-    fontSize: 14,  // md
-    fontWeight: '600',  // semibold
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: '600',
     color: theme.colors.text.primary,
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: theme.spacing.xs,
   },
   statSubtext: {
-    fontSize: 13,  // sm (adjusted up)
+    fontSize: theme.typography.fontSize.sm,
     color: theme.colors.text.secondary,
     textAlign: 'center',
   },
   perfectStreakBadge: {
-    fontSize: 11,
+    fontSize: theme.typography.fontSize.xs,
     fontWeight: '600',
     color: theme.colors.gold,
-    marginTop: 4,
+    marginTop: theme.spacing.xs,
     textAlign: 'center',
   },
   section: {
-    padding: 20,
+    padding: theme.spacing.xl,
   },
   sectionTitle: {
     fontSize: 20,  // 2xl
     fontWeight: '600',  // semibold
     fontFamily: theme.typography.fontFamily.headingRegular,
     color: theme.colors.text.primary,
-    marginBottom: 16,
+    marginBottom: theme.spacing.lg,
   },
   todayProgressContainer: {
     backgroundColor: theme.colors.card.background,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.lg,
     borderWidth: 1,
     borderColor: theme.colors.border.primary,
   },
   todayPrayerItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: theme.spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border.primary,
   },
   prayerEmoji: {
-    fontSize: 24,  // 3xl
-    marginRight: 12,
+    fontSize: theme.typography.fontSize['3xl'],
+    marginRight: theme.spacing.md,
   },
   prayerName: {
     flex: 1,
-    fontSize: 16,  // lg
-    fontWeight: '500',  // medium
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: '500',
     color: theme.colors.text.primary,
   },
   completedPrayerName: {
     color: theme.colors.primary.DEFAULT,
   },
   prayerTime: {
-    fontSize: 14,  // md
+    fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.secondary,
   },
   chart: {
-    marginVertical: 8,
-    borderRadius: 16,
+    marginVertical: theme.spacing.sm,
+    borderRadius: theme.borderRadius.lg,
   },
   insightCard: {
     backgroundColor: theme.colors.card.background,
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 12,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.xl,
+    marginBottom: theme.spacing.md,
     borderLeftWidth: 4,
     borderLeftColor: theme.colors.primary.DEFAULT,
     borderWidth: 1,
@@ -654,19 +654,19 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     backgroundColor: theme.colors.card.hover,
   },
   insightTitle: {
-    fontSize: 16,  // lg
-    fontWeight: '600',  // semibold
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: '600',
     color: theme.colors.primary.DEFAULT,
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
   },
   insightValue: {
-    fontSize: 24,  // 3xl
-    fontWeight: '700',  // bold
+    fontSize: theme.typography.fontSize['3xl'],
+    fontWeight: '700',
     color: theme.colors.text.primary,
-    marginBottom: 4,
+    marginBottom: theme.spacing.xs,
   },
   insightDescription: {
-    fontSize: 14,  // md
+    fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.secondary,
     lineHeight: 20,
   },

@@ -291,28 +291,28 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     backgroundColor: theme.colors.background.primary,
   },
   scrollContent: {
-    paddingBottom: 20,
+    paddingBottom: theme.spacing.xl,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: theme.spacing.xl,
   },
   loadingText: {
-    marginTop: 16,
-    fontSize: 16,  // lg
+    marginTop: theme.spacing.lg,
+    fontSize: theme.typography.fontSize.lg,
     color: theme.colors.text.secondary,
   },
   loadingSubtext: {
-    marginTop: 8,
-    fontSize: 14,  // md
+    marginTop: theme.spacing.sm,
+    fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.muted,
     textAlign: 'center',
   },
   header: {
-    padding: 20,
-    paddingBottom: 10,
+    padding: theme.spacing.xl,
+    paddingBottom: theme.spacing.sm,
     backgroundColor: theme.colors.background.primary,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border.secondary,
@@ -322,41 +322,41 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontWeight: '700',  // bold
     fontFamily: theme.typography.fontFamily.heading,
     color: theme.colors.text.primary,
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
   },
   subtitle: {
-    fontSize: 16,  // lg
+    fontSize: theme.typography.fontSize.lg,
     color: theme.colors.text.secondary,
   },
 
   // 🎯 NEW: Status section styles
   statusSection: {
-    margin: 20,
-    padding: 16,
+    margin: theme.spacing.xl,
+    padding: theme.spacing.lg,
     backgroundColor: theme.colors.card.background,
-    borderRadius: 12,
+    borderRadius: theme.borderRadius.md,
     borderWidth: 1,
     borderColor: theme.colors.border.primary,
   },
   statusTitle: {
-    fontSize: 14,  // md
-    fontWeight: '600',  // semibold
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: '600',
     color: theme.colors.text.secondary,
-    marginBottom: 12,
+    marginBottom: theme.spacing.md,
     letterSpacing: 0.5,
   },
   statusRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
   },
   statusLabel: {
-    fontSize: 14,  // md
+    fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.secondary,
   },
   statusValue: {
-    fontSize: 14,  // md
-    fontWeight: '600',  // semibold
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: '600',
     color: theme.colors.text.primary,
   },
   statusValueGood: {
@@ -369,16 +369,16 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     color: theme.colors.status.error,
   },
   debugButton: {
-    marginTop: 12,
+    marginTop: theme.spacing.md,
     backgroundColor: theme.colors.card.hover,
-    padding: 12,
-    borderRadius: 8,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.sm,
     alignItems: 'center',
   },
   debugButtonText: {
     color: theme.colors.primary.DEFAULT,
-    fontSize: 14,  // md
-    fontWeight: '600',  // semibold
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: '600',
   },
 });
 
