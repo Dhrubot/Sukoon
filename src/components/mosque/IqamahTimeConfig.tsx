@@ -8,6 +8,8 @@ import {
   Alert,
 } from 'react-native';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 import { useMosqueMode } from '../../hooks/useMosqueMode';
 import { usePrayerTimes } from '../../providers/PrayerTimesProvider';
 import { PrayerName } from '../../types';
@@ -23,6 +25,7 @@ type InputMode = 'offset' | 'exact';
 
 export const IqamahTimeConfig: React.FC = () => {
   const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const { settings, setIqamahOffset } = useMosqueMode();
   const { todayPrayerTimes } = usePrayerTimes();
   const [expandedPrayer, setExpandedPrayer] = useState<PrayerName | null>(null);
@@ -213,100 +216,100 @@ export const IqamahTimeConfig: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
-    marginBottom: 20,
+    marginBottom: theme.spacing.xl,
   },
   header: {
-    marginBottom: 16,
-    paddingHorizontal: 4,
+    marginBottom: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.xs,
   },
   title: {
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 6,
+    fontSize: theme.typography.fontSize.xl,
+    fontWeight: theme.typography.fontWeight.bold,
+    marginBottom: theme.spacing.xs + 2,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: theme.typography.fontSize.md,
     lineHeight: 20,
   },
   prayerList: {
-    gap: 8,
+    gap: theme.spacing.sm,
   },
   prayerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
-    borderRadius: 12,
+    padding: theme.spacing.lg,
+    borderRadius: theme.borderRadius.md,
     borderWidth: 1,
   },
   prayerInfo: {
     flex: 1,
   },
   prayerName: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.semibold,
+    marginBottom: theme.spacing.xs,
   },
   offsetText: {
-    fontSize: 13,
+    fontSize: theme.typography.fontSize.sm,
   },
   chevron: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: theme.typography.fontSize.lg,
+    fontWeight: theme.typography.fontWeight.semibold,
   },
   pickerContainer: {
-    padding: 16,
-    borderRadius: 12,
-    marginTop: 8,
-    marginBottom: 8,
+    padding: theme.spacing.lg,
+    borderRadius: theme.borderRadius.md,
+    marginTop: theme.spacing.sm,
+    marginBottom: theme.spacing.sm,
   },
   pickerLabel: {
-    fontSize: 14,
-    fontWeight: '500',
-    marginBottom: 8,
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.medium,
+    marginBottom: theme.spacing.sm,
   },
   chipGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: theme.spacing.sm,
   },
   chip: {
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 10,
+    paddingVertical: theme.spacing.md - 2,
+    paddingHorizontal: theme.spacing.lg,
+    borderRadius: theme.borderRadius.sm + 2,
     borderWidth: 1,
   },
   chipText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.medium,
   },
   modeToggle: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 16,
+    gap: theme.spacing.sm,
+    marginBottom: theme.spacing.lg,
   },
   modeButton: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: theme.spacing.md - 2,
     alignItems: 'center',
-    borderRadius: 10,
+    borderRadius: theme.borderRadius.sm + 2,
     borderWidth: 1,
     borderColor: 'rgba(128, 128, 128, 0.2)',
   },
   modeButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: theme.typography.fontSize.md,
+    fontWeight: theme.typography.fontWeight.semibold,
   },
   tipBox: {
-    marginTop: 16,
-    padding: 14,
-    borderRadius: 12,
+    marginTop: theme.spacing.lg,
+    padding: theme.spacing.md + 2,
+    borderRadius: theme.borderRadius.md,
     borderWidth: 1,
   },
   tipText: {
-    fontSize: 13,
+    fontSize: theme.typography.fontSize.sm,
     textAlign: 'center',
     lineHeight: 18,
   },
