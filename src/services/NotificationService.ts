@@ -587,7 +587,7 @@ class NotificationService {
       } else {
         await Notifications.scheduleNotificationAsync({
           content: {
-            title: `Did you pray ${prayerName}? 🤲`,
+            title: `${prayerName} Prayer`,
             body: 'Tap to mark your prayer and add a reflection',
             data: {
               prayer: prayer.name,
@@ -642,10 +642,10 @@ class NotificationService {
 
   private getPrePrayerContent(prayerName: string, minutes: number): NotificationContent {
     const messages = [
-      `${prayerName} prayer in ${minutes} minutes. Time to prepare your heart 🤲`,
-      `${minutes} minutes until ${prayerName}. Begin your mindful preparation 🕌`,
-      `Get ready for ${prayerName} prayer in ${minutes} minutes ✨`,
-      `${prayerName} approaching in ${minutes} minutes. Find your peaceful space 🌿`,
+      `${prayerName} prayer in ${minutes} minutes — time to prepare your heart`,
+      `${minutes} minutes until ${prayerName}. Begin your mindful preparation`,
+      `${prayerName} approaching in ${minutes} minutes. Find your peaceful space`,
+      `${prayerName} in ${minutes} minutes — a moment of stillness awaits`,
     ];
 
     return {
@@ -1075,7 +1075,7 @@ class NotificationService {
 
           await Notifications.scheduleNotificationAsync({
             content: {
-              title: '🌌 Tahajjud Time',
+              title: 'Tahajjud Time',
               body: message,
               data: {
                 type: 'tahajjud-reminder',

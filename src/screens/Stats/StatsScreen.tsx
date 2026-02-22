@@ -41,7 +41,7 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
   } = usePrayerTimes();
 
   // Keep existing store state for other features
-  const { currentStreak, todayPrayerRecords } = useStore();
+  const { currentStreak, engagementStreak, todayPrayerRecords } = useStore();
   
   const [timeRange, setTimeRange] = useState<TimeRange>('week');
   const [isLoading, setIsLoading] = useState(true);
@@ -317,9 +317,12 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
           </View>
           
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{currentStreak}</Text>
-            <Text style={styles.statLabel}>Current Streak</Text>
-            <Text style={styles.statSubtext}>days in a row</Text>
+            <Text style={styles.statValue}>{engagementStreak}</Text>
+            <Text style={styles.statLabel}>Prayer Streak</Text>
+            <Text style={styles.statSubtext}>days active</Text>
+            {currentStreak > 0 && (
+              <Text style={styles.perfectStreakBadge}>{currentStreak}d perfect</Text>
+            )}
           </View>
           
           <View style={styles.statCard}>
@@ -581,6 +584,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   statSubtext: {
     fontSize: 13,  // sm (adjusted up)
     color: theme.colors.text.secondary,
+    textAlign: 'center',
+  },
+  perfectStreakBadge: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: theme.colors.gold,
+    marginTop: 4,
     textAlign: 'center',
   },
   section: {

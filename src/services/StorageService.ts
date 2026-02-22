@@ -245,7 +245,7 @@ class StorageService {
     this.storage.set(`daily_stats_${date}`, JSON.stringify(stats));
   }
 
-  // Streaks
+  // Streaks — dual system: engagement (≥1 prayer) + perfect (5/5)
   getCurrentStreak(): number {
     return this.storage.getNumber("current_streak") || 0;
   }
@@ -254,9 +254,17 @@ class StorageService {
     this.storage.set("current_streak", value);
   }
 
-  // P0-D FIX: Made idempotent — guards with last_streak_update_date so repeated
-  // calls on the same day don't keep incrementing. Also fixes the missing reset
-  // path (Bug 9): today < 5 now always resets streak to 0 regardless of yesterday.
+  getEngagementStreak(): number {
+    return this.storage.getNumber("engagement_streak") || 0;
+  }
+
+  setEngagementStreak(value: number): void {
+    this.storage.set("engagement_streak", value);
+  }
+
+  // Dual streak update: engagement streak rewards any effort (≥1 prayer),
+  // perfect streak rewards full completion (5/5). This avoids the
+  // "abstinence violation effect" where partial progress feels like failure.
   updateStreak(): void {
     const today = getLocalDateKey();
     const yesterday = getLocalDateKey(new Date(Date.now() - 86400000));
@@ -264,48 +272,76 @@ class StorageService {
     const todayStats = this.getDailyStats(today);
     const yesterdayStats = this.getDailyStats(yesterday);
 
-    // Guard: only recalculate streak once per calendar day
+    const todayCompleted = todayStats?.prayersCompleted ?? 0;
+    const yesterdayCompleted = yesterdayStats?.prayersCompleted ?? 0;
+
+    // ── Engagement Streak (≥1 prayer today) ──
+    if (todayCompleted >= 1) {
+      const lastEngagementDate = this.storage.getString("last_engagement_streak_date");
+      if (lastEngagementDate !== today) {
+        if (yesterdayCompleted >= 1) {
+          this.storage.set("engagement_streak", this.getEngagementStreak() + 1);
+        } else {
+          this.storage.set("engagement_streak", 1);
+        }
+        this.storage.set("last_engagement_streak_date", today);
+      }
+    } else {
+      if (yesterdayCompleted < 1) {
+        this.storage.set("engagement_streak", 0);
+      }
+    }
+
+    // ── Perfect Streak (5/5 prayers) ──
     const lastStreakDate = this.storage.getString("last_streak_update_date");
 
-    if (todayStats && todayStats.prayersCompleted === 5) {
+    if (todayCompleted === 5) {
       if (lastStreakDate === today) {
-        // Already calculated streak for today's perfect day — skip
-        return;
-      }
-      if (yesterdayStats && yesterdayStats.prayersCompleted === 5) {
-        // Continue streak
-        const current = this.getCurrentStreak();
-        this.storage.set("current_streak", current + 1);
+        // Already calculated perfect streak for today — skip
       } else {
-        // Start new streak
-        this.storage.set("current_streak", 1);
+        if (yesterdayCompleted === 5) {
+          this.storage.set("current_streak", this.getCurrentStreak() + 1);
+        } else {
+          this.storage.set("current_streak", 1);
+        }
+        this.storage.set("last_streak_update_date", today);
       }
-      this.storage.set("last_streak_update_date", today);
     } else {
-      // Today is not yet a perfect day — reset streak if yesterday wasn't perfect
-      // (Bug 9 fix: this covers the previously missing case)
-      if (!yesterdayStats || yesterdayStats.prayersCompleted < 5) {
+      if (yesterdayCompleted < 5) {
         this.storage.set("current_streak", 0);
       }
     }
 
-    // Update longest streak
-    const current = this.getCurrentStreak();
-    const longest = this.storage.getNumber("longest_streak") || 0;
-    if (current > longest) {
-      this.storage.set("longest_streak", current);
+    // Update longest streaks (both types)
+    const currentPerfect = this.getCurrentStreak();
+    const longestPerfect = this.storage.getNumber("longest_streak") || 0;
+    if (currentPerfect > longestPerfect) {
+      this.storage.set("longest_streak", currentPerfect);
     }
 
-    // Log streak milestones
+    const currentEngagement = this.getEngagementStreak();
+    const longestEngagement = this.storage.getNumber("longest_engagement_streak") || 0;
+    if (currentEngagement > longestEngagement) {
+      this.storage.set("longest_engagement_streak", currentEngagement);
+    }
+
+    // Log streak milestones for both types
     const milestones = [7, 30, 60, 100, 365];
-    if (milestones.includes(current)) {
-      AnalyticsService.logStreakMilestone(current);
+    if (milestones.includes(currentPerfect)) {
+      AnalyticsService.logStreakMilestone(currentPerfect);
+    }
+    if (milestones.includes(currentEngagement)) {
+      AnalyticsService.logStreakMilestone(currentEngagement);
     }
   }
 
-  // Get longest streak ever recorded
+  // Get longest streaks ever recorded
   getLongestStreak(): number {
     return this.storage.getNumber("longest_streak") || 0;
+  }
+
+  getLongestEngagementStreak(): number {
+    return this.storage.getNumber("longest_engagement_streak") || 0;
   }
 
   // Get prayer records for a date range

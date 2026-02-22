@@ -42,20 +42,20 @@ export function isQuietHours(settings: UserSettings, time: Date = new Date()): b
 export function getTier2Messages(urgency: 'first' | 'middle' | 'final'): string[] {
   const messages = {
     first: [
-      "Have you prayed {prayer} yet?",
-      "Checking in: Did you complete {prayer}?",
-      "Quick reminder about {prayer} prayer ✨",
-      "Come to the Prayer, Come to Success"
+      "{prayer} time is open — find a quiet moment",
+      "The {prayer} window is here",
+      "Come to the Prayer, Come to Success",
+      "{prayer} — a moment of stillness awaits",
     ],
     middle: [
-      "Still waiting for {prayer}! Everything okay?",
-      "Friendly reminder: {prayer} is waiting!",
-      "Hey there! Don't forget {prayer} prayer",
+      "The {prayer} window continues — there's still time",
+      "A gentle reminder: {prayer} time is still open",
+      "{prayer} — your moment of peace is waiting",
     ],
     final: [
-      "Last reminder for {prayer} prayer!",
-      "I won't give up on you! {prayer} time",
-      "Final check: Have you prayed {prayer}?",
+      "The {prayer} window is closing soon",
+      "Last light for {prayer} — still time to turn inward",
+      "A few moments left for {prayer} prayer",
     ],
   };
 
@@ -120,7 +120,7 @@ export async function scheduleTier2PersistentReminders(
 
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: `${prayerDisplayName} Prayer Check-in 🤲`,
+        title: `${prayerDisplayName} Prayer`,
         body: message,
         data: {
           prayerId,

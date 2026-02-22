@@ -641,19 +641,19 @@ export const lightTheme = {
     verifyLink:             palette.green600,
   },
 
-  // SanctuaryView — same white overlays on gradient (gradients are vivid in both themes)
+  // SanctuaryView — dark ink on pastel gradients for proper contrast in light mode
   sanctuary: {
-    greeting:        palette.whiteAlpha70,
-    label:           palette.whiteAlpha50,
-    prayerName:      palette.white,
-    prayerTime:      palette.whiteAlpha80,
-    countdown:       palette.whiteAlpha60,
-    prayedStatus:    palette.whiteAlpha80,
-    buttonBg:        palette.whiteAlpha10,
-    buttonBorder:    palette.whiteAlpha30,
-    buttonBgMuted:   palette.whiteAlpha05,
-    buttonBorderMuted: palette.whiteAlpha15,
-    buttonText:      palette.white,
+    greeting:        palette.ink500,
+    label:           palette.ink400,
+    prayerName:      palette.ink900,
+    prayerTime:      palette.ink700,
+    countdown:       palette.ink500,
+    prayedStatus:    palette.ink700,
+    buttonBg:        'rgba(0, 0, 0, 0.06)',
+    buttonBorder:    'rgba(0, 0, 0, 0.12)',
+    buttonBgMuted:   'rgba(0, 0, 0, 0.03)',
+    buttonBorderMuted: 'rgba(0, 0, 0, 0.08)',
+    buttonText:      palette.ink900,
   },
 
   prayerGradients: prayerGradients.light,
