@@ -151,11 +151,10 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
     >
       <View style={styles.leftSection}>
         <View style={styles.iconContainer}>
-          <Icon 
-            source={getPrayerIcon(prayer.name)} 
-            size={32}
-            color={isActive() ? theme.colors.primary.DEFAULT : theme.colors.text.secondary}
-          />
+          {React.createElement(getPrayerIcon(prayer.name), {
+            size: 32,
+            color: isActive() ? theme.colors.primary.DEFAULT : theme.colors.text.secondary,
+          })}
         </View>
         <View style={styles.timeInfo}>
           <Text style={[styles.prayerName, { color: theme.colors.text.primary }, isActive() && styles.activeName]}>

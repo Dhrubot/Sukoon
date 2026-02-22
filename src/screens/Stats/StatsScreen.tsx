@@ -16,6 +16,7 @@ import { format, startOfWeek, endOfWeek, eachDayOfInterval, subDays, startOfMont
 
 // Store and Services
 import { useStore } from '../../store/useStore';
+import { getPrayerIcon } from '../../assets/icons';
 import StorageService from '../../services/StorageService';
 import { PrayerRecord, DailyStats } from '../../types';
 
@@ -343,9 +344,14 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
               
               return (
                 <View key={prayer.name} style={styles.todayPrayerItem}>
-                  <Text style={styles.prayerEmoji}>
-                    {isCompleted ? (isMindful ? '🤲' : '✅') : '⭕'}
-                  </Text>
+                  <View style={styles.prayerIconContainer}>
+                    {React.createElement(getPrayerIcon(prayer.name), {
+                      size: 22,
+                      color: isCompleted
+                        ? theme.colors.primary.DEFAULT
+                        : theme.colors.text.muted,
+                    })}
+                  </View>
                   <Text style={[
                     styles.prayerName,
                     isCompleted && styles.completedPrayerName
@@ -618,8 +624,11 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border.primary,
   },
-  prayerEmoji: {
-    fontSize: theme.typography.fontSize['3xl'],
+  prayerIconContainer: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginRight: theme.spacing.md,
   },
   prayerName: {

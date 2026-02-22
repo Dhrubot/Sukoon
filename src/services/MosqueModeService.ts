@@ -148,7 +148,7 @@ class MosqueModeService {
 
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: '🕌 Mosque Mode Test',
+          title: 'Mosque Mode Test',
           body: scheduled ? 'Test scheduled for 1 minute from now.' : 'Could not schedule. Please grant Do Not Disturb access.',
           data: {
             type: 'mosque_mode_test',
@@ -240,7 +240,7 @@ class MosqueModeService {
 
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: '🔊 Ringer Restored',
+          title: 'Ringer Restored',
           body: 'Mosque Mode ended',
           data: {
             type: 'mosque_mode_restore',
@@ -307,7 +307,7 @@ class MosqueModeService {
 
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: `🔇 ${prayer.name} Iqamah Now`,
+          title: `${prayer.name} Iqamah Now`,
           body: 'Please silence your phone for prayer.',
           data: {
             type: 'mosque_mode_iqamah',
@@ -427,7 +427,7 @@ class MosqueModeService {
 
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: `🕌 ${prayer.name} Iqamah in ${minsUntilIqamah} min`,
+          title: `${prayer.name} Iqamah in ${minsUntilIqamah} min`,
           body: 'Heading to the mosque? Tap to enable silent mode.',
           data: {
             type: 'mosque_mode_prompt',
