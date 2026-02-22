@@ -147,6 +147,61 @@ export function getMoonSightingEvent(maghribTime?: Date): MoonSightingEvent | nu
   return null;
 }
 
+// ─── Expanded Nudge (days 1–3 of critical months) ────────────
+
+export interface HijriNudgeEvent {
+  /** The event type this nudge relates to */
+  type: MoonSightingEventType;
+  /** Current computed hijri date (with any existing adjustment) */
+  currentDay: number;
+  currentMonth: string;
+  currentYear: number;
+  /** Hijri month number */
+  monthNumber: number;
+}
+
+/**
+ * Check if we should show a persistent "Is today X?" nudge card.
+ * Returns an event during days 1–3 of Ramadan, Shawwal, Dhul Hijjah
+ * ONLY if the user has NOT confirmed the moon sighting for this transition.
+ *
+ * This is different from getMoonSightingEvent() which shows a modal popup.
+ * The nudge is a non-intrusive card that persists for 3 days.
+ */
+export function getHijriNudgeEvent(): HijriNudgeEvent | null {
+  const raw = getRawCachedHijriDate();
+  if (!raw) return null;
+
+  const { month, day, year } = raw;
+
+  // Only nudge during the first 3 days of critical months
+  if (day < 1 || day > 3) return null;
+
+  const NUDGE_MAP: Array<{ month: number; type: MoonSightingEventType }> = [
+    { month: RAMADAN,    type: 'ramadan' },
+    { month: SHAWWAL,    type: 'eid_fitr' },
+    { month: DHUL_HIJJAH, type: 'eid_adha' },
+  ];
+
+  for (const nm of NUDGE_MAP) {
+    if (month !== nm.month) continue;
+
+    // If user already confirmed for this transition, no nudge needed
+    const state = getState(nm.type, year);
+    if (state === 'confirmed') return null;
+
+    return {
+      type: nm.type,
+      currentDay: day,
+      currentMonth: raw.monthNameEn,
+      currentYear: year,
+      monthNumber: month,
+    };
+  }
+
+  return null;
+}
+
 /**
  * Get a deferred moon sighting event (user previously said "Not yet").
  * Used to show the re-trigger card on HomeScreen.

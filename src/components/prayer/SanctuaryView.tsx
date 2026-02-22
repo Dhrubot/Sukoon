@@ -23,9 +23,10 @@ import { isFriday } from '../../utils/ramadan';
 
 const { height } = Dimensions.get('window');
 
-interface MosqueModeInfo {
-  prayer: PrayerName;
-  restoreTime: Date;
+interface MosqueModeHeroInfo {
+  iqamahTime: Date;
+  /** Present only when mosque mode has fired (active silent period) */
+  restoreTime?: Date;
 }
 
 interface SanctuaryViewProps {
@@ -38,7 +39,8 @@ interface SanctuaryViewProps {
   onPrepareQada?: () => void;
   onPraySunnah?: () => void;
   isFocusMode?: boolean;
-  mosqueModeActive?: MosqueModeInfo;
+  mosqueModeInfo?: MosqueModeHeroInfo;
+  onMosqueModeTap?: () => void;
 }
 
 const SanctuaryView: React.FC<SanctuaryViewProps> = ({
@@ -51,7 +53,8 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
   onPrepareQada,
   onPraySunnah,
   isFocusMode = false,
-  mosqueModeActive,
+  mosqueModeInfo,
+  onMosqueModeTap,
 }) => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
@@ -185,13 +188,22 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
           </View>
         )}
 
-        {/* Mosque Mode Pill Badge — subtle awareness, no emoji */}
-        {mosqueModeActive && (
-          <View style={styles.mosqueModePill}>
+        {/* Mosque Mode Pill — unified: iqamah time + active status */}
+        {mosqueModeInfo && (
+          <TouchableOpacity
+            style={styles.mosqueModePill}
+            onPress={onMosqueModeTap}
+            activeOpacity={0.7}
+          >
             <Text style={styles.mosqueModePillText}>
-              Mosque Mode · {PrayerTimeService.getPrayerDisplayName(mosqueModeActive.prayer)} · until {format(mosqueModeActive.restoreTime, 'h:mm a')}
+              Iqamah at {format(mosqueModeInfo.iqamahTime, 'h:mm a')}
             </Text>
-          </View>
+            {mosqueModeInfo.restoreTime && (
+              <Text style={styles.mosqueModePillText}>
+                Mosque Mode · until {format(mosqueModeInfo.restoreTime, 'h:mm a')}
+              </Text>
+            )}
+          </TouchableOpacity>
         )}
 
         {/* CTA */}

@@ -30,7 +30,7 @@ import PrayerCard from "../../components/prayer/PrayerCard";
 import SanctuaryView from "../../components/prayer/SanctuaryView";
 import DailyVerse from "../../components/common/DailyVerse";
 import { SunTimesDisplay } from "../../components/common/SunTimesDisplay";
-import { MosqueModeStatus, MosqueModeOverlay } from "../../components/mosque";
+import { MosqueModeOverlay } from "../../components/mosque";
 import RamadanTimesCard from "../../components/prayer/RamadanTimesCard";
 import OptionalPrayersSection from "../../components/prayer/OptionalPrayersSection";
 import GardenTeaser from "../../components/garden/GardenTeaser";
@@ -39,9 +39,10 @@ import GardenTeaser from "../../components/garden/GardenTeaser";
 import { PrayerTime, OptionalPrayerTime } from "../../types";
 
 import { isRamadan, getRamadanDay, isEidDay, getEidName, isTashreeqDays, getTashreeqDayLabel } from "../../utils/ramadan";
-import { getMoonSightingEvent, getDeferredMoonSightingEvent, MoonSightingEvent } from "../../utils/moonSighting";
+import { getMoonSightingEvent, getDeferredMoonSightingEvent, getHijriNudgeEvent, MoonSightingEvent, HijriNudgeEvent } from "../../utils/moonSighting";
 import MoonSightingPrompt from "../../components/MoonSightingPrompt";
 import MoonSightingCard from "../../components/MoonSightingCard";
+import HijriNudgeCard from "../../components/HijriNudgeCard";
 
 const { width } = Dimensions.get("window");
 
@@ -70,13 +71,14 @@ const HomeScreen = ({ navigation }: any) => {
   } = useStore();
 
   // Mosque mode state for focus mode + pill badge
-  const { isActive: isMosqueModeActive, activeState: mosqueModeState } = useMosqueMode();
+  const { isActive: isMosqueModeActive, activeState: mosqueModeState, isEnabled: isMosqueModeEnabled, settings: mosqueModeSettings, getIqamahTime } = useMosqueMode();
 
   // Local state for UI features
   const [currentTime, setCurrentTime] = useState(new Date());
   const [focusExpanded, setFocusExpanded] = useState(false);
   const [moonSightingEvent, setMoonSightingEvent] = useState<MoonSightingEvent | null>(null);
   const [deferredMoonEvent, setDeferredMoonEvent] = useState<MoonSightingEvent | null>(null);
+  const [hijriNudge, setHijriNudge] = useState<HijriNudgeEvent | null>(null);
 
   // 🎯 REMOVED: loadPrayerTimes function - now handled by provider!
   // 🎯 REMOVED: location checks - now handled by provider!
@@ -116,6 +118,13 @@ const HomeScreen = ({ navigation }: any) => {
     // Check for deferred card (user said "Not yet" previously)
     const deferred = getDeferredMoonSightingEvent();
     setDeferredMoonEvent(deferred);
+
+    // Check for expanded hijri nudge (days 1-3 of critical months)
+    if (!moonSightingEvent && !deferred) {
+      setHijriNudge(getHijriNudgeEvent());
+    } else {
+      setHijriNudge(null);
+    }
   }, [todayPrayerTimes, currentTime]);
 
   const loadTodayRecords = () => {
@@ -236,6 +245,29 @@ const HomeScreen = ({ navigation }: any) => {
 
   const completedToday = todayPrayerRecords.filter(r => r.status === 'prayed').length;
 
+  // Unified mosque mode info for the hero pill
+  const mosqueModeHeroInfo = useMemo(() => {
+    if (!isMosqueModeEnabled) return null;
+
+    // Active: iqamahTime + restoreTime
+    if (isMosqueModeActive && mosqueModeState) {
+      return {
+        iqamahTime: mosqueModeState.iqamahTime,
+        restoreTime: mosqueModeState.restoreTime,
+      };
+    }
+
+    // Scheduled: next future iqamah, no restoreTime yet
+    const now = new Date();
+    for (const p of todayPrayerTimes) {
+      const iqamah = getIqamahTime(p);
+      if (!iqamah) continue;
+      if (iqamah.getTime() <= now.getTime()) continue;
+      return { iqamahTime: iqamah };
+    }
+    return null;
+  }, [isMosqueModeEnabled, isMosqueModeActive, mosqueModeState, todayPrayerTimes, getIqamahTime, currentTime]);
+
   // Find the record for the current hero prayer (if already prayed)
   const heroPrayerRecord = useMemo(() => {
     if (!nextPrayer) return undefined;
@@ -337,10 +369,8 @@ const HomeScreen = ({ navigation }: any) => {
             onPrepareQada={missedPreviousPrayer ? () => handlePrayerComplete(missedPreviousPrayer) : undefined}
             onPraySunnah={handleSunnahPrayer}
             isFocusMode={isFocusMode}
-            mosqueModeActive={isMosqueModeActive && mosqueModeState ? {
-              prayer: mosqueModeState.prayer,
-              restoreTime: mosqueModeState.restoreTime,
-            } : undefined}
+            mosqueModeInfo={mosqueModeHeroInfo ?? undefined}
+            onMosqueModeTap={() => navigation.navigate('MosqueMode')}
           />
         ) : (
           <LinearGradient colors={getBackgroundGradient()} style={styles.noNextPrayer}>
@@ -374,8 +404,6 @@ const HomeScreen = ({ navigation }: any) => {
             </View>
           )}
 
-          {/* 🕌 Mosque Mode Status Banner */}
-          <MosqueModeStatus />
 
           {/* Sunrise & Sunset */}
           <SunTimesDisplay sunrise={todaySunrise} sunset={todaySunset} />
@@ -396,6 +424,14 @@ const HomeScreen = ({ navigation }: any) => {
                 setMoonSightingEvent(deferredMoonEvent);
                 setDeferredMoonEvent(null);
               }}
+            />
+          )}
+
+          {/* 🌙 Hijri date nudge — persistent card during first 3 days of critical months */}
+          {hijriNudge && !moonSightingEvent && !deferredMoonEvent && (
+            <HijriNudgeCard
+              nudge={hijriNudge}
+              onDismissed={() => setHijriNudge(null)}
             />
           )}
 
