@@ -402,42 +402,43 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     alignItems: 'center',
   },
   loadingText: {
-    marginTop: 16,
-    fontSize: 16,  // lg
+    marginTop: theme.spacing.lg,
+    fontSize: theme.typography.fontSize.lg,
     color: theme.colors.text.secondary,
   },
   header: {
-    padding: 20,
+    padding: theme.spacing.xl,
     alignItems: 'center',
   },
   title: {
-    fontSize: 32,  // 5xl
-    fontWeight: '700',  // bold
+    fontSize: theme.typography.fontSize['5xl'],
+    fontWeight: theme.typography.fontWeight.bold,
+    fontFamily: theme.typography.fontFamily.heading,
     color: theme.colors.text.primary,
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
   },
   subtitle: {
-    fontSize: 16,  // lg
+    fontSize: theme.typography.fontSize.lg,
     color: theme.colors.text.secondary,
     textAlign: 'center',
   },
   tabContainer: {
     flexDirection: 'row',
-    marginHorizontal: 20,
+    marginHorizontal: theme.spacing.xl,
     backgroundColor: theme.colors.card.hover,
-    borderRadius: 12,
-    padding: 4,
-    marginBottom: 20,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.xs,
+    marginBottom: theme.spacing.xl,
   },
   tab: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    gap: 6,
+    paddingVertical: theme.spacing.md,
+    paddingHorizontal: theme.spacing.sm,
+    borderRadius: theme.borderRadius.sm,
+    gap: theme.spacing.xs + 2,
   },
   tabActive: {
     backgroundColor: theme.colors.primary.DEFAULT,
@@ -448,19 +449,19 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     elevation: 2,
   },
   tabIcon: {
-    fontSize: 20,  // 2xl
+    fontSize: theme.typography.fontSize['2xl'],
   },
   tabIconActive: {
-    fontSize: 20,  // 2xl
+    fontSize: theme.typography.fontSize['2xl'],
   },
   tabText: {
-    fontSize: 14,  // md
+    fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.secondary,
-    fontWeight: '500',  // medium
+    fontWeight: theme.typography.fontWeight.medium,
   },
   tabTextActive: {
     color: theme.colors.text.primary,
-    fontWeight: '600',  // semibold
+    fontWeight: theme.typography.fontWeight.semibold,
   },
   tabContent: {
     flex: 1,
@@ -468,57 +469,57 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   // Subscription Tab Styles
   introCard: {
     backgroundColor: theme.colors.card.background,
-    marginHorizontal: 20,
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 24,
+    marginHorizontal: theme.spacing.xl,
+    padding: theme.spacing.xl,
+    borderRadius: theme.borderRadius.md,
+    marginBottom: theme.spacing['2xl'],
     borderWidth: 1,
     borderColor: theme.colors.card.hover,
   },
   introTitle: {
-    fontSize: 20,  // 2xl
-    fontWeight: '600',  // semibold
+    fontSize: theme.typography.fontSize['2xl'],
+    fontWeight: theme.typography.fontWeight.semibold,
     color: theme.colors.primary.DEFAULT,
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
   },
   introText: {
-    fontSize: 16,  // lg
+    fontSize: theme.typography.fontSize.lg,
     color: theme.colors.text.secondary,
     lineHeight: 22,
   },
   featuresContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
+    paddingHorizontal: theme.spacing.xl,
+    marginBottom: theme.spacing['2xl'],
   },
   featuresTitle: {
-    fontSize: 18,  // xl
-    fontWeight: '600',  // semibold
+    fontSize: theme.typography.fontSize.xl,
+    fontWeight: theme.typography.fontWeight.semibold,
     color: theme.colors.text.primary,
-    marginBottom: 16,
+    marginBottom: theme.spacing.lg,
   },
   featureRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: theme.spacing.md,
   },
   featureIcon: {
-    fontSize: 24,  // 3xl
-    marginRight: 12,
+    fontSize: theme.typography.fontSize['3xl'],
+    marginRight: theme.spacing.md,
   },
   featureText: {
-    fontSize: 16,  // lg
+    fontSize: theme.typography.fontSize.lg,
     color: theme.colors.text.secondary,
     flex: 1,
   },
   plansContainer: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
+    paddingHorizontal: theme.spacing.xl,
+    marginBottom: theme.spacing['2xl'],
   },
   planCard: {
     backgroundColor: theme.colors.card.background,
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 16,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.xl,
+    marginBottom: theme.spacing.lg,
     borderWidth: 2,
     borderColor: theme.colors.card.hover,
   },
@@ -532,61 +533,61 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   recommendedBadge: {
     position: 'absolute',
     top: -12,
-    right: 16,
+    right: theme.spacing.lg,
     backgroundColor: theme.colors.primary.DEFAULT,
-    paddingHorizontal: 12,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: theme.spacing.md,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.borderRadius.md,
   },
   recommendedText: {
-    fontSize: 13,  // sm (adjusted up)
-    fontWeight: '700',  // bold
+    fontSize: theme.typography.fontSize.sm,
+    fontWeight: theme.typography.fontWeight.bold,
     color: theme.colors.text.primary,
   },
   planHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
   },
   planName: {
-    fontSize: 20,  // 2xl
-    fontWeight: '600',  // semibold
+    fontSize: theme.typography.fontSize['2xl'],
+    fontWeight: theme.typography.fontWeight.semibold,
     color: theme.colors.text.primary,
   },
   planPrice: {
-    fontSize: 24,  // 3xl
-    fontWeight: '700',  // bold
+    fontSize: theme.typography.fontSize['3xl'],
+    fontWeight: theme.typography.fontWeight.bold,
     color: theme.colors.primary.DEFAULT,
   },
   planDescription: {
-    fontSize: 16,  // lg
+    fontSize: theme.typography.fontSize.lg,
     color: theme.colors.text.secondary,
   },
   currentPlanBadge: {
-    fontSize: 14,  // md
+    fontSize: theme.typography.fontSize.md,
     color: theme.colors.primary.DEFAULT,
-    fontWeight: '600',  // semibold
-    marginTop: 8,
+    fontWeight: theme.typography.fontWeight.semibold,
+    marginTop: theme.spacing.sm,
   },
   manageButton: {
-    marginHorizontal: 20,
-    marginBottom: 20,
+    marginHorizontal: theme.spacing.xl,
+    marginBottom: theme.spacing.xl,
     alignItems: 'center',
   },
   manageButtonText: {
-    fontSize: 16,  // lg
+    fontSize: theme.typography.fontSize.lg,
     color: theme.colors.primary.DEFAULT,
     textDecorationLine: 'underline',
   },
   // Watch Ad Tab Styles
   adContainer: {
-    padding: 20,
+    padding: theme.spacing.xl,
   },
   adCard: {
     backgroundColor: theme.colors.card.background,
-    borderRadius: 16,
-    padding: 24,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing['2xl'],
     alignItems: 'center',
     borderWidth: 1,
     borderColor: theme.colors.card.hover,
@@ -598,173 +599,174 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   adEmoji: {
     fontSize: 64,
-    marginBottom: 16,
+    marginBottom: theme.spacing.lg,
   },
   adTitle: {
-    fontSize: 24,  // 3xl
-    fontWeight: '700',  // bold
+    fontSize: theme.typography.fontSize['3xl'],
+    fontWeight: theme.typography.fontWeight.bold,
     color: theme.colors.text.primary,
-    marginBottom: 12,
+    marginBottom: theme.spacing.md,
   },
   adDescription: {
-    fontSize: 16,  // lg
+    fontSize: theme.typography.fontSize.lg,
     color: theme.colors.text.secondary,
     textAlign: 'center',
     lineHeight: 24,
-    marginBottom: 20,
+    marginBottom: theme.spacing.xl,
   },
   adNote: {
-    fontSize: 15,  // base
+    fontSize: theme.typography.fontSize.base,
     color: theme.colors.text.secondary,
     lineHeight: 22,
-    marginBottom: 24,
+    marginBottom: theme.spacing['2xl'],
   },
   watchAdButton: {
     width: '100%',
   },
   watchAdGradient: {
-    paddingVertical: 16,
-    paddingHorizontal: 32,
-    borderRadius: 12,
+    paddingVertical: theme.spacing.lg,
+    paddingHorizontal: theme.spacing['3xl'],
+    borderRadius: theme.borderRadius.md,
     alignItems: 'center',
   },
   watchAdButtonText: {
-    fontSize: 18,  // xl
-    fontWeight: '600',  // semibold
+    fontSize: theme.typography.fontSize.xl,
+    fontWeight: theme.typography.fontWeight.semibold,
     color: theme.colors.text.primary,
   },
   adUnavailable: {
     backgroundColor: theme.colors.card.hover,
-    padding: 16,
-    borderRadius: 8,
-    marginTop: 16,
+    padding: theme.spacing.lg,
+    borderRadius: theme.borderRadius.sm,
+    marginTop: theme.spacing.lg,
   },
   adUnavailableText: {
-    fontSize: 16,  // lg
+    fontSize: theme.typography.fontSize.lg,
     color: theme.colors.status.warning,
     textAlign: 'center',
   },
   privacyNote: {
     backgroundColor: theme.colors.card.background,
-    padding: 20,
-    borderRadius: 12,
-    marginTop: 24,
+    padding: theme.spacing.xl,
+    borderRadius: theme.borderRadius.md,
+    marginTop: theme.spacing['2xl'],
     borderWidth: 1,
     borderColor: theme.colors.card.hover,
   },
   privacyTitle: {
-    fontSize: 18,  // xl
-    fontWeight: '600',  // semibold
+    fontSize: theme.typography.fontSize.xl,
+    fontWeight: theme.typography.fontWeight.semibold,
     color: theme.colors.primary.DEFAULT,
-    marginBottom: 12,
+    marginBottom: theme.spacing.md,
   },
   privacyText: {
-    fontSize: 15,  // base
+    fontSize: theme.typography.fontSize.base,
     color: theme.colors.text.secondary,
     lineHeight: 22,
   },
   // Donate Tab Styles
   donateHeader: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
+    paddingHorizontal: theme.spacing.xl,
+    marginBottom: theme.spacing['2xl'],
     alignItems: 'center',
   },
   donateTitle: {
-    fontSize: 24,  // 3xl
-    fontWeight: '700',  // bold
+    fontSize: theme.typography.fontSize['3xl'],
+    fontWeight: theme.typography.fontWeight.bold,
+    fontFamily: theme.typography.fontFamily.headingRegular,
     color: theme.colors.text.primary,
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
   },
   donateSubtitle: {
-    fontSize: 16,  // lg
+    fontSize: theme.typography.fontSize.lg,
     color: theme.colors.text.secondary,
     textAlign: 'center',
     lineHeight: 22,
   },
   donationTiers: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
+    paddingHorizontal: theme.spacing.xl,
+    marginBottom: theme.spacing['2xl'],
   },
   donationCard: {
     backgroundColor: theme.colors.card.background,
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 16,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.xl,
+    marginBottom: theme.spacing.lg,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: theme.colors.card.hover,
   },
   donationEmoji: {
-    fontSize: 48,  // icon 4xl
-    marginBottom: 12,
+    fontSize: theme.typography.fontSize['5xl'] + 16,
+    marginBottom: theme.spacing.md,
   },
   donationTitle: {
-    fontSize: 18,  // xl
-    fontWeight: '600',  // semibold
+    fontSize: theme.typography.fontSize.xl,
+    fontWeight: theme.typography.fontWeight.semibold,
     color: theme.colors.text.primary,
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
   },
   donationDescription: {
-    fontSize: 14,  // md
+    fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.secondary,
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: theme.spacing.md,
   },
   donationAmount: {
-    fontSize: 20,  // 2xl
-    fontWeight: '700',  // bold
+    fontSize: theme.typography.fontSize['2xl'],
+    fontWeight: theme.typography.fontWeight.bold,
     color: theme.colors.primary.DEFAULT,
   },
   alternativeMethods: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
+    paddingHorizontal: theme.spacing.xl,
+    marginBottom: theme.spacing['2xl'],
   },
   alternativeTitle: {
-    fontSize: 18,  // xl
-    fontWeight: '600',  // semibold
+    fontSize: theme.typography.fontSize.xl,
+    fontWeight: theme.typography.fontWeight.semibold,
     color: theme.colors.text.primary,
-    marginBottom: 16,
+    marginBottom: theme.spacing.lg,
   },
   alternativeButton: {
     backgroundColor: theme.colors.card.background,
     borderWidth: 1,
     borderColor: theme.colors.primary.DEFAULT,
-    borderRadius: 8,
-    paddingVertical: 12,
+    borderRadius: theme.borderRadius.sm,
+    paddingVertical: theme.spacing.md,
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: theme.spacing.md,
   },
   alternativeButtonText: {
-    fontSize: 16,  // lg
+    fontSize: theme.typography.fontSize.lg,
     color: theme.colors.primary.DEFAULT,
-    fontWeight: '500',  // medium
+    fontWeight: theme.typography.fontWeight.medium,
   },
   zakatNote: {
     backgroundColor: theme.colors.card.hover,
-    marginHorizontal: 20,
-    padding: 20,
-    borderRadius: 12,
-    marginBottom: 24,
+    marginHorizontal: theme.spacing.xl,
+    padding: theme.spacing.xl,
+    borderRadius: theme.borderRadius.md,
+    marginBottom: theme.spacing['2xl'],
     borderWidth: 1,
     borderColor: theme.colors.primary.DEFAULT,
   },
   zakatTitle: {
-    fontSize: 18,  // xl
-    fontWeight: '600',  // semibold
+    fontSize: theme.typography.fontSize.xl,
+    fontWeight: theme.typography.fontWeight.semibold,
     color: theme.colors.status.warning,
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
   },
   zakatText: {
-    fontSize: 15,  // base
+    fontSize: theme.typography.fontSize.base,
     color: theme.colors.text.secondary,
     lineHeight: 22,
   },
   footer: {
-    padding: 20,
+    padding: theme.spacing.xl,
     alignItems: 'center',
   },
   footerText: {
-    fontSize: 16,  // lg
+    fontSize: theme.typography.fontSize.lg,
     color: theme.colors.text.secondary,
     textAlign: 'center',
     fontStyle: 'italic',
