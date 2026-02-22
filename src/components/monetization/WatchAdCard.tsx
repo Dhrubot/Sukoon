@@ -9,6 +9,8 @@ import {
   Alert,
 } from 'react-native';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 import AdService from '../../services/monetization/AdService';
 
 interface WatchAdCardProps {
@@ -17,6 +19,7 @@ interface WatchAdCardProps {
 
 export const WatchAdCard: React.FC<WatchAdCardProps> = ({ onRewardEarned }) => {
   const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [canWatch, setCanWatch] = useState(false);
   const [hoursLeft, setHoursLeft] = useState(0);
   const [isWatching, setIsWatching] = useState(false);
@@ -127,46 +130,46 @@ export const WatchAdCard: React.FC<WatchAdCardProps> = ({ onRewardEarned }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   card: {
-    borderRadius: 16,
-    padding: 20,
-    marginBottom: 16,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.xl,
+    marginBottom: theme.spacing.lg,
   },
   iconRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: theme.spacing.md,
   },
   icon: {
-    fontSize: 32,
-    marginRight: 12,
+    fontSize: theme.typography.fontSize['5xl'],
+    marginRight: theme.spacing.md,
   },
   textContainer: {
     flex: 1,
   },
   title: {
-    fontSize: 17,
-    fontWeight: '700',
-    marginBottom: 2,
+    fontSize: theme.typography.fontSize.xl - 1,
+    fontWeight: theme.typography.fontWeight.bold,
+    marginBottom: theme.spacing.xxs,
   },
   subtitle: {
-    fontSize: 13,
+    fontSize: theme.typography.fontSize.sm,
     lineHeight: 18,
   },
   description: {
-    fontSize: 13,
+    fontSize: theme.typography.fontSize.sm,
     lineHeight: 20,
-    marginBottom: 16,
+    marginBottom: theme.spacing.lg,
   },
   button: {
-    borderRadius: 12,
-    paddingVertical: 14,
+    borderRadius: theme.borderRadius.md,
+    paddingVertical: theme.spacing.md + 2,
     alignItems: 'center',
     justifyContent: 'center',
   },
   buttonText: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: theme.typography.fontSize.base,
+    fontWeight: theme.typography.fontWeight.semibold,
   },
 });
