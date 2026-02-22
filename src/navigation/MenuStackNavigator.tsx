@@ -12,11 +12,13 @@ import ReflectionGardenScreen from '../screens/ReflectionGarden/ReflectionGarden
 import MosqueModeScreen from '../screens/MosqueMode/MosqueModeScreen';
 import AdhkarScreen from '../screens/Adhkar/AdhkarScreen';
 import TasbihScreen from '../screens/Tasbih/TasbihScreen';
+import DuaLibraryScreen from '../screens/DuaLibrary/DuaLibraryScreen';
 
 export type MenuStackParamList = {
   MenuHome: undefined;
   Adhkar: undefined;
   Tasbih: undefined;
+  DuaLibrary: undefined;
   MyJourney: undefined;
   ReflectionGarden: undefined;
   MosqueMode: undefined;
@@ -53,6 +55,11 @@ export const MenuStackNavigator: React.FC = () => {
         name="MenuHome"
         component={MenuScreen}
         options={{ headerShown: false }}
+      />
+      <Stack.Screen
+        name="DuaLibrary"
+        component={DuaLibraryScreen}
+        options={{ title: 'Dua Library' }}
       />
       <Stack.Screen
         name="Adhkar"
