@@ -171,6 +171,11 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
           ) : (
             <Text style={styles.countdown}>in {timeRemaining}</Text>
           )}
+          {mosqueModeInfo && (
+            <Text style={styles.iqamahText}>
+              Iqamah at {format(mosqueModeInfo.iqamahTime, 'h:mm a')}
+            </Text>
+          )}
         </View>
 
         {/* Jumu'ah sunnah reminders */}
@@ -188,21 +193,16 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
           </View>
         )}
 
-        {/* Mosque Mode Pill — unified: iqamah time + active status */}
-        {mosqueModeInfo && (
+        {/* Mosque Mode Active Pill — only when silent mode is on */}
+        {mosqueModeInfo?.restoreTime && (
           <TouchableOpacity
             style={styles.mosqueModePill}
             onPress={onMosqueModeTap}
             activeOpacity={0.7}
           >
             <Text style={styles.mosqueModePillText}>
-              Iqamah at {format(mosqueModeInfo.iqamahTime, 'h:mm a')}
+              Mosque Mode · until {format(mosqueModeInfo.restoreTime, 'h:mm a')}
             </Text>
-            {mosqueModeInfo.restoreTime && (
-              <Text style={styles.mosqueModePillText}>
-                Mosque Mode · until {format(mosqueModeInfo.restoreTime, 'h:mm a')}
-              </Text>
-            )}
           </TouchableOpacity>
         )}
 
@@ -249,7 +249,7 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: {
-      minHeight: height * 0.55,
+      minHeight: height * 0.70,
       justifyContent: 'space-between',
       alignItems: 'center',
       paddingTop: 40,
@@ -346,11 +346,20 @@ const createStyles = (theme: AppTheme) =>
       color: theme.colors.sanctuary.label,
       fontWeight: '500',
     },
+    iqamahText: {
+      fontSize: 13,
+      fontWeight: '400',
+      color: theme.colors.sanctuary.countdown,
+      marginTop: 4,
+      opacity: 0.90,
+      fontStyle: 'italic', 
+    },
     mosqueModePill: {
       backgroundColor: 'rgba(255, 255, 255, 0.12)',
       borderRadius: 16,
       paddingVertical: 6,
       paddingHorizontal: 14,
+      alignItems: 'center',
       marginBottom: 12,
     },
     mosqueModePillText: {
@@ -358,6 +367,7 @@ const createStyles = (theme: AppTheme) =>
       fontWeight: '500',
       color: theme.colors.sanctuary.label,
       opacity: 0.85,
+      textAlign: 'center',
     },
   });
 
