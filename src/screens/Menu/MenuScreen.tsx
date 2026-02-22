@@ -77,6 +77,19 @@ const AdhkarIcon: React.FC<{ color: string; size: number }> = ({ color, size }) 
   </Svg>
 );
 
+// Tasbih (prayer beads) icon component
+const TasbihIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="12" r="9" stroke={color} strokeWidth="2" />
+    <Circle cx="12" cy="5" r="1.5" fill={color} />
+    <Circle cx="17" cy="8" r="1.5" fill={color} />
+    <Circle cx="17" cy="16" r="1.5" fill={color} />
+    <Circle cx="12" cy="19" r="1.5" fill={color} />
+    <Circle cx="7" cy="16" r="1.5" fill={color} />
+    <Circle cx="7" cy="8" r="1.5" fill={color} />
+  </Svg>
+);
+
 // Mosque icon component
 const MosqueIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -98,6 +111,13 @@ const allMenuItems: MenuItem[] = [
     title: 'Morning & Evening Adhkar',
     subtitle: 'Daily remembrance from the Sunnah',
     screen: 'Adhkar',
+    iconType: 'component',
+  },
+  {
+    icon: TasbihIcon,
+    title: 'Tasbih Counter',
+    subtitle: 'Free-form dhikr counting',
+    screen: 'Tasbih',
     iconType: 'component',
   },
   {

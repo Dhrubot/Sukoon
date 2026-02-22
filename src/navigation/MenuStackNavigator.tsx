@@ -11,10 +11,12 @@ import SetupHealthScreen from '../screens/SetupHealth/SetupHealthScreen';
 import ReflectionGardenScreen from '../screens/ReflectionGarden/ReflectionGardenScreen';
 import MosqueModeScreen from '../screens/MosqueMode/MosqueModeScreen';
 import AdhkarScreen from '../screens/Adhkar/AdhkarScreen';
+import TasbihScreen from '../screens/Tasbih/TasbihScreen';
 
 export type MenuStackParamList = {
   MenuHome: undefined;
   Adhkar: undefined;
+  Tasbih: undefined;
   MyJourney: undefined;
   ReflectionGarden: undefined;
   MosqueMode: undefined;
@@ -56,6 +58,11 @@ export const MenuStackNavigator: React.FC = () => {
         name="Adhkar"
         component={AdhkarScreen}
         options={{ title: 'Morning & Evening Adhkar' }}
+      />
+      <Stack.Screen
+        name="Tasbih"
+        component={TasbihScreen}
+        options={{ title: 'Tasbih Counter' }}
       />
       <Stack.Screen
         name="MyJourney"
