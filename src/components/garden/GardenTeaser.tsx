@@ -59,6 +59,7 @@ const GardenTeaser: React.FC = () => {
 
 const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
+    marginTop: theme.spacing.md,
     marginHorizontal: theme.spacing.xl,
     marginBottom: theme.spacing.xs,
     paddingVertical: theme.spacing.md,

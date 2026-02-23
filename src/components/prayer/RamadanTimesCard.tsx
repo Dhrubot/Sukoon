@@ -36,6 +36,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   ramadanCard: {
     marginHorizontal: theme.spacing.xl,
     marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.lg,
     backgroundColor: theme.colors.card.background,
     borderRadius: theme.borderRadius.lg,
     padding: theme.spacing.lg,
@@ -43,10 +44,10 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderColor: theme.colors.border.primary,
   },
   ramadanTitle: {
-    fontSize: theme.typography.fontSize.lg,
+    fontSize: theme.typography.fontSize.xl,
     fontWeight: theme.typography.fontWeight.semibold,
     fontFamily: theme.typography.fontFamily.headingRegular,
-    color: theme.colors.text.primary,
+    color: theme.colors.text.secondary,
     textAlign: 'center',
     marginBottom: theme.spacing.md,
   },
@@ -66,9 +67,9 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginBottom: theme.spacing.xs,
   },
   ramadanTime: {
-    fontSize: theme.typography.fontSize['3xl'] - 2,
+    fontSize: theme.typography.fontSize.xl,
     fontFamily: theme.typography.fontFamily.bodySemibold,
-    color: theme.colors.primary.DEFAULT,
+    color: theme.colors.text.primary
   },
   ramadanDivider: {
     width: 1,

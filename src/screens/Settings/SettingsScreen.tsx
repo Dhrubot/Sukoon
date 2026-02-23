@@ -93,7 +93,7 @@ const SettingsScreen = ({ navigation }: any) => {
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Settings</Text>
+          {/* <Text style={styles.title}>Settings</Text> */}
           <Text style={styles.subtitle}>Customize your prayer experience</Text>
         </View>
 

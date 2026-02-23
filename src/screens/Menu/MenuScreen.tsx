@@ -266,8 +266,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   headerTitle: {
     fontSize: theme.typography.fontSize['4xl'],
     fontWeight: '700',
-    fontFamily: theme.typography.fontFamily.heading,
-    color: theme.colors.text.primary,
+    fontFamily: theme.typography.fontFamily.headingRegular,
+    color: theme.colors.text.secondary,
     marginBottom: theme.spacing.xs,
   },
   headerSubtitle: {

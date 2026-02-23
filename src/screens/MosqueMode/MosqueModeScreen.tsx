@@ -29,9 +29,9 @@ const MosqueModeScreen: React.FC = () => {
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>
+        {/* <Text style={styles.headerTitle}>
           Mosque Mode
-        </Text>
+        </Text> */}
         <Text style={styles.headerSubtitle}>
           Automatically silence your phone when iqamah starts so you can focus entirely on your prayer.
         </Text>

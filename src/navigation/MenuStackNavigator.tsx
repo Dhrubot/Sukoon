@@ -96,7 +96,7 @@ export const MenuStackNavigator: React.FC = () => {
       <Stack.Screen
         name="SetupHealth"
         component={SetupHealthScreen}
-        options={{ title: 'Setup Health' }}
+        options={{ title: 'Setup & Health' }}
       />
     </Stack.Navigator>
   );

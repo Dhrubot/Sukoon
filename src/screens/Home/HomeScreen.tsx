@@ -494,9 +494,6 @@ const HomeScreen = ({ navigation }: any) => {
           )}
 
 
-          {/* Sunrise & Sunset */}
-          <SunTimesDisplay sunrise={todaySunrise} sunset={todaySunset} />
-
           {/* Ramadan Suhoor/Iftar — only during Ramadan */}
           {isRamadan() && todayPrayerTimes.length > 0 && (() => {
             const fajr = todayPrayerTimes.find(p => p.name === 'Fajr');
@@ -523,6 +520,9 @@ const HomeScreen = ({ navigation }: any) => {
               onDismissed={() => setHijriNudge(null)}
             />
           )}
+
+          {/* Sunrise & Sunset */}
+          <SunTimesDisplay sunrise={todaySunrise} sunset={todaySunset} />
 
           {/* Garden Teaser — subtle entry point to Reflection Garden */}
           <GardenTeaser />

@@ -53,6 +53,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     padding: theme.spacing.lg,
     marginHorizontal: theme.spacing.xl,
     marginBottom: theme.spacing.lg,
+    marginTop: theme.spacing.md,
     borderWidth: 1,
     backgroundColor: theme.colors.card.hover,
     borderColor: theme.colors.border.primary,

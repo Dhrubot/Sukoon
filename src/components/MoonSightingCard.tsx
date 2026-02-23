@@ -49,6 +49,7 @@ const createStyles = (theme: AppTheme) =>
       paddingVertical: theme.spacing.md + 2,
       paddingHorizontal: theme.spacing.lg,
       marginHorizontal: theme.spacing.xl,
+      marginTop: theme.spacing.md,
       marginBottom: theme.spacing.lg,
       borderWidth: 1,
       borderColor: theme.colors.border.primary,

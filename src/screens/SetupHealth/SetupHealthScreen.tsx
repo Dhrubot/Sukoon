@@ -113,7 +113,7 @@ const SetupHealthScreen: React.FC<SetupHealthScreenProps> = ({ onDone, navigatio
     >
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.colors.text.primary }]}>Setup & Health</Text>
+          {/* <Text style={[styles.title, { color: theme.colors.text.primary }]}>Setup & Health</Text> */}
           <Text style={[styles.subtitle, { color: theme.colors.text.secondary }]}>Verify everything is working</Text>
         </View>
 
