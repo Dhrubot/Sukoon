@@ -2,7 +2,7 @@
 // Gold SVG progress ring with prayer name, time, and countdown centered inside.
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient as SvgGradient, RadialGradient, Stop } from 'react-native-svg';
 import { useTheme } from '../../providers/ThemeProvider';
 import { AppTheme } from '../../theme';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
@@ -16,6 +16,7 @@ const STROKE_WIDTH = 3;
 const RADIUS = (RING_SIZE - STROKE_WIDTH * 2) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 const INNER_INSET = 16;
+const INNER_RADIUS = RING_SIZE / 2 - INNER_INSET;
 // Fallback window when no previous prayer time is available
 const FALLBACK_WINDOW_MINUTES = 60;
 
@@ -76,32 +77,55 @@ const CountdownRing: React.FC<CountdownRingProps> = ({
   }, [prayer, previousPrayerTime]);
 
   const strokeDashoffset = CIRCUMFERENCE * (1 - progress);
+  const cx = RING_SIZE / 2;
+  const cy = RING_SIZE / 2;
+  const origin = `${cx}, ${cy}`;
 
   return (
     <View style={styles.container}>
-      {/* SVG Ring */}
-      <Svg width={RING_SIZE} height={RING_SIZE} style={styles.svg}>
+      <Svg width={RING_SIZE} height={RING_SIZE} style={StyleSheet.absoluteFill}>
         <Defs>
+          {/* Arc gradient: gold → gold-light */}
           <SvgGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
             <Stop offset="0%" stopColor={theme.colors.gold} stopOpacity="1" />
             <Stop offset="100%" stopColor={theme.colors.goldLight} stopOpacity="1" />
           </SvgGradient>
+          {/* Radial gradient for inner circle */}
+          <RadialGradient id="innerGrad" cx="50%" cy="50%" r="50%">
+            <Stop offset="0%" stopColor={theme.colors.sanctuary.ring.innerGradCenter} />
+            <Stop offset="100%" stopColor={theme.colors.sanctuary.ring.innerGradEdge} />
+          </RadialGradient>
         </Defs>
 
         {/* Track (dim ring) */}
         <Circle
-          cx={RING_SIZE / 2}
-          cy={RING_SIZE / 2}
+          cx={cx}
+          cy={cy}
           r={RADIUS}
-          stroke="rgba(255,255,255,0.08)"
+          stroke={theme.colors.sanctuary.ring.trackStroke}
           strokeWidth={STROKE_WIDTH}
           fill="none"
         />
 
+        {/* Glow layer — rendered before the real arc */}
+        <Circle
+          cx={cx}
+          cy={cy}
+          r={RADIUS}
+          stroke={theme.colors.sanctuary.ring.glowStroke}
+          strokeWidth={STROKE_WIDTH + 7}
+          fill="none"
+          strokeLinecap="round"
+          strokeDasharray={`${CIRCUMFERENCE}`}
+          strokeDashoffset={strokeDashoffset}
+          rotation={-90}
+          origin={origin}
+        />
+
         {/* Progress arc */}
         <Circle
-          cx={RING_SIZE / 2}
-          cy={RING_SIZE / 2}
+          cx={cx}
+          cy={cy}
           r={RADIUS}
           stroke="url(#goldGrad)"
           strokeWidth={STROKE_WIDTH}
@@ -110,12 +134,19 @@ const CountdownRing: React.FC<CountdownRingProps> = ({
           strokeDasharray={`${CIRCUMFERENCE}`}
           strokeDashoffset={strokeDashoffset}
           rotation={-90}
-          origin={`${RING_SIZE / 2}, ${RING_SIZE / 2}`}
+          origin={origin}
+        />
+
+        {/* Inner circle with radial gradient */}
+        <Circle
+          cx={cx}
+          cy={cy}
+          r={INNER_RADIUS}
+          fill="url(#innerGrad)"
+          stroke={theme.colors.sanctuary.ring.innerBorder}
+          strokeWidth={1}
         />
       </Svg>
-
-      {/* Inner circle background — dark green tinted with gold border */}
-      <View style={styles.innerCircle} />
 
       {/* Centered content inside the ring */}
       <View style={styles.innerContent}>
@@ -155,30 +186,15 @@ const createStyles = (theme: AppTheme) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    svg: {
-      position: 'absolute',
-    },
-    innerCircle: {
-      position: 'absolute',
-      top: INNER_INSET,
-      left: INNER_INSET,
-      right: INNER_INSET,
-      bottom: INNER_INSET,
-      borderRadius: (RING_SIZE - INNER_INSET * 2) / 2,
-      backgroundColor: 'rgba(12, 32, 22, 0.92)',
-      borderWidth: 1,
-      borderColor: 'rgba(232, 201, 122, 0.12)',
-      // Depth shadow to approximate inset effect
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.35,
-      shadowRadius: 12,
-      elevation: 4,
-    },
     innerContent: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
       alignItems: 'center',
       justifyContent: 'center',
-      paddingHorizontal: 12,
+      paddingHorizontal: INNER_INSET + 8,
     },
     label: {
       fontSize: 10,
@@ -190,7 +206,7 @@ const createStyles = (theme: AppTheme) =>
     },
     prayerName: {
       fontSize: theme.typography.fontSize['6xl'],
-      fontFamily: theme.typography.fontFamily.headingMedium,
+      fontFamily: theme.typography.fontFamily.sanctuaryHeading,
       color: theme.colors.sanctuary.prayerName,
       lineHeight: 36,
       letterSpacing: -0.5,
@@ -214,8 +230,9 @@ const createStyles = (theme: AppTheme) =>
       color: theme.colors.sanctuary.prayedStatus,
     },
     iqamah: {
-      fontSize: theme.typography.fontSize.sm,
-      fontFamily: theme.typography.fontFamily.bodyMedium,
+      fontSize: theme.typography.fontSize.xs,
+      fontFamily: theme.typography.fontFamily.sanctuaryItalic,
+      fontStyle: 'italic' as const,
       color: theme.colors.goldLight,
       marginTop: theme.spacing.xs,
     },

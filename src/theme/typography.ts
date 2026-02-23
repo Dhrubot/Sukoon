@@ -11,6 +11,8 @@ export const typography = {
     bodyBold: 'DMSans_700Bold',        // Sans bold — strong emphasis
     arabic: 'Amiri_400Regular',        // Calligraphic — Quranic text, dhikr
     arabicBold: 'Amiri_700Bold',       // Calligraphic bold — Arabic headings
+    sanctuaryHeading: 'CormorantGaramond_500Medium', // Elegant serif — countdown ring prayer name (hero always dark)
+    sanctuaryItalic: 'CormorantGaramond_400Regular', // Italic serif — iqamah line
   },
   fontSize: {
     xs: 11,      // Tiny labels, timestamps
@@ -53,6 +55,8 @@ export const blackoutTypography = {
     bodyBold: 'DMSans_600SemiBold',       // one step lighter than default
     arabic: 'Amiri_400Regular',
     arabicBold: 'Amiri_700Bold',
+    sanctuaryHeading: 'CormorantGaramond_500Medium',
+    sanctuaryItalic: 'CormorantGaramond_400Regular',
   },
   fontSize: {
     xs: 10,

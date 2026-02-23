@@ -420,6 +420,13 @@ export const darkTheme = {
     buttonBgMuted:   palette.whiteAlpha05,
     buttonBorderMuted: palette.whiteAlpha15,
     buttonText:      palette.white,
+    ring: {
+      innerGradCenter: 'rgba(10,30,22,0.8)',
+      innerGradEdge:   'rgba(7,20,14,0.95)',
+      innerBorder:     'rgba(212,175,55,0.10)',
+      trackStroke:     palette.whiteAlpha08,
+      glowStroke:      'rgba(212,175,55,0.22)',
+    },
   },
 
   // Prayer gradients for MindfulnessFlow / SanctuaryView
@@ -684,6 +691,13 @@ export const lightTheme = {
     buttonBgMuted:   palette.whiteAlpha05,
     buttonBorderMuted: palette.whiteAlpha15,
     buttonText:      palette.white,
+    ring: {
+      innerGradCenter: 'rgba(18,42,32,0.88)',
+      innerGradEdge:   'rgba(10,28,20,0.95)',
+      innerBorder:     'rgba(232,201,122,0.12)',
+      trackStroke:     palette.whiteAlpha08,
+      glowStroke:      'rgba(232,201,122,0.25)',
+    },
   },
 
   prayerGradients: prayerGradients.light,
@@ -981,6 +995,13 @@ export const blackoutTheme = {
     buttonBgMuted:   palette.whiteAlpha05,
     buttonBorderMuted: palette.whiteAlpha15,
     buttonText:      blackoutPalette.text,
+    ring: {
+      innerGradCenter: 'rgba(10,30,22,0.8)',
+      innerGradEdge:   'rgba(7,20,14,0.95)',
+      innerBorder:     'rgba(201,168,76,0.08)',
+      trackStroke:     palette.whiteAlpha05,
+      glowStroke:      'rgba(201,168,76,0.20)',
+    },
   },
 
   prayerGradients: blackoutPrayerGradients,
