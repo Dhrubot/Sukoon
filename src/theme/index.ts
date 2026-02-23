@@ -1,10 +1,10 @@
 // src/theme/index.ts
-import { darkTheme, lightTheme, Theme } from './colors';
+import { darkTheme, lightTheme, blackoutTheme, Theme } from './colors';
 import { spacing, borderRadius, shadows } from './spacing';
-import { typography } from './typography';
+import { typography, blackoutTypography } from './typography';
 import { iconSizes } from './iconSizes';
 
-export type ThemeMode = 'dark' | 'light';
+export type ThemeMode = 'dark' | 'light' | 'blackout';
 
 export interface AppTheme {
   mode: ThemeMode;
@@ -16,13 +16,25 @@ export interface AppTheme {
   iconSizes: typeof iconSizes;
 }
 
+const themeColors: Record<ThemeMode, Theme> = {
+  dark: darkTheme,
+  light: lightTheme,
+  blackout: blackoutTheme,
+};
+
+const themeTypography: Record<ThemeMode, typeof typography> = {
+  dark: typography,
+  light: typography,
+  blackout: blackoutTypography,
+};
+
 export const createTheme = (mode: ThemeMode): AppTheme => ({
   mode,
-  colors: mode === 'dark' ? darkTheme : lightTheme,
+  colors: themeColors[mode],
   spacing,
   borderRadius,
   shadows,
-  typography,
+  typography: themeTypography[mode],
   iconSizes,
 });
 
@@ -30,5 +42,5 @@ export const createTheme = (mode: ThemeMode): AppTheme => ({
 export const defaultTheme = createTheme('dark');
 
 // Export individual modules for direct access if needed
-export { darkTheme, lightTheme, spacing, borderRadius, shadows, typography, iconSizes };
+export { darkTheme, lightTheme, blackoutTheme, spacing, borderRadius, shadows, typography, blackoutTypography, iconSizes };
 export type { Theme };

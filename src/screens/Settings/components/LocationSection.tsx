@@ -50,49 +50,53 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
 
   return (
     <SettingSection title="Location">
-      <View style={styles.locationInfo}>
-        {isLocationSet ? (
-          <>
-            <Text style={styles.locationText}>
-              {userSettings.location.city || 'Unknown City'}, {userSettings.location.country || 'Unknown Country'}
-            </Text>
-            <Text style={styles.coordinatesText}>
-              {userSettings.location.latitude.toFixed(4)}°, {userSettings.location.longitude.toFixed(4)}°
-            </Text>
-          </>
-        ) : (
-          <>
-            <Text style={styles.locationText}>
-              📍 Location Not Set
-            </Text>
-            <Text style={styles.invalidText}>
-              Please set your location to calculate accurate prayer times
-            </Text>
-          </>
-        )}
+      <View style={styles.locationCard}>
+        <View style={styles.locationInfo}>
+          {isLocationSet ? (
+            <>
+              <Text style={styles.locationText}>
+                {userSettings.location.city || 'Unknown City'}, {userSettings.location.country || 'Unknown Country'}
+              </Text>
+              <Text style={styles.coordinatesText}>
+                {userSettings.location.latitude.toFixed(4)}°, {userSettings.location.longitude.toFixed(4)}°
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.locationText}>
+                Location Not Set
+              </Text>
+              <Text style={styles.invalidText}>
+                Set your location for accurate prayer times
+              </Text>
+            </>
+          )}
+        </View>
       </View>
 
-      <TouchableOpacity 
-        style={[styles.button, isUpdatingLocation && styles.buttonDisabled]}
-        onPress={onUpdateLocation}
-        disabled={isUpdatingLocation}
-      >
-        <Text style={styles.buttonText}>
-          {isUpdatingLocation ? '⏳ Updating...' : isLocationSet ? 'Update Location' : '📍 Set Location'}
-        </Text>
-      </TouchableOpacity>
-
-      {onSelectManually && (
+      <View style={styles.buttonRow}>
         <TouchableOpacity 
-          style={[styles.manualButton, isUpdatingLocation && styles.buttonDisabled]}
-          onPress={onSelectManually}
+          style={[styles.button, isUpdatingLocation && styles.buttonDisabled]}
+          onPress={onUpdateLocation}
           disabled={isUpdatingLocation}
         >
-          <Text style={styles.manualButtonText}>
-            Select Location Manually
+          <Text style={styles.buttonText}>
+            {isUpdatingLocation ? 'Updating...' : 'Update Location'}
           </Text>
         </TouchableOpacity>
-      )}
+
+        {onSelectManually && (
+          <TouchableOpacity 
+            style={[styles.manualButton, isUpdatingLocation && styles.buttonDisabled]}
+            onPress={onSelectManually}
+            disabled={isUpdatingLocation}
+          >
+            <Text style={styles.manualButtonText}>
+              Select Manually
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
       {/* 🆕 NEW: Location status indicator */}
       {!isLocationSet && (
@@ -120,55 +124,65 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
 };
 
 const createStyles = (theme: AppTheme) => StyleSheet.create({
-  locationInfo: {
-    backgroundColor: theme.colors.settings.optionBg,
-    padding: theme.spacing.lg,
+  locationCard: {
+    backgroundColor: theme.colors.card.hover,
     borderRadius: theme.borderRadius.sm,
-    marginBottom: theme.spacing.lg,
+    padding: theme.spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.md,
+  },
+  locationInfo: {
+    flex: 1,
   },
   locationText: {
     fontSize: theme.typography.fontSize.lg,
     color: theme.colors.settings.labelPrimary,
     fontFamily: theme.typography.fontFamily.bodyMedium,
-    marginBottom: theme.spacing.xs,
   },
   coordinatesText: {
-    fontSize: theme.typography.fontSize.md,
+    fontSize: theme.typography.fontSize.xs,
     fontFamily: theme.typography.fontFamily.body,
-    color: theme.colors.settings.labelSecondary,
+    color: theme.colors.text.muted,
+    marginTop: theme.spacing.xxs,
   },
   invalidText: {
-    fontSize: theme.typography.fontSize.md,
+    fontSize: theme.typography.fontSize.sm,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.status.error,
-    fontStyle: 'italic',
-    marginTop: theme.spacing.xs,
+    marginTop: theme.spacing.xxs,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: theme.spacing.sm,
+    marginTop: theme.spacing.md,
   },
   button: {
+    flex: 1,
     backgroundColor: theme.colors.settings.buttonPrimaryBg,
     borderRadius: theme.borderRadius.sm,
     paddingVertical: theme.spacing.md,
     alignItems: 'center',
-    marginBottom: theme.spacing.md,
   },
   buttonDisabled: {
     opacity: 0.6,
   },
   buttonText: {
-    fontSize: theme.typography.fontSize.lg,
+    fontSize: theme.typography.fontSize.sm,
     fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.settings.buttonPrimaryText,
   },
   manualButton: {
-    backgroundColor: theme.colors.settings.sectionBg,
+    flex: 1,
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: theme.colors.settings.buttonSecondaryBorder,
+    borderColor: theme.colors.border.primary,
     borderRadius: theme.borderRadius.sm,
     paddingVertical: theme.spacing.md,
     alignItems: 'center',
   },
   manualButtonText: {
-    fontSize: theme.typography.fontSize.lg,
+    fontSize: theme.typography.fontSize.sm,
     fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.settings.buttonSecondaryText,
   },

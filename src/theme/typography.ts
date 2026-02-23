@@ -35,4 +35,43 @@ export const typography = {
   },
 };
 
+// ─── Blackout Typography ─────────────────────────────────────────
+// Cormorant Garamond serif + lighter DM Sans weights.
+// Slightly smaller, more airy sizing — premium, editorial feel.
+export const blackoutTypography = {
+  fontFamily: {
+    heading: 'CormorantGaramond_600SemiBold',
+    headingRegular: 'CormorantGaramond_400Regular',
+    body: 'DMSans_400Regular',
+    bodyMedium: 'DMSans_500Medium',
+    bodySemibold: 'DMSans_500Medium',     // one step lighter than default
+    bodyBold: 'DMSans_600SemiBold',       // one step lighter than default
+    arabic: 'Amiri_400Regular',
+    arabicBold: 'Amiri_700Bold',
+  },
+  fontSize: {
+    xs: 10,
+    sm: 12,
+    md: 13,
+    base: 15,
+    lg: 15,
+    xl: 18,
+    '2xl': 20,
+    '3xl': 22,
+    '4xl': 24,
+    '5xl': 28,
+  },
+  fontWeight: {
+    regular: '400' as const,
+    medium: '500' as const,
+    semibold: '600' as const,
+    bold: '700' as const,
+  },
+  lineHeight: {
+    tight: 1.25,
+    normal: 1.5,
+    relaxed: 1.75,
+  },
+};
+
 export type Typography = typeof typography;

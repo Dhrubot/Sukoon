@@ -86,6 +86,37 @@ const SettingsScreen = ({ navigation }: any) => {
     );
   }
 
+  // Tahajjud toggle handler
+  const handleToggleTahajjud = async () => {
+    const isEnabled = userSettings.tahajjudReminders?.enabled ?? false;
+    const updated = {
+      ...userSettings,
+      tahajjudReminders: {
+        enabled: !isEnabled,
+        frequency: userSettings.tahajjudReminders?.frequency || 'twice_weekly' as const,
+      },
+    };
+    setUserSettings(updated);
+    if (!isEnabled) {
+      await NotificationService.scheduleTahajjudEncouragement();
+    } else {
+      await NotificationService.cancelTahajjudNotifications();
+    }
+  };
+
+  // Jumu'ah toggle handler
+  const handleToggleJummah = () => {
+    const isEnabled = userSettings.jummahReminders?.enabled !== false;
+    setUserSettings({
+      ...userSettings,
+      jummahReminders: { enabled: !isEnabled },
+    });
+  };
+
+  // Theme display label
+  const themeLabel = themeMode === 'dark' ? 'Dark' : themeMode === 'light' ? 'Light' : 'Blackout';
+  const themeIcon = themeMode === 'dark' ? '🌙' : themeMode === 'light' ? '☀️' : '✦';
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -93,18 +124,15 @@ const SettingsScreen = ({ navigation }: any) => {
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.header}>
-          {/* <Text style={styles.title}>Settings</Text> */}
-          <Text style={styles.subtitle}>Customize your prayer experience</Text>
+          <Text style={styles.subtitle}>Prayer Preferences</Text>
         </View>
 
-        {/* 🎯 ENHANCED: Prayer Settings with real-time previews */}
+        {/* 1. Prayer Settings — Hero Card + Calculation */}
         <PrayerSettingsSection
           userSettings={userSettings}
           setUserSettings={setUserSettings}
           onCalculationMethodPress={() => setShowCalculationPicker(true)}
           calculationMethods={calculationMethods}
-
-          // Enhanced props
           isUpdatingMethod={isUpdatingMethod}
           todayPrayerTimes={todayPrayerTimes}
           nextPrayer={nextPrayer}
@@ -115,54 +143,16 @@ const SettingsScreen = ({ navigation }: any) => {
           onRefreshPrayerTimes={refreshPrayerTimes}
         />
 
-        {/* Notification Settings */}
+        {/* 2. Notifications — consolidated with Tahajjud & Jumu'ah */}
         <NotificationSection
           userSettings={userSettings}
           onNotificationPress={() => setShowNotificationModal(true)}
+          onToggleTahajjud={handleToggleTahajjud}
+          onToggleJummah={handleToggleJummah}
         />
 
-        {/* 🌌 Optional Prayer Settings */}
-        <SettingSection title="">
-          <SettingRow
-            label="Tahajjud Reminders"
-            subtitle="Gentle encouragement to pray the night prayer"
-            value={userSettings.tahajjudReminders?.enabled ? 'On' : 'Off'}
-            onPress={async () => {
-              const isEnabled = userSettings.tahajjudReminders?.enabled ?? false;
-              const updated = {
-                ...userSettings,
-                tahajjudReminders: {
-                  enabled: !isEnabled,
-                  frequency: userSettings.tahajjudReminders?.frequency || 'twice_weekly' as const,
-                },
-              };
-              setUserSettings(updated);
-              if (!isEnabled) {
-                await NotificationService.scheduleTahajjudEncouragement();
-              } else {
-                await NotificationService.cancelTahajjudNotifications();
-              }
-            }}
-          />
-          <SettingRow
-            label="Jumu'ah Reminders"
-            subtitle="Friday Sunnah reminders: Surah Al-Kahf, ghusl, dua hour"
-            value={userSettings.jummahReminders?.enabled !== false ? 'On' : 'Off'}
-            onPress={() => {
-              const isEnabled = userSettings.jummahReminders?.enabled !== false;
-              const updated = {
-                ...userSettings,
-                jummahReminders: {
-                  enabled: !isEnabled,
-                },
-              };
-              setUserSettings(updated);
-            }}
-          />
-        </SettingSection>
-
-        {/* 🌙 Hijri Date Adjustment (Moon Sighting) */}
-        <SettingSection title="HIJRI CALENDAR">
+        {/* 3. Hijri Calendar */}
+        <SettingSection title="Hijri Calendar">
           <SettingRow
             label="Hijri Date Adjustment"
             subtitle={(() => {
@@ -179,9 +169,7 @@ const SettingsScreen = ({ navigation }: any) => {
           />
         </SettingSection>
 
-        {/* Mosque Mode moved to dedicated screen via Menu > Mosque Mode */}
-
-        {/* 🎯 ENHANCED: Location Section with manual selection */}
+        {/* 4. Location */}
         <LocationSection
           userSettings={userSettings}
           isUpdatingLocation={isUpdatingLocation}
@@ -190,64 +178,60 @@ const SettingsScreen = ({ navigation }: any) => {
           hasValidLocation={hasValidLocation}
         />
 
-        {/* Location modal for manual update */}
         <LocationModal
           visible={showManualLocationModal}
           onClose={() => setShowManualLocationModal(false)}
         />
 
-        {/* App Data */}
+        {/* 5. Appearance */}
+        <SettingSection title="Appearance">
+          <SettingRow
+            label="App Theme"
+            subtitle="Tap to cycle themes"
+            value={`${themeIcon} ${themeLabel}`}
+            onPress={toggleTheme}
+          />
+        </SettingSection>
+
+        {/* 6. App Data */}
         <AppDataSection
           onExportData={handleExportData}
           onResetApp={handleResetApp}
         />
 
-        {__DEV__ && <TouchableOpacity onPress={() => navigation.navigate('NotificationDebug')}>
-          <Text>🔧 Notification Debugger</Text>
-        </TouchableOpacity>}
-
-        {/* Appearance Settings */}
-        <SettingSection title="APPEARANCE">
-          <SettingRow
-            label="App Theme"
-            subtitle="Switch between dark and light mode"
-            value={themeMode === 'dark' ? '🌙 Dark' : '☀️ Light'}
-            onPress={toggleTheme}
-          />
-        </SettingSection>
-
-        {/* About */}
+        {/* 7. About */}
         <AboutSection
           onPrivacyPolicy={() => handlePrivacyPolicy(navigation)}
           onShowDebugInfo={__DEV__ ? showDebugInfo : undefined}
         />
 
-        {/* 🎯 NEW: Connection status indicator */}
-       { __DEV__ && <View style={styles.statusSection}>
-          <Text style={styles.statusTitle}>🔗 Connection Status</Text>
-          <View style={styles.statusRow}>
-            <Text style={styles.statusLabel}>Prayer Times:</Text>
-            <Text style={[
-              styles.statusValue,
-              hasValidLocation ? styles.statusConnected : styles.statusDisconnected
-            ]}>
-              {hasValidLocation ? '✅ Connected' : '❌ No Location'}
-            </Text>
+        {/* Dev-only: Connection status */}
+        {__DEV__ && (
+          <View style={styles.statusSection}>
+            <Text style={styles.statusTitle}>Connection Status</Text>
+            <View style={styles.statusRow}>
+              <Text style={styles.statusLabel}>Prayer Times:</Text>
+              <Text style={[
+                styles.statusValue,
+                hasValidLocation ? styles.statusConnected : styles.statusDisconnected
+              ]}>
+                {hasValidLocation ? 'Connected' : 'No Location'}
+              </Text>
+            </View>
+            <View style={styles.statusRow}>
+              <Text style={styles.statusLabel}>Today's Prayers:</Text>
+              <Text style={styles.statusValue}>
+                {prayerTimesLoading ? 'Loading...' : `${todayPrayerTimes.length} loaded`}
+              </Text>
+            </View>
+            <View style={styles.statusRow}>
+              <Text style={styles.statusLabel}>Next Prayer:</Text>
+              <Text style={styles.statusValue}>
+                {nextPrayer ? `${nextPrayer.name}` : 'None'}
+              </Text>
+            </View>
           </View>
-          <View style={styles.statusRow}>
-            <Text style={styles.statusLabel}>Today's Prayers:</Text>
-            <Text style={styles.statusValue}>
-              {prayerTimesLoading ? '⏳ Loading...' : `${todayPrayerTimes.length} loaded`}
-            </Text>
-          </View>
-          <View style={styles.statusRow}>
-            <Text style={styles.statusLabel}>Next Prayer:</Text>
-            <Text style={styles.statusValue}>
-              {nextPrayer ? `${nextPrayer.name}` : 'None'}
-            </Text>
-          </View>
-        </View>
-        }
+        )}
       </ScrollView>
 
       {/* 🎯 ENHANCED: Calculation Method Modal with previews */}
@@ -334,12 +318,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
 
   // 🎯 NEW: Status section styles
   statusSection: {
-    margin: theme.spacing.xl,
+    marginHorizontal: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
     padding: theme.spacing.lg,
     backgroundColor: theme.colors.card.background,
-    borderRadius: theme.borderRadius.md,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: theme.colors.border.primary,
+    borderColor: theme.colors.border.secondary,
   },
   statusTitle: {
     fontSize: theme.typography.fontSize.md,

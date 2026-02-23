@@ -13,11 +13,15 @@ import { AppTheme } from '../../../theme';
 interface NotificationSectionProps {
   userSettings: UserSettings;
   onNotificationPress: () => void;
+  onToggleTahajjud?: () => void;
+  onToggleJummah?: () => void;
 }
 
 export const NotificationSection: React.FC<NotificationSectionProps> = ({
   userSettings,
   onNotificationPress,
+  onToggleTahajjud,
+  onToggleJummah,
 }) => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
@@ -97,17 +101,34 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
       <View style={styles.row}>
         <View style={styles.textContainer}>
           <Text style={styles.label}>Adhan Sound</Text>
-          <Text style={styles.subtitle}>Play call to prayer at prayer time</Text>
+          <Text style={styles.subtitle}>Call to prayer at prayer time</Text>
         </View>
         <Switch
           value={userSettings.notifications.adhanEnabled}
           onValueChange={toggleAdhan}
-          // Only allow toggling if master notifications are enabled
           disabled={!userSettings.notifications.enabled || permissionStatus !== 'granted'}
           trackColor={{ false: theme.colors.switch.trackFalse, true: theme.colors.switch.trackTrue }}
           thumbColor={theme.colors.switch.thumb}
         />
       </View>
+      {/* Tahajjud Reminders */}
+      {onToggleTahajjud && (
+        <SettingRow
+          label="Tahajjud Reminders"
+          subtitle="Night prayer encouragement"
+          value={userSettings.tahajjudReminders?.enabled ? 'On' : 'Off'}
+          onPress={onToggleTahajjud}
+        />
+      )}
+      {/* Jumu'ah Reminders */}
+      {onToggleJummah && (
+        <SettingRow
+          label="Jumu'ah Reminders"
+          subtitle="Friday sunnah · Al-Kahf, ghusl"
+          value={userSettings.jummahReminders?.enabled !== false ? 'On' : 'Off'}
+          onPress={onToggleJummah}
+        />
+      )}
     </SettingSection>
   );
 };

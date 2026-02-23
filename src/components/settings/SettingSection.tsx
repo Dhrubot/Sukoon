@@ -24,18 +24,20 @@ export const SettingSection: React.FC<SettingSectionProps> = ({ title, children 
 
 const createStyles = (theme: AppTheme) => StyleSheet.create({
   section: {
-    marginBottom: theme.spacing.lg,
-    padding: theme.spacing.xl,
-    borderBottomWidth: 1,
-    backgroundColor: theme.colors.background.secondary,
-    borderBottomColor: theme.colors.border.primary,
+    marginHorizontal: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
+    padding: theme.spacing.lg,
+    backgroundColor: theme.colors.card.background,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: theme.colors.border.secondary,
   },
   sectionTitle: {
-    fontSize: theme.typography.fontSize.md,
+    fontSize: theme.typography.fontSize.xs,
     fontFamily: theme.typography.fontFamily.bodySemibold,
     marginBottom: theme.spacing.md,
-    paddingHorizontal: theme.spacing.xl,
-    letterSpacing: 0.5,
-    color: theme.colors.text.secondary,
+    letterSpacing: 1.8,
+    textTransform: 'uppercase',
+    color: theme.colors.text.muted,
   },
 });

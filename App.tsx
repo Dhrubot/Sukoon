@@ -10,6 +10,12 @@ import {
   DMSans_600SemiBold,
   DMSans_700Bold,
 } from '@expo-google-fonts/dm-sans';
+import {
+  CormorantGaramond_300Light,
+  CormorantGaramond_400Regular,
+  CormorantGaramond_500Medium,
+  CormorantGaramond_600SemiBold,
+} from '@expo-google-fonts/cormorant-garamond';
 
 // Components
 import { AppInitializer } from './src/components/AppInitializer';
@@ -31,6 +37,10 @@ export default function App() {
     DMSans_500Medium,
     DMSans_600SemiBold,
     DMSans_700Bold,
+    CormorantGaramond_300Light,
+    CormorantGaramond_400Regular,
+    CormorantGaramond_500Medium,
+    CormorantGaramond_600SemiBold,
   });
 
   const onLayoutRootView = useCallback(async () => {

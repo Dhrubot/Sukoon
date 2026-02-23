@@ -714,8 +714,307 @@ export const lightTheme = {
   },
 };
 
+// ═══════════════════════════════════════════════════════════════════
+// BLACKOUT THEME — "Midnight & Gold"
+// True-black canvas, gold ornamentation, teal interactive accents.
+// Inspired by mosque interiors at night: dark stone, gilded arches,
+// moonlight through geometric screens.
+// ═══════════════════════════════════════════════════════════════════
+
+// ─── Blackout-specific palette (not shared with dark/light) ──────
+const blackoutPalette = {
+  night:       '#090d18',
+  deep:        '#0d1424',
+  card:        '#111827',
+  card2:       '#141d2e',
+  gold:        '#c9a84c',
+  goldLight:   '#e8c97a',
+  goldDim:     'rgba(201, 168, 76, 0.15)',
+  goldGlow:    'rgba(201, 168, 76, 0.08)',
+  goldAlpha05: 'rgba(201, 168, 76, 0.05)',
+  goldAlpha10: 'rgba(201, 168, 76, 0.10)',
+  goldAlpha12: 'rgba(201, 168, 76, 0.12)',
+  goldAlpha20: 'rgba(201, 168, 76, 0.20)',
+  goldAlpha25: 'rgba(201, 168, 76, 0.25)',
+  goldAlpha30: 'rgba(201, 168, 76, 0.30)',
+  goldAlpha40: 'rgba(201, 168, 76, 0.40)',
+  teal:        '#2dd4bf',
+  tealDim:     'rgba(45, 212, 191, 0.12)',
+  tealAlpha08: 'rgba(45, 212, 191, 0.08)',
+  tealAlpha20: 'rgba(45, 212, 191, 0.20)',
+  tealAlpha30: 'rgba(45, 212, 191, 0.30)',
+  text:        '#f0ece4',
+  textMuted:   '#7a8499',
+  textSub:     '#3d4a60',
+  borderDim:   'rgba(255, 255, 255, 0.06)',
+  borderBright: 'rgba(255, 255, 255, 0.12)',
+  emerald:     '#10b981',
+  emeraldDim:  'rgba(16, 185, 129, 0.1)',
+  danger:      '#e85d75',
+} as const;
+
+// ─── Blackout prayer gradients ───────────────────────────────────
+const blackoutPrayerGradients = {
+  Fajr:     ['#080E2A', '#0D1940', '#121F4A'] as const,
+  Dhuhr:    ['#0D1820', '#091E1C', '#0A2818'] as const,
+  Asr:      ['#1A1808', '#151C0E', '#122214'] as const,
+  Maghrib:  ['#1A0A18', '#160E22', '#12121E'] as const,
+  Isha:     ['#0A0820', '#08091A', '#060816'] as const,
+  Taraweeh: ['#100828', '#0A0E22', '#081428'] as const,
+  Tahajjud: ['#060618', '#040410', '#02020A'] as const,
+  Jumah:    ['#181408', '#221C08', '#2A2208'] as const,
+  default:  ['#0D1820', '#091E1C', '#0A2818'] as const,
+} as const;
+
+// ─── Blackout prayer identity colors ─────────────────────────────
+const blackoutPrayerColors = {
+  fajr:     '#7986CB',
+  dhuhr:    '#81C784',
+  asr:      '#DCE775',
+  maghrib:  '#CE93D8',
+  isha:     '#9FA8DA',
+  taraweeh: '#B39DDB',
+  tahajjud: '#7986CB',
+  jumah:    blackoutPalette.gold,
+} as const;
+
+export const blackoutTheme = {
+  background: {
+    primary:   blackoutPalette.night,
+    secondary: blackoutPalette.deep,
+    tertiary:  blackoutPalette.card2,
+    overlay:   palette.blackAlpha60,
+  },
+
+  text: {
+    primary:   blackoutPalette.text,
+    secondary: blackoutPalette.textMuted,
+    muted:     blackoutPalette.textSub,
+    inverse:   blackoutPalette.night,
+  },
+
+  primary: {
+    DEFAULT:  blackoutPalette.gold,
+    light:    blackoutPalette.goldLight,
+    dark:     '#A07C1F',
+    contrast: blackoutPalette.night,
+  },
+
+  secondary: {
+    DEFAULT: blackoutPalette.textMuted,
+    light:   blackoutPalette.textSub,
+    dark:    '#5C6493',
+  },
+
+  status: {
+    success: '#4ade80',
+    warning: palette.statusWarning,
+    error:   blackoutPalette.danger,
+    info:    palette.statusInfo,
+  },
+
+  prayer: blackoutPrayerColors,
+
+  border: {
+    primary:   blackoutPalette.borderBright,
+    secondary: blackoutPalette.borderDim,
+    focus:     blackoutPalette.gold,
+  },
+
+  card: {
+    background: blackoutPalette.card,
+    hover:      blackoutPalette.card2,
+    border:     blackoutPalette.borderBright,
+  },
+
+  interactive: {
+    active:   blackoutPalette.teal,
+    hover:    blackoutPalette.card2,
+    disabled: blackoutPalette.textSub,
+  },
+
+  gold:        blackoutPalette.gold,
+  goldDark:    '#A07C1F',
+
+  mindfulness: {
+    circleBg:        blackoutPalette.goldAlpha10,
+    circleBorder:    blackoutPalette.goldAlpha30,
+    circleShadow:    blackoutPalette.gold,
+    innerCircleBg:   blackoutPalette.goldAlpha12,
+    outerRingBorder: blackoutPalette.goldAlpha20,
+    progressFill:    blackoutPalette.goldAlpha20,
+    progressRingBg:  palette.whiteAlpha10,
+    accent:          blackoutPalette.gold,
+    textPrimary:     blackoutPalette.text,
+    textSecondary:   palette.whiteAlpha80,
+    textMuted:       palette.whiteAlpha70,
+    textSubtle:      palette.whiteAlpha60,
+    textHint:        palette.whiteAlpha50,
+    inputBg:         palette.whiteAlpha08,
+    inputBorder:     blackoutPalette.goldAlpha25,
+    quickOptionBg:   blackoutPalette.goldAlpha10,
+    quickOptionBorder: blackoutPalette.goldAlpha20,
+    buttonBg:        blackoutPalette.goldAlpha20,
+    buttonBorder:    blackoutPalette.goldAlpha40,
+    timingInfoBg:    blackoutPalette.goldAlpha12,
+    timingInfoBorder: blackoutPalette.goldAlpha25,
+    dotActive:       blackoutPalette.gold,
+    dotInactive:     palette.whiteAlpha25,
+  },
+
+  onboarding: {
+    gradient:        [blackoutPalette.night, blackoutPalette.deep, blackoutPalette.night] as const,
+    inputBg:         palette.whiteAlpha15,
+    inputBorder:     palette.whiteAlpha30,
+    buttonBg:        blackoutPalette.goldAlpha20,
+    buttonBorder:    blackoutPalette.goldAlpha40,
+    optionBg:        palette.whiteAlpha10,
+    optionBorder:    palette.whiteAlpha20,
+    optionActiveBg:  palette.whiteAlpha20,
+    toggleBg:        palette.whiteAlpha10,
+    textSubtle:      palette.whiteAlpha90,
+    textMuted:       palette.whiteAlpha70,
+    textHint:        palette.whiteAlpha60,
+    textDim:         palette.whiteAlpha50,
+    placeholder:     palette.whiteAlpha50,
+    progressBg:      palette.whiteAlpha20,
+    textBody:        palette.whiteAlpha80,
+  },
+
+  achievement: {
+    overlayBg:       palette.blackAlpha80,
+    shadow:          palette.black,
+    textPrimary:     blackoutPalette.text,
+    textSecondary:   palette.whiteAlpha90,
+    badgeBg:         palette.whiteAlpha20,
+    continueBg:      palette.whiteAlpha25,
+    continueBorder:  palette.whiteAlpha40,
+    tiers:           achievementTiers,
+    confetti:        celebrationColors,
+  },
+
+  garden: {
+    soil:          blackoutPalette.card,
+    soilBorder:    blackoutPalette.borderBright,
+    stem:          '#A07C1F',
+    sparkle:       blackoutPalette.goldLight,
+    emptyDot:      palette.whiteAlpha15,
+    todayRing:     blackoutPalette.gold,
+    cardBg:        blackoutPalette.card,
+    journalBorder: blackoutPalette.borderBright,
+    accentFajr:    '#7986CB',
+    accentMaghrib: '#CE93D8',
+  },
+
+  qibla: {
+    compassBg:              blackoutPalette.card,
+    compassRing:            blackoutPalette.borderBright,
+    compassRingAligned:     blackoutPalette.gold,
+    needleBeam:             blackoutPalette.gold,
+    needleBeamAligned:      blackoutPalette.goldLight,
+    needleTip:              blackoutPalette.goldLight,
+    alignedGlow:            blackoutPalette.gold,
+    alignedGlowShadow:     '#A07C1F',
+    kaabaIcon:              blackoutPalette.text,
+    kaabaGold:              blackoutPalette.gold,
+    bearingText:            blackoutPalette.goldLight,
+    hintText:               blackoutPalette.textMuted,
+    interferenceWarningBg:  'rgba(232, 93, 117, 0.15)',
+    interferenceWarningText: blackoutPalette.danger,
+    anomalyWarningBg:       'rgba(245, 158, 11, 0.15)',
+    anomalyWarningText:     palette.statusWarning,
+    cardinalN:              blackoutPalette.text,
+    cardinalMuted:          blackoutPalette.textSub,
+    tickCardinal:           blackoutPalette.textMuted,
+    tickMinor:              blackoutPalette.borderBright,
+    verifyLink:             blackoutPalette.goldLight,
+  },
+
+  sanctuary: {
+    greeting:        palette.whiteAlpha70,
+    label:           palette.whiteAlpha50,
+    prayerName:      blackoutPalette.text,
+    prayerTime:      palette.whiteAlpha80,
+    countdown:       palette.whiteAlpha60,
+    prayedStatus:    palette.whiteAlpha80,
+    buttonBg:        palette.whiteAlpha10,
+    buttonBorder:    palette.whiteAlpha30,
+    buttonBgMuted:   palette.whiteAlpha05,
+    buttonBorderMuted: palette.whiteAlpha15,
+    buttonText:      blackoutPalette.text,
+  },
+
+  prayerGradients: blackoutPrayerGradients,
+
+  switch: {
+    trackFalse: blackoutPalette.card2,
+    trackTrue:  blackoutPalette.teal,
+    thumb:      palette.white,
+  },
+
+  chart: {
+    background:         blackoutPalette.card,
+    gradientFrom:       blackoutPalette.card,
+    gradientTo:         blackoutPalette.card,
+    line:               blackoutPalette.gold,
+    dot:                blackoutPalette.goldLight,
+    label:              blackoutPalette.textMuted,
+    legendFont:         blackoutPalette.textMuted,
+  },
+
+  settings: {
+    sectionBg:         blackoutPalette.card,
+    containerBg:       blackoutPalette.night,
+    inputBg:           blackoutPalette.card2,
+    inputBorder:       blackoutPalette.gold,
+    inputText:         blackoutPalette.text,
+    sliderMin:         blackoutPalette.goldLight,
+    sliderMax:         blackoutPalette.textSub,
+    sliderThumb:       blackoutPalette.gold,
+    sliderWarningMin:  palette.statusWarning,
+    sliderWarningThumb: '#F57C00',
+    optionBg:          blackoutPalette.card2,
+    optionBorder:      blackoutPalette.borderBright,
+    optionActiveBg:    blackoutPalette.goldAlpha12,
+    optionActiveBorder: blackoutPalette.gold,
+    buttonPrimaryBg:   blackoutPalette.teal,
+    buttonPrimaryText: blackoutPalette.night,
+    buttonSecondaryBg: 'transparent',
+    buttonSecondaryBorder: blackoutPalette.teal,
+    buttonSecondaryText: blackoutPalette.teal,
+    cancelBg:          blackoutPalette.card2,
+    cancelBorder:      blackoutPalette.borderBright,
+    cancelText:        blackoutPalette.textMuted,
+    infoBg:            'rgba(59, 130, 246, 0.1)',
+    infoTitle:         palette.statusInfo,
+    infoLabel:         palette.statusInfo,
+    infoText:          palette.statusInfo,
+    warningBg:         'rgba(245, 158, 11, 0.1)',
+    warningBorder:     'rgba(245, 158, 11, 0.3)',
+    warningText:       palette.statusWarning,
+    hintBg:            blackoutPalette.goldAlpha05,
+    hintBorder:        blackoutPalette.goldAlpha10,
+    hintText:          blackoutPalette.gold,
+    tipsBg:            blackoutPalette.goldGlow,
+    tipsTitle:         blackoutPalette.goldLight,
+    tipsText:          blackoutPalette.gold,
+    modalOverlay:      palette.blackAlpha60,
+    modalBg:           blackoutPalette.card,
+    modalShadow:       palette.black,
+    modalBorder:       blackoutPalette.borderBright,
+    modalTitle:        blackoutPalette.gold,
+    modalClose:        blackoutPalette.gold,
+    modalCloseDisabled: blackoutPalette.textSub,
+    previewBg:         blackoutPalette.card2,
+    previewBorder:     blackoutPalette.gold,
+    labelPrimary:      blackoutPalette.text,
+    labelSecondary:    blackoutPalette.textMuted,
+    labelMuted:        blackoutPalette.textSub,
+  },
+};
+
 // ─── Type Utilities ────────────────────────────────────────────────
-// Widen literal string types so both darkTheme and lightTheme satisfy Theme.
+// Widen literal string types so darkTheme, lightTheme, and blackoutTheme satisfy Theme.
 type DeepStringify<T> =
   T extends readonly (infer U)[]
     ? readonly DeepStringify<U>[]
@@ -728,6 +1027,6 @@ type DeepStringify<T> =
           : T;
 
 // ─── Exports ───────────────────────────────────────────────────────
-export { palette, prayerGradients, achievementTiers, celebrationColors };
+export { palette, blackoutPalette, prayerGradients, achievementTiers, celebrationColors };
 export type Theme = DeepStringify<typeof darkTheme>;
 export type ThemeColors = keyof Theme;

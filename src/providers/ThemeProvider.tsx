@@ -31,9 +31,9 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     const newTheme = createTheme(themeMode);
     setTheme(newTheme);
     
-    // Update status bar
+    // Update status bar (blackout uses light-content like dark)
     StatusBar.setBarStyle(
-      themeMode === 'dark' ? 'light-content' : 'dark-content',
+      themeMode === 'light' ? 'dark-content' : 'light-content',
       true
     );
     
@@ -45,7 +45,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     try {
       const settings = StorageService.getUserSettings();
       const savedTheme = settings?.theme;
-      if (savedTheme === 'light' || savedTheme === 'dark') {
+      if (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'blackout') {
         setThemeModeState(savedTheme);
       }
     } catch (error) {
@@ -72,7 +72,14 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   };
 
   const toggleTheme = () => {
-    setThemeModeState((prev) => (prev === 'dark' ? 'light' : 'dark'));
+    setThemeModeState((prev) => {
+      const cycle: Record<ThemeMode, ThemeMode> = {
+        dark: 'light',
+        light: 'blackout',
+        blackout: 'dark',
+      };
+      return cycle[prev];
+    });
   };
 
   return (
