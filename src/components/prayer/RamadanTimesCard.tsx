@@ -1,7 +1,6 @@
 // src/components/prayer/RamadanTimesCard.tsx
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
@@ -18,12 +17,7 @@ const RamadanTimesCard: React.FC<RamadanTimesCardProps> = ({ fajrTime, maghribTi
   const styles = useThemedStyles(createStyles);
 
   return (
-    <LinearGradient
-      colors={['#0f1c2e', '#0a1820'] as const}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 1 }}
-      style={styles.ramadanCard}
-    >
+    <View style={styles.ramadanCard}>
       <Text style={styles.ramadanTitle}>Ramadan Times</Text>
       <View style={styles.ramadanRow}>
         <View style={styles.ramadanItem}>
@@ -36,7 +30,7 @@ const RamadanTimesCard: React.FC<RamadanTimesCardProps> = ({ fajrTime, maghribTi
           <Text style={[styles.ramadanTime, { color: theme.colors.goldLight }]}>{fmt(maghribTime)}</Text>
         </View>
       </View>
-    </LinearGradient>
+    </View>
   );
 };
 

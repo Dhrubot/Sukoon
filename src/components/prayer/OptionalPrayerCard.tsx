@@ -1,7 +1,6 @@
 // src/components/prayer/OptionalPrayerCard.tsx
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { format } from 'date-fns';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
@@ -26,7 +25,8 @@ const OptionalPrayerCard: React.FC<OptionalPrayerCardProps> = ({ prayer, onPrepa
   const categoryLabel = CATEGORY_LABELS[prayer.category] || prayer.category;
   const isTaraweeh = prayer.name === 'Taraweeh';
   const prayerColorKey = prayer.name.toLowerCase() as keyof typeof theme.colors.prayer;
-  const accentColor = isTaraweeh ? '#8b5cf6' : (theme.colors.prayer?.[prayerColorKey] || theme.colors.text.secondary);
+  const purpleAccent = theme.colors.prayer?.taraweeh || '#8b5cf6';
+  const accentColor = isTaraweeh ? purpleAccent : (theme.colors.prayer?.[prayerColorKey] || theme.colors.text.secondary);
 
   const cardContent = (
     <View style={styles.innerContent}>
@@ -34,7 +34,7 @@ const OptionalPrayerCard: React.FC<OptionalPrayerCardProps> = ({ prayer, onPrepa
         <Text style={styles.icon}>{prayer.icon}</Text>
         <View style={styles.nameSection}>
           <View style={styles.nameRow}>
-            <Text style={[styles.name, { color: isTaraweeh ? '#c4b5fd' : theme.colors.text.primary }]}>
+            <Text style={[styles.name, { color: isTaraweeh ? purpleAccent : theme.colors.text.primary }]}>
               {prayer.displayName}
             </Text>
             <View style={[styles.badge, { backgroundColor: `${accentColor}20` }]}>
@@ -43,14 +43,14 @@ const OptionalPrayerCard: React.FC<OptionalPrayerCardProps> = ({ prayer, onPrepa
               </Text>
             </View>
           </View>
-          <Text style={[styles.arabic, { color: isTaraweeh ? 'rgba(196, 181, 253, 0.6)' : theme.colors.text.muted }]}>
+          <Text style={[styles.arabic, { color: isTaraweeh ? `${purpleAccent}99` : theme.colors.text.muted }]}>
             {prayer.arabic}
           </Text>
         </View>
       </View>
 
       <View style={styles.rightSection}>
-        <Text style={[styles.time, { color: isTaraweeh ? 'rgba(196, 181, 253, 0.7)' : theme.colors.text.secondary }]}>
+        <Text style={[styles.time, { color: isTaraweeh ? `${purpleAccent}B3` : theme.colors.text.secondary }]}>
           {prayer.name === 'Taraweeh' ? 'After Isha' : prayer.name === 'Eid' ? 'After Sunrise' : format(prayer.time, 'h:mm a')}
         </Text>
         <Text style={[styles.cta, { color: accentColor }]}>
@@ -62,15 +62,18 @@ const OptionalPrayerCard: React.FC<OptionalPrayerCardProps> = ({ prayer, onPrepa
 
   if (isTaraweeh) {
     return (
-      <TouchableOpacity onPress={onPrepare} activeOpacity={0.7}>
-        <LinearGradient
-          colors={['#110d22', '#0d0e1e'] as const}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-          style={[styles.container, { borderColor: 'rgba(139, 92, 246, 0.20)' }]}
-        >
-          {cardContent}
-        </LinearGradient>
+      <TouchableOpacity
+        style={[
+          styles.container,
+          {
+            backgroundColor: theme.colors.card.background,
+            borderColor: `${purpleAccent}33`,
+          },
+        ]}
+        onPress={onPrepare}
+        activeOpacity={0.7}
+      >
+        {cardContent}
       </TouchableOpacity>
     );
   }

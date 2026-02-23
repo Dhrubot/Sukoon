@@ -93,7 +93,7 @@ const CountdownRing: React.FC<CountdownRingProps> = ({
           cx={RING_SIZE / 2}
           cy={RING_SIZE / 2}
           r={RADIUS}
-          stroke="rgba(255,255,255,0.05)"
+          stroke="rgba(255,255,255,0.08)"
           strokeWidth={STROKE_WIDTH}
           fill="none"
         />
@@ -165,9 +165,15 @@ const createStyles = (theme: AppTheme) =>
       right: INNER_INSET,
       bottom: INNER_INSET,
       borderRadius: (RING_SIZE - INNER_INSET * 2) / 2,
-      backgroundColor: 'rgba(10, 30, 22, 0.85)',
+      backgroundColor: 'rgba(12, 32, 22, 0.92)',
       borderWidth: 1,
-      borderColor: 'rgba(201, 168, 76, 0.08)',
+      borderColor: 'rgba(232, 201, 122, 0.12)',
+      // Depth shadow to approximate inset effect
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.35,
+      shadowRadius: 12,
+      elevation: 4,
     },
     innerContent: {
       alignItems: 'center',
@@ -177,7 +183,7 @@ const createStyles = (theme: AppTheme) =>
     label: {
       fontSize: 10,
       fontFamily: theme.typography.fontFamily.bodyMedium,
-      color: theme.colors.text.muted,
+      color: theme.colors.sanctuary.label,
       letterSpacing: 2,
       textTransform: 'uppercase',
       marginBottom: theme.spacing.xs,
@@ -185,7 +191,7 @@ const createStyles = (theme: AppTheme) =>
     prayerName: {
       fontSize: theme.typography.fontSize['6xl'],
       fontFamily: theme.typography.fontFamily.headingMedium,
-      color: theme.colors.text.primary,
+      color: theme.colors.sanctuary.prayerName,
       lineHeight: 36,
       letterSpacing: -0.5,
       marginBottom: theme.spacing.xxs,

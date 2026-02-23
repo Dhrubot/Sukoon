@@ -18,16 +18,17 @@ interface StarConfig {
   delay: number;
 }
 
-// 8 hand-tuned star positions (mockup has ~6, we add a couple more)
+// Stars spread across top ~35% of hero (hero ≈ 72% of screen → y up to ~0.25 of SH)
+// Positions match mockup: top:8%→35% of hero, scattered left-to-right
 const STARS: StarConfig[] = [
-  { x: SW * 0.10, y: SH * 0.04, size: 2, delay: 0 },
-  { x: SW * 0.75, y: SH * 0.06, size: 3, delay: 700 },
-  { x: SW * 0.50, y: SH * 0.02, size: 2, delay: 1200 },
-  { x: SW * 0.25, y: SH * 0.10, size: 2, delay: 400 },
-  { x: SW * 0.88, y: SH * 0.03, size: 2, delay: 2000 },
-  { x: SW * 0.60, y: SH * 0.12, size: 1, delay: 1500 },
-  { x: SW * 0.35, y: SH * 0.15, size: 2, delay: 800 },
-  { x: SW * 0.15, y: SH * 0.08, size: 1, delay: 300 },
+  { x: SW * 0.10, y: SH * 0.06, size: 2, delay: 0 },
+  { x: SW * 0.75, y: SH * 0.14, size: 3, delay: 700 },
+  { x: SW * 0.50, y: SH * 0.05, size: 2, delay: 1200 },
+  { x: SW * 0.25, y: SH * 0.21, size: 2, delay: 400 },
+  { x: SW * 0.88, y: SH * 0.08, size: 2, delay: 2000 },
+  { x: SW * 0.60, y: SH * 0.25, size: 1, delay: 1500 },
+  { x: SW * 0.35, y: SH * 0.11, size: 2, delay: 800 },
+  { x: SW * 0.15, y: SH * 0.17, size: 1, delay: 300 },
 ];
 
 // Star with scale + opacity twinkle animation (matches mockup CSS)
