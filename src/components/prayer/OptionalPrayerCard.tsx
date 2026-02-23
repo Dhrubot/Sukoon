@@ -1,6 +1,7 @@
 // src/components/prayer/OptionalPrayerCard.tsx
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import { format } from 'date-fns';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
@@ -23,8 +24,56 @@ const OptionalPrayerCard: React.FC<OptionalPrayerCardProps> = ({ prayer, onPrepa
   const styles = useThemedStyles(createStyles);
 
   const categoryLabel = CATEGORY_LABELS[prayer.category] || prayer.category;
+  const isTaraweeh = prayer.name === 'Taraweeh';
   const prayerColorKey = prayer.name.toLowerCase() as keyof typeof theme.colors.prayer;
-  const accentColor = theme.colors.prayer?.[prayerColorKey] || theme.colors.text.secondary;
+  const accentColor = isTaraweeh ? '#8b5cf6' : (theme.colors.prayer?.[prayerColorKey] || theme.colors.text.secondary);
+
+  const cardContent = (
+    <View style={styles.innerContent}>
+      <View style={styles.leftSection}>
+        <Text style={styles.icon}>{prayer.icon}</Text>
+        <View style={styles.nameSection}>
+          <View style={styles.nameRow}>
+            <Text style={[styles.name, { color: isTaraweeh ? '#c4b5fd' : theme.colors.text.primary }]}>
+              {prayer.displayName}
+            </Text>
+            <View style={[styles.badge, { backgroundColor: `${accentColor}20` }]}>
+              <Text style={[styles.badgeText, { color: accentColor }]}>
+                {isTaraweeh ? '☪ Seasonal' : categoryLabel}
+              </Text>
+            </View>
+          </View>
+          <Text style={[styles.arabic, { color: isTaraweeh ? 'rgba(196, 181, 253, 0.6)' : theme.colors.text.muted }]}>
+            {prayer.arabic}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.rightSection}>
+        <Text style={[styles.time, { color: isTaraweeh ? 'rgba(196, 181, 253, 0.7)' : theme.colors.text.secondary }]}>
+          {prayer.name === 'Taraweeh' ? 'After Isha' : prayer.name === 'Eid' ? 'After Sunrise' : format(prayer.time, 'h:mm a')}
+        </Text>
+        <Text style={[styles.cta, { color: accentColor }]}>
+          Prepare
+        </Text>
+      </View>
+    </View>
+  );
+
+  if (isTaraweeh) {
+    return (
+      <TouchableOpacity onPress={onPrepare} activeOpacity={0.7}>
+        <LinearGradient
+          colors={['#110d22', '#0d0e1e'] as const}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={[styles.container, { borderColor: 'rgba(139, 92, 246, 0.20)' }]}
+        >
+          {cardContent}
+        </LinearGradient>
+      </TouchableOpacity>
+    );
+  }
 
   return (
     <TouchableOpacity
@@ -38,33 +87,7 @@ const OptionalPrayerCard: React.FC<OptionalPrayerCardProps> = ({ prayer, onPrepa
       onPress={onPrepare}
       activeOpacity={0.7}
     >
-      <View style={styles.leftSection}>
-        <Text style={styles.icon}>{prayer.icon}</Text>
-        <View style={styles.nameSection}>
-          <View style={styles.nameRow}>
-            <Text style={[styles.name, { color: theme.colors.text.primary }]}>
-              {prayer.displayName}
-            </Text>
-            <View style={[styles.badge, { backgroundColor: `${accentColor}20` }]}>
-              <Text style={[styles.badgeText, { color: accentColor }]}>
-                {categoryLabel}
-              </Text>
-            </View>
-          </View>
-          <Text style={[styles.arabic, { color: theme.colors.text.muted }]}>
-            {prayer.arabic}
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.rightSection}>
-        <Text style={[styles.time, { color: theme.colors.text.secondary }]}>
-          {prayer.name === 'Taraweeh' ? 'After Isha' : prayer.name === 'Eid' ? 'After Sunrise' : format(prayer.time, 'h:mm a')}
-        </Text>
-        <Text style={[styles.cta, { color: accentColor }]}>
-          Prepare
-        </Text>
-      </View>
+      {cardContent}
     </TouchableOpacity>
   );
 };
@@ -74,11 +97,14 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderRadius: theme.borderRadius.md,
     padding: theme.spacing.md + 2,
     marginBottom: theme.spacing.md - 2,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    overflow: 'hidden',
+  },
+  innerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderWidth: 1,
-    borderStyle: 'dashed',
   },
   leftSection: {
     flexDirection: 'row',

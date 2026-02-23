@@ -1,6 +1,8 @@
 // src/components/prayer/RamadanTimesCard.tsx
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 
@@ -12,23 +14,29 @@ interface RamadanTimesCardProps {
 const fmt = (d: Date) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
 const RamadanTimesCard: React.FC<RamadanTimesCardProps> = ({ fajrTime, maghribTime }) => {
+  const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
 
   return (
-    <View style={styles.ramadanCard}>
+    <LinearGradient
+      colors={['#0f1c2e', '#0a1820'] as const}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.ramadanCard}
+    >
       <Text style={styles.ramadanTitle}>Ramadan Times</Text>
       <View style={styles.ramadanRow}>
         <View style={styles.ramadanItem}>
           <Text style={styles.ramadanLabel}>Suhoor ends</Text>
-          <Text style={styles.ramadanTime}>{fmt(fajrTime)}</Text>
+          <Text style={[styles.ramadanTime, { color: theme.colors.interactive.active }]}>{fmt(fajrTime)}</Text>
         </View>
         <View style={styles.ramadanDivider} />
         <View style={styles.ramadanItem}>
           <Text style={styles.ramadanLabel}>Iftar</Text>
-          <Text style={styles.ramadanTime}>{fmt(maghribTime)}</Text>
+          <Text style={[styles.ramadanTime, { color: theme.colors.goldLight }]}>{fmt(maghribTime)}</Text>
         </View>
       </View>
-    </View>
+    </LinearGradient>
   );
 };
 
@@ -44,8 +52,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderColor: theme.colors.border.primary,
   },
   ramadanTitle: {
-    fontSize: theme.typography.fontSize.xl,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontSize: theme.typography.fontSize['2xl'],
     fontFamily: theme.typography.fontFamily.headingRegular,
     color: theme.colors.text.secondary,
     textAlign: 'center',

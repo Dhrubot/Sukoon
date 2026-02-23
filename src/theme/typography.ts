@@ -2,6 +2,8 @@
 export const typography = {
   fontFamily: {
     heading: 'Lora_700Bold',           // Serif bold — prayer names, screen titles
+    headingMedium: 'Lora_700Bold',     // Serif medium — (Lora has no 500; alias to bold)
+    headingLight: 'Lora_400Regular',   // Serif light — (Lora has no 300; alias to regular)
     headingRegular: 'Lora_400Regular', // Serif regular — subtitles, quotes, greetings
     body: 'DMSans_400Regular',         // Sans — body text, descriptions, labels
     bodyMedium: 'DMSans_500Medium',    // Sans medium — emphasized body, status text
@@ -21,6 +23,7 @@ export const typography = {
     '3xl': 24,   // Large numbers, featured text
     '4xl': 28,   // Hero text
     '5xl': 32,   // Extra large displays
+    '6xl': 36,   // Countdown ring, hero display
   },
   fontWeight: {
     regular: '400' as const,   // Body text
@@ -41,6 +44,8 @@ export const typography = {
 export const blackoutTypography = {
   fontFamily: {
     heading: 'CormorantGaramond_600SemiBold',
+    headingMedium: 'CormorantGaramond_500Medium',
+    headingLight: 'CormorantGaramond_300Light',
     headingRegular: 'CormorantGaramond_400Regular',
     body: 'DMSans_400Regular',
     bodyMedium: 'DMSans_500Medium',
@@ -60,6 +65,7 @@ export const blackoutTypography = {
     '3xl': 22,
     '4xl': 24,
     '5xl': 28,
+    '6xl': 36,
   },
   fontWeight: {
     regular: '400' as const,

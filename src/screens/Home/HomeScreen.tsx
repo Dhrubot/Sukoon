@@ -216,6 +216,13 @@ const HomeScreen = ({ navigation }: any) => {
 
   // Prayer-aware hero: if the user already prayed the current fiqh-window prayer,
   // advance the hero to the next unprayed prayer. Returns null when all are prayed.
+  // Extract first name for gold rendering in SanctuaryView greeting
+  const heroUserName = useMemo(() => {
+    const fullName = userSettings?.name?.trim() || 'Friend';
+    const firstName = fullName.split(/\s+/)[0];
+    return firstName.charAt(0).toUpperCase() + firstName.slice(1);
+  }, [userSettings?.name]);
+
   const heroPrayer = useMemo(() => {
     if (!nextPrayer) return null;
 
@@ -237,6 +244,14 @@ const HomeScreen = ({ navigation }: any) => {
     // All remaining prayers are prayed
     return null;
   }, [nextPrayer, todayPrayerTimes, todayPrayerRecords]);
+
+  // Previous prayer time for inter-prayer ring progress
+  const previousPrayerTime = useMemo(() => {
+    if (!heroPrayer) return undefined;
+    const heroIdx = todayPrayerTimes.findIndex(p => p.name === heroPrayer.name);
+    if (heroIdx > 0) return todayPrayerTimes[heroIdx - 1].time;
+    return undefined;
+  }, [heroPrayer, todayPrayerTimes]);
 
   // Unified mosque mode info for the hero pill — scoped to heroPrayer
   const mosqueModeHeroInfo = useMemo(() => {
@@ -451,6 +466,8 @@ const HomeScreen = ({ navigation }: any) => {
           <SanctuaryView
             prayer={heroPrayer}
             greeting={getGreeting()}
+            userName={heroUserName}
+            previousPrayerTime={previousPrayerTime}
             record={heroPrayerRecord}
             isTimeEntered={isHeroPrayerTimeEntered}
             missedPrayer={missedPreviousPrayer}
@@ -658,7 +675,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginTop: theme.spacing.sm,
   },
   secondaryContent: {
-    paddingTop: theme.spacing.lg,
+    paddingTop: theme.spacing.xs,
   },
   section: {
     paddingHorizontal: theme.spacing.xl,
@@ -667,8 +684,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   sectionTitle: {
     fontSize: theme.typography.fontSize['2xl'],
-    fontWeight: '600',
-    fontFamily: theme.typography.fontFamily.headingRegular,
+    fontFamily: theme.typography.fontFamily.headingMedium,
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.lg,
   },

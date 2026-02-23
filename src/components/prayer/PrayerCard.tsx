@@ -130,13 +130,22 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
     return !nextPrayer || isFuture(nextPrayer.time);
   };
 
+  // Missed: past prayer with no record and next prayer has already started
+  const isMissed = () => {
+    if (record) return false;
+    if (!isPast(prayer.time)) return false;
+    if (prayer.name === 'Fajr' && todaySunrise && isPast(todaySunrise)) return true;
+    return nextPrayer ? isPast(nextPrayer.time) : false;
+  };
+
   return (
     <TouchableOpacity
       style={[
         styles.container,
-        { backgroundColor: theme.colors.card.background, borderColor: theme.colors.border.primary },
-        isActive() && [styles.activeContainer, { backgroundColor: theme.colors.card.hover, borderColor: theme.colors.primary.DEFAULT, shadowColor: theme.colors.primary.DEFAULT }],
-        record?.status === 'prayed' && styles.completedContainer,
+        { backgroundColor: theme.colors.card.background, borderColor: theme.colors.border.secondary },
+        isActive() && [styles.activeContainer, { backgroundColor: theme.colors.gold + '18', borderColor: theme.colors.gold + '40', shadowColor: theme.colors.gold }],
+        record?.status === 'prayed' && [styles.prayedContainer, { backgroundColor: theme.colors.interactive.active + '12', borderColor: theme.colors.interactive.active + '30' }],
+        isMissed() && [styles.missedContainer, { backgroundColor: theme.colors.status.error + '10', borderColor: theme.colors.status.error + '25' }],
       ]}
       onPress={onComplete}
       disabled={
@@ -153,7 +162,11 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
         <View style={styles.iconContainer}>
           {React.createElement(getPrayerIcon(prayer.name), {
             size: 32,
-            color: isActive() ? theme.colors.primary.DEFAULT : theme.colors.text.secondary,
+            color: record?.status === 'prayed'
+              ? theme.colors.interactive.active
+              : isActive()
+                ? theme.colors.gold
+                : theme.colors.text.secondary,
           })}
         </View>
         <View style={styles.timeInfo}>
@@ -198,14 +211,17 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderWidth: 1,
   },
   activeContainer: {
-    borderWidth: 2,
+    borderWidth: 1.5,
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    shadowOpacity: 0.25,
+    shadowRadius: 10,
+    elevation: 4,
   },
-  completedContainer: {
-    opacity: 0.6,
+  prayedContainer: {
+    borderWidth: 1,
+  },
+  missedContainer: {
+    borderWidth: 1,
   },
   leftSection: {
     flexDirection: 'row',

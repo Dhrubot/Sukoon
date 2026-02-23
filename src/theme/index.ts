@@ -38,8 +38,8 @@ export const createTheme = (mode: ThemeMode): AppTheme => ({
   iconSizes,
 });
 
-// Export default dark theme
-export const defaultTheme = createTheme('dark');
+// Export default blackout theme
+export const defaultTheme = createTheme('blackout');
 
 // Export individual modules for direct access if needed
 export { darkTheme, lightTheme, blackoutTheme, spacing, borderRadius, shadows, typography, blackoutTypography, iconSizes };

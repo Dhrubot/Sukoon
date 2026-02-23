@@ -18,8 +18,8 @@ interface ThemeProviderProps {
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const [themeMode, setThemeModeState] = useState<ThemeMode>('dark');
-  const [theme, setTheme] = useState<AppTheme>(createTheme('dark'));
+  const [themeMode, setThemeModeState] = useState<ThemeMode>('blackout');
+  const [theme, setTheme] = useState<AppTheme>(createTheme('blackout'));
 
   // Load saved theme preference on mount
   useEffect(() => {

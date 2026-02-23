@@ -42,17 +42,26 @@ const GardenTeaser: React.FC = () => {
     ? `${summary.newBlooms} new bloom${summary.newBlooms > 1 ? 's' : ''} this week`
     : 'Your garden is growing';
 
+  // Simple progress: cap at 7 reflections per week
+  const progressPercent = Math.min(summary.total / 7, 1);
+
   return (
     <TouchableOpacity
       style={styles.container}
       onPress={handlePress}
       activeOpacity={0.8}
     >
-      <Text style={styles.emoji}>{summary.topEmoji}</Text>
-      <Text style={styles.message}>
-        {message}
-      </Text>
-      <Text style={styles.arrow}>→</Text>
+      <View style={styles.topRow}>
+        <Text style={styles.emoji}>{summary.topEmoji}</Text>
+        <View style={styles.textCol}>
+          <Text style={styles.title}>Reflection Garden</Text>
+          <Text style={styles.message}>{message}</Text>
+        </View>
+        <Text style={[styles.chevron, { color: theme.colors.text.muted }]}>›</Text>
+      </View>
+      <View style={styles.progressTrack}>
+        <View style={[styles.progressFill, { width: `${progressPercent * 100}%`, backgroundColor: theme.colors.interactive.active }]} />
+      </View>
     </TouchableOpacity>
   );
 };
@@ -62,28 +71,49 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginTop: theme.spacing.md,
     marginHorizontal: theme.spacing.xl,
     marginBottom: theme.spacing.xs,
-    paddingVertical: theme.spacing.md,
-    paddingHorizontal: theme.spacing.lg,
+    padding: theme.spacing.lg,
     borderRadius: theme.borderRadius.md,
+    backgroundColor: theme.colors.card.background,
+    borderWidth: 1,
+    borderColor: theme.colors.border.secondary,
+  },
+  topRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderColor: theme.colors.border.primary,
   },
   emoji: {
     fontSize: theme.typography.fontSize.xl,
     marginRight: theme.spacing.md - 2,
   },
-  message: {
-    fontSize: theme.typography.fontSize.md,
-    fontFamily: theme.typography.fontFamily.body,
-    fontStyle: 'italic',
+  textCol: {
     flex: 1,
+  },
+  title: {
+    fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.xxs,
+  },
+  message: {
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.muted,
   },
-  arrow: {
-    fontSize: theme.typography.fontSize.lg,
+  chevron: {
+    fontSize: theme.typography.fontSize['3xl'],
     fontFamily: theme.typography.fontFamily.body,
-    color: theme.colors.text.muted,
+    marginLeft: theme.spacing.sm,
+  },
+  progressTrack: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: theme.colors.border.secondary,
+    marginTop: theme.spacing.md,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 2,
   },
 });
 

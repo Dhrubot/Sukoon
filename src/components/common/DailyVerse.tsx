@@ -124,7 +124,13 @@ const DailyVerse: React.FC = () => {
         onPress={() => setShowTranslation(!showTranslation)}
         activeOpacity={0.8}
       >
+        {/* Gold decorative quote mark */}
+        <Text style={[styles.quoteMark, { color: theme.colors.gold }]}>"</Text>
+
         <Text style={styles.arabic}>{content.arabic}</Text>
+
+        {/* Gold divider */}
+        <View style={[styles.goldDivider, { backgroundColor: theme.colors.gold }]} />
         
         {showTranslation && (
           <>
@@ -160,8 +166,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   title: {
     fontSize: theme.typography.fontSize['2xl'],
-    fontWeight: theme.typography.fontWeight.semibold,
-    fontFamily: theme.typography.fontFamily.headingRegular,
+    fontFamily: theme.typography.fontFamily.headingMedium,
     color: theme.colors.text.primary,
   },
   shareButton: {
@@ -176,20 +181,36 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     backgroundColor: theme.colors.card.background,
     borderColor: theme.colors.border.primary,
   },
+  quoteMark: {
+    fontSize: 60,
+    fontFamily: theme.typography.fontFamily.headingRegular,
+    textAlign: 'center',
+    lineHeight: 60,
+    marginBottom: theme.spacing.xs,
+    opacity: 0.6,
+  },
   arabic: {
     fontSize: theme.typography.fontSize['3xl'],
     textAlign: 'center',
-    marginBottom: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
     lineHeight: 36,
     fontFamily: theme.typography.fontFamily.arabic,
     color: theme.colors.text.primary,
   },
+  goldDivider: {
+    width: 40,
+    height: 2,
+    borderRadius: 1,
+    alignSelf: 'center',
+    marginBottom: theme.spacing.md,
+    opacity: 0.4,
+  },
   translation: {
-    fontSize: theme.typography.fontSize.lg,
-    fontFamily: theme.typography.fontFamily.body,
+    fontSize: 17,
+    fontFamily: theme.typography.fontFamily.headingRegular,
     textAlign: 'center',
     marginBottom: theme.spacing.md,
-    lineHeight: 24,
+    lineHeight: 26,
     fontStyle: 'italic',
     color: theme.colors.text.secondary,
   },
