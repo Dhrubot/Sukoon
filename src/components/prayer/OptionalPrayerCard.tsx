@@ -99,7 +99,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   name: {
     fontSize: theme.typography.fontSize.base,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
   },
   badge: {
     paddingHorizontal: theme.spacing.sm,
@@ -108,7 +108,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   badgeText: {
     fontSize: theme.typography.fontSize.xs - 1,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -122,11 +122,11 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   time: {
     fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
   },
   cta: {
     fontSize: theme.typography.fontSize.xs,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     marginTop: theme.spacing.xxs,
   },
 });

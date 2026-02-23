@@ -32,7 +32,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   sectionTitle: {
     fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     marginBottom: theme.spacing.md,
     paddingHorizontal: theme.spacing.xl,
     letterSpacing: 0.5,

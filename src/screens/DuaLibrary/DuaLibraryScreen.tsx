@@ -220,6 +220,7 @@ const createStyles = (theme: AppTheme) =>
       borderColor: theme.colors.border.primary,
       paddingHorizontal: theme.spacing.lg,
       paddingVertical: theme.spacing.sm,
+      fontFamily: theme.typography.fontFamily.body,
       fontSize: theme.typography.fontSize.md,
       color: theme.colors.text.primary,
     },
@@ -242,12 +243,12 @@ const createStyles = (theme: AppTheme) =>
     },
     chipText: {
       fontSize: theme.typography.fontSize.sm,
-      fontWeight: '500',
+      fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.text.secondary,
     },
     chipTextActive: {
       color: '#FFFFFF',
-      fontWeight: '600',
+      fontFamily: theme.typography.fontFamily.bodySemibold,
     },
     listContent: {
       paddingHorizontal: theme.spacing['2xl'],
@@ -267,7 +268,7 @@ const createStyles = (theme: AppTheme) =>
     },
     duaOfDayLabel: {
       fontSize: theme.typography.fontSize.xs,
-      fontWeight: '600',
+      fontFamily: theme.typography.fontFamily.bodySemibold,
       color: theme.colors.primary.DEFAULT,
       textTransform: 'uppercase',
       letterSpacing: 1,
@@ -283,6 +284,7 @@ const createStyles = (theme: AppTheme) =>
     },
     duaTransliteration: {
       fontSize: theme.typography.fontSize.md,
+      fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.muted,
       fontStyle: 'italic',
       marginBottom: theme.spacing.md,
@@ -290,6 +292,7 @@ const createStyles = (theme: AppTheme) =>
     },
     duaTranslation: {
       fontSize: theme.typography.fontSize.base,
+      fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.secondary,
       lineHeight: 22,
       marginBottom: theme.spacing.md,
@@ -302,12 +305,12 @@ const createStyles = (theme: AppTheme) =>
     duaReference: {
       fontSize: theme.typography.fontSize.xs,
       color: theme.colors.text.muted,
-      fontWeight: '500',
+      fontFamily: theme.typography.fontFamily.bodyMedium,
       flex: 1,
     },
     shareLink: {
       fontSize: theme.typography.fontSize.sm,
-      fontWeight: '600',
+      fontFamily: theme.typography.fontFamily.bodySemibold,
       color: theme.colors.primary.DEFAULT,
       marginLeft: theme.spacing.md,
     },
@@ -317,6 +320,7 @@ const createStyles = (theme: AppTheme) =>
     },
     emptyText: {
       fontSize: theme.typography.fontSize.md,
+      fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.muted,
     },
   });

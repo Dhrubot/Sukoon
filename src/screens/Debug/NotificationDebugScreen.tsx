@@ -348,7 +348,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   title: {
     fontSize: theme.typography.fontSize['3xl'],
-    fontWeight: theme.typography.fontWeight.bold,
+    fontFamily: theme.typography.fontFamily.heading,
     color: theme.colors.primary.contrast,
     marginBottom: theme.spacing.xs,
   },
@@ -365,13 +365,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   sectionTitle: {
     fontSize: theme.typography.fontSize.xl,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     marginBottom: theme.spacing.md,
     color: theme.colors.primary.DEFAULT,
   },
   subsectionTitle: {
     fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     marginTop: theme.spacing.md,
     marginBottom: theme.spacing.sm,
     color: theme.colors.text.secondary,
@@ -389,7 +389,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   infoValue: {
     fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
   },
   notificationCard: {
@@ -414,7 +414,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   buttonTitle: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.settings.buttonPrimaryText,
     marginBottom: theme.spacing.xs,
   },

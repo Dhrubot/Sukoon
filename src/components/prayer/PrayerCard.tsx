@@ -223,18 +223,19 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   prayerName: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: '500',
+    fontFamily: theme.typography.fontFamily.heading,
     marginBottom: theme.spacing.xs,
   },
   activeName: {
     fontSize: theme.typography.fontSize.xl,
-    fontWeight: '600',
+    fontFamily: theme.typography.fontFamily.heading,
   },
   time: {
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
   },
   activeTime: {
-    fontWeight: '500',
+    fontFamily: theme.typography.fontFamily.bodyMedium,
   },
   rightSection: {
     alignItems: 'center',
@@ -246,10 +247,11 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   status: {
     fontSize: theme.typography.fontSize.sm,
-    fontWeight: '500',
+    fontFamily: theme.typography.fontFamily.bodyMedium,
   },
   reflectionBadge: {
     fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
   },
 });
 

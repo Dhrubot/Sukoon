@@ -61,14 +61,14 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   count: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     marginBottom: theme.spacing.xs,
     color: theme.colors.text.primary,
   },
   message: {
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     fontStyle: 'italic',
-    fontWeight: '300',
     color: theme.colors.text.muted,
   },
 });

@@ -78,7 +78,7 @@ const createStyles = (theme: AppTheme) =>
     },
     question: {
       fontSize: theme.typography.fontSize.md,
-      fontWeight: theme.typography.fontWeight.medium,
+      fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.text.primary,
       textAlign: 'center',
       marginBottom: theme.spacing.md,
@@ -98,7 +98,7 @@ const createStyles = (theme: AppTheme) =>
     },
     adjustButtonText: {
       fontSize: theme.typography.fontSize.sm,
-      fontWeight: theme.typography.fontWeight.semibold,
+      fontFamily: theme.typography.fontFamily.bodySemibold,
       color: theme.colors.text.secondary,
     },
     correctButton: {

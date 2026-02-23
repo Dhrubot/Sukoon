@@ -150,7 +150,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   title: {
     fontSize: theme.typography.fontSize.xl - 1,
-    fontWeight: theme.typography.fontWeight.bold,
+    fontFamily: theme.typography.fontFamily.bodyBold,
     marginBottom: theme.spacing.xxs,
   },
   subtitle: {
@@ -170,6 +170,6 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   buttonText: {
     fontSize: theme.typography.fontSize.base,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
 });

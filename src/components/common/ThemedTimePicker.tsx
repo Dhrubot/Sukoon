@@ -501,17 +501,17 @@ const createStyles = (theme: AppTheme) =>
     },
     title: {
       fontSize: theme.typography.fontSize.lg + 1,
-      fontWeight: theme.typography.fontWeight.semibold,
+      fontFamily: theme.typography.fontFamily.bodySemibold,
       color: theme.colors.text.primary,
     },
     cancelText: {
       fontSize: theme.typography.fontSize.lg,
-      fontWeight: theme.typography.fontWeight.regular,
+      fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.secondary,
     },
     confirmText: {
       fontSize: theme.typography.fontSize.lg,
-      fontWeight: theme.typography.fontWeight.semibold,
+      fontFamily: theme.typography.fontFamily.bodySemibold,
       color: theme.colors.primary.DEFAULT,
     },
     pickerRow: {
@@ -535,11 +535,11 @@ const createStyles = (theme: AppTheme) =>
     },
     pickerItem: {
       fontSize: theme.typography.fontSize['2xl'] + 2,
-      fontWeight: theme.typography.fontWeight.medium,
+      fontFamily: theme.typography.fontFamily.bodyMedium,
     },
     colonSeparator: {
       fontSize: theme.typography.fontSize['3xl'],
-      fontWeight: theme.typography.fontWeight.bold,
+      fontFamily: theme.typography.fontFamily.bodyBold,
       color: theme.colors.text.primary,
       marginHorizontal: -4,
       marginTop: -4,

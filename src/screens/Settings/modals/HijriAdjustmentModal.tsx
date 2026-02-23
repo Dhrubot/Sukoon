@@ -136,12 +136,12 @@ const createStyles = (theme: AppTheme) =>
     },
     modalTitle: {
       fontSize: theme.typography.fontSize.xl,
-      fontWeight: theme.typography.fontWeight.bold,
+      fontFamily: theme.typography.fontFamily.bodyBold,
       color: theme.colors.settings.modalTitle,
     },
     modalClose: {
       fontSize: theme.typography.fontSize.lg,
-      fontWeight: theme.typography.fontWeight.semibold,
+      fontFamily: theme.typography.fontFamily.bodySemibold,
       color: theme.colors.primary.DEFAULT,
     },
     body: {
@@ -151,17 +151,19 @@ const createStyles = (theme: AppTheme) =>
     },
     label: {
       fontSize: theme.typography.fontSize.md,
+      fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.muted,
       marginBottom: theme.spacing.xs + 2,
     },
     dateDisplay: {
       fontSize: theme.typography.fontSize['2xl'],
-      fontWeight: theme.typography.fontWeight.semibold,
+      fontFamily: theme.typography.fontFamily.bodySemibold,
       color: theme.colors.text.primary,
       marginBottom: theme.spacing['2xl'],
     },
     adjustLabel: {
       fontSize: theme.typography.fontSize.md,
+      fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.secondary,
       marginBottom: theme.spacing.lg,
     },
@@ -184,7 +186,7 @@ const createStyles = (theme: AppTheme) =>
     },
     segmentText: {
       fontSize: theme.typography.fontSize.md,
-      fontWeight: theme.typography.fontWeight.semibold,
+      fontFamily: theme.typography.fontFamily.bodySemibold,
       color: theme.colors.text.secondary,
     },
     segmentTextActive: {
@@ -192,17 +194,19 @@ const createStyles = (theme: AppTheme) =>
     },
     resultLabel: {
       fontSize: theme.typography.fontSize.md,
+      fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.muted,
       marginBottom: theme.spacing.xs + 2,
     },
     resultDate: {
       fontSize: theme.typography.fontSize['2xl'] + 2,
-      fontWeight: theme.typography.fontWeight.bold,
+      fontFamily: theme.typography.fontFamily.bodyBold,
       color: theme.colors.primary.DEFAULT,
       marginBottom: theme.spacing.xl,
     },
     footer: {
       fontSize: theme.typography.fontSize.sm,
+      fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.muted,
       textAlign: 'center',
       lineHeight: 18,

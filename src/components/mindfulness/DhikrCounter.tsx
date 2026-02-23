@@ -230,7 +230,7 @@ const createStyles = (theme: AppTheme) =>
     },
     transliteration: {
       fontSize: theme.typography.fontSize.xl,
-      fontWeight: theme.typography.fontWeight.medium,
+      fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.mindfulness.textSecondary,
       textAlign: 'center',
       marginBottom: theme.spacing.sm,
@@ -241,6 +241,7 @@ const createStyles = (theme: AppTheme) =>
     },
     translation: {
       fontSize: theme.typography.fontSize.md,
+      fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.mindfulness.textMuted,
       textAlign: 'center',
       lineHeight: 20,
@@ -252,6 +253,7 @@ const createStyles = (theme: AppTheme) =>
     },
     expandHint: {
       fontSize: theme.typography.fontSize.sm,
+      fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.mindfulness.accent,
       fontStyle: 'normal',
     },
@@ -272,7 +274,7 @@ const createStyles = (theme: AppTheme) =>
     },
     counterText: {
       fontSize: theme.typography.fontSize['3xl'],
-      fontWeight: '300',
+      fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.mindfulness.textPrimary,
       marginTop: theme.spacing.xs,
     },
@@ -286,11 +288,12 @@ const createStyles = (theme: AppTheme) =>
     },
     reciteConfirmText: {
       fontSize: theme.typography.fontSize.lg,
-      fontWeight: theme.typography.fontWeight.medium,
+      fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.mindfulness.textPrimary,
     },
     reference: {
       fontSize: theme.typography.fontSize.xs,
+      fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.mindfulness.textHint,
       textAlign: 'center',
       marginTop: theme.spacing.xl,
@@ -302,6 +305,7 @@ const createStyles = (theme: AppTheme) =>
     },
     skipText: {
       fontSize: theme.typography.fontSize.md,
+      fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.mindfulness.textSubtle,
     },
   });

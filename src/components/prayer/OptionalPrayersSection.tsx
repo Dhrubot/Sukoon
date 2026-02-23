@@ -58,7 +58,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   sectionTitle: {
     fontSize: theme.typography.fontSize.xl,
-    fontWeight: '500',
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.text.primary,
     marginBottom: 4,
   },

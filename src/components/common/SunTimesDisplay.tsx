@@ -70,12 +70,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   label: {
     fontSize: theme.typography.fontSize.sm,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.text.secondary,
   },
   time: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.bold,
+    fontFamily: theme.typography.fontFamily.bodyBold,
     color: theme.colors.text.primary,
   },
 });

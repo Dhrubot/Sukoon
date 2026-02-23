@@ -157,7 +157,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   modalTitle: {
     fontSize: theme.typography.fontSize['2xl'],
-    fontWeight: '700',
+    fontFamily: theme.typography.fontFamily.heading,
     marginBottom: theme.spacing.sm,
     color: theme.colors.primary.DEFAULT,
     textAlign: 'center',
@@ -202,7 +202,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   buttonText: {
     color: theme.colors.primary.contrast,
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: '600',
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   errorText: {
     color: theme.colors.status.error,

@@ -58,7 +58,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   title: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: '700',
+    fontFamily: theme.typography.fontFamily.bodyBold,
     color: theme.colors.primary.contrast,
     marginBottom: theme.spacing.xxs,
   },
@@ -68,7 +68,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   arrow: {
     fontSize: theme.typography.fontSize['4xl'],
-    fontWeight: '300',
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.primary.contrast,
     marginLeft: theme.spacing.sm,
   },

@@ -549,7 +549,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   sectionTitle: {
     fontSize: theme.typography.fontSize.xl,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.primary.DEFAULT,
     marginBottom: theme.spacing.xs,
   },
@@ -570,12 +570,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   sliderLabel: {
     fontSize: theme.typography.fontSize.base,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.settings.labelPrimary,
   },
   sliderValue: {
     fontSize: theme.typography.fontSize.base,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.primary.DEFAULT,
   },
   slider: {
@@ -592,7 +592,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   optionLabel: {
     fontSize: theme.typography.fontSize.base,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.settings.labelPrimary,
     marginBottom: theme.spacing.md,
   },
@@ -615,12 +615,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   snoozeButtonText: {
     fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.settings.labelSecondary,
   },
   snoozeButtonTextActive: {
     color: theme.colors.primary.DEFAULT,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   timePickerContainer: {
     marginTop: theme.spacing.lg,
@@ -633,7 +633,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   timeLabel: {
     fontSize: theme.typography.fontSize.base,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.settings.labelPrimary,
   },
   timeButton: {
@@ -646,7 +646,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   timeButtonText: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.primary.DEFAULT,
   },
   quietHoursHint: {
@@ -664,7 +664,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   infoTitle: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.settings.infoTitle,
     marginBottom: theme.spacing.lg,
   },
@@ -673,7 +673,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   infoLabel: {
     fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.settings.infoLabel,
     marginBottom: theme.spacing.xs,
   },

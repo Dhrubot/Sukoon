@@ -61,12 +61,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   ramadanLabel: {
     fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     marginBottom: theme.spacing.xs,
   },
   ramadanTime: {
     fontSize: theme.typography.fontSize['3xl'] - 2,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.primary.DEFAULT,
   },
   ramadanDivider: {

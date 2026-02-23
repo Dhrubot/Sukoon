@@ -841,6 +841,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   closeText: {
     fontSize: theme.typography.fontSize['2xl'],
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.mindfulness.textPrimary,
   },
   progressContainer: {
@@ -880,6 +881,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   instruction: {
     fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.mindfulness.textSecondary,
     textAlign: "center",
     marginBottom: theme.spacing['4xl'],
@@ -899,7 +901,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.mindfulness.accent,
     textAlign: "center",
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
   },
   breathingContainer: {
     flex: 1,
@@ -914,6 +916,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   skipText: {
     fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.mindfulness.textMuted,
   },
   moodSection: {
@@ -934,7 +937,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   completeButtonText: {
     fontSize: theme.typography.fontSize.xl,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.mindfulness.textPrimary,
   },
   completeContainer: {
@@ -955,12 +958,14 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   completeText: {
     fontSize: theme.typography.fontSize.xl,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.mindfulness.textSecondary,
     textAlign: "center",
     lineHeight: 26,
   },
   gardenHint: {
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.mindfulness.textMuted,
     textAlign: "center",
     fontStyle: "italic",
@@ -968,6 +973,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   tapToDismiss: {
     fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.mindfulness.textHint,
     textAlign: "center",
     marginTop: theme.spacing['3xl'],
@@ -980,7 +986,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   niyyahWhisper: {
     fontSize: theme.typography.fontSize.base,
-    fontWeight: '300',
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.mindfulness.textSecondary,
     textAlign: "center",
     fontStyle: "italic",
@@ -1001,7 +1007,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   beginPrayerText: {
     fontSize: theme.typography.fontSize.xl + 1,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.mindfulness.textPrimary,
     letterSpacing: 0.5,
   },
@@ -1023,7 +1029,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   prayingLabel: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.text.secondary,
     letterSpacing: 1,
     marginBottom: theme.spacing['3xl'],
@@ -1038,7 +1044,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   prayingSubtext: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: '300',
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     textAlign: "center",
     fontStyle: "italic",
@@ -1055,7 +1061,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   finishPrayerText: {
     fontSize: theme.typography.fontSize.xl,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.mindfulness.textPrimary,
   },
   transitionContainer: {

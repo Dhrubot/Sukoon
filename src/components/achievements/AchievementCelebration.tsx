@@ -200,7 +200,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   unlockedText: {
     fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.bold,
+    fontFamily: theme.typography.fontFamily.bodyBold,
     color: theme.colors.achievement.textSecondary,
     letterSpacing: 2,
     marginBottom: theme.spacing.md,
@@ -215,6 +215,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   achievementDescription: {
     fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.achievement.textSecondary,
     textAlign: 'center',
     marginBottom: theme.spacing['2xl'],
@@ -229,7 +230,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   tierText: {
     fontSize: theme.typography.fontSize.sm,
-    fontWeight: theme.typography.fontWeight.bold,
+    fontFamily: theme.typography.fontFamily.bodyBold,
     color: theme.colors.achievement.textPrimary,
     letterSpacing: 1,
   },
@@ -243,7 +244,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   continueText: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.achievement.textPrimary,
   },
 });

@@ -272,6 +272,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   headerSubtitle: {
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
   },
   scrollView: {
@@ -303,17 +304,18 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   itemTitle: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: '600',
+    fontFamily: theme.typography.fontFamily.headingRegular,
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.xs,
   },
   itemSubtitle: {
     fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
   },
   chevron: {
     fontSize: theme.typography.fontSize['4xl'],
-    fontWeight: '300',
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.muted,
   },
   appInfo: {
@@ -322,11 +324,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   appVersion: {
     fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.muted,
     marginBottom: theme.spacing.sm,
   },
   blessing: {
     fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.muted,
     fontStyle: 'italic',
   },

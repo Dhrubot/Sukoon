@@ -359,12 +359,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   tabText: {
     fontSize: theme.typography.fontSize.base,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.settings.labelSecondary,
   },
   tabTextActive: {
     color: theme.colors.primary.DEFAULT,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   scrollView: {
     flex: 1,
@@ -379,7 +379,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   sectionTitle: {
     fontSize: theme.typography.fontSize.xl,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.primary.DEFAULT,
     marginBottom: theme.spacing.md,
   },
@@ -394,12 +394,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   settingLabel: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.settings.labelPrimary,
     marginBottom: theme.spacing.xs,
   },
   settingDescription: {
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.settings.labelSecondary,
     lineHeight: 20,
   },
@@ -423,11 +424,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   reminderOptionText: {
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.settings.labelSecondary,
   },
   reminderOptionTextActive: {
     color: theme.colors.primary.DEFAULT,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   button: {
     backgroundColor: theme.colors.settings.buttonPrimaryBg,
@@ -443,7 +445,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   buttonText: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.settings.buttonPrimaryText,
   },
   secondaryButtonText: {
@@ -458,12 +460,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   tipsTitle: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.settings.tipsTitle,
     marginBottom: theme.spacing.md,
   },
   tipText: {
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.settings.tipsText,
     lineHeight: 22,
     marginBottom: theme.spacing.sm,

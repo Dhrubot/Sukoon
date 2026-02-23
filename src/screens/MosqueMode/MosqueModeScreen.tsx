@@ -90,6 +90,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   headerSubtitle: {
     fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     lineHeight: 22,
   },
@@ -104,6 +105,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   footerText: {
     fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.muted,
     textAlign: 'center',
     fontStyle: 'italic',

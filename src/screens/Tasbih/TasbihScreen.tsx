@@ -306,7 +306,7 @@ const createStyles = (theme: AppTheme) =>
     },
     dhikrSelectorText: {
       fontSize: theme.typography.fontSize.lg,
-      fontWeight: '500',
+      fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.primary.DEFAULT,
     },
     chevron: {
@@ -335,12 +335,12 @@ const createStyles = (theme: AppTheme) =>
     },
     targetPillText: {
       fontSize: theme.typography.fontSize.sm,
-      fontWeight: '500',
+      fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.text.secondary,
     },
     targetPillTextActive: {
       color: '#FFFFFF',
-      fontWeight: '600',
+      fontFamily: theme.typography.fontFamily.bodySemibold,
     },
     // Main tap area
     tapArea: {
@@ -375,14 +375,14 @@ const createStyles = (theme: AppTheme) =>
     },
     countText: {
       fontSize: 72,
-      fontWeight: '200',
+      fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.primary,
       textAlign: 'center',
       zIndex: 1,
     },
     targetText: {
       fontSize: theme.typography.fontSize.xl,
-      fontWeight: '300',
+      fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.muted,
       textAlign: 'center',
       marginTop: theme.spacing.xs,
@@ -392,7 +392,7 @@ const createStyles = (theme: AppTheme) =>
       fontSize: theme.typography.fontSize.md,
       color: theme.colors.primary.DEFAULT,
       marginTop: theme.spacing.lg,
-      fontWeight: '500',
+      fontFamily: theme.typography.fontFamily.bodyMedium,
       zIndex: 1,
     },
     // Bottom controls
@@ -419,7 +419,7 @@ const createStyles = (theme: AppTheme) =>
     },
     controlButtonText: {
       fontSize: theme.typography.fontSize.md,
-      fontWeight: '500',
+      fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.text.secondary,
     },
     controlButtonTextActive: {
@@ -427,6 +427,7 @@ const createStyles = (theme: AppTheme) =>
     },
     sessionTotal: {
       fontSize: theme.typography.fontSize.sm,
+      fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.muted,
       marginTop: theme.spacing.md,
     },
@@ -466,13 +467,14 @@ const createStyles = (theme: AppTheme) =>
     },
     presetTransliteration: {
       fontSize: theme.typography.fontSize.lg,
-      fontWeight: '500',
+      fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.text.secondary,
       textAlign: 'center',
       marginBottom: theme.spacing.xs,
     },
     presetTranslation: {
       fontSize: theme.typography.fontSize.sm,
+      fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.muted,
       textAlign: 'center',
       fontStyle: 'italic',

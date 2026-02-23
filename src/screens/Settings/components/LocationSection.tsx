@@ -129,15 +129,17 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   locationText: {
     fontSize: theme.typography.fontSize.lg,
     color: theme.colors.settings.labelPrimary,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     marginBottom: theme.spacing.xs,
   },
   coordinatesText: {
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.settings.labelSecondary,
   },
   invalidText: {
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.status.error,
     fontStyle: 'italic',
     marginTop: theme.spacing.xs,
@@ -154,7 +156,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   buttonText: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.settings.buttonPrimaryText,
   },
   manualButton: {
@@ -167,7 +169,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   manualButtonText: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.settings.buttonSecondaryText,
   },
   warningBox: {
@@ -180,6 +182,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   warningText: {
     fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.settings.warningText,
     textAlign: 'center',
     lineHeight: 18,
@@ -190,7 +193,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   settingsLinkText: {
     fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.primary.DEFAULT,
   },
 });

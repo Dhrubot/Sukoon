@@ -156,12 +156,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   title: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.bold,
+    fontFamily: theme.typography.fontFamily.bodyBold,
     marginBottom: theme.spacing.xs,
   },
   description: {
     fontSize: theme.typography.fontSize.sm,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
   },
   button: {
     paddingHorizontal: theme.spacing.lg,
@@ -170,6 +170,6 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   buttonText: {
     fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
 });

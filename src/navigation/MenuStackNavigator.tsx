@@ -44,7 +44,7 @@ export const MenuStackNavigator: React.FC = () => {
         },
         headerTintColor: theme.colors.text.primary,
         headerTitleStyle: {
-          fontWeight: '600',
+          fontFamily: theme.typography.fontFamily.bodySemibold,
           fontSize: theme.typography.fontSize.xl,
         },
         headerBackTitle: '',

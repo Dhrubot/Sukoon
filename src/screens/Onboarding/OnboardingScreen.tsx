@@ -617,6 +617,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   subtitle: {
     fontSize: theme.typography.fontSize.xl,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.onboarding.textSubtle,
     textAlign: 'center',
     marginBottom: theme.spacing.lg,
@@ -624,6 +625,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   description: {
     fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.onboarding.textMuted,
     textAlign: 'center',
     marginBottom: theme.spacing['4xl'],
@@ -634,6 +636,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderRadius: theme.borderRadius.md,
     paddingVertical: theme.spacing.lg,
     paddingHorizontal: theme.spacing.xl,
+    fontFamily: theme.typography.fontFamily.body,
     fontSize: theme.typography.fontSize.xl,
     color: theme.colors.text.primary,
     width: '100%',
@@ -654,11 +657,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   buttonText: {
     fontSize: theme.typography.fontSize.xl,
-    fontWeight: '600',
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
   },
   skipText: {
     fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.onboarding.textHint,
     marginTop: theme.spacing.xl,
   },
@@ -681,11 +685,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   methodText: {
     fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.onboarding.textBody,
   },
   methodTextSelected: {
     color: theme.colors.primary.DEFAULT,
-    fontWeight: '600',  // semibold
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   toggleContainer: {
     width: '100%',
@@ -703,10 +708,11 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   toggleLabel: {
     fontSize: theme.typography.fontSize.xl,
     color: theme.colors.text.primary,
-    fontWeight: '600',
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   toggleDescription: {
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.onboarding.textMuted,
   },
   // Phase 1: Location UX styles
@@ -716,6 +722,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   loadingText: {
     fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.onboarding.textSubtle,
     marginTop: theme.spacing.lg,
   },
@@ -725,6 +732,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   manualLocationHint: {
     fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.onboarding.textMuted,
     textAlign: 'center',
     marginBottom: theme.spacing['2xl'],
@@ -732,6 +740,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   errorText: {
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.status.error,
     textAlign: 'center',
     marginBottom: theme.spacing.lg,
@@ -739,7 +748,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   // Phase 2: Notification intensity styles
   intensityLabel: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: '600',
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
     textAlign: 'center',
     marginBottom: theme.spacing.lg,
@@ -763,7 +772,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   intensityTitle: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: '600',
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.onboarding.textBody,
     marginBottom: theme.spacing.xs,
   },
@@ -772,6 +781,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   intensityDesc: {
     fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.onboarding.textMuted,
   },
 });

@@ -62,7 +62,7 @@ const createStyles = (theme: AppTheme) =>
     },
     title: {
       fontSize: theme.typography.fontSize.md,
-      fontWeight: theme.typography.fontWeight.medium,
+      fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.text.primary,
       marginBottom: theme.spacing.xxs,
     },
@@ -73,7 +73,7 @@ const createStyles = (theme: AppTheme) =>
     },
     arrow: {
       fontSize: theme.typography.fontSize.xl,
-      fontWeight: '300',
+      fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.muted,
       marginLeft: theme.spacing.sm,
     },

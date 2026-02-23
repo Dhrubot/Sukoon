@@ -114,6 +114,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   loadingText: {
     marginTop: theme.spacing.lg,
     fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     fontStyle: 'italic',
   },
@@ -127,7 +128,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   subtitle: {
     fontSize: theme.typography.fontSize.base,
-    fontWeight: '300',
+    fontFamily: theme.typography.fontFamily.body,
     fontStyle: 'italic',
     color: theme.colors.text.muted,
     lineHeight: 22,
@@ -161,6 +162,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   emptySubtitle: {
     fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.muted,
     textAlign: 'center',
     lineHeight: 22,
@@ -174,7 +176,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   emptyCtaText: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
   },
 });
 

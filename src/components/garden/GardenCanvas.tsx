@@ -126,8 +126,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   emptyText: {
     fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.body,
     fontStyle: 'italic',
-    fontWeight: '300',
   },
 });
 

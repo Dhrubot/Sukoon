@@ -208,6 +208,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   changePrompt: {
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.mindfulness.accent,
     textAlign: 'center',
     marginTop: theme.spacing.sm,
@@ -216,6 +217,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     backgroundColor: theme.colors.mindfulness.inputBg,
     borderRadius: theme.borderRadius.lg,
     padding: theme.spacing.lg,
+    fontFamily: theme.typography.fontFamily.body,
     fontSize: theme.typography.fontSize.lg,
     color: theme.colors.mindfulness.textPrimary,
     minHeight: 120,
@@ -228,6 +230,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   quickOptionsTitle: {
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.mindfulness.textSecondary,
     textAlign: 'center',
     marginBottom: theme.spacing.md,
@@ -242,6 +245,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   quickOptionText: {
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.mindfulness.textSecondary,
     textAlign: 'center',
   },
@@ -251,6 +255,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   characterCountText: {
     fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.mindfulness.textSubtle,
   },
   duaCard: {
@@ -264,7 +269,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   duaTitle: {
     fontSize: theme.typography.fontSize.xs,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.mindfulness.textSecondary,
     letterSpacing: 1,
     textTransform: 'uppercase',
@@ -280,6 +285,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   duaTranslation: {
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     fontStyle: 'italic',
     color: theme.colors.mindfulness.textSecondary,
     textAlign: 'center',

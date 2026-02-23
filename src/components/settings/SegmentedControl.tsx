@@ -87,7 +87,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   segmentText: {
     fontSize: theme.typography.fontSize.base,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.secondary,
     textAlign: 'center',
     marginBottom: 4,

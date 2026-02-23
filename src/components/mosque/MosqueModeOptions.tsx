@@ -156,7 +156,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   sectionTitle: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.bold,
+    fontFamily: theme.typography.fontFamily.bodyBold,
     marginBottom: theme.spacing.md,
     paddingHorizontal: theme.spacing.xs,
   },
@@ -175,16 +175,17 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   rowLabel: {
     fontSize: theme.typography.fontSize.base,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     marginBottom: 3,
   },
   rowValue: {
+    fontFamily: theme.typography.fontFamily.body,
     fontSize: theme.typography.fontSize.sm,
     lineHeight: 18,
   },
   chevron: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   pickerContainer: {
     padding: theme.spacing.lg,
@@ -193,7 +194,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   pickerLabel: {
     fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     marginBottom: theme.spacing.sm,
   },
   chipGrid: {
@@ -209,6 +210,6 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   chipText: {
     fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
   },
 });

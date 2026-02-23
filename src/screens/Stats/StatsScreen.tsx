@@ -503,7 +503,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   timeRangeText: {
     fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.text.secondary,
   },
   timeRangeTextActive: {
@@ -523,13 +523,14 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   emptyStateTitle: {
     fontSize: theme.typography.fontSize['3xl'],
-    fontWeight: '700',
+    fontFamily: theme.typography.fontFamily.heading,
     color: theme.colors.text.primary,
     textAlign: 'center',
     marginBottom: theme.spacing.md,
   },
   emptyStateText: {
     fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     textAlign: 'center',
     marginBottom: theme.spacing.sm,
@@ -537,6 +538,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   emptyStateSubtext: {
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.muted,
     textAlign: 'center',
   },
@@ -549,6 +551,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   loadingText: {
     fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     marginTop: theme.spacing.lg,
     textAlign: 'center',
@@ -577,25 +580,26 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   statValue: {
     fontSize: theme.typography.fontSize['4xl'],
-    fontWeight: '700',
+    fontFamily: theme.typography.fontFamily.bodyBold,
     color: theme.colors.primary.DEFAULT,
     marginBottom: theme.spacing.xs,
   },
   statLabel: {
     fontSize: theme.typography.fontSize.md,
-    fontWeight: '600',
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
     textAlign: 'center',
     marginBottom: theme.spacing.xs,
   },
   statSubtext: {
     fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     textAlign: 'center',
   },
   perfectStreakBadge: {
     fontSize: theme.typography.fontSize.xs,
-    fontWeight: '600',
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.gold,
     marginTop: theme.spacing.xs,
     textAlign: 'center',
@@ -634,7 +638,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   prayerName: {
     flex: 1,
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: '500',
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.text.primary,
   },
   completedPrayerName: {
@@ -642,6 +646,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   prayerTime: {
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
   },
   chart: {
@@ -664,18 +669,19 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   insightTitle: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: '600',
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.primary.DEFAULT,
     marginBottom: theme.spacing.sm,
   },
   insightValue: {
     fontSize: theme.typography.fontSize['3xl'],
-    fontWeight: '700',
+    fontFamily: theme.typography.fontFamily.bodyBold,
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.xs,
   },
   insightDescription: {
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     lineHeight: 20,
   },

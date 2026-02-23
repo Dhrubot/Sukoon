@@ -848,21 +848,21 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 28,
-    fontWeight: '700',
+    fontFamily: 'Lora_700Bold',
   },
   headerCity: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: 'DMSans_500Medium',
     marginTop: 2,
   },
   headerDistance: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: 'DMSans_500Medium',
     marginTop: 4,
   },
   verifyLink: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'DMSans_600SemiBold',
     marginTop: 4,
   },
   centeredContent: {
@@ -877,7 +877,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    fontWeight: '500',
+    fontFamily: 'DMSans_500Medium',
   },
   errorIcon: {
     fontSize: 60,
@@ -885,12 +885,13 @@ const styles = StyleSheet.create({
   },
   errorTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    fontFamily: 'DMSans_700Bold',
     marginBottom: 12,
     textAlign: 'center',
   },
   errorText: {
     fontSize: 15,
+    fontFamily: 'DMSans_400Regular',
     textAlign: 'center',
     lineHeight: 22,
     paddingHorizontal: 20,
@@ -903,7 +904,7 @@ const styles = StyleSheet.create({
   },
   settingsButtonText: {
     fontSize: 14,
-    fontWeight: '700',
+    fontFamily: 'DMSans_700Bold',
   },
   calibrationBanner: {
     marginHorizontal: 24,
@@ -915,7 +916,7 @@ const styles = StyleSheet.create({
   },
   calibrationText: {
     fontSize: 13,
-    fontWeight: '600',
+    fontFamily: 'DMSans_600SemiBold',
   },
   compassArea: {
     flex: 1,
@@ -966,7 +967,7 @@ const styles = StyleSheet.create({
   cardinal: {
     position: 'absolute',
     fontSize: 12,
-    fontWeight: '700',
+    fontFamily: 'DMSans_700Bold',
   },
   cardinalN: {
     top: 10,
@@ -983,7 +984,7 @@ const styles = StyleSheet.create({
   intercardinal: {
     position: 'absolute',
     fontSize: 9,
-    fontWeight: '600',
+    fontFamily: 'DMSans_600SemiBold',
     opacity: 0.7,
   },
   intercardinalNE: {
@@ -1040,7 +1041,7 @@ const styles = StyleSheet.create({
   },
   kaabaLabel: {
     fontSize: 10,
-    fontWeight: '700',
+    fontFamily: 'DMSans_700Bold',
     marginTop: 4,
     letterSpacing: 1,
     textTransform: 'uppercase',
@@ -1065,7 +1066,7 @@ const styles = StyleSheet.create({
   },
   bearingLabel: {
     fontSize: 11,
-    fontWeight: '600',
+    fontFamily: 'DMSans_600SemiBold',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 2,
@@ -1077,7 +1078,7 @@ const styles = StyleSheet.create({
   },
   directionValue: {
     fontSize: 28,
-    fontWeight: '700',
+    fontFamily: 'DMSans_700Bold',
   },
   turnHintContainer: {
     flexDirection: 'row',
@@ -1091,7 +1092,7 @@ const styles = StyleSheet.create({
   },
   turnHint: {
     fontSize: 14,
-    fontWeight: '500',
+    fontFamily: 'DMSans_500Medium',
   },
   footer: {
     paddingVertical: 16,
@@ -1100,7 +1101,7 @@ const styles = StyleSheet.create({
   },
   footerHint: {
     fontSize: 13,
-    fontWeight: '400',
+    fontFamily: 'DMSans_400Regular',
   },
 });
 

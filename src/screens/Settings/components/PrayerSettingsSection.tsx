@@ -319,6 +319,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   explanationText: {
     fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.settings.labelPrimary,
     lineHeight: 18,
   },
@@ -330,6 +331,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   statusText: {
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.settings.labelMuted,
     textAlign: 'center',
   },
@@ -343,7 +345,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   prayerTimesTitle: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.primary.DEFAULT,
     marginBottom: theme.spacing.md,
   },
@@ -368,11 +370,11 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   prayerName: {
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.settings.labelPrimary,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
   },
   nextPrayerName: {
     color: theme.colors.primary.DEFAULT,
-    fontWeight: theme.typography.fontWeight.bold,
+    fontFamily: theme.typography.fontFamily.bodyBold,
   },
   asrHighlight: {
     color: theme.colors.status.warning,
@@ -380,15 +382,15 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   prayerTime: {
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.settings.labelMuted,
-    fontWeight: theme.typography.fontWeight.regular,
+    fontFamily: theme.typography.fontFamily.body,
   },
   nextPrayerTime: {
     color: theme.colors.primary.DEFAULT,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   jummahHighlight: {
     color: '#D4AF37',
-    fontWeight: theme.typography.fontWeight.bold,
+    fontFamily: theme.typography.fontFamily.bodyBold,
   },
   tahajjudName: {
     color: '#7986CB',
@@ -402,7 +404,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   moreText: {
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.primary.DEFAULT,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     textAlign: 'center',
     marginTop: theme.spacing.sm,
     paddingVertical: theme.spacing.xs,
@@ -424,7 +426,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   testButtonText: {
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.primary.DEFAULT,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   hintContainer: {
     backgroundColor: theme.colors.settings.hintBg,
@@ -436,6 +438,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   hintText: {
     fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.settings.hintText,
     textAlign: 'center',
     lineHeight: 16,

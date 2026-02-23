@@ -302,11 +302,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   loadingText: {
     marginTop: theme.spacing.lg,
     fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
   },
   loadingSubtext: {
     marginTop: theme.spacing.sm,
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.muted,
     textAlign: 'center',
   },
@@ -326,6 +328,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   subtitle: {
     fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
   },
 
@@ -340,7 +343,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   statusTitle: {
     fontSize: theme.typography.fontSize.md,
-    fontWeight: '600',
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.secondary,
     marginBottom: theme.spacing.md,
     letterSpacing: 0.5,
@@ -352,11 +355,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   statusLabel: {
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
   },
   statusValue: {
     fontSize: theme.typography.fontSize.md,
-    fontWeight: '600',
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
   },
   statusValueGood: {
@@ -378,7 +382,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   debugButtonText: {
     color: theme.colors.primary.DEFAULT,
     fontSize: theme.typography.fontSize.md,
-    fontWeight: '600',
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
 });
 

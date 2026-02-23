@@ -404,6 +404,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   loadingText: {
     marginTop: theme.spacing.lg,
     fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
   },
   header: {
@@ -419,6 +420,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   subtitle: {
     fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     textAlign: 'center',
   },
@@ -457,11 +459,11 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   tabText: {
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.secondary,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
   },
   tabTextActive: {
     color: theme.colors.text.primary,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   tabContent: {
     flex: 1,
@@ -478,12 +480,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   introTitle: {
     fontSize: theme.typography.fontSize['2xl'],
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.primary.DEFAULT,
     marginBottom: theme.spacing.sm,
   },
   introText: {
     fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     lineHeight: 22,
   },
@@ -493,7 +496,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   featuresTitle: {
     fontSize: theme.typography.fontSize.xl,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.lg,
   },
@@ -508,6 +511,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   featureText: {
     fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     flex: 1,
   },
@@ -541,7 +545,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   recommendedText: {
     fontSize: theme.typography.fontSize.sm,
-    fontWeight: theme.typography.fontWeight.bold,
+    fontFamily: theme.typography.fontFamily.bodyBold,
     color: theme.colors.text.primary,
   },
   planHeader: {
@@ -552,22 +556,23 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   planName: {
     fontSize: theme.typography.fontSize['2xl'],
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
   },
   planPrice: {
     fontSize: theme.typography.fontSize['3xl'],
-    fontWeight: theme.typography.fontWeight.bold,
+    fontFamily: theme.typography.fontFamily.bodyBold,
     color: theme.colors.primary.DEFAULT,
   },
   planDescription: {
     fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
   },
   currentPlanBadge: {
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.primary.DEFAULT,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     marginTop: theme.spacing.sm,
   },
   manageButton: {
@@ -577,6 +582,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   manageButtonText: {
     fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.primary.DEFAULT,
     textDecorationLine: 'underline',
   },
@@ -603,12 +609,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   adTitle: {
     fontSize: theme.typography.fontSize['3xl'],
-    fontWeight: theme.typography.fontWeight.bold,
+    fontFamily: theme.typography.fontFamily.heading,
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.md,
   },
   adDescription: {
     fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     textAlign: 'center',
     lineHeight: 24,
@@ -616,6 +623,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   adNote: {
     fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     lineHeight: 22,
     marginBottom: theme.spacing['2xl'],
@@ -631,7 +639,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   watchAdButtonText: {
     fontSize: theme.typography.fontSize.xl,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
   },
   adUnavailable: {
@@ -642,6 +650,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   adUnavailableText: {
     fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.status.warning,
     textAlign: 'center',
   },
@@ -655,12 +664,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   privacyTitle: {
     fontSize: theme.typography.fontSize.xl,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.primary.DEFAULT,
     marginBottom: theme.spacing.md,
   },
   privacyText: {
     fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     lineHeight: 22,
   },
@@ -679,6 +689,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   donateSubtitle: {
     fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     textAlign: 'center',
     lineHeight: 22,
@@ -702,19 +713,20 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   donationTitle: {
     fontSize: theme.typography.fontSize.xl,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.sm,
   },
   donationDescription: {
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     textAlign: 'center',
     marginBottom: theme.spacing.md,
   },
   donationAmount: {
     fontSize: theme.typography.fontSize['2xl'],
-    fontWeight: theme.typography.fontWeight.bold,
+    fontFamily: theme.typography.fontFamily.bodyBold,
     color: theme.colors.primary.DEFAULT,
   },
   alternativeMethods: {
@@ -723,7 +735,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   alternativeTitle: {
     fontSize: theme.typography.fontSize.xl,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.lg,
   },
@@ -739,7 +751,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   alternativeButtonText: {
     fontSize: theme.typography.fontSize.lg,
     color: theme.colors.primary.DEFAULT,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
   },
   zakatNote: {
     backgroundColor: theme.colors.card.hover,
@@ -752,12 +764,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   zakatTitle: {
     fontSize: theme.typography.fontSize.xl,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.status.warning,
     marginBottom: theme.spacing.sm,
   },
   zakatText: {
     fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     lineHeight: 22,
   },
@@ -767,6 +780,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   footerText: {
     fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     textAlign: 'center',
     fontStyle: 'italic',

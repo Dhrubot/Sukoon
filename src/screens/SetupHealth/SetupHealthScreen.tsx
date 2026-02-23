@@ -255,11 +255,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   title: {
     fontSize: theme.typography.fontSize['3xl'],
-    fontWeight: theme.typography.fontWeight.bold,
+    fontFamily: theme.typography.fontFamily.heading,
   },
   subtitle: {
     marginTop: theme.spacing.xs + 2,
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
   },
   card: {
     borderWidth: 1,
@@ -269,11 +270,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   cardTitle: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.bold,
+    fontFamily: theme.typography.fontFamily.bodyBold,
     marginBottom: theme.spacing.md - 2,
   },
   rowText: {
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     marginBottom: theme.spacing.xs + 2,
   },
   button: {
@@ -284,7 +286,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   buttonText: {
     fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   rowButtons: {
     flexDirection: 'row',
@@ -300,7 +302,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   buttonSecondaryText: {
     fontSize: theme.typography.fontSize.sm,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   doneButton: {
     marginTop: theme.spacing.xl - 2,
@@ -311,7 +313,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   doneButtonText: {
     fontSize: theme.typography.fontSize.base,
-    fontWeight: theme.typography.fontWeight.bold,
+    fontFamily: theme.typography.fontFamily.bodyBold,
   },
 });
 

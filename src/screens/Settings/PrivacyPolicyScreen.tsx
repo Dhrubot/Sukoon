@@ -221,6 +221,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   lastUpdated: {
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     fontStyle: 'italic',
   },
@@ -229,22 +230,24 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   sectionTitle: {
     fontSize: theme.typography.fontSize['2xl'],
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.md,
   },
   paragraph: {
     fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.body,
     lineHeight: 24,
     color: theme.colors.text.secondary,
     marginBottom: theme.spacing.md,
   },
   bold: {
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
   },
   bulletPoint: {
     fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.body,
     lineHeight: 24,
     color: theme.colors.text.secondary,
     marginLeft: theme.spacing.sm,
@@ -259,6 +262,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   footerText: {
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     textAlign: 'center',
     marginBottom: theme.spacing.sm,

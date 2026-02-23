@@ -287,6 +287,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,  // lg
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
   },
   header: {
@@ -294,7 +295,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   title: {
     fontSize: 32,  // 5xl
-    fontWeight: '700',  // bold
+    fontFamily: theme.typography.fontFamily.heading,
     color: theme.colors.text.primary,
     marginBottom: 20,
   },
@@ -312,7 +313,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   progressTitle: {
     fontSize: theme.typography.fontSize.xl,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.lg,
   },
@@ -326,11 +327,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   statNumber: {
     fontSize: theme.typography.fontSize['4xl'],
-    fontWeight: theme.typography.fontWeight.bold,
+    fontFamily: theme.typography.fontFamily.bodyBold,
     color: theme.colors.primary.DEFAULT,
   },
   statLabel: {
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     marginTop: theme.spacing.xs,
   },
@@ -376,11 +378,11 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   categoryLabel: {
     fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.secondary,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
   },
   categoryLabelActive: {
     color: theme.colors.primary.DEFAULT,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   achievementsGrid: {
     flexDirection: 'row',
@@ -430,26 +432,28 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   achievementName: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
     textAlign: 'center',
     marginBottom: theme.spacing.sm,
   },
   achievementNameLocked: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.secondary,
     textAlign: 'center',
     marginBottom: theme.spacing.sm,
   },
   achievementDescription: {
     fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.primary,
     textAlign: 'center',
     marginBottom: theme.spacing.md,
   },
   achievementDescriptionLocked: {
     fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.muted,
     textAlign: 'center',
   },
@@ -464,7 +468,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   tierText: {
     fontSize: theme.typography.fontSize.xs,
-    fontWeight: theme.typography.fontWeight.bold,
+    fontFamily: theme.typography.fontFamily.bodyBold,
     color: theme.colors.text.primary,
   },
   progressContainer: {
@@ -478,7 +482,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   progressText: {
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.text.secondary,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   miniProgressBar: {
     height: 4,
@@ -500,12 +504,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   tipsTitle: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.primary.DEFAULT,
     marginBottom: theme.spacing.md,
   },
   tipText: {
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     lineHeight: 22,
     marginBottom: theme.spacing.sm,

@@ -166,7 +166,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   shareButton: {
     fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.primary.DEFAULT,
   },
   verseContainer: {
@@ -186,6 +186,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   translation: {
     fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     textAlign: 'center',
     marginBottom: theme.spacing.md,
     lineHeight: 24,
@@ -194,6 +195,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   narrator: {
     fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
     textAlign: 'center',
     marginBottom: theme.spacing.xs,
     fontStyle: 'italic',
@@ -202,11 +204,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   reference: {
     fontSize: theme.typography.fontSize.md,
     textAlign: 'center',
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.text.muted,
   },
   hint: {
     fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
     textAlign: 'center',
     marginTop: theme.spacing.sm,
   },

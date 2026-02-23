@@ -221,12 +221,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   modalTitle: {
     fontSize: theme.typography.fontSize.xl,
-    fontWeight: theme.typography.fontWeight.bold,
+    fontFamily: theme.typography.fontFamily.bodyBold,
     color: theme.colors.settings.modalTitle,
   },
   modalClose: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.settings.modalClose,
   },
   modalCloseDisabled: {
@@ -245,7 +245,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   previewTitle: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.bold,
+    fontFamily: theme.typography.fontFamily.bodyBold,
     color: theme.colors.primary.DEFAULT,
     marginBottom: theme.spacing.md,
     textAlign: 'center',
@@ -262,16 +262,17 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   previewPrayerName: {
     fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.settings.labelPrimary,
   },
   previewPrayerTime: {
     fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.primary.DEFAULT,
   },
   previewNote: {
     fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.settings.labelMuted,
     textAlign: 'center',
     fontStyle: 'italic',
@@ -281,7 +282,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   sectionTitle: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.settings.labelPrimary,
     marginBottom: theme.spacing.md,
   },
@@ -310,7 +311,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   methodText: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.settings.labelPrimary,
   },
   methodTextSelected: {
@@ -321,6 +322,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   methodDescription: {
     fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.settings.labelMuted,
     marginTop: 2,
   },
@@ -332,7 +334,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   checkmark: {
     fontSize: theme.typography.fontSize.xl,
     color: theme.colors.primary.DEFAULT,
-    fontWeight: theme.typography.fontWeight.bold,
+    fontFamily: theme.typography.fontFamily.bodyBold,
   },
   previewButton: {
     backgroundColor: theme.colors.settings.sectionBg,
@@ -346,7 +348,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   previewButtonText: {
     fontSize: theme.typography.fontSize.sm,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.primary.DEFAULT,
   },
   infoSection: {
@@ -359,12 +361,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   infoTitle: {
     fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.settings.labelPrimary,
     marginBottom: theme.spacing.sm,
   },
   infoText: {
     fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.settings.labelMuted,
     lineHeight: 16,
     marginBottom: theme.spacing.xs + 2,

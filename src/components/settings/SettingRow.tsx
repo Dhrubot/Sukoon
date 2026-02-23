@@ -79,7 +79,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   settingLabel: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
   },
   settingSubtext: {
     fontSize: theme.typography.fontSize.sm,
@@ -91,7 +91,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   chevron: {
     fontSize: theme.typography.fontSize['3xl'],
-    fontWeight: '300',
+    fontFamily: theme.typography.fontFamily.body,
   },
   dangerText: {
     color: '#EF4444',

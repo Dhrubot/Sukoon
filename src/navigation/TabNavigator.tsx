@@ -63,7 +63,7 @@ export const TabNavigator: React.FC = () => {
         },
         tabBarLabelStyle: {
           fontSize: theme.typography.fontSize.xs,
-          fontWeight: theme.typography.fontWeight.semibold,
+          fontFamily: theme.typography.fontFamily.bodySemibold,
           marginTop: 4,
         },
         tabBarItemStyle: {

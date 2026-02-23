@@ -226,11 +226,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   title: {
     fontSize: theme.typography.fontSize.xl,
-    fontWeight: theme.typography.fontWeight.bold,
+    fontFamily: theme.typography.fontFamily.bodyBold,
     marginBottom: theme.spacing.xs + 2,
   },
   subtitle: {
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     lineHeight: 20,
   },
   prayerList: {
@@ -249,15 +250,16 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   prayerName: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     marginBottom: theme.spacing.xs,
   },
   offsetText: {
     fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
   },
   chevron: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   pickerContainer: {
     padding: theme.spacing.lg,
@@ -267,7 +269,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   pickerLabel: {
     fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     marginBottom: theme.spacing.sm,
   },
   chipGrid: {
@@ -283,7 +285,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   chipText: {
     fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
   },
   modeToggle: {
     flexDirection: 'row',
@@ -300,7 +302,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   modeButtonText: {
     fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   tipBox: {
     marginTop: theme.spacing.lg,
@@ -310,6 +312,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   tipText: {
     fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
     textAlign: 'center',
     lineHeight: 18,
   },

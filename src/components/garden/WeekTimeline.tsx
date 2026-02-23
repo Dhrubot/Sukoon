@@ -62,7 +62,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   title: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     marginBottom: theme.spacing.md - 2,
   },
   row: {
@@ -97,10 +97,10 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   dayLabel: {
     fontSize: theme.typography.fontSize.xs,
     marginTop: theme.spacing.xs,
-    fontWeight: theme.typography.fontWeight.regular,
+    fontFamily: theme.typography.fontFamily.body,
   },
   dayLabelToday: {
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   extraCount: {
     fontSize: 9,

@@ -74,14 +74,14 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   message: {
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     fontStyle: 'italic',
-    fontWeight: '300',
     flex: 1,
     color: theme.colors.text.muted,
   },
   arrow: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: '300',
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.muted,
   },
 });

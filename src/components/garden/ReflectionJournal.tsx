@@ -74,7 +74,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   title: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     marginBottom: theme.spacing.md,
   },
   entry: {
@@ -95,7 +95,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   entryPrayer: {
     fontSize: theme.typography.fontSize.md,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   entryDate: {
     fontSize: theme.typography.fontSize.xs,

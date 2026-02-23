@@ -60,7 +60,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   title: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: '600',
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.xs,
   },
@@ -78,7 +78,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   upgradeText: {
     fontSize: theme.typography.fontSize.md,
-    fontWeight: '600',
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.primary.contrast,
   },
 });

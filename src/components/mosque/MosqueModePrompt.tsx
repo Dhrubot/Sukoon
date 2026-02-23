@@ -144,15 +144,16 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   prayerName: {
     fontSize: theme.typography.fontSize.xl,
-    fontWeight: theme.typography.fontWeight.bold,
+    fontFamily: theme.typography.fontFamily.bodyBold,
     marginBottom: theme.spacing.xs,
   },
   iqamahText: {
     fontSize: theme.typography.fontSize.base,
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
   },
   description: {
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     lineHeight: 20,
     textAlign: 'center',
     marginBottom: theme.spacing['2xl'],
@@ -181,7 +182,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   buttonText: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   cancelText: {
     // Color comes from inline style
@@ -191,6 +192,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   footerText: {
     fontSize: theme.typography.fontSize.xs,
+    fontFamily: theme.typography.fontFamily.body,
     textAlign: 'center',
   },
 });

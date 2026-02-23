@@ -167,12 +167,12 @@ const createStyles = (theme: AppTheme) =>
     },
     toggleText: {
       fontSize: theme.typography.fontSize.md,
-      fontWeight: '500',
+      fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.text.secondary,
     },
     toggleTextActive: {
       color: '#FFFFFF',
-      fontWeight: '600',
+      fontFamily: theme.typography.fontFamily.bodySemibold,
     },
     counterContainer: {
       flex: 1,
@@ -193,6 +193,7 @@ const createStyles = (theme: AppTheme) =>
     },
     completionSubtitle: {
       fontSize: theme.typography.fontSize.md,
+      fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.secondary,
       textAlign: 'center',
       fontStyle: 'italic',
@@ -206,7 +207,7 @@ const createStyles = (theme: AppTheme) =>
     },
     doneButtonText: {
       fontSize: theme.typography.fontSize.lg,
-      fontWeight: '600',
+      fontFamily: theme.typography.fontFamily.bodySemibold,
       color: '#FFFFFF',
     },
   });

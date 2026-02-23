@@ -334,11 +334,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   breathNumber: {
     fontSize: theme.typography.fontSize['5xl'] + 16,
-    fontWeight: '300',
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.mindfulness.textPrimary,
   },
   breathLabel: {
     fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.mindfulness.textSecondary,
     marginTop: -4,
   },
@@ -346,7 +347,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     position: 'absolute',
     bottom: -50,
     fontSize: theme.typography.fontSize['2xl'],
-    fontWeight: theme.typography.fontWeight.medium,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.mindfulness.textPrimary,
     textAlign: 'center',
   },

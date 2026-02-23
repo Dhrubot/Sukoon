@@ -92,7 +92,6 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   text: {
     fontSize: theme.typography.fontSize['3xl'],
-    fontWeight: '300',
     fontFamily: theme.typography.fontFamily.headingRegular,
     letterSpacing: 0.5,
   },

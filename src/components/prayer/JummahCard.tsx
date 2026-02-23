@@ -94,7 +94,7 @@ const createStyles = (theme: AppTheme) =>
     },
     label: {
       fontSize: theme.typography.fontSize.xs,
-      fontWeight: theme.typography.fontWeight.bold,
+      fontFamily: theme.typography.fontFamily.bodyBold,
       letterSpacing: 2,
       color: '#D4AF37',
     },
@@ -109,12 +109,13 @@ const createStyles = (theme: AppTheme) =>
     },
     timeText: {
       fontSize: theme.typography.fontSize['5xl'],
-      fontWeight: theme.typography.fontWeight.bold,
+      fontFamily: theme.typography.fontFamily.heading,
       color: theme.colors.text.primary,
       marginBottom: theme.spacing.xs + 2,
     },
     subtitle: {
       fontSize: theme.typography.fontSize.sm,
+      fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.secondary,
       fontStyle: 'italic',
       lineHeight: 18,
@@ -136,7 +137,7 @@ const createStyles = (theme: AppTheme) =>
     sunnahText: {
       fontSize: theme.typography.fontSize.xs,
       color: theme.colors.text.secondary,
-      fontWeight: theme.typography.fontWeight.medium,
+      fontFamily: theme.typography.fontFamily.bodyMedium,
     },
     prepareButton: {
       backgroundColor: 'rgba(212, 175, 55, 0.2)',
@@ -148,7 +149,7 @@ const createStyles = (theme: AppTheme) =>
     },
     prepareText: {
       fontSize: theme.typography.fontSize.base,
-      fontWeight: theme.typography.fontWeight.semibold,
+      fontFamily: theme.typography.fontFamily.bodySemibold,
       color: '#D4AF37',
       letterSpacing: 0.3,
     },

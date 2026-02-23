@@ -265,12 +265,13 @@ const createStyles = (theme: AppTheme) =>
     },
     title: {
       fontSize: theme.typography.fontSize.lg,
-      fontWeight: theme.typography.fontWeight.semibold,
+      fontFamily: theme.typography.fontFamily.bodySemibold,
       color: theme.colors.text.primary,
       marginBottom: theme.spacing.xs,
     },
     subtitle: {
       fontSize: theme.typography.fontSize.sm,
+      fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.secondary,
       lineHeight: 18,
     },
@@ -288,17 +289,18 @@ const createStyles = (theme: AppTheme) =>
     },
     optionLabel: {
       fontSize: theme.typography.fontSize.md,
-      fontWeight: theme.typography.fontWeight.medium,
+      fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.text.primary,
     },
     optionHint: {
       fontSize: theme.typography.fontSize.xs,
+      fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.secondary,
       marginTop: theme.spacing.xxs,
     },
     optionValue: {
       fontSize: theme.typography.fontSize.md,
-      fontWeight: theme.typography.fontWeight.semibold,
+      fontFamily: theme.typography.fontFamily.bodySemibold,
       color: '#D4AF37',
     },
     chipGrid: {
@@ -316,7 +318,7 @@ const createStyles = (theme: AppTheme) =>
     },
     chipText: {
       fontSize: theme.typography.fontSize.md,
-      fontWeight: theme.typography.fontWeight.medium,
+      fontFamily: theme.typography.fontFamily.bodyMedium,
     },
     iqamahSection: {
       marginTop: theme.spacing.sm,
@@ -340,7 +342,7 @@ const createStyles = (theme: AppTheme) =>
     },
     modeButtonText: {
       fontSize: theme.typography.fontSize.sm,
-      fontWeight: theme.typography.fontWeight.semibold,
+      fontFamily: theme.typography.fontFamily.bodySemibold,
     },
     exactTimeRow: {
       marginTop: theme.spacing.xs,

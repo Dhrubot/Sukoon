@@ -616,7 +616,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   focusRevealText: {
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.text.muted,
-    fontWeight: '500',
+    fontFamily: theme.typography.fontFamily.bodyMedium,
   },
   secondaryContentHidden: {
     display: 'none',
@@ -629,7 +629,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   greeting: {
     fontSize: theme.typography.fontSize['3xl'],
-    fontWeight: '400',
+    fontFamily: theme.typography.fontFamily.headingRegular,
     color: theme.colors.sanctuary.prayerName,
     textAlign: 'center',
     marginBottom: theme.spacing.sm,
@@ -692,6 +692,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   setupSubtitle: {
     fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     textAlign: 'center',
     marginBottom: theme.spacing['2xl'],
@@ -706,6 +707,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   setupHelpText: {
     fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     textAlign: 'center',
     lineHeight: 22,
@@ -719,6 +721,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   loadingText: {
     fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.primary,
     marginTop: theme.spacing.lg,
     textAlign: 'center',
@@ -732,13 +735,14 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   errorTitle: {
     fontSize: theme.typography.fontSize['3xl'],
-    fontWeight: '700',
+    fontFamily: theme.typography.fontFamily.heading,
     color: theme.colors.text.primary,
     textAlign: 'center',
     marginBottom: theme.spacing.lg,
   },
   errorText: {
     fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     textAlign: 'center',
     marginBottom: theme.spacing['2xl'],
@@ -754,11 +758,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   retryButtonText: {
     fontSize: theme.typography.fontSize.base,
-    fontWeight: '600',
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
   },
   date: {
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     textAlign: 'center',
   },
@@ -776,7 +781,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   offlineBannerText: {
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.status.warning,
-    fontWeight: '500',
+    fontFamily: theme.typography.fontFamily.bodyMedium,
   },
 });
 

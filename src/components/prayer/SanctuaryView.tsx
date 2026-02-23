@@ -280,7 +280,7 @@ const createStyles = (theme: AppTheme) =>
     },
     prayerLabel: {
       fontSize: theme.typography.fontSize.xs,
-      fontWeight: theme.typography.fontWeight.medium,
+      fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.sanctuary.label,
       letterSpacing: 2,
       textTransform: 'uppercase',
@@ -294,19 +294,19 @@ const createStyles = (theme: AppTheme) =>
     },
     prayerTime: {
       fontSize: theme.typography.fontSize['2xl'],
-      fontWeight: theme.typography.fontWeight.regular,
+      fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.sanctuary.prayerTime,
       marginBottom: theme.spacing.xs,
     },
     countdown: {
       fontSize: theme.typography.fontSize.lg,
-      fontWeight: '300',
+      fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.sanctuary.countdown,
       fontStyle: 'italic',
     },
     prayedStatus: {
       fontSize: theme.typography.fontSize.lg,
-      fontWeight: theme.typography.fontWeight.medium,
+      fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.sanctuary.prayedStatus,
       marginTop: theme.spacing.xs,
     },
@@ -324,7 +324,7 @@ const createStyles = (theme: AppTheme) =>
     },
     prepareText: {
       fontSize: theme.typography.fontSize.lg,
-      fontWeight: theme.typography.fontWeight.medium,
+      fontFamily: theme.typography.fontFamily.bodySemibold,
       color: theme.colors.sanctuary.buttonText,
       letterSpacing: 0.5,
     },
@@ -346,11 +346,11 @@ const createStyles = (theme: AppTheme) =>
     sunnahText: {
       fontSize: theme.typography.fontSize.xs,
       color: theme.colors.sanctuary.label,
-      fontWeight: theme.typography.fontWeight.medium,
+      fontFamily: theme.typography.fontFamily.bodyMedium,
     },
     iqamahText: {
       fontSize: theme.typography.fontSize.sm,
-      fontWeight: theme.typography.fontWeight.regular,
+      fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.sanctuary.countdown,
       marginTop: theme.spacing.xs,
       opacity: 0.90,
@@ -366,7 +366,7 @@ const createStyles = (theme: AppTheme) =>
     },
     mosqueModePillText: {
       fontSize: theme.typography.fontSize.xs,
-      fontWeight: theme.typography.fontWeight.medium,
+      fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.sanctuary.label,
       opacity: 0.85,
       textAlign: 'center',

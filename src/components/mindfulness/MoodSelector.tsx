@@ -155,12 +155,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   moodLabel: {
     fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.mindfulness.textMuted,
     textAlign: 'center',
   },
   moodLabelActive: {
     color: theme.colors.mindfulness.textPrimary,
-    fontWeight: '600',
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   feedbackContainer: {
     marginTop: theme.spacing.lg,
@@ -168,6 +169,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   feedbackText: {
     fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.mindfulness.textSecondary,
     textAlign: 'center',
     fontStyle: 'italic',
