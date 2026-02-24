@@ -117,7 +117,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontSize: theme.typography.fontSize.xl,
     fontWeight: theme.typography.fontWeight.semibold,
     fontFamily: theme.typography.fontFamily.headingRegular,
-    color: theme.colors.mindfulness.textPrimary,
+    color: theme.colors.text.primary,
     textAlign: 'center',
     marginBottom: theme.spacing['2xl'],
   },
@@ -138,7 +138,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: theme.colors.mindfulness.dotInactive,
+    borderColor: theme.colors.border.secondary,
     marginBottom: theme.spacing.sm,
   },
   moodButtonActive: {
@@ -156,11 +156,11 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   moodLabel: {
     fontSize: theme.typography.fontSize.sm,
     fontFamily: theme.typography.fontFamily.body,
-    color: theme.colors.mindfulness.textMuted,
+    color: theme.colors.text.muted,
     textAlign: 'center',
   },
   moodLabelActive: {
-    color: theme.colors.mindfulness.textPrimary,
+    color: theme.colors.text.primary,
     fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   feedbackContainer: {
@@ -170,7 +170,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   feedbackText: {
     fontSize: theme.typography.fontSize.lg,
     fontFamily: theme.typography.fontFamily.body,
-    color: theme.colors.mindfulness.textSecondary,
+    color: theme.colors.text.secondary,
     textAlign: 'center',
     fontStyle: 'italic',
   },

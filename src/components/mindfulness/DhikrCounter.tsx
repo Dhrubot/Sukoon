@@ -201,13 +201,13 @@ const createStyles = (theme: AppTheme) =>
       width: 8,
       height: 8,
       borderRadius: 4,
-      backgroundColor: theme.colors.mindfulness.dotInactive,
+      backgroundColor: theme.colors.border.secondary,
     },
     dotCompleted: {
       backgroundColor: theme.colors.mindfulness.accent,
     },
     dotActive: {
-      backgroundColor: theme.colors.mindfulness.textPrimary,
+      backgroundColor: theme.colors.text.primary,
       width: theme.spacing.xl,
     },
     tapTarget: {
@@ -218,7 +218,7 @@ const createStyles = (theme: AppTheme) =>
     },
     arabicText: {
       fontSize: theme.typography.fontSize['5xl'],
-      color: theme.colors.mindfulness.textPrimary,
+      color: theme.colors.text.primary,
       textAlign: 'center',
       lineHeight: 52,
       marginBottom: theme.spacing.lg,
@@ -231,7 +231,7 @@ const createStyles = (theme: AppTheme) =>
     transliteration: {
       fontSize: theme.typography.fontSize.xl,
       fontFamily: theme.typography.fontFamily.bodyMedium,
-      color: theme.colors.mindfulness.textSecondary,
+      color: theme.colors.text.secondary,
       textAlign: 'center',
       marginBottom: theme.spacing.sm,
     },
@@ -242,7 +242,7 @@ const createStyles = (theme: AppTheme) =>
     translation: {
       fontSize: theme.typography.fontSize.md,
       fontFamily: theme.typography.fontFamily.body,
-      color: theme.colors.mindfulness.textMuted,
+      color: theme.colors.text.muted,
       textAlign: 'center',
       lineHeight: 20,
       fontStyle: 'italic',
@@ -254,7 +254,7 @@ const createStyles = (theme: AppTheme) =>
     expandHint: {
       fontSize: theme.typography.fontSize.sm,
       fontFamily: theme.typography.fontFamily.body,
-      color: theme.colors.mindfulness.accent,
+      color: theme.colors.primary.DEFAULT,
       fontStyle: 'normal',
     },
     counterContainer: {
@@ -265,7 +265,7 @@ const createStyles = (theme: AppTheme) =>
       width: 200,
       height: 6,
       borderRadius: 3,
-      backgroundColor: theme.colors.mindfulness.progressRingBg,
+      backgroundColor: theme.colors.border.secondary,
       overflow: 'hidden',
     },
     counterProgress: {
@@ -275,7 +275,7 @@ const createStyles = (theme: AppTheme) =>
     counterText: {
       fontSize: theme.typography.fontSize['3xl'],
       fontFamily: theme.typography.fontFamily.body,
-      color: theme.colors.mindfulness.textPrimary,
+      color: theme.colors.text.primary,
       marginTop: theme.spacing.xs,
     },
     reciteConfirm: {
@@ -289,12 +289,12 @@ const createStyles = (theme: AppTheme) =>
     reciteConfirmText: {
       fontSize: theme.typography.fontSize.lg,
       fontFamily: theme.typography.fontFamily.bodyMedium,
-      color: theme.colors.mindfulness.textPrimary,
+      color: theme.colors.text.primary,
     },
     reference: {
       fontSize: theme.typography.fontSize.xs,
       fontFamily: theme.typography.fontFamily.body,
-      color: theme.colors.mindfulness.textHint,
+      color: theme.colors.text.muted,
       textAlign: 'center',
       marginTop: theme.spacing.xl,
     },
@@ -306,7 +306,7 @@ const createStyles = (theme: AppTheme) =>
     skipText: {
       fontSize: theme.typography.fontSize.md,
       fontFamily: theme.typography.fontFamily.body,
-      color: theme.colors.mindfulness.textSubtle,
+      color: theme.colors.text.secondary,
     },
   });
 

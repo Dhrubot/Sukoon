@@ -658,7 +658,7 @@ const MindfulnessFlow: React.FC = () => {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.stepTitle}>How Was Your Prayer?</Text>
+        <Text style={[styles.stepTitle, { color: theme.colors.text.primary }]}>How Was Your Prayer?</Text>
 
         <ReflectionPrompts
           prayerName={prayer.name}
@@ -681,7 +681,7 @@ const MindfulnessFlow: React.FC = () => {
           onPress={completeReflection}
           disabled={selectedMood === 0}
         >
-          <Text style={styles.completeButtonText}>
+          <Text style={[styles.completeButtonText, { color: theme.colors.text.primary }]}>
             Complete ✨
           </Text>
         </TouchableOpacity>
@@ -1062,7 +1062,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   finishPrayerText: {
     fontSize: theme.typography.fontSize.xl,
     fontFamily: theme.typography.fontFamily.bodySemibold,
-    color: theme.colors.mindfulness.textPrimary,
+    color: theme.colors.text.primary,
   },
   transitionContainer: {
     flex: 1,

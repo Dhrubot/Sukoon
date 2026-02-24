@@ -155,7 +155,7 @@ const ReflectionPrompts: React.FC<ReflectionPromptsProps> = ({
         style={styles.reflectionInput}
         multiline
         placeholder="Share your thoughts... (optional)"
-        placeholderTextColor={theme.colors.mindfulness.textHint}
+        placeholderTextColor={theme.colors.text.muted}
         selectionColor={theme.colors.primary.DEFAULT}
         value={reflectionText}
         onChangeText={handleTextChange}
@@ -201,7 +201,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontSize: theme.typography.fontSize['2xl'],
     fontWeight: theme.typography.fontWeight.medium,
     fontFamily: theme.typography.fontFamily.headingRegular,
-    color: theme.colors.mindfulness.textPrimary,
+    color: theme.colors.text.primary,
     textAlign: 'center',
     lineHeight: 28,
     marginBottom: theme.spacing.sm,
@@ -209,7 +209,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   changePrompt: {
     fontSize: theme.typography.fontSize.md,
     fontFamily: theme.typography.fontFamily.body,
-    color: theme.colors.mindfulness.accent,
+    color: theme.colors.primary.DEFAULT,
     textAlign: 'center',
     marginTop: theme.spacing.sm,
   },
@@ -219,7 +219,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     padding: theme.spacing.lg,
     fontFamily: theme.typography.fontFamily.body,
     fontSize: theme.typography.fontSize.lg,
-    color: theme.colors.mindfulness.textPrimary,
+    color: theme.colors.text.primary,
     minHeight: 120,
     marginBottom: theme.spacing.xl,
     borderWidth: 1,
@@ -231,7 +231,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   quickOptionsTitle: {
     fontSize: theme.typography.fontSize.md,
     fontFamily: theme.typography.fontFamily.body,
-    color: theme.colors.mindfulness.textSecondary,
+    color: theme.colors.text.secondary,
     textAlign: 'center',
     marginBottom: theme.spacing.md,
   },
@@ -246,7 +246,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   quickOptionText: {
     fontSize: theme.typography.fontSize.md,
     fontFamily: theme.typography.fontFamily.body,
-    color: theme.colors.mindfulness.textSecondary,
+    color: theme.colors.text.secondary,
     textAlign: 'center',
   },
   characterCount: {
@@ -256,7 +256,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   characterCountText: {
     fontSize: theme.typography.fontSize.sm,
     fontFamily: theme.typography.fontFamily.body,
-    color: theme.colors.mindfulness.textSubtle,
+    color: theme.colors.text.muted,
   },
   duaCard: {
     backgroundColor: theme.colors.mindfulness.inputBg,
@@ -270,14 +270,14 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   duaTitle: {
     fontSize: theme.typography.fontSize.xs,
     fontFamily: theme.typography.fontFamily.bodyMedium,
-    color: theme.colors.mindfulness.textSecondary,
+    color: theme.colors.text.secondary,
     letterSpacing: 1,
     textTransform: 'uppercase',
     marginBottom: theme.spacing.md,
   },
   duaArabic: {
     fontSize: theme.typography.fontSize['3xl'] - 2,
-    color: theme.colors.mindfulness.textPrimary,
+    color: theme.colors.text.primary,
     textAlign: 'center',
     lineHeight: 34,
     marginBottom: theme.spacing.md - 2,
@@ -287,7 +287,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontSize: theme.typography.fontSize.md,
     fontFamily: theme.typography.fontFamily.body,
     fontStyle: 'italic',
-    color: theme.colors.mindfulness.textSecondary,
+    color: theme.colors.text.secondary,
     textAlign: 'center',
     lineHeight: 20,
   },
