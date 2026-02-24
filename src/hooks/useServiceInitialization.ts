@@ -1,6 +1,6 @@
 // src/hooks/useServiceInitialization.ts (FINAL MERGED VERSION)
 import { useEffect } from "react";
-import * as BackgroundFetch from 'expo-background-fetch';
+import * as BackgroundTask from 'expo-background-task';
 import * as TaskManager from 'expo-task-manager';
 import { usePrayerTimes } from "../providers/PrayerTimesProvider";
 import { useStore } from '../store/useStore';
@@ -41,10 +41,8 @@ export const useServiceInitialization = () => {
         try {
           const isRegistered = await TaskManager.isTaskRegisteredAsync(NOTIFICATION_RESCHEDULE_TASK);
           if (!isRegistered) {
-            await BackgroundFetch.registerTaskAsync(NOTIFICATION_RESCHEDULE_TASK, {
-              minimumInterval: 24 * 60 * 60,
-              stopOnTerminate: false,
-              startOnBoot: true,
+            await BackgroundTask.registerTaskAsync(NOTIFICATION_RESCHEDULE_TASK, {
+              minimumInterval: 24 * 60,
             });
           }
         } catch (error) {

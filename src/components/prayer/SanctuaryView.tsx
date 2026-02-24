@@ -281,7 +281,7 @@ const createStyles = (theme: AppTheme) =>
     prepareButton: {
       borderWidth: 1,
       borderColor: theme.colors.sanctuary.buttonBorder,
-      borderRadius: theme.borderRadius.xl,
+      borderRadius: theme.borderRadius.full,
       paddingVertical: theme.spacing.md + 2,
       paddingHorizontal: theme.spacing['4xl'],
       backgroundColor: theme.colors.sanctuary.buttonBg,

@@ -1,5 +1,5 @@
 // src/services/AnalyticsService.ts
-import analytics from '@react-native-firebase/analytics';
+import { getAnalytics, logEvent as fbLogEvent, setUserProperty as fbSetUserProperty, logScreenView as fbLogScreenView } from '@react-native-firebase/analytics';
 import logger from '../utils/logger';
 
 type AnalyticsEvent =
@@ -36,7 +36,7 @@ class AnalyticsService {
     if (!this.enabled) return;
 
     try {
-      await analytics().logEvent(event, params);
+      await fbLogEvent(getAnalytics(), event, params);
     } catch (error) {
       logger.error('[Analytics] Failed to log event:', error);
     }
@@ -45,7 +45,7 @@ class AnalyticsService {
   async setUserProperty(name: string, value: string): Promise<void> {
     if (!this.enabled) return;
     try {
-      await analytics().setUserProperty(name, value);
+      await fbSetUserProperty(getAnalytics(), name, value);
     } catch (error) {
       logger.error('[Analytics] Failed to set user property:', error);
     }
@@ -54,7 +54,7 @@ class AnalyticsService {
   async logScreenView(screenName: string): Promise<void> {
     if (!this.enabled) return;
     try {
-      await analytics().logScreenView({
+      await fbLogScreenView(getAnalytics(), {
         screen_name: screenName,
         screen_class: screenName,
       });

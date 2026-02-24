@@ -73,6 +73,7 @@ export default {
       "expo-location",
       ["expo-audio", { microphonePermission: false }],
       "expo-secure-store",
+      "expo-background-task",
       [
         "expo-notifications",
         {
