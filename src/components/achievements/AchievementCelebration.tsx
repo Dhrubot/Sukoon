@@ -141,7 +141,7 @@ const AchievementCelebration: React.FC<AchievementCelebrationProps> = ({
 
               <View style={styles.tierBadge}>
                 <Text style={styles.tierText}>
-                  {achievement.tier?.toUpperCase() || 'SPECIAL'}
+                  {achievement.tier ? achievement.tier.charAt(0).toUpperCase() + achievement.tier.slice(1) : 'Special'}
                 </Text>
               </View>
 

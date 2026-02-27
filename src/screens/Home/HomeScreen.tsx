@@ -35,6 +35,7 @@ import { MosqueModeOverlay, MosqueModePrompt } from "../../components/mosque";
 import RamadanTimesCard from "../../components/prayer/RamadanTimesCard";
 import OptionalPrayersSection from "../../components/prayer/OptionalPrayersSection";
 import GardenTeaser from "../../components/garden/GardenTeaser";
+import CatchUpCard from "../../components/prayer/CatchUpCard";
 
 // Types
 import { PrayerTime, OptionalPrayerTime } from "../../types";
@@ -55,6 +56,7 @@ const HomeScreen = ({ navigation }: any) => {
   const { 
     todayPrayerTimes, 
     nextPrayer, 
+    tomorrowFajr,
     isLoading: prayerTimesLoading, 
     hasValidLocation, 
     isOffline,
@@ -68,7 +70,8 @@ const HomeScreen = ({ navigation }: any) => {
     todayPrayerRecords,
     setTodayPrayerRecords,
     todaySunrise,
-    todaySunset
+    todaySunset,
+    todayMidnight,
   } = useStore();
 
   // Mosque mode state for focus mode + pill badge
@@ -224,7 +227,18 @@ const HomeScreen = ({ navigation }: any) => {
   }, [userSettings?.name]);
 
   const heroPrayer = useMemo(() => {
-    if (!nextPrayer) return null;
+    if (!nextPrayer) return tomorrowFajr ? { ...tomorrowFajr, isNext: true } : null;
+
+    // After Islamic midnight and Isha is the current prayer → transition hero to Fajr
+    const now = new Date();
+    if (
+      nextPrayer.name === 'Isha' &&
+      todayMidnight &&
+      now >= todayMidnight &&
+      tomorrowFajr
+    ) {
+      return { ...tomorrowFajr, isNext: true };
+    }
 
     const isCurrentPrayed = todayPrayerRecords.some(
       r => r.prayer === nextPrayer.name && r.status === 'prayed'
@@ -241,9 +255,9 @@ const HomeScreen = ({ navigation }: any) => {
       if (!prayed) return { ...p, isNext: true };
     }
 
-    // All remaining prayers are prayed
-    return null;
-  }, [nextPrayer, todayPrayerTimes, todayPrayerRecords]);
+    // All remaining prayers prayed → show tomorrow's Fajr
+    return tomorrowFajr ? { ...tomorrowFajr, isNext: true } : null;
+  }, [nextPrayer, todayPrayerTimes, todayPrayerRecords, tomorrowFajr, todayMidnight]);
 
   // Previous prayer time for inter-prayer ring progress
   const previousPrayerTime = useMemo(() => {
@@ -328,6 +342,22 @@ const HomeScreen = ({ navigation }: any) => {
     }
     return undefined;
   }, [heroPrayer, todayPrayerTimes, todayPrayerRecords, isHeroPrayerTimeEntered]);
+
+  // All missed prayers today (past time, no record, next prayer started)
+  const missedPrayersToday = useMemo(() => {
+    return todayPrayerTimes.filter((prayer, index) => {
+      if (prayer.time > currentTime) return false; // future
+      const hasRecord = todayPrayerRecords.some(
+        r => r.prayer === prayer.name && r.status === 'prayed'
+      );
+      if (hasRecord) return false;
+      // Fajr: missed after sunrise
+      if (prayer.name === 'Fajr' && todaySunrise && todaySunrise <= currentTime) return true;
+      // Others: missed when next prayer has started
+      const nextInList = index < todayPrayerTimes.length - 1 ? todayPrayerTimes[index + 1] : null;
+      return nextInList ? nextInList.time <= currentTime : false;
+    });
+  }, [todayPrayerTimes, todayPrayerRecords, currentTime, todaySunrise]);
 
   // Mosque mode prompt: in-app auto-show when iqamah is ≤5 min away
   useEffect(() => {
@@ -461,8 +491,8 @@ const HomeScreen = ({ navigation }: any) => {
         showsVerticalScrollIndicator={false}
         bounces={false}
       >
-        {/* 1a: SanctuaryView — full-screen next prayer hero */}
-        {heroPrayer ? (
+        {/* 1a: SanctuaryView — full-screen next prayer hero (always rendered) */}
+        {heroPrayer && (
           <SanctuaryView
             prayer={heroPrayer}
             greeting={getGreeting()}
@@ -478,12 +508,6 @@ const HomeScreen = ({ navigation }: any) => {
             mosqueModeInfo={mosqueModeHeroInfo ?? undefined}
             onMosqueModeTap={() => navigation.navigate('MosqueMode' as never)}
           />
-        ) : (
-          <LinearGradient colors={getBackgroundGradient()} style={styles.noNextPrayer}>
-            <Text style={styles.greeting}>{getGreeting()}</Text>
-            <Text style={styles.allPrayersComplete}>All prayers complete today</Text>
-            <Text style={styles.allPrayersSubtext}>Alhamdulillah</Text>
-          </LinearGradient>
         )}
 
         {/* Secondary content — collapsed in Focus Mode */}
@@ -544,6 +568,12 @@ const HomeScreen = ({ navigation }: any) => {
           {/* Garden Teaser — subtle entry point to Reflection Garden */}
           <GardenTeaser />
 
+
+          {/* Catch-up card — warm prompt when ≥3 prayers missed */}
+          <CatchUpCard
+            missedPrayers={missedPrayersToday}
+            onCatchUp={(prayer) => handlePrayerComplete(prayer)}
+          />
 
           {/* Today's Prayer Times */}
           <View style={styles.section}>
@@ -643,36 +673,6 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     paddingTop: theme.spacing['2xl'],
     paddingBottom: theme.spacing.xl,
     alignItems: 'center',
-  },
-  greeting: {
-    fontSize: theme.typography.fontSize['3xl'],
-    fontFamily: theme.typography.fontFamily.headingRegular,
-    color: theme.colors.sanctuary.prayerName,
-    textAlign: 'center',
-    marginBottom: theme.spacing.sm,
-  },
-  noNextPrayer: {
-    minHeight: 300,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: theme.spacing.xl,
-    paddingVertical: theme.spacing['2xl'],
-  },
-  allPrayersComplete: {
-    fontSize: theme.typography.fontSize['4xl'],
-    fontWeight: '300',
-    fontFamily: theme.typography.fontFamily.headingRegular,
-    color: theme.colors.text.primary,
-    textAlign: 'center',
-    marginTop: theme.spacing.lg,
-  },
-  allPrayersSubtext: {
-    fontSize: theme.typography.fontSize.xl,
-    fontWeight: '300',
-    fontFamily: theme.typography.fontFamily.headingRegular,
-    color: theme.colors.text.secondary,
-    fontStyle: 'italic',
-    marginTop: theme.spacing.sm,
   },
   secondaryContent: {
     paddingTop: theme.spacing.xs,

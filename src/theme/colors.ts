@@ -187,21 +187,14 @@ const prayerColors = {
   },
 } as const;
 
-// ─── Achievement Tier Colors ───────────────────────────────────────
+// ─── Achievement Tier Colors (botanical progression) ─────────────
 const achievementTiers = {
-  bronze:   { from: '#CD7F32', to: '#8B6914' },
-  silver:   { from: '#B8C4CB', to: '#8899A6' },
-  gold:     { from: '#D4AF37', to: '#C49A2C' },
-  platinum: { from: '#E5E4E2', to: '#BCC6CC' },
+  seed:     { from: '#8B7355', to: '#6B5B3E' },   // warm earth
+  sapling:  { from: '#5B8C5A', to: '#3D6B3D' },   // young green
+  tree:     { from: '#2D6B4F', to: '#1B4D3A' },   // deep forest
+  garden:   { from: '#4A7C59', to: '#2D5A3F' },   // rich garden
   default:  { from: palette.green600, to: palette.green800 },
 } as const;
-
-// ─── Confetti / Celebration Colors ─────────────────────────────────
-const celebrationColors = [
-  '#7986CB', '#81C784', '#DCE775', '#CE93D8',
-  '#9FA8DA', '#FFB74D', '#F48FB1', '#4FC3F7',
-  '#AED581', '#FFD54F', '#FF8A65', '#80DEEA',
-] as const;
 
 // ─── Onboarding Gradient ───────────────────────────────────────────
 const onboardingGradient = {
@@ -365,7 +358,6 @@ export const darkTheme = {
     continueBg:      palette.whiteAlpha25,
     continueBorder:  palette.whiteAlpha40,
     tiers:           achievementTiers,
-    confetti:        celebrationColors,
   },
 
   // Reflection Garden
@@ -685,7 +677,6 @@ export const lightTheme = {
     continueBg:      palette.whiteAlpha25,
     continueBorder:  palette.whiteAlpha40,
     tiers:           achievementTiers,
-    confetti:        celebrationColors,
   },
 
   // Reflection Garden
@@ -1041,7 +1032,6 @@ export const blackoutTheme = {
     continueBg:      palette.whiteAlpha25,
     continueBorder:  palette.whiteAlpha40,
     tiers:           achievementTiers,
-    confetti:        celebrationColors,
   },
 
   garden: {
@@ -1234,6 +1224,6 @@ type DeepStringify<T> =
           : T;
 
 // ─── Exports ───────────────────────────────────────────────────────
-export { palette, lightPalette, blackoutPalette, prayerGradients, achievementTiers, celebrationColors };
+export { palette, lightPalette, blackoutPalette, prayerGradients, achievementTiers };
 export type Theme = DeepStringify<typeof darkTheme>;
 export type ThemeColors = keyof Theme;

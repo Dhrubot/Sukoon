@@ -426,6 +426,83 @@ const MindfulnessFlow: React.FC = () => {
     });
   };
 
+  // ── SKIP REFLECTION: Save minimal session and go to complete ──
+  const skipReflection = () => {
+    Keyboard.dismiss();
+
+    const session: MindfulnessSession = {
+      id: `mindfulness_${Date.now()}`,
+      prayerName: prayer.name,
+      startedAt: sessionStartTime,
+      completedAt: new Date(),
+      duration: Math.floor(
+        (new Date().getTime() - sessionStartTime.getTime()) / 1000
+      ),
+      breathingCompleted: breathCount >= 3,
+      reflectionCompleted: false,
+      reflection: {
+        mood: 3 as 1 | 2 | 3 | 4 | 5,
+        text: '',
+      },
+    };
+
+    StorageService.saveMindfulnessSession(session);
+    setCurrentMindfulnessSession(session);
+
+    AnalyticsService.logEvent('mindfulness_completed', {
+      prayer: prayer.name,
+      duration: session.duration,
+      mood: 0,
+      breathing_completed: session.breathingCompleted,
+      reflection_added: false,
+      skipped_reflection: true,
+    });
+
+    // Animate to complete screen (same as completeReflection)
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: -50,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      setCurrentStep("complete");
+      requestAnimationFrame(() => {
+        Animated.parallel([
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 500,
+            useNativeDriver: true,
+          }),
+          Animated.spring(completeScale, {
+            toValue: 1,
+            friction: 4,
+            tension: 40,
+            useNativeDriver: true,
+          }),
+        ]).start(() => {
+          Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+          setTimeout(() => {
+            Animated.timing(fadeAnim, {
+              toValue: 0,
+              duration: 1000,
+              useNativeDriver: true,
+            }).start(() => {
+              if (navigation.canGoBack()) {
+                navigation.goBack();
+              }
+            });
+          }, 4000);
+        });
+      });
+    });
+  };
+
   // ── POST-PRAYER: Save reflection + session after mood/text ──
   const completeReflection = async () => {
     if (selectedMood === 0) {
@@ -673,18 +750,29 @@ const MindfulnessFlow: React.FC = () => {
           />
         </View>
 
-        <TouchableOpacity
-          style={[
-            styles.completeButton,
-            selectedMood === 0 && styles.completeButtonDisabled,
-          ]}
-          onPress={completeReflection}
-          disabled={selectedMood === 0}
-        >
-          <Text style={[styles.completeButtonText, { color: theme.colors.text.primary }]}>
-            Complete ✨
-          </Text>
-        </TouchableOpacity>
+        <View style={styles.reflectionButtonRow}>
+          <TouchableOpacity
+            style={styles.skipReflectionButton}
+            onPress={skipReflection}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.skipReflectionText}>Skip</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.completeButton,
+              selectedMood === 0 && styles.completeButtonDisabled,
+            ]}
+            onPress={completeReflection}
+            disabled={selectedMood === 0}
+            activeOpacity={0.8}
+          >
+            <Text style={[styles.completeButtonText, { color: theme.colors.text.primary }]}>
+              Complete ✨
+            </Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </Animated.View>
   );
@@ -923,14 +1011,33 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginTop: theme.spacing['3xl'],
     marginBottom: theme.spacing['3xl'],
   },
+  reflectionButtonRow: {
+    flexDirection: 'row',
+    gap: theme.spacing.md,
+    marginTop: theme.spacing.xl,
+  },
+  skipReflectionButton: {
+    flex: 1,
+    backgroundColor: 'transparent',
+    borderRadius: theme.borderRadius.lg,
+    paddingVertical: theme.spacing.xl - 2,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: theme.colors.mindfulness.buttonBorder,
+  },
+  skipReflectionText: {
+    fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
+    color: theme.colors.text.secondary,
+  },
   completeButton: {
+    flex: 2,
     backgroundColor: theme.colors.mindfulness.buttonBg,
     borderRadius: theme.borderRadius.lg,
     paddingVertical: theme.spacing.xl - 2,
     alignItems: "center",
     borderWidth: 1,
     borderColor: theme.colors.mindfulness.buttonBorder,
-    marginTop: theme.spacing.xl,
   },
   completeButtonDisabled: {
     opacity: 0.4,

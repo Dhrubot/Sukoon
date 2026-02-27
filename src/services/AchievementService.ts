@@ -6,8 +6,8 @@ import { PRAYER_NAMES as PrayerName } from '../constants';
 import { getLocalDateKey } from '../utils/dateHelpers';
 
 export interface AchievementDefinition extends Achievement {
-  category: 'prayer' | 'streak' | 'mindfulness' | 'focus' | 'special';
-  tier: 'bronze' | 'silver' | 'gold' | 'platinum';
+  category: 'prayer' | 'devotion' | 'mindfulness' | 'focus' | 'special';
+  tier: 'seed' | 'sapling' | 'tree' | 'garden';
   checkCondition: () => boolean | Promise<boolean>;
 }
 
@@ -20,7 +20,7 @@ class AchievementService {
       description: 'Begin your journey with your first prayer',
       icon: '🌟',
       category: 'prayer',
-      tier: 'bronze',
+      tier: 'seed',
       target: 1,
       checkCondition: async () => {
         const allTime = await this.getTotalPrayersCount();
@@ -33,7 +33,7 @@ class AchievementService {
       description: 'Offer all 5 prayers in a single day',
       icon: '✨',
       category: 'prayer',
-      tier: 'silver',
+      tier: 'sapling',
       target: 5,
       checkCondition: () => {
         const today = getLocalDateKey();
@@ -47,7 +47,7 @@ class AchievementService {
       description: 'Offer 25 prayers',
       icon: '�',
       category: 'prayer',
-      tier: 'bronze',
+      tier: 'seed',
       target: 25,
       checkCondition: async () => {
         const allTime = await this.getTotalPrayersCount();
@@ -60,7 +60,7 @@ class AchievementService {
       description: 'Offer 100 prayers',
       icon: '�',
       category: 'prayer',
-      tier: 'silver',
+      tier: 'sapling',
       target: 100,
       checkCondition: async () => {
         const allTime = await this.getTotalPrayersCount();
@@ -73,7 +73,7 @@ class AchievementService {
       description: 'Offer 500 prayers',
       icon: '🕌',
       category: 'prayer',
-      tier: 'gold',
+      tier: 'tree',
       target: 500,
       checkCondition: async () => {
         const allTime = await this.getTotalPrayersCount();
@@ -86,7 +86,7 @@ class AchievementService {
       description: 'Offer 1000 prayers — may each one draw you closer',
       icon: '🤲',
       category: 'prayer',
-      tier: 'platinum',
+      tier: 'garden',
       target: 1000,
       checkCondition: async () => {
         const allTime = await this.getTotalPrayersCount();
@@ -94,14 +94,14 @@ class AchievementService {
       },
     },
 
-    // Streak Achievements
+    // Devotion Achievements (perfect 5/5 days)
     {
       id: 'streak_3',
       name: 'Seeds of Habit',
-      description: 'Pray consistently for 3 days',
+      description: 'All five prayers for 3 consecutive days',
       icon: '🌿',
-      category: 'streak',
-      tier: 'bronze',
+      category: 'devotion',
+      tier: 'seed',
       target: 3,
       checkCondition: () => {
         const streak = StorageService.getCurrentStreak();
@@ -111,10 +111,10 @@ class AchievementService {
     {
       id: 'streak_7',
       name: 'A Week of Devotion',
-      description: 'Pray consistently for 7 days',
+      description: 'All five prayers for 7 consecutive days',
       icon: '🌙',
-      category: 'streak',
-      tier: 'silver',
+      category: 'devotion',
+      tier: 'sapling',
       target: 7,
       checkCondition: () => {
         const streak = StorageService.getCurrentStreak();
@@ -124,10 +124,10 @@ class AchievementService {
     {
       id: 'streak_30',
       name: 'Unwavering Faith',
-      description: 'Pray consistently for 30 days',
+      description: 'All five prayers for 30 consecutive days',
       icon: '🕋',
-      category: 'streak',
-      tier: 'gold',
+      category: 'devotion',
+      tier: 'tree',
       target: 30,
       checkCondition: () => {
         const streak = StorageService.getCurrentStreak();
@@ -137,13 +137,67 @@ class AchievementService {
     {
       id: 'streak_100',
       name: 'The Constant Servant',
-      description: 'Pray consistently for 100 days',
+      description: 'All five prayers for 100 consecutive days',
       icon: '💎',
-      category: 'streak',
-      tier: 'platinum',
+      category: 'devotion',
+      tier: 'garden',
       target: 100,
       checkCondition: () => {
         const streak = StorageService.getCurrentStreak();
+        return streak >= 100;
+      },
+    },
+
+    // Engagement Achievements (≥1 prayer/day — rewards showing up)
+    {
+      id: 'devotion_3',
+      name: 'Seeds of Return',
+      description: 'Show up for prayer 3 days in a row',
+      icon: '🌱',
+      category: 'devotion',
+      tier: 'seed',
+      target: 3,
+      checkCondition: () => {
+        const streak = StorageService.getEngagementStreak();
+        return streak >= 3;
+      },
+    },
+    {
+      id: 'devotion_7',
+      name: 'A Week of Seeking',
+      description: 'Return to prayer for 7 consecutive days',
+      icon: '🌾',
+      category: 'devotion',
+      tier: 'sapling',
+      target: 7,
+      checkCondition: () => {
+        const streak = StorageService.getEngagementStreak();
+        return streak >= 7;
+      },
+    },
+    {
+      id: 'devotion_30',
+      name: 'The Returning Heart',
+      description: '30 days of turning back to Allah',
+      icon: '🌳',
+      category: 'devotion',
+      tier: 'tree',
+      target: 30,
+      checkCondition: () => {
+        const streak = StorageService.getEngagementStreak();
+        return streak >= 30;
+      },
+    },
+    {
+      id: 'devotion_100',
+      name: 'Sustained Devotion',
+      description: '100 days of consistent effort',
+      icon: '🏡',
+      category: 'devotion',
+      tier: 'garden',
+      target: 100,
+      checkCondition: () => {
+        const streak = StorageService.getEngagementStreak();
         return streak >= 100;
       },
     },
@@ -155,7 +209,7 @@ class AchievementService {
       description: 'Complete your first prayer preparation',
       icon: '🧘',
       category: 'mindfulness',
-      tier: 'bronze',
+      tier: 'seed',
       target: 1,
       checkCondition: async () => {
         const count = await this.getMindfulnessCount();
@@ -168,7 +222,7 @@ class AchievementService {
       description: 'Prepare with presence for 10 prayers',
       icon: '🌸',
       category: 'mindfulness',
-      tier: 'silver',
+      tier: 'sapling',
       target: 10,
       checkCondition: async () => {
         const count = await this.getMindfulnessCount();
@@ -181,7 +235,7 @@ class AchievementService {
       description: 'Prepare with presence for 50 prayers',
       icon: '🪷',
       category: 'mindfulness',
-      tier: 'gold',
+      tier: 'tree',
       target: 50,
       checkCondition: async () => {
         const count = await this.getMindfulnessCount();
@@ -196,7 +250,7 @@ class AchievementService {
       description: 'Achieve deep focus in prayer 5 times',
       icon: '✨',
       category: 'focus',
-      tier: 'silver',
+      tier: 'sapling',
       target: 5,
       checkCondition: async () => {
         const count = await this.getHighFocusCount();
@@ -209,7 +263,7 @@ class AchievementService {
       description: 'Maintain deep presence in prayer for a full week',
       icon: '⭐',
       category: 'focus',
-      tier: 'gold',
+      tier: 'tree',
       target: 7,
       checkCondition: async () => {
         const avgFocus = await this.getWeeklyAverageFocus();
@@ -224,7 +278,7 @@ class AchievementService {
       description: 'Reflect after 10 prayers',
       icon: '💭',
       category: 'mindfulness',
-      tier: 'bronze',
+      tier: 'seed',
       target: 10,
       checkCondition: async () => {
         const count = await this.getReflectionCount();
@@ -237,7 +291,7 @@ class AchievementService {
       description: 'Reflect after 50 prayers',
       icon: '📖',
       category: 'mindfulness',
-      tier: 'silver',
+      tier: 'sapling',
       target: 50,
       checkCondition: async () => {
         const count = await this.getReflectionCount();
@@ -252,7 +306,7 @@ class AchievementService {
       description: 'Pray Fajr on time for 7 days',
       icon: '🌅',
       category: 'special',
-      tier: 'gold',
+      tier: 'tree',
       target: 7,
       checkCondition: async () => {
         const count = await this.getConsecutiveFajrCount();
@@ -265,7 +319,7 @@ class AchievementService {
       description: 'Pray Isha faithfully for 30 days',
       icon: '🌃',
       category: 'special',
-      tier: 'gold',
+      tier: 'tree',
       target: 30,
       checkCondition: async () => {
         const count = await this.getConsecutiveIshaCount();
@@ -278,7 +332,7 @@ class AchievementService {
       description: 'Complete all prayers during Ramadan',
       icon: '🌙',
       category: 'special',
-      tier: 'platinum',
+      tier: 'garden',
       target: 30,
       checkCondition: async () => {
         // Check if current month is Ramadan and perfect streak
@@ -291,7 +345,7 @@ class AchievementService {
       description: 'Return to a full day of prayer after missing some — Allah loves those who repent',
       icon: '�️',
       category: 'special',
-      tier: 'silver',
+      tier: 'sapling',
       checkCondition: async () => {
         return await this.checkComebackAchievement();
       },
@@ -358,6 +412,12 @@ class AchievementService {
       case 'streak_30':
       case 'streak_100':
         return StorageService.getCurrentStreak();
+        
+      case 'devotion_3':
+      case 'devotion_7':
+      case 'devotion_30':
+      case 'devotion_100':
+        return StorageService.getEngagementStreak();
         
       case 'mindful_first':
       case 'mindful_10':
@@ -475,7 +535,7 @@ class AchievementService {
   getAchievementCategories() {
     return {
       prayer: this.achievements.filter(a => a.category === 'prayer'),
-      streak: this.achievements.filter(a => a.category === 'streak'),
+      devotion: this.achievements.filter(a => a.category === 'devotion'),
       mindfulness: this.achievements.filter(a => a.category === 'mindfulness'),
       focus: this.achievements.filter(a => a.category === 'focus'),
       special: this.achievements.filter(a => a.category === 'special'),
@@ -484,10 +544,10 @@ class AchievementService {
 
   getAchievementsByTier() {
     return {
-      bronze: this.achievements.filter(a => a.tier === 'bronze'),
-      silver: this.achievements.filter(a => a.tier === 'silver'),
-      gold: this.achievements.filter(a => a.tier === 'gold'),
-      platinum: this.achievements.filter(a => a.tier === 'platinum'),
+      seed: this.achievements.filter(a => a.tier === 'seed'),
+      sapling: this.achievements.filter(a => a.tier === 'sapling'),
+      tree: this.achievements.filter(a => a.tier === 'tree'),
+      garden: this.achievements.filter(a => a.tier === 'garden'),
     };
   }
 

@@ -14,6 +14,7 @@ import { getLocalDateKey } from '../utils/dateHelpers';
 interface PrayerTimesContextType {
   todayPrayerTimes: PrayerTime[];
   nextPrayer: PrayerTime | null;
+  tomorrowFajr: PrayerTime | null;
   isLoading: boolean;
   error: string | null;
   hasValidLocation: boolean;
@@ -24,6 +25,7 @@ interface PrayerTimesContextType {
 const PrayerTimesContext = createContext<PrayerTimesContextType>({
   todayPrayerTimes: [],
   nextPrayer: null,
+  tomorrowFajr: null,
   isLoading: false,
   error: null,
   hasValidLocation: false,
@@ -293,6 +295,7 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
   const value: PrayerTimesContextType = {
     todayPrayerTimes, // ✅ Now subscribed to store changes!
     nextPrayer,       // ✅ Now subscribed to store changes!
+    tomorrowFajr,
     isLoading,
     error,
     hasValidLocation,
