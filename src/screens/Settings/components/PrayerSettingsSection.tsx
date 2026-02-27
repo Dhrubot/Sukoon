@@ -1,10 +1,11 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { format } from 'date-fns';
 import { SettingSection } from '../../../components/settings/SettingSection';
 import { SettingRow } from '../../../components/settings/SettingRow';
 import StorageService from '../../../services/StorageService';
 import NotificationService from '../../../services/NotificationService';
+import { useStore } from '../../../store/useStore';
 import { UserSettings, CalculationMethodType, PrayerTime, PrayerName } from '../../../types';
 import { isFriday } from '../../../utils/ramadan';
 import { useTheme } from '../../../providers/ThemeProvider';
@@ -48,6 +49,7 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
 }) => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const juristicOptions = [
     {
       value: 'Standard',
@@ -101,11 +103,13 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
     
     // 🔧 FIX: Immediately refresh prayer times
     if (onRefreshPrayerTimes && hasValidLocation) {
+      setIsRefreshing(true);
       try {
         await onRefreshPrayerTimes();
         
-        // Show confirmation with new Asr time
-        const asrPrayer = todayPrayerTimes.find(p => p.name === 'Asr');
+        // Read fresh Asr time from store (props are stale in this closure)
+        const freshTimes = useStore.getState().todayPrayerTimes;
+        const asrPrayer = freshTimes.find(p => p.name === 'Asr');
         const timeStr = asrPrayer ? format(asrPrayer.time, 'h:mm a') : '';
         
         Alert.alert(
@@ -121,6 +125,8 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
           'Asr method changed. Prayer times will update on next refresh.',
           [{ text: 'OK' }]
         );
+      } finally {
+        setIsRefreshing(false);
       }
     } else if (!hasValidLocation) {
       Alert.alert(
@@ -248,12 +254,20 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
             Juristic Method <Text style={styles.juristicLabelSub}>· Asr timing</Text>
           </Text>
           
-          <SegmentedControl
-            options={juristicOptions}
-            selectedValue={userSettings.asrJuristic === 'Hanafi' ? 'Hanafi' : 'Standard'}
-            onValueChange={handleJuristicChange}
-            style={styles.juristicControl}
-          />
+          <View style={{ position: 'relative' }}>
+            <SegmentedControl
+              options={juristicOptions}
+              selectedValue={userSettings.asrJuristic === 'Hanafi' ? 'Hanafi' : 'Standard'}
+              onValueChange={handleJuristicChange}
+              style={styles.juristicControl}
+            />
+            {isRefreshing && (
+              <View style={styles.refreshingOverlay}>
+                <ActivityIndicator size="small" color={theme.colors.primary.DEFAULT} />
+                <Text style={styles.refreshingText}>Updating times...</Text>
+              </View>
+            )}
+          </View>
           
           <View style={styles.juristicExplanation}>
             <Text style={styles.explanationText}>
@@ -441,5 +455,17 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     color: theme.colors.primary.DEFAULT,
     fontFamily: theme.typography.fontFamily.bodySemibold,
     letterSpacing: 0.2,
+  },
+  refreshingOverlay: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 8,
+    paddingTop: 10,
+  },
+  refreshingText: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.secondary,
+    fontFamily: theme.typography.fontFamily.body,
   },
 });
