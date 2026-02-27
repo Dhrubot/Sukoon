@@ -143,7 +143,7 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
       style={[
         styles.container,
         { backgroundColor: theme.colors.card.background, borderColor: theme.colors.border.secondary },
-        isActive() && [styles.activeContainer, { backgroundColor: theme.colors.gold + '18', borderColor: theme.colors.gold + '40', shadowColor: theme.colors.gold }],
+        isActive() && [styles.activeContainer, { backgroundColor: theme.colors.gold + '18', borderColor: theme.colors.gold + '40' }],
         record?.status === 'prayed' && [styles.prayedContainer, { backgroundColor: theme.colors.interactive.active + '12', borderColor: theme.colors.interactive.active + '30' }],
         isMissed() && [styles.missedContainer, { backgroundColor: theme.colors.status.error + '10', borderColor: theme.colors.status.error + '25' }],
       ]}
@@ -212,10 +212,6 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   activeContainer: {
     borderWidth: 1.5,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 4,
   },
   prayedContainer: {
     borderWidth: 1,
