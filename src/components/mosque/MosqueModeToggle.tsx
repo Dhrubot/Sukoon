@@ -10,12 +10,15 @@ import {
   AppState,
 } from 'react-native';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 import { useMosqueMode } from '../../hooks/useMosqueMode';
 import RingerControlService from '../../services/RingerControlService';
 import MosqueModeService from '../../services/MosqueModeService';
 
 export const MosqueModeToggle: React.FC = () => {
   const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const { isEnabled, enableMosqueMode } = useMosqueMode();
   const [isLoading, setIsLoading] = useState(false);
   const pendingEnable = useRef(false);
@@ -99,7 +102,7 @@ export const MosqueModeToggle: React.FC = () => {
           const canModify = await RingerControlService.canModify();
           if (!canModify) {
             Alert.alert(
-              '🛑 Permission Required',
+              'Permission Required',
               'To auto-silence your phone at iqamah time, Sukoon needs Do Not Disturb access.\n\nYou will be taken to Android settings. Find "Sukoon" and toggle it ON, then come back.',
               [
                 { text: 'Not Now', style: 'cancel' },
@@ -162,15 +165,13 @@ export const MosqueModeToggle: React.FC = () => {
       : 'Get reminders to enable silent mode for prayers';
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.card.background }]}>
+    <View style={styles.container}>
       <View style={styles.content}>
         <View style={styles.textContainer}>
-          <Text style={[styles.title, { color: theme.colors.text.primary }]}>
-            Mosque Mode
-          </Text>
+          <Text style={styles.title}>Mosque Mode</Text>
           <Text style={[
             styles.description,
-            { color: nativeAvailable ? theme.colors.text.secondary : theme.colors.status.error },
+            !nativeAvailable && { color: theme.colors.status.error },
           ]}>
             {description}
           </Text>
@@ -190,11 +191,13 @@ export const MosqueModeToggle: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.lg,
+    backgroundColor: theme.colors.mosqueMode.card.bg,
+    borderWidth: 1,
+    borderColor: theme.colors.mosqueMode.card.border,
   },
   content: {
     flexDirection: 'row',
@@ -203,15 +206,18 @@ const styles = StyleSheet.create({
   },
   textContainer: {
     flex: 1,
-    marginRight: 12,
+    marginRight: theme.spacing.md,
   },
   title: {
-    fontSize: 16,
-    fontWeight: '600',
-    marginBottom: 4,
+    fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.xs,
   },
   description: {
-    fontSize: 13,
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
+    color: theme.colors.text.secondary,
     lineHeight: 18,
   },
 });

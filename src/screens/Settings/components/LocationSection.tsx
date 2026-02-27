@@ -50,49 +50,53 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
 
   return (
     <SettingSection title="Location">
-      <View style={styles.locationInfo}>
-        {isLocationSet ? (
-          <>
-            <Text style={styles.locationText}>
-              {userSettings.location.city || 'Unknown City'}, {userSettings.location.country || 'Unknown Country'}
-            </Text>
-            <Text style={styles.coordinatesText}>
-              {userSettings.location.latitude.toFixed(4)}°, {userSettings.location.longitude.toFixed(4)}°
-            </Text>
-          </>
-        ) : (
-          <>
-            <Text style={styles.locationText}>
-              📍 Location Not Set
-            </Text>
-            <Text style={styles.invalidText}>
-              Please set your location to calculate accurate prayer times
-            </Text>
-          </>
-        )}
+      <View style={styles.locationCard}>
+        <View style={styles.locationInfo}>
+          {isLocationSet ? (
+            <>
+              <Text style={styles.locationText}>
+                {userSettings.location.city || 'Unknown City'}, {userSettings.location.country || 'Unknown Country'}
+              </Text>
+              <Text style={styles.coordinatesText}>
+                {userSettings.location.latitude.toFixed(4)}°, {userSettings.location.longitude.toFixed(4)}°
+              </Text>
+            </>
+          ) : (
+            <>
+              <Text style={styles.locationText}>
+                Location Not Set
+              </Text>
+              <Text style={styles.invalidText}>
+                Set your location for accurate prayer times
+              </Text>
+            </>
+          )}
+        </View>
       </View>
 
-      <TouchableOpacity 
-        style={[styles.button, isUpdatingLocation && styles.buttonDisabled]}
-        onPress={onUpdateLocation}
-        disabled={isUpdatingLocation}
-      >
-        <Text style={styles.buttonText}>
-          {isUpdatingLocation ? '⏳ Updating...' : isLocationSet ? 'Update Location' : '📍 Set Location'}
-        </Text>
-      </TouchableOpacity>
-
-      {onSelectManually && (
+      <View style={styles.buttonRow}>
         <TouchableOpacity 
-          style={[styles.manualButton, isUpdatingLocation && styles.buttonDisabled]}
-          onPress={onSelectManually}
+          style={[styles.button, isUpdatingLocation && styles.buttonDisabled]}
+          onPress={onUpdateLocation}
           disabled={isUpdatingLocation}
         >
-          <Text style={styles.manualButtonText}>
-            Select Location Manually
+          <Text style={styles.buttonText}>
+            {isUpdatingLocation ? 'Updating...' : 'Update Location'}
           </Text>
         </TouchableOpacity>
-      )}
+
+        {onSelectManually && (
+          <TouchableOpacity 
+            style={[styles.manualButton, isUpdatingLocation && styles.buttonDisabled]}
+            onPress={onSelectManually}
+            disabled={isUpdatingLocation}
+          >
+            <Text style={styles.manualButtonText}>
+              Select Manually
+            </Text>
+          </TouchableOpacity>
+        )}
+      </View>
 
       {/* 🆕 NEW: Location status indicator */}
       {!isLocationSet && (
@@ -120,77 +124,90 @@ export const LocationSection: React.FC<LocationSectionProps> = ({
 };
 
 const createStyles = (theme: AppTheme) => StyleSheet.create({
+  locationCard: {
+    backgroundColor: theme.colors.card.hover,
+    borderRadius: theme.borderRadius.sm,
+    padding: theme.spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.md,
+  },
   locationInfo: {
-    backgroundColor: theme.colors.settings.optionBg,
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 16,
+    flex: 1,
   },
   locationText: {
-    fontSize: 16,
+    fontSize: theme.typography.fontSize.lg,
     color: theme.colors.settings.labelPrimary,
-    fontWeight: '500',
-    marginBottom: 4,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
   },
   coordinatesText: {
-    fontSize: 14,
-    color: theme.colors.settings.labelSecondary,
+    fontSize: theme.typography.fontSize.xs,
+    fontFamily: theme.typography.fontFamily.body,
+    color: theme.colors.text.muted,
+    marginTop: theme.spacing.xxs,
   },
   invalidText: {
-    fontSize: 14,
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.status.error,
-    fontStyle: 'italic',
-    marginTop: 4,
+    marginTop: theme.spacing.xxs,
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    gap: theme.spacing.sm,
+    marginTop: theme.spacing.md,
   },
   button: {
+    flex: 1,
     backgroundColor: theme.colors.settings.buttonPrimaryBg,
-    borderRadius: 8,
-    paddingVertical: 12,
+    borderRadius: theme.borderRadius.sm,
+    paddingVertical: theme.spacing.md,
     alignItems: 'center',
-    marginBottom: 12,
   },
   buttonDisabled: {
     opacity: 0.6,
   },
   buttonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.settings.buttonPrimaryText,
   },
   manualButton: {
-    backgroundColor: theme.colors.settings.sectionBg,
+    flex: 1,
+    backgroundColor: 'transparent',
     borderWidth: 1,
-    borderColor: theme.colors.settings.buttonSecondaryBorder,
-    borderRadius: 8,
-    paddingVertical: 12,
+    borderColor: theme.colors.border.primary,
+    borderRadius: theme.borderRadius.sm,
+    paddingVertical: theme.spacing.md,
     alignItems: 'center',
   },
   manualButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.settings.buttonSecondaryText,
   },
   warningBox: {
     backgroundColor: theme.colors.settings.warningBg,
-    borderRadius: 8,
-    padding: 12,
-    marginTop: 12,
+    borderRadius: theme.borderRadius.sm,
+    padding: theme.spacing.md,
+    marginTop: theme.spacing.md,
     borderWidth: 1,
     borderColor: theme.colors.settings.warningBorder,
   },
   warningText: {
-    fontSize: 13,
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.settings.warningText,
     textAlign: 'center',
     lineHeight: 18,
   },
   settingsLink: {
-    marginTop: 10,
+    marginTop: theme.spacing.md - 2,
     alignItems: 'center',
   },
   settingsLinkText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.primary.DEFAULT,
   },
 });

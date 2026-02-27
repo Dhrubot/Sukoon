@@ -48,6 +48,8 @@ interface AppState {
   // Stats
   currentStreak: number;
   setCurrentStreak: (streak: number) => void;
+  engagementStreak: number;
+  setEngagementStreak: (streak: number) => void;
   todayStats: DailyStats | null;
   setTodayStats: (stats: DailyStats | null) => void;
   
@@ -146,6 +148,11 @@ export const useStore = create<AppState>((set) => ({
     StorageService.setStreak(streak);
     set({ currentStreak: streak });
   },
+  engagementStreak: 0,
+  setEngagementStreak: (streak) => {
+    StorageService.setEngagementStreak(streak);
+    set({ engagementStreak: streak });
+  },
   todayStats: null,
   setTodayStats: (stats) => set({ todayStats: stats }),
   
@@ -222,6 +229,8 @@ export const useStats = () => useStore(
   useShallow((state) => ({
     currentStreak: state.currentStreak,
     setCurrentStreak: state.setCurrentStreak,
+    engagementStreak: state.engagementStreak,
+    setEngagementStreak: state.setEngagementStreak,
     todayStats: state.todayStats,
     setTodayStats: state.setTodayStats,
   }))

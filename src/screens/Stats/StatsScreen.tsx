@@ -16,6 +16,7 @@ import { format, startOfWeek, endOfWeek, eachDayOfInterval, subDays, startOfMont
 
 // Store and Services
 import { useStore } from '../../store/useStore';
+import { getPrayerIcon } from '../../assets/icons';
 import StorageService from '../../services/StorageService';
 import { PrayerRecord, DailyStats } from '../../types';
 
@@ -41,7 +42,7 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
   } = usePrayerTimes();
 
   // Keep existing store state for other features
-  const { currentStreak, todayPrayerRecords } = useStore();
+  const { currentStreak, engagementStreak, todayPrayerRecords } = useStore();
   
   const [timeRange, setTimeRange] = useState<TimeRange>('week');
   const [isLoading, setIsLoading] = useState(true);
@@ -317,9 +318,12 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
           </View>
           
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{currentStreak}</Text>
-            <Text style={styles.statLabel}>Current Streak</Text>
-            <Text style={styles.statSubtext}>days in a row</Text>
+            <Text style={styles.statValue}>{engagementStreak}</Text>
+            <Text style={styles.statLabel}>Prayer Streak</Text>
+            <Text style={styles.statSubtext}>days active</Text>
+            {currentStreak > 0 && (
+              <Text style={styles.perfectStreakBadge}>{currentStreak}d perfect</Text>
+            )}
           </View>
           
           <View style={styles.statCard}>
@@ -340,9 +344,14 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
               
               return (
                 <View key={prayer.name} style={styles.todayPrayerItem}>
-                  <Text style={styles.prayerEmoji}>
-                    {isCompleted ? (isMindful ? '🤲' : '✅') : '⭕'}
-                  </Text>
+                  <View style={styles.prayerIconContainer}>
+                    {React.createElement(getPrayerIcon(prayer.name), {
+                      size: 22,
+                      color: isCompleted
+                        ? theme.colors.primary.DEFAULT
+                        : theme.colors.text.muted,
+                    })}
+                  </View>
                   <Text style={[
                     styles.prayerName,
                     isCompleted && styles.completedPrayerName
@@ -464,36 +473,37 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     backgroundColor: theme.colors.background.primary,
   },
   header: {
-    padding: 20,
+    padding: theme.spacing.xl,
     backgroundColor: theme.colors.card.background,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border.primary,
   },
   title: {
-    fontSize: 28,  // 4xl
-    fontWeight: '700',  // bold
+    fontSize: theme.typography.fontSize['4xl'],
+    fontWeight: theme.typography.fontWeight.bold,
+    fontFamily: theme.typography.fontFamily.heading,
     color: theme.colors.text.primary,
-    marginBottom: 20,
+    marginBottom: theme.spacing.xl,
   },
   timeRangeContainer: {
     flexDirection: 'row',
     backgroundColor: theme.colors.card.hover,
-    borderRadius: 8,
-    padding: 4,
+    borderRadius: theme.borderRadius.sm,
+    padding: theme.spacing.xs,
   },
   timeRangeButton: {
     flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.borderRadius.sm,
     alignItems: 'center',
   },
   timeRangeButtonActive: {
     backgroundColor: theme.colors.primary.DEFAULT,
   },
   timeRangeText: {
-    fontSize: 14,  // md
-    fontWeight: '500',  // medium
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.text.secondary,
   },
   timeRangeTextActive: {
@@ -505,28 +515,30 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
+    padding: theme.spacing['4xl'],
   },
   emptyStateIcon: {
     fontSize: 64,
-    marginBottom: 16,
+    marginBottom: theme.spacing.lg,
   },
   emptyStateTitle: {
-    fontSize: 24,  // 3xl
-    fontWeight: '700',  // bold
+    fontSize: theme.typography.fontSize['3xl'],
+    fontFamily: theme.typography.fontFamily.heading,
     color: theme.colors.text.primary,
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: theme.spacing.md,
   },
   emptyStateText: {
-    fontSize: 16,  // lg
+    fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
     lineHeight: 24,
   },
   emptyStateSubtext: {
-    fontSize: 14,  // md
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.muted,
     textAlign: 'center',
   },
@@ -535,12 +547,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
+    padding: theme.spacing['4xl'],
   },
   loadingText: {
-    fontSize: 16,  // lg
+    fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
-    marginTop: 16,
+    marginTop: theme.spacing.lg,
     textAlign: 'center',
   },
   
@@ -548,13 +561,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   statsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    padding: 10,
-    gap: 10,
+    padding: theme.spacing.sm,
+    gap: theme.spacing.sm,
   },
   statCard: {
     backgroundColor: theme.colors.card.background,
-    borderRadius: 12,
-    padding: 20,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.xl,
     width: (width - 40) / 2,
     alignItems: 'center',
     borderWidth: 1,
@@ -566,72 +579,85 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     elevation: 3,
   },
   statValue: {
-    fontSize: 32,  // 5xl
-    fontWeight: '700',  // bold
+    fontSize: theme.typography.fontSize['4xl'],
+    fontFamily: theme.typography.fontFamily.bodyBold,
     color: theme.colors.primary.DEFAULT,
-    marginBottom: 4,
+    marginBottom: theme.spacing.xs,
   },
   statLabel: {
-    fontSize: 14,  // md
-    fontWeight: '600',  // semibold
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
     textAlign: 'center',
-    marginBottom: 4,
+    marginBottom: theme.spacing.xs,
   },
   statSubtext: {
-    fontSize: 13,  // sm (adjusted up)
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     textAlign: 'center',
   },
+  perfectStreakBadge: {
+    fontSize: theme.typography.fontSize.xs,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
+    color: theme.colors.gold,
+    marginTop: theme.spacing.xs,
+    textAlign: 'center',
+  },
   section: {
-    padding: 20,
+    padding: theme.spacing.xl,
   },
   sectionTitle: {
-    fontSize: 20,  // 2xl
-    fontWeight: '600',  // semibold
+    fontSize: theme.typography.fontSize['2xl'],
+    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.headingRegular,
     color: theme.colors.text.primary,
-    marginBottom: 16,
+    marginBottom: theme.spacing.lg,
   },
   todayProgressContainer: {
     backgroundColor: theme.colors.card.background,
-    borderRadius: 12,
-    padding: 16,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.lg,
     borderWidth: 1,
     borderColor: theme.colors.border.primary,
   },
   todayPrayerItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: theme.spacing.md,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border.primary,
   },
-  prayerEmoji: {
-    fontSize: 24,  // 3xl
-    marginRight: 12,
+  prayerIconContainer: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: theme.spacing.md,
   },
   prayerName: {
     flex: 1,
-    fontSize: 16,  // lg
-    fontWeight: '500',  // medium
+    fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.text.primary,
   },
   completedPrayerName: {
     color: theme.colors.primary.DEFAULT,
   },
   prayerTime: {
-    fontSize: 14,  // md
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
   },
   chart: {
-    marginVertical: 8,
-    borderRadius: 16,
+    marginVertical: theme.spacing.sm,
+    borderRadius: theme.borderRadius.lg,
   },
   insightCard: {
     backgroundColor: theme.colors.card.background,
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 12,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.xl,
+    marginBottom: theme.spacing.md,
     borderLeftWidth: 4,
     borderLeftColor: theme.colors.primary.DEFAULT,
     borderWidth: 1,
@@ -642,19 +668,20 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     backgroundColor: theme.colors.card.hover,
   },
   insightTitle: {
-    fontSize: 16,  // lg
-    fontWeight: '600',  // semibold
+    fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.primary.DEFAULT,
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
   },
   insightValue: {
-    fontSize: 24,  // 3xl
-    fontWeight: '700',  // bold
+    fontSize: theme.typography.fontSize['3xl'],
+    fontFamily: theme.typography.fontFamily.bodyBold,
     color: theme.colors.text.primary,
-    marginBottom: 4,
+    marginBottom: theme.spacing.xs,
   },
   insightDescription: {
-    fontSize: 14,  // md
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     lineHeight: 20,
   },

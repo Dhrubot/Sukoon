@@ -1,0 +1,350 @@
+// src/constants/hadithCollection.ts
+//
+// Curated hadith collection for the Daily Hadith feature.
+// All hadith are from authenticated sources (Bukhari, Muslim, Abu Dawud,
+// Tirmidhi, Nasa'i, Ibn Majah). Themes align with the existing VERSES themes.
+
+export interface Hadith {
+  id: number;
+  arabic: string;
+  translation: string;
+  narrator: string;
+  source: string;
+  theme: string;
+}
+
+export const HADITH_COLLECTION: Hadith[] = [
+  // ─── Prayer ────────────────────────────────────────────────────────
+  {
+    id: 1,
+    arabic: 'إِنَّ أَوَّلَ مَا يُحَاسَبُ بِهِ الْعَبْدُ يَوْمَ الْقِيَامَةِ مِنْ عَمَلِهِ صَلَاتُهُ',
+    translation: 'The first matter that the servant will be brought to account for on the Day of Judgment is prayer.',
+    narrator: 'Abu Hurairah',
+    source: 'Abu Dawud 864, At-Tirmidhi 413',
+    theme: 'prayer',
+  },
+  {
+    id: 2,
+    arabic: 'جُعِلَتْ قُرَّةُ عَيْنِي فِي الصَّلَاةِ',
+    translation: 'The coolness of my eyes has been placed in prayer.',
+    narrator: 'Anas ibn Malik',
+    source: 'Sunan An-Nasa\'i 3939',
+    theme: 'prayer',
+  },
+  {
+    id: 3,
+    arabic: 'بَيْنَ الرَّجُلِ وَبَيْنَ الشِّرْكِ وَالْكُفْرِ تَرْكُ الصَّلَاةِ',
+    translation: 'Between a person and disbelief is the abandonment of prayer.',
+    narrator: 'Jabir ibn Abdullah',
+    source: 'Sahih Muslim 82',
+    theme: 'prayer',
+  },
+  {
+    id: 4,
+    arabic: 'صَلُّوا كَمَا رَأَيْتُمُونِي أُصَلِّي',
+    translation: 'Pray as you have seen me praying.',
+    narrator: 'Malik ibn al-Huwayrith',
+    source: 'Sahih Al-Bukhari 631',
+    theme: 'prayer',
+  },
+  {
+    id: 5,
+    arabic: 'أَقْرَبُ مَا يَكُونُ الْعَبْدُ مِنْ رَبِّهِ وَهُوَ سَاجِدٌ',
+    translation: 'The closest a servant is to his Lord is when he is in prostration.',
+    narrator: 'Abu Hurairah',
+    source: 'Sahih Muslim 482',
+    theme: 'prayer',
+  },
+  {
+    id: 6,
+    arabic: 'الصَّلَوَاتُ الْخَمْسُ وَالْجُمُعَةُ إِلَى الْجُمُعَةِ كَفَّارَاتٌ لِمَا بَيْنَهُنَّ',
+    translation: 'The five daily prayers and Friday to Friday are expiation for what is between them.',
+    narrator: 'Abu Hurairah',
+    source: 'Sahih Muslim 233',
+    theme: 'prayer',
+  },
+  {
+    id: 7,
+    arabic: 'مَنْ حَافَظَ عَلَيْهَا كَانَتْ لَهُ نُورًا وَبُرْهَانًا وَنَجَاةً يَوْمَ الْقِيَامَةِ',
+    translation: 'Whoever guards his prayers will have light, proof, and salvation on the Day of Resurrection.',
+    narrator: 'Abdullah ibn Amr',
+    source: 'Musnad Ahmad 6576',
+    theme: 'prayer',
+  },
+  // ─── Remembrance ───────────────────────────────────────────────────
+  {
+    id: 8,
+    arabic: 'مَثَلُ الَّذِي يَذْكُرُ رَبَّهُ وَالَّذِي لَا يَذْكُرُ رَبَّهُ مَثَلُ الْحَيِّ وَالْمَيِّتِ',
+    translation: 'The example of the one who remembers his Lord and the one who does not is like the living and the dead.',
+    narrator: 'Abu Musa al-Ash\'ari',
+    source: 'Sahih Al-Bukhari 6407',
+    theme: 'remembrance',
+  },
+  {
+    id: 9,
+    arabic: 'كَلِمَتَانِ خَفِيفَتَانِ عَلَى اللِّسَانِ ثَقِيلَتَانِ فِي الْمِيزَانِ حَبِيبَتَانِ إِلَى الرَّحْمَنِ سُبْحَانَ اللَّهِ وَبِحَمْدِهِ سُبْحَانَ اللَّهِ الْعَظِيمِ',
+    translation: 'Two words are light on the tongue, heavy on the Scale, and beloved to the Most Merciful: SubhanAllahi wa bihamdihi, SubhanAllahil-Azeem.',
+    narrator: 'Abu Hurairah',
+    source: 'Sahih Al-Bukhari 6406, Sahih Muslim 2694',
+    theme: 'remembrance',
+  },
+  {
+    id: 10,
+    arabic: 'أَلَا أُنَبِّئُكُمْ بِخَيْرِ أَعْمَالِكُمْ وَأَزْكَاهَا عِنْدَ مَلِيكِكُمْ',
+    translation: 'Shall I not inform you of the best of your deeds, the purest in the sight of your Master?',
+    narrator: 'Abu Darda',
+    source: 'At-Tirmidhi 3377',
+    theme: 'remembrance',
+  },
+  {
+    id: 11,
+    arabic: 'مَنْ قَالَ سُبْحَانَ اللَّهِ وَبِحَمْدِهِ فِي يَوْمٍ مِائَةَ مَرَّةٍ حُطَّتْ خَطَايَاهُ',
+    translation: 'Whoever says SubhanAllahi wa bihamdihi one hundred times a day will have his sins forgiven.',
+    narrator: 'Abu Hurairah',
+    source: 'Sahih Al-Bukhari 6405, Sahih Muslim 2691',
+    theme: 'remembrance',
+  },
+  // ─── Patience ──────────────────────────────────────────────────────
+  {
+    id: 12,
+    arabic: 'عَجَبًا لِأَمْرِ الْمُؤْمِنِ إِنَّ أَمْرَهُ كُلَّهُ خَيْرٌ',
+    translation: 'How wonderful is the affair of the believer — everything is good for him.',
+    narrator: 'Suhaib',
+    source: 'Sahih Muslim 2999',
+    theme: 'patience',
+  },
+  {
+    id: 13,
+    arabic: 'إِنَّ عِظَمَ الْجَزَاءِ مَعَ عِظَمِ الْبَلَاءِ',
+    translation: 'The greatness of reward comes with the greatness of trial.',
+    narrator: 'Anas ibn Malik',
+    source: 'At-Tirmidhi 2396',
+    theme: 'patience',
+  },
+  {
+    id: 14,
+    arabic: 'مَا يُصِيبُ الْمُسْلِمَ مِنْ نَصَبٍ وَلَا وَصَبٍ وَلَا هَمٍّ وَلَا حُزْنٍ وَلَا أَذًى وَلَا غَمٍّ حَتَّى الشَّوْكَةِ يُشَاكُهَا إِلَّا كَفَّرَ اللَّهُ بِهَا مِنْ خَطَايَاهُ',
+    translation: 'No fatigue, illness, anxiety, sorrow, harm, or distress befalls a Muslim — even the prick of a thorn — but that Allah expiates some of his sins thereby.',
+    narrator: 'Abu Hurairah',
+    source: 'Sahih Al-Bukhari 5641, Sahih Muslim 2573',
+    theme: 'patience',
+  },
+  {
+    id: 15,
+    arabic: 'وَمَا أُعْطِيَ أَحَدٌ عَطَاءً خَيْرًا وَأَوْسَعَ مِنَ الصَّبْرِ',
+    translation: 'No one is given a gift better and more comprehensive than patience.',
+    narrator: 'Abu Sa\'id al-Khudri',
+    source: 'Sahih Al-Bukhari 1469, Sahih Muslim 1053',
+    theme: 'patience',
+  },
+  // ─── Gratitude ─────────────────────────────────────────────────────
+  {
+    id: 16,
+    arabic: 'مَنْ لَا يَشْكُرُ النَّاسَ لَا يَشْكُرُ اللَّهَ',
+    translation: 'Whoever does not thank the people has not thanked Allah.',
+    narrator: 'Abu Hurairah',
+    source: 'Abu Dawud 4811, At-Tirmidhi 1954',
+    theme: 'gratitude',
+  },
+  {
+    id: 17,
+    arabic: 'انْظُرُوا إِلَى مَنْ أَسْفَلَ مِنْكُمْ وَلَا تَنْظُرُوا إِلَى مَنْ هُوَ فَوْقَكُمْ',
+    translation: 'Look at those below you and do not look at those above you, for that is more likely to prevent you from belittling the blessings of Allah.',
+    narrator: 'Abu Hurairah',
+    source: 'Sahih Muslim 2963',
+    theme: 'gratitude',
+  },
+  {
+    id: 18,
+    arabic: 'إِنَّ اللَّهَ لَيَرْضَى عَنِ الْعَبْدِ أَنْ يَأْكُلَ الْأَكْلَةَ فَيَحْمَدَهُ عَلَيْهَا',
+    translation: 'Indeed Allah is pleased with a servant who eats a meal and praises Him for it.',
+    narrator: 'Anas ibn Malik',
+    source: 'Sahih Muslim 2734',
+    theme: 'gratitude',
+  },
+  // ─── Mercy & Forgiveness ───────────────────────────────────────────
+  {
+    id: 19,
+    arabic: 'إِنَّ اللَّهَ كَتَبَ عَلَى نَفْسِهِ قَبْلَ أَنْ يَخْلُقَ الْخَلْقَ إِنَّ رَحْمَتِي غَلَبَتْ غَضَبِي',
+    translation: 'Allah wrote upon Himself before He created creation: My mercy prevails over My wrath.',
+    narrator: 'Abu Hurairah',
+    source: 'Sahih Al-Bukhari 3194, Sahih Muslim 2751',
+    theme: 'mercy',
+  },
+  {
+    id: 20,
+    arabic: 'الرَّاحِمُونَ يَرْحَمُهُمُ الرَّحْمَنُ ارْحَمُوا مَنْ فِي الْأَرْضِ يَرْحَمْكُم مَّنْ فِي السَّمَاءِ',
+    translation: 'The merciful are shown mercy by the Most Merciful. Be merciful to those on earth and the One in the heavens will be merciful to you.',
+    narrator: 'Abdullah ibn Amr',
+    source: 'Abu Dawud 4941, At-Tirmidhi 1924',
+    theme: 'mercy',
+  },
+  {
+    id: 21,
+    arabic: 'يَا عِبَادِي إِنَّكُمْ تُخْطِئُونَ بِاللَّيْلِ وَالنَّهَارِ وَأَنَا أَغْفِرُ الذُّنُوبَ جَمِيعًا فَاسْتَغْفِرُونِي أَغْفِرْ لَكُمْ',
+    translation: 'O My servants, you sin by night and day, and I forgive all sins. So seek My forgiveness and I will forgive you.',
+    narrator: 'Abu Dharr (Hadith Qudsi)',
+    source: 'Sahih Muslim 2577',
+    theme: 'mercy',
+  },
+  {
+    id: 22,
+    arabic: 'يَنْزِلُ رَبُّنَا كُلَّ لَيْلَةٍ إِلَى السَّمَاءِ الدُّنْيَا حِينَ يَبْقَى ثُلُثُ اللَّيْلِ الْآخِرُ فَيَقُولُ مَنْ يَدْعُونِي فَأَسْتَجِيبَ لَهُ',
+    translation: 'Our Lord descends every night to the lowest heaven in the last third of the night and says: Who is calling upon Me so that I may answer him?',
+    narrator: 'Abu Hurairah',
+    source: 'Sahih Al-Bukhari 1145, Sahih Muslim 758',
+    theme: 'mercy',
+  },
+  // ─── Dua ───────────────────────────────────────────────────────────
+  {
+    id: 23,
+    arabic: 'الدُّعَاءُ هُوَ الْعِبَادَةُ',
+    translation: 'Supplication is the essence of worship.',
+    narrator: 'An-Nu\'man ibn Bashir',
+    source: 'Abu Dawud 1479, At-Tirmidhi 3372',
+    theme: 'dua',
+  },
+  {
+    id: 24,
+    arabic: 'إِنَّ اللَّهَ حَيِيٌّ كَرِيمٌ يَسْتَحْيِي إِذَا رَفَعَ الرَّجُلُ إِلَيْهِ يَدَيْهِ أَنْ يَرُدَّهُمَا صِفْرًا خَائِبَتَيْنِ',
+    translation: 'Indeed Allah is Shy and Generous. He is shy when His servant raises his hands to Him to turn them away empty and disappointed.',
+    narrator: 'Salman al-Farisi',
+    source: 'Abu Dawud 1488, At-Tirmidhi 3556',
+    theme: 'dua',
+  },
+  {
+    id: 25,
+    arabic: 'مَا مِنْ مُسْلِمٍ يَدْعُو بِدَعْوَةٍ لَيْسَ فِيهَا إِثْمٌ وَلَا قَطِيعَةُ رَحِمٍ إِلَّا أَعْطَاهُ اللَّهُ بِهَا إِحْدَى ثَلَاثٍ',
+    translation: 'No Muslim makes a supplication — provided it does not involve sin or cutting ties — except that Allah gives him one of three things: an immediate response, stores it for the Hereafter, or averts an equivalent harm.',
+    narrator: 'Abu Sa\'id al-Khudri',
+    source: 'Musnad Ahmad 11133',
+    theme: 'dua',
+  },
+  // ─── Tawakkul (Trust in Allah) ─────────────────────────────────────
+  {
+    id: 26,
+    arabic: 'لَوْ أَنَّكُمْ تَوَكَّلْتُمْ عَلَى اللَّهِ حَقَّ تَوَكُّلِهِ لَرَزَقَكُمْ كَمَا يَرْزُقُ الطَّيْرَ',
+    translation: 'If you were to rely upon Allah with the reliance He is due, He would provide for you as He provides for the birds.',
+    narrator: 'Umar ibn al-Khattab',
+    source: 'At-Tirmidhi 2344',
+    theme: 'tawakkul',
+  },
+  {
+    id: 27,
+    arabic: 'احْفَظِ اللَّهَ يَحْفَظْكَ احْفَظِ اللَّهَ تَجِدْهُ تُجَاهَكَ',
+    translation: 'Be mindful of Allah and He will protect you. Be mindful of Allah and you will find Him before you.',
+    narrator: 'Abdullah ibn Abbas',
+    source: 'At-Tirmidhi 2516',
+    theme: 'tawakkul',
+  },
+  // ─── Good Character ────────────────────────────────────────────────
+  {
+    id: 28,
+    arabic: 'إِنَّمَا بُعِثْتُ لِأُتَمِّمَ صَالِحَ الْأَخْلَاقِ',
+    translation: 'I was sent only to perfect good character.',
+    narrator: 'Abu Hurairah',
+    source: 'Musnad Ahmad 8939',
+    theme: 'character',
+  },
+  {
+    id: 29,
+    arabic: 'إِنَّ مِنْ أَحَبِّكُمْ إِلَيَّ وَأَقْرَبِكُمْ مِنِّي مَجْلِسًا يَوْمَ الْقِيَامَةِ أَحَاسِنَكُمْ أَخْلَاقًا',
+    translation: 'The dearest and closest of you to me on the Day of Resurrection will be those of you with the best character.',
+    narrator: 'Jabir ibn Abdullah',
+    source: 'At-Tirmidhi 2018',
+    theme: 'character',
+  },
+  {
+    id: 30,
+    arabic: 'مَا شَيْءٌ أَثْقَلُ فِي مِيزَانِ الْمُؤْمِنِ يَوْمَ الْقِيَامَةِ مِنْ خُلُقٍ حَسَنٍ',
+    translation: 'Nothing is heavier on the believer\'s Scale on the Day of Resurrection than good character.',
+    narrator: 'Abu Darda',
+    source: 'Abu Dawud 4799, At-Tirmidhi 2002',
+    theme: 'character',
+  },
+  // ─── Community ─────────────────────────────────────────────────────
+  {
+    id: 31,
+    arabic: 'لَا يُؤْمِنُ أَحَدُكُمْ حَتَّى يُحِبَّ لِأَخِيهِ مَا يُحِبُّ لِنَفْسِهِ',
+    translation: 'None of you truly believes until he loves for his brother what he loves for himself.',
+    narrator: 'Anas ibn Malik',
+    source: 'Sahih Al-Bukhari 13, Sahih Muslim 45',
+    theme: 'community',
+  },
+  {
+    id: 32,
+    arabic: 'الْمُؤْمِنُ لِلْمُؤْمِنِ كَالْبُنْيَانِ يَشُدُّ بَعْضُهُ بَعْضًا',
+    translation: 'The believer to the believer is like a building — each part supports the other.',
+    narrator: 'Abu Musa al-Ash\'ari',
+    source: 'Sahih Al-Bukhari 6026, Sahih Muslim 2585',
+    theme: 'community',
+  },
+  // ─── Purification of Heart ─────────────────────────────────────────
+  {
+    id: 33,
+    arabic: 'أَلَا وَإِنَّ فِي الْجَسَدِ مُضْغَةً إِذَا صَلَحَتْ صَلَحَ الْجَسَدُ كُلُّهُ وَإِذَا فَسَدَتْ فَسَدَ الْجَسَدُ كُلُّهُ أَلَا وَهِيَ الْقَلْبُ',
+    translation: 'In the body there is a piece of flesh; if it is sound, the whole body is sound, and if it is corrupt, the whole body is corrupt. It is the heart.',
+    narrator: 'An-Nu\'man ibn Bashir',
+    source: 'Sahih Al-Bukhari 52, Sahih Muslim 1599',
+    theme: 'purification',
+  },
+  {
+    id: 34,
+    arabic: 'إِنَّ اللَّهَ لَا يَنْظُرُ إِلَى صُوَرِكُمْ وَأَمْوَالِكُمْ وَلَكِنْ يَنْظُرُ إِلَى قُلُوبِكُمْ وَأَعْمَالِكُمْ',
+    translation: 'Indeed Allah does not look at your appearance or wealth, but He looks at your hearts and deeds.',
+    narrator: 'Abu Hurairah',
+    source: 'Sahih Muslim 2564',
+    theme: 'purification',
+  },
+  // ─── Fajr & Night ──────────────────────────────────────────────────
+  {
+    id: 35,
+    arabic: 'مَنْ صَلَّى الْبَرْدَيْنِ دَخَلَ الْجَنَّةَ',
+    translation: 'Whoever prays the two cool prayers (Fajr and Asr) will enter Paradise.',
+    narrator: 'Abu Musa al-Ash\'ari',
+    source: 'Sahih Al-Bukhari 574, Sahih Muslim 635',
+    theme: 'fajr',
+  },
+  {
+    id: 36,
+    arabic: 'رَكْعَتَا الْفَجْرِ خَيْرٌ مِنَ الدُّنْيَا وَمَا فِيهَا',
+    translation: 'The two rak\'ahs of Fajr are better than the world and all it contains.',
+    narrator: 'Aisha',
+    source: 'Sahih Muslim 725',
+    theme: 'fajr',
+  },
+  // ─── Taqwa ─────────────────────────────────────────────────────────
+  {
+    id: 37,
+    arabic: 'اتَّقِ اللَّهَ حَيْثُمَا كُنْتَ وَأَتْبِعِ السَّيِّئَةَ الْحَسَنَةَ تَمْحُهَا وَخَالِقِ النَّاسَ بِخُلُقٍ حَسَنٍ',
+    translation: 'Fear Allah wherever you are, follow a bad deed with a good deed and it will erase it, and behave well towards people.',
+    narrator: 'Abu Dharr',
+    source: 'At-Tirmidhi 1987',
+    theme: 'taqwa',
+  },
+  {
+    id: 38,
+    arabic: 'التَّقْوَى هَاهُنَا',
+    translation: 'Taqwa is here (pointing to his chest three times).',
+    narrator: 'Abu Hurairah',
+    source: 'Sahih Muslim 2564',
+    theme: 'taqwa',
+  },
+  // ─── Knowledge & Sincerity ─────────────────────────────────────────
+  {
+    id: 39,
+    arabic: 'مَنْ سَلَكَ طَرِيقًا يَلْتَمِسُ فِيهِ عِلْمًا سَهَّلَ اللَّهُ لَهُ بِهِ طَرِيقًا إِلَى الْجَنَّةِ',
+    translation: 'Whoever takes a path seeking knowledge, Allah will make easy for him a path to Paradise.',
+    narrator: 'Abu Hurairah',
+    source: 'Sahih Muslim 2699',
+    theme: 'knowledge',
+  },
+  {
+    id: 40,
+    arabic: 'إِنَّمَا الْأَعْمَالُ بِالنِّيَّاتِ وَإِنَّمَا لِكُلِّ امْرِئٍ مَا نَوَى',
+    translation: 'Actions are judged by intentions, and every person will get what they intended.',
+    narrator: 'Umar ibn al-Khattab',
+    source: 'Sahih Al-Bukhari 1, Sahih Muslim 1907',
+    theme: 'sincerity',
+  },
+];

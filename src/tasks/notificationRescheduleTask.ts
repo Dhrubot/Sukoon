@@ -1,4 +1,4 @@
-import * as BackgroundFetch from 'expo-background-fetch';
+import * as BackgroundTask from 'expo-background-task';
 import * as TaskManager from 'expo-task-manager';
 
 import NotificationService from '../services/NotificationService';
@@ -10,9 +10,9 @@ TaskManager.defineTask(NOTIFICATION_RESCHEDULE_TASK, async () => {
     const didReschedule = await NotificationService.maybeRescheduleExtendedNotifications(24);
 
     return didReschedule
-      ? BackgroundFetch.BackgroundFetchResult.NewData
-      : BackgroundFetch.BackgroundFetchResult.NoData;
+      ? BackgroundTask.BackgroundTaskResult.Success
+      : BackgroundTask.BackgroundTaskResult.Success;
   } catch {
-    return BackgroundFetch.BackgroundFetchResult.Failed;
+    return BackgroundTask.BackgroundTaskResult.Failed;
   }
 });

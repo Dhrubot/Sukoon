@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: '700',
+    fontFamily: 'Lora_700Bold',
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 12,
@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   },
   retryButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'DMSans_600SemiBold',
     color: '#FFFFFF',
   },
   errorDetails: {
@@ -142,7 +142,7 @@ const styles = StyleSheet.create({
   },
   errorTitle: {
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'DMSans_600SemiBold',
     color: '#FF6B6B',
     marginBottom: 8,
   },

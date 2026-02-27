@@ -3,6 +3,8 @@ import React, { useMemo } from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 import { GardenPlant } from '../../types/garden';
 import GardenPlantView from './GardenPlantView';
 
@@ -28,6 +30,7 @@ function simpleHash(str: string): number {
 
 const GardenCanvas: React.FC<GardenCanvasProps> = ({ plants }) => {
   const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   // Get current time-of-day gradient
   const skyGradient = useMemo(() => {
@@ -88,10 +91,10 @@ const GardenCanvas: React.FC<GardenCanvasProps> = ({ plants }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
-    marginHorizontal: 20,
-    borderRadius: 20,
+    marginHorizontal: theme.spacing.xl,
+    borderRadius: theme.borderRadius.xl,
     overflow: 'hidden',
     height: CANVAS_HEIGHT,
   },
@@ -105,8 +108,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 40,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: theme.borderRadius.xl,
+    borderTopRightRadius: theme.borderRadius.xl,
     opacity: 0.6,
   },
   plantPosition: {
@@ -118,13 +121,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emptyEmoji: {
-    fontSize: 48,
-    marginBottom: 12,
+    fontSize: theme.typography.fontSize['5xl'] + 16,
+    marginBottom: theme.spacing.md,
   },
   emptyText: {
-    fontSize: 15,
+    fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.body,
     fontStyle: 'italic',
-    fontWeight: '300',
   },
 });
 

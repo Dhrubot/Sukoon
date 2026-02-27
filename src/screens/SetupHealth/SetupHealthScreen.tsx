@@ -3,6 +3,8 @@ import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, Linking
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Notifications from 'expo-notifications';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 import { usePrayerTimes } from '../../providers/PrayerTimesProvider';
 import { useStore } from '../../store/useStore';
 import StorageService from '../../services/StorageService';
@@ -18,6 +20,7 @@ type SetupHealthScreenProps = {
 
 const SetupHealthScreen: React.FC<SetupHealthScreenProps> = ({ onDone, navigation }) => {
   const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const { userSettings } = useStore();
   const { todayPrayerTimes, nextPrayer, hasValidLocation, isLoading, refreshPrayerTimes } = usePrayerTimes();
 
@@ -110,7 +113,7 @@ const SetupHealthScreen: React.FC<SetupHealthScreenProps> = ({ onDone, navigatio
     >
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={[styles.title, { color: theme.colors.text.primary }]}>Setup & Health</Text>
+          {/* <Text style={[styles.title, { color: theme.colors.text.primary }]}>Setup & Health</Text> */}
           <Text style={[styles.subtitle, { color: theme.colors.text.secondary }]}>Verify everything is working</Text>
         </View>
 
@@ -239,76 +242,78 @@ const SetupHealthScreen: React.FC<SetupHealthScreenProps> = ({ onDone, navigatio
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
   },
   content: {
-    padding: 20,
-    paddingBottom: 40,
+    padding: theme.spacing.xl,
+    paddingBottom: theme.spacing['4xl'],
   },
   header: {
-    marginBottom: 16,
+    marginBottom: theme.spacing.lg,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: theme.typography.fontSize['3xl'],
+    fontFamily: theme.typography.fontFamily.heading,
   },
   subtitle: {
-    marginTop: 6,
-    fontSize: 14,
+    marginTop: theme.spacing.xs + 2,
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
   },
   card: {
     borderWidth: 1,
-    borderRadius: 14,
-    padding: 16,
-    marginTop: 12,
+    borderRadius: theme.borderRadius.md + 2,
+    padding: theme.spacing.lg,
+    marginTop: theme.spacing.md,
   },
   cardTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    marginBottom: 10,
+    fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.bodyBold,
+    marginBottom: theme.spacing.md - 2,
   },
   rowText: {
-    fontSize: 14,
-    marginBottom: 6,
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
+    marginBottom: theme.spacing.xs + 2,
   },
   button: {
-    marginTop: 12,
-    paddingVertical: 12,
-    borderRadius: 10,
+    marginTop: theme.spacing.md,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.md - 2,
     alignItems: 'center',
   },
   buttonText: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   rowButtons: {
     flexDirection: 'row',
-    gap: 10,
-    marginTop: 10,
+    gap: theme.spacing.md - 2,
+    marginTop: theme.spacing.md - 2,
   },
   buttonSecondary: {
     flex: 1,
     borderWidth: 1,
-    borderRadius: 10,
-    paddingVertical: 10,
+    borderRadius: theme.borderRadius.md - 2,
+    paddingVertical: theme.spacing.md - 2,
     alignItems: 'center',
   },
   buttonSecondaryText: {
-    fontSize: 13,
-    fontWeight: '600',
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   doneButton: {
-    marginTop: 18,
+    marginTop: theme.spacing.xl - 2,
     borderWidth: 1,
-    borderRadius: 12,
-    paddingVertical: 14,
+    borderRadius: theme.borderRadius.md,
+    paddingVertical: theme.spacing.md + 2,
     alignItems: 'center',
   },
   doneButtonText: {
-    fontSize: 15,
-    fontWeight: '700',
+    fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.bodyBold,
   },
 });
 

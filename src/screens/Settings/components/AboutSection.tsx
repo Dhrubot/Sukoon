@@ -37,10 +37,10 @@ export const AboutSection: React.FC<AboutSectionProps> = ({
 
 const createStyles = (theme: AppTheme) => StyleSheet.create({
   aboutText: {
-    fontSize: 14,
+    fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.secondary,
     textAlign: 'center',
-    marginTop: 16,
+    marginTop: theme.spacing.lg,
     lineHeight: 20,
   },
 });

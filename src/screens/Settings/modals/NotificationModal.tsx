@@ -74,14 +74,14 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderBottomColor: theme.colors.border.primary,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: theme.typography.fontSize['2xl'],
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
   },
   modalClose: {
-    fontSize: 16,
+    fontSize: theme.typography.fontSize.lg,
     color: theme.colors.settings.modalClose,
-    fontWeight: '600',
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   modalBody: {
     flex: 1,

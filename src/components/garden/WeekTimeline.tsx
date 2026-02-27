@@ -2,6 +2,8 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 import { WeekDay } from '../../types/garden';
 
 interface WeekTimelineProps {
@@ -10,6 +12,7 @@ interface WeekTimelineProps {
 
 const WeekTimeline: React.FC<WeekTimelineProps> = ({ weekSummary }) => {
   const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   return (
     <View style={styles.container}>
@@ -52,22 +55,22 @@ const WeekTimeline: React.FC<WeekTimelineProps> = ({ weekSummary }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
-    marginHorizontal: 20,
-    marginTop: 20,
+    marginHorizontal: theme.spacing.xl,
+    marginTop: theme.spacing.xl,
   },
   title: {
-    fontSize: 16,
-    fontWeight: '500',
-    marginBottom: 10,
+    fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
+    marginBottom: theme.spacing.md - 2,
   },
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    borderRadius: 16,
-    paddingVertical: 14,
-    paddingHorizontal: 12,
+    borderRadius: theme.borderRadius.lg,
+    paddingVertical: theme.spacing.md + 2,
+    paddingHorizontal: theme.spacing.md,
     borderWidth: 1,
   },
   dayColumn: {
@@ -84,7 +87,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   plantEmoji: {
-    fontSize: 20,
+    fontSize: theme.typography.fontSize['2xl'],
   },
   emptyDot: {
     width: 8,
@@ -92,12 +95,12 @@ const styles = StyleSheet.create({
     borderRadius: 4,
   },
   dayLabel: {
-    fontSize: 11,
-    marginTop: 4,
-    fontWeight: '400',
+    fontSize: theme.typography.fontSize.xs,
+    marginTop: theme.spacing.xs,
+    fontFamily: theme.typography.fontFamily.body,
   },
   dayLabelToday: {
-    fontWeight: '600',
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   extraCount: {
     fontSize: 9,

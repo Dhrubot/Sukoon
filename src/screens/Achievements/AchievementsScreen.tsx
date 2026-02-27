@@ -287,6 +287,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,  // lg
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
   },
   header: {
@@ -294,14 +295,14 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   title: {
     fontSize: 32,  // 5xl
-    fontWeight: '700',  // bold
+    fontFamily: theme.typography.fontFamily.heading,
     color: theme.colors.text.primary,
     marginBottom: 20,
   },
   progressCard: {
     backgroundColor: theme.colors.card.background,
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.xl,
     borderWidth: 1,
     borderColor: theme.colors.border.primary,
     shadowColor: theme.colors.achievement.shadow,
@@ -311,28 +312,29 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     elevation: 3,
   },
   progressTitle: {
-    fontSize: 18,  // xl
-    fontWeight: '600',  // semibold
+    fontSize: theme.typography.fontSize.xl,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
-    marginBottom: 16,
+    marginBottom: theme.spacing.lg,
   },
   progressStats: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    marginBottom: 20,
+    marginBottom: theme.spacing.xl,
   },
   statItem: {
     alignItems: 'center',
   },
   statNumber: {
-    fontSize: 28,  // 4xl
-    fontWeight: '700',  // bold
+    fontSize: theme.typography.fontSize['4xl'],
+    fontFamily: theme.typography.fontFamily.bodyBold,
     color: theme.colors.primary.DEFAULT,
   },
   statLabel: {
-    fontSize: 14,  // md
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
-    marginTop: 4,
+    marginTop: theme.spacing.xs,
   },
   statDivider: {
     width: 1,
@@ -350,18 +352,18 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderRadius: 4,
   },
   categoryContainer: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    gap: 12,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.md - 2,
+    gap: theme.spacing.md,
   },
   categoryButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: theme.colors.card.background,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    marginRight: 12,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.md - 2,
+    borderRadius: theme.borderRadius.xl,
+    marginRight: theme.spacing.md,
     borderWidth: 1,
     borderColor: theme.colors.border.primary,
   },
@@ -370,34 +372,34 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderColor: theme.colors.primary.DEFAULT,
   },
   categoryIcon: {
-    fontSize: 20,  // 2xl
-    marginRight: 8,
+    fontSize: theme.typography.fontSize['2xl'],
+    marginRight: theme.spacing.sm,
   },
   categoryLabel: {
-    fontSize: 14,  // md
+    fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.secondary,
-    fontWeight: '500',  // medium
+    fontFamily: theme.typography.fontFamily.bodyMedium,
   },
   categoryLabelActive: {
     color: theme.colors.primary.DEFAULT,
-    fontWeight: '600',  // semibold
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   achievementsGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: 16,
-    paddingTop: 20,
-    gap: 16,
+    paddingHorizontal: theme.spacing.lg,
+    paddingTop: theme.spacing.xl,
+    gap: theme.spacing.lg,
   },
   achievementCard: {
     width: (width - 48) / 2,
     aspectRatio: 1,
-    marginBottom: 16,
+    marginBottom: theme.spacing.lg,
   },
   achievementUnlocked: {
     flex: 1,
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: theme.colors.achievement.shadow,
@@ -408,8 +410,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   achievementLocked: {
     flex: 1,
-    borderRadius: 16,
-    padding: 16,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: theme.colors.card.background,
@@ -418,67 +420,69 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderStyle: 'dashed',
   },
   achievementIcon: {
-    fontSize: 48,  // icon 4xl
-    marginBottom: 12,
+    fontSize: theme.typography.fontSize['5xl'] + 16,
+    marginBottom: theme.spacing.md,
   },
   lockedIconContainer: {
-    marginBottom: 12,
+    marginBottom: theme.spacing.md,
   },
   lockedIcon: {
-    fontSize: 32,  // 5xl
+    fontSize: theme.typography.fontSize['5xl'],
     opacity: 0.5,
   },
   achievementName: {
-    fontSize: 16,  // lg
-    fontWeight: '600',  // semibold
+    fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
   },
   achievementNameLocked: {
-    fontSize: 16,  // lg
-    fontWeight: '600',  // semibold
+    fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.secondary,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
   },
   achievementDescription: {
-    fontSize: 13,  // sm (adjusted up)
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.primary,
     textAlign: 'center',
-    marginBottom: 12,
+    marginBottom: theme.spacing.md,
   },
   achievementDescriptionLocked: {
-    fontSize: 13,  // sm (adjusted up)
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.muted,
     textAlign: 'center',
   },
   tierBadge: {
     position: 'absolute',
-    top: 8,
-    right: 8,
+    top: theme.spacing.sm,
+    right: theme.spacing.sm,
     backgroundColor: theme.colors.achievement.badgeBg,
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xs,
+    borderRadius: theme.borderRadius.md,
   },
   tierText: {
-    fontSize: 11,  // xs (adjusted up)
-    fontWeight: '700',  // bold
+    fontSize: theme.typography.fontSize.xs,
+    fontFamily: theme.typography.fontFamily.bodyBold,
     color: theme.colors.text.primary,
   },
   progressContainer: {
     width: '100%',
-    marginTop: 12,
+    marginTop: theme.spacing.md,
   },
   progressInfo: {
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
   },
   progressText: {
-    fontSize: 13,  // sm (adjusted up)
+    fontSize: theme.typography.fontSize.sm,
     color: theme.colors.text.secondary,
-    fontWeight: '600',  // semibold
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   miniProgressBar: {
     height: 4,
@@ -492,23 +496,24 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   tipsSection: {
     backgroundColor: theme.colors.card.background,
-    padding: 20,
-    margin: 20,
-    borderRadius: 12,
+    padding: theme.spacing.xl,
+    margin: theme.spacing.xl,
+    borderRadius: theme.borderRadius.md,
     borderWidth: 1,
     borderColor: theme.colors.border.primary,
   },
   tipsTitle: {
-    fontSize: 16,  // lg
-    fontWeight: '600',  // semibold
+    fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.primary.DEFAULT,
-    marginBottom: 12,
+    marginBottom: theme.spacing.md,
   },
   tipText: {
-    fontSize: 14,  // md
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     lineHeight: 22,
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
   },
 });
 

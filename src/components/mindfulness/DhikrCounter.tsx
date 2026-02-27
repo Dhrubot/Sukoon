@@ -20,19 +20,22 @@ import { POST_FARD_DHIKR, DhikrItem } from '../../constants/dhikrData';
 interface DhikrCounterProps {
   onComplete: () => void;
   onSkip: () => void;
+  items?: DhikrItem[];
 }
 
-const DhikrCounter: React.FC<DhikrCounterProps> = ({ onComplete, onSkip }) => {
+const DhikrCounter: React.FC<DhikrCounterProps> = ({ onComplete, onSkip, items }) => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
+
+  const dhikrItems = items ?? POST_FARD_DHIKR;
 
   const [dhikrIndex, setDhikrIndex] = useState(0);
   const [currentCount, setCurrentCount] = useState(0);
   const countRef = useRef(0);
   const advancingRef = useRef(false);
 
-  const currentDhikr: DhikrItem = POST_FARD_DHIKR[dhikrIndex];
-  const isLastDhikr = dhikrIndex === POST_FARD_DHIKR.length - 1;
+  const currentDhikr: DhikrItem = dhikrItems[dhikrIndex];
+  const isLastDhikr = dhikrIndex === dhikrItems.length - 1;
   const progress = currentCount / currentDhikr.count;
   const isLongText = currentDhikr.arabic.length > 80;
   const [translationExpanded, setTranslationExpanded] = useState(false);
@@ -81,14 +84,14 @@ const DhikrCounter: React.FC<DhikrCounterProps> = ({ onComplete, onSkip }) => {
   }, [currentDhikr, advanceToNext]);
 
   // Overall progress across all dhikr items
-  const totalItems = POST_FARD_DHIKR.length;
+  const totalItems = dhikrItems.length;
   const completedItems = dhikrIndex;
 
   return (
     <View style={styles.container}>
       {/* Overall progress dots */}
       <View style={styles.progressDots}>
-        {POST_FARD_DHIKR.map((_, i) => (
+        {dhikrItems.map((_, i) => (
           <View
             key={i}
             style={[
@@ -181,8 +184,8 @@ const createStyles = (theme: AppTheme) =>
     container: {
       flex: 1,
       alignItems: 'center',
-      paddingHorizontal: 24,
-      paddingTop: 40,
+      paddingHorizontal: theme.spacing['2xl'],
+      paddingTop: theme.spacing['4xl'],
     },
     scrollContent: {
       flexGrow: 1,
@@ -191,76 +194,78 @@ const createStyles = (theme: AppTheme) =>
     },
     progressDots: {
       flexDirection: 'row',
-      gap: 6,
-      marginBottom: 40,
+      gap: theme.spacing.xs + 2,
+      marginBottom: theme.spacing['4xl'],
     },
     dot: {
       width: 8,
       height: 8,
       borderRadius: 4,
-      backgroundColor: theme.colors.mindfulness.dotInactive,
+      backgroundColor: theme.colors.border.secondary,
     },
     dotCompleted: {
       backgroundColor: theme.colors.mindfulness.accent,
     },
     dotActive: {
-      backgroundColor: theme.colors.mindfulness.textPrimary,
-      width: 20,
+      backgroundColor: theme.colors.text.primary,
+      width: theme.spacing.xl,
     },
     tapTarget: {
       alignItems: 'center',
-      paddingVertical: 40,
-      paddingHorizontal: 20,
+      paddingVertical: theme.spacing['4xl'],
+      paddingHorizontal: theme.spacing.xl,
       width: '100%',
     },
     arabicText: {
-      fontSize: 32,
-      color: theme.colors.mindfulness.textPrimary,
+      fontSize: theme.typography.fontSize['5xl'],
+      color: theme.colors.text.primary,
       textAlign: 'center',
       lineHeight: 52,
-      marginBottom: 16,
+      marginBottom: theme.spacing.lg,
       fontFamily: theme.typography.fontFamily.arabic,
     },
     arabicTextLong: {
-      fontSize: 22,
+      fontSize: theme.typography.fontSize['3xl'] - 2,
       lineHeight: 38,
     },
     transliteration: {
-      fontSize: 18,
-      fontWeight: '500',
-      color: theme.colors.mindfulness.textSecondary,
+      fontSize: theme.typography.fontSize.xl,
+      fontFamily: theme.typography.fontFamily.bodyMedium,
+      color: theme.colors.text.secondary,
       textAlign: 'center',
-      marginBottom: 8,
+      marginBottom: theme.spacing.sm,
     },
     transliterationLong: {
-      fontSize: 14,
+      fontSize: theme.typography.fontSize.md,
       lineHeight: 20,
     },
     translation: {
-      fontSize: 14,
-      color: theme.colors.mindfulness.textMuted,
+      fontSize: theme.typography.fontSize.md,
+      fontFamily: theme.typography.fontFamily.body,
+      color: theme.colors.text.muted,
       textAlign: 'center',
       lineHeight: 20,
       fontStyle: 'italic',
-      marginBottom: 32,
+      marginBottom: theme.spacing['3xl'],
     },
     translationWrapper: {
       alignSelf: 'stretch',
     },
     expandHint: {
-      fontSize: 13,
-      color: theme.colors.mindfulness.accent,
+      fontSize: theme.typography.fontSize.sm,
+      fontFamily: theme.typography.fontFamily.body,
+      color: theme.colors.primary.DEFAULT,
       fontStyle: 'normal',
     },
     counterContainer: {
       alignItems: 'center',
-      gap: 8,
+      gap: theme.spacing.sm,
     },
     counterCircle: {
       width: 200,
       height: 6,
       borderRadius: 3,
-      backgroundColor: theme.colors.mindfulness.progressRingBg,
+      backgroundColor: theme.colors.border.secondary,
       overflow: 'hidden',
     },
     counterProgress: {
@@ -268,38 +273,40 @@ const createStyles = (theme: AppTheme) =>
       borderRadius: 3,
     },
     counterText: {
-      fontSize: 24,
-      fontWeight: '300',
-      color: theme.colors.mindfulness.textPrimary,
-      marginTop: 4,
+      fontSize: theme.typography.fontSize['3xl'],
+      fontFamily: theme.typography.fontFamily.body,
+      color: theme.colors.text.primary,
+      marginTop: theme.spacing.xs,
     },
     reciteConfirm: {
       backgroundColor: theme.colors.mindfulness.buttonBg,
-      borderRadius: 16,
-      paddingVertical: 14,
-      paddingHorizontal: 32,
+      borderRadius: theme.borderRadius.lg,
+      paddingVertical: theme.spacing.md + 2,
+      paddingHorizontal: theme.spacing['3xl'],
       borderWidth: 1,
       borderColor: theme.colors.mindfulness.buttonBorder,
     },
     reciteConfirmText: {
-      fontSize: 16,
-      fontWeight: '500',
-      color: theme.colors.mindfulness.textPrimary,
+      fontSize: theme.typography.fontSize.lg,
+      fontFamily: theme.typography.fontFamily.bodyMedium,
+      color: theme.colors.text.primary,
     },
     reference: {
-      fontSize: 12,
-      color: theme.colors.mindfulness.textHint,
+      fontSize: theme.typography.fontSize.xs,
+      fontFamily: theme.typography.fontFamily.body,
+      color: theme.colors.text.muted,
       textAlign: 'center',
-      marginTop: 20,
+      marginTop: theme.spacing.xl,
     },
     skipButton: {
-      marginTop: 24,
-      paddingVertical: 8,
-      paddingHorizontal: 16,
+      marginTop: theme.spacing['2xl'],
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.lg,
     },
     skipText: {
-      fontSize: 14,
-      color: theme.colors.mindfulness.textSubtle,
+      fontSize: theme.typography.fontSize.md,
+      fontFamily: theme.typography.fontFamily.body,
+      color: theme.colors.text.secondary,
     },
   });
 

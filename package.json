@@ -12,6 +12,8 @@
   },
   "dependencies": {
     "@expo-google-fonts/amiri": "^0.4.1",
+    "@expo-google-fonts/cormorant-garamond": "^0.4.1",
+    "@expo-google-fonts/dm-sans": "^0.4.2",
     "@expo-google-fonts/lora": "^0.4.2",
     "@expo/metro-runtime": "~5.0.4",
     "@react-native-community/slider": "4.5.6",
@@ -29,7 +31,7 @@
     "expo-apple-authentication": "^7.2.4",
     "expo-audio": "~0.4.9",
     "expo-auth-session": "^6.2.0",
-    "expo-background-fetch": "~13.1.6",
+    "expo-background-task": "~0.2.8",
     "expo-build-properties": "~0.14.8",
     "expo-constants": "^17.1.6",
     "expo-dev-client": "~5.2.4",

@@ -7,6 +7,10 @@ export const NOTIFICATION_CHANNEL_VERSION = 6;
 export const NOTIFICATION_SCHEDULING_DAYS = 7;
 export const NOTIFICATION_MAX_FUTURE_DAYS = NOTIFICATION_SCHEDULING_DAYS + 1;
 
+// iOS imposes a hard limit of 64 local scheduled notifications per app.
+// We cap at 58 to leave headroom for Tahajjud, test notifications, etc.
+export const IOS_NOTIFICATION_CAP = 58;
+
 export const CHANNELS = {
   // Appends version: "prayer-times-adhan-v2"
   ADHAN: `prayer-times-adhan-v${NOTIFICATION_CHANNEL_VERSION}`,

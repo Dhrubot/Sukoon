@@ -10,6 +10,8 @@ import { format, isPast, isFuture } from 'date-fns';
 import { PrayerTime, PrayerRecord, PrayerName } from '../../types';
 import PrayerTimeService from '../../services/PrayerTimeService';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 import { useStore } from '../../store/useStore';
 import StorageService from '../../services/StorageService';
 import NotificationService from '../../services/NotificationService';
@@ -36,6 +38,7 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
   nextPrayer,
 }) => {
   const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const { userSettings, setUserSettings, todaySunrise } = useStore();
 
   // Handle notification toggle
@@ -127,13 +130,22 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
     return !nextPrayer || isFuture(nextPrayer.time);
   };
 
+  // Missed: past prayer with no record and next prayer has already started
+  const isMissed = () => {
+    if (record) return false;
+    if (!isPast(prayer.time)) return false;
+    if (prayer.name === 'Fajr' && todaySunrise && isPast(todaySunrise)) return true;
+    return nextPrayer ? isPast(nextPrayer.time) : false;
+  };
+
   return (
     <TouchableOpacity
       style={[
         styles.container,
-        { backgroundColor: theme.colors.card.background, borderColor: theme.colors.border.primary },
-        isActive() && [styles.activeContainer, { backgroundColor: theme.colors.card.hover, borderColor: theme.colors.primary.DEFAULT, shadowColor: theme.colors.primary.DEFAULT }],
-        record?.status === 'prayed' && styles.completedContainer,
+        { backgroundColor: theme.colors.card.background, borderColor: theme.colors.border.secondary },
+        isActive() && [styles.activeContainer, { backgroundColor: theme.colors.gold + '18', borderColor: theme.colors.gold + '40' }],
+        record?.status === 'prayed' && [styles.prayedContainer, { backgroundColor: theme.colors.interactive.active + '12', borderColor: theme.colors.interactive.active + '30' }],
+        isMissed() && [styles.missedContainer, { backgroundColor: theme.colors.status.error + '10', borderColor: theme.colors.status.error + '25' }],
       ]}
       onPress={onComplete}
       disabled={
@@ -148,11 +160,14 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
     >
       <View style={styles.leftSection}>
         <View style={styles.iconContainer}>
-          <Icon 
-            source={getPrayerIcon(prayer.name)} 
-            size={32}
-            color={isActive() ? theme.colors.primary.DEFAULT : theme.colors.text.secondary}
-          />
+          {React.createElement(getPrayerIcon(prayer.name), {
+            size: 32,
+            color: record?.status === 'prayed'
+              ? theme.colors.interactive.active
+              : isActive()
+                ? theme.colors.gold
+                : theme.colors.text.secondary,
+          })}
         </View>
         <View style={styles.timeInfo}>
           <Text style={[styles.prayerName, { color: theme.colors.text.primary }, isActive() && styles.activeName]}>
@@ -185,34 +200,33 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
-    borderRadius: 12,      // theme.borderRadius.md
-    padding: 16,           // theme.spacing.lg
-    marginBottom: 12,      // theme.spacing.md
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
   },
   activeContainer: {
-    borderWidth: 2,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
-    elevation: 5,
+    borderWidth: 1.5,
   },
-  completedContainer: {
-    opacity: 0.6,
+  prayedContainer: {
+    borderWidth: 1,
+  },
+  missedContainer: {
+    borderWidth: 1,
   },
   leftSection: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   iconContainer: {
-    width: 40,
-    height: 40,
-    marginRight: 12,       // theme.spacing.md
+    width: theme.iconSizes['3xl'],
+    height: theme.iconSizes['3xl'],
+    marginRight: theme.spacing.md,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -220,34 +234,36 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   prayerName: {
-    fontSize: 16,          // theme.typography.fontSize.lg
-    fontWeight: '500',     // theme.typography.fontWeight.medium
-    marginBottom: 4,       // theme.spacing.xs
+    fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.heading,
+    marginBottom: theme.spacing.xs,
   },
   activeName: {
-    fontSize: 18,          // theme.typography.fontSize.xl
-    fontWeight: '600',     // theme.typography.fontWeight.semibold
+    fontSize: theme.typography.fontSize.xl,
+    fontFamily: theme.typography.fontFamily.heading,
   },
   time: {
-    fontSize: 14,          // theme.typography.fontSize.md
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
   },
   activeTime: {
-    fontWeight: '500',     // theme.typography.fontWeight.medium
+    fontFamily: theme.typography.fontFamily.bodyMedium,
   },
   rightSection: {
     alignItems: 'center',
     flexDirection: 'row',
-    gap: 12,                // theme.spacing.md
+    gap: theme.spacing.md,
   },
   statusContainer: {
     alignItems: 'flex-end',
   },
   status: {
-    fontSize: 13,          // theme.typography.fontSize.sm
-    fontWeight: '500',  // medium
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
   },
   reflectionBadge: {
-    fontSize: 16,  // lg
+    fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
   },
 });
 

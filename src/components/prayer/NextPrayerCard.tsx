@@ -125,13 +125,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   nextLabel: {
     fontSize: theme.typography.fontSize.xs,
-    fontWeight: '600',
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     letterSpacing: 1,
     color: theme.colors.text.secondary,
   },
   timeRemaining: {
     fontSize: theme.typography.fontSize.md,
-    fontWeight: '600',
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
   },
   content: {
@@ -146,6 +146,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   prayerTime: {
     fontSize: theme.typography.fontSize['2xl'],
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
   },
   progressContainer: {
@@ -174,7 +175,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   prepareButtonText: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: '600',
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.primary.contrast,
   },
 });

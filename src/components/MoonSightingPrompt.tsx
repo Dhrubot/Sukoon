@@ -191,6 +191,7 @@ const createStyles = (theme: AppTheme) =>
     },
     body: {
       fontSize: theme.typography.fontSize.base,
+      fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.secondary,
       textAlign: 'center',
       lineHeight: 22,
@@ -206,7 +207,7 @@ const createStyles = (theme: AppTheme) =>
     },
     primaryButtonText: {
       fontSize: theme.typography.fontSize.lg,
-      fontWeight: '600',
+      fontFamily: theme.typography.fontFamily.bodySemibold,
       color: theme.colors.primary.contrast,
     },
     secondaryButton: {
@@ -220,7 +221,7 @@ const createStyles = (theme: AppTheme) =>
     },
     secondaryButtonText: {
       fontSize: theme.typography.fontSize.lg,
-      fontWeight: '600',
+      fontFamily: theme.typography.fontFamily.bodySemibold,
       color: theme.colors.primary.DEFAULT,
     },
     dismissButton: {
@@ -230,10 +231,12 @@ const createStyles = (theme: AppTheme) =>
     },
     dismissText: {
       fontSize: theme.typography.fontSize.sm,
+      fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.muted,
     },
     footer: {
       fontSize: theme.typography.fontSize.xs,
+      fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.muted,
       textAlign: 'center',
       opacity: 0.7,

@@ -92,7 +92,7 @@ const JummahMosqueConfig: React.FC = () => {
           onValueChange={handleToggle}
           trackColor={{
             false: theme.colors.switch.trackFalse,
-            true: '#D4AF37',
+            true: theme.colors.mosqueMode.jummah.accent,
           }}
           thumbColor={theme.colors.switch.thumb}
         />
@@ -124,8 +124,7 @@ const JummahMosqueConfig: React.FC = () => {
                     key={min}
                     style={[
                       styles.chip,
-                      { borderColor: theme.colors.border.primary },
-                      isSelected && { backgroundColor: '#D4AF37', borderColor: '#D4AF37' },
+                      isSelected && styles.chipActive,
                     ]}
                     onPress={() => {
                       handleDurationChange(min);
@@ -136,8 +135,7 @@ const JummahMosqueConfig: React.FC = () => {
                     <Text
                       style={[
                         styles.chipText,
-                        { color: theme.colors.text.secondary },
-                        isSelected && { color: '#FFFFFF', fontWeight: '700' },
+                        isSelected && styles.chipTextActive,
                       ]}
                     >
                       {min} min
@@ -152,31 +150,31 @@ const JummahMosqueConfig: React.FC = () => {
           <View style={styles.iqamahSection}>
             <Text style={styles.optionLabel}>Jumu'ah Iqamah</Text>
 
-            <View style={styles.modeToggle}>
+            <View style={styles.segmentControl}>
               <TouchableOpacity
                 style={[
-                  styles.modeButton,
-                  inputMode === 'offset' && { backgroundColor: '#D4AF37' },
+                  styles.segmentButton,
+                  inputMode === 'offset' && styles.segmentButtonActive,
                 ]}
                 onPress={() => setInputMode('offset')}
               >
                 <Text style={[
-                  styles.modeButtonText,
-                  { color: inputMode === 'offset' ? '#FFFFFF' : theme.colors.text.secondary },
+                  styles.segmentButtonText,
+                  inputMode === 'offset' && styles.segmentButtonTextActive,
                 ]}>
                   Offset
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
-                  styles.modeButton,
-                  inputMode === 'exact' && { backgroundColor: '#D4AF37' },
+                  styles.segmentButton,
+                  inputMode === 'exact' && styles.segmentButtonActive,
                 ]}
                 onPress={() => setInputMode('exact')}
               >
                 <Text style={[
-                  styles.modeButtonText,
-                  { color: inputMode === 'exact' ? '#FFFFFF' : theme.colors.text.secondary },
+                  styles.segmentButtonText,
+                  inputMode === 'exact' && styles.segmentButtonTextActive,
                 ]}>
                   Exact Time
                 </Text>
@@ -205,8 +203,7 @@ const JummahMosqueConfig: React.FC = () => {
                           key={min}
                           style={[
                             styles.chip,
-                            { borderColor: theme.colors.border.primary },
-                            isSelected && { backgroundColor: '#D4AF37', borderColor: '#D4AF37' },
+                            isSelected && styles.chipActive,
                           ]}
                           onPress={() => {
                             handleOffsetChange(min);
@@ -217,8 +214,7 @@ const JummahMosqueConfig: React.FC = () => {
                           <Text
                             style={[
                               styles.chipText,
-                              { color: theme.colors.text.secondary },
-                              isSelected && { color: '#FFFFFF', fontWeight: '700' },
+                              isSelected && styles.chipTextActive,
                             ]}
                           >
                             {min} min
@@ -248,11 +244,11 @@ const JummahMosqueConfig: React.FC = () => {
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: {
-      backgroundColor: theme.colors.card.background,
-      borderRadius: 12,
-      padding: 16,
+      backgroundColor: theme.colors.mosqueMode.card.bg,
+      borderRadius: theme.borderRadius.md,
+      padding: theme.spacing.lg,
       borderWidth: 1,
-      borderColor: 'rgba(212, 175, 55, 0.2)',
+      borderColor: theme.colors.mosqueMode.jummah.accentDim,
     },
     header: {
       flexDirection: 'row',
@@ -261,89 +257,109 @@ const createStyles = (theme: AppTheme) =>
     },
     headerLeft: {
       flex: 1,
-      marginRight: 12,
+      marginRight: theme.spacing.md,
     },
     title: {
-      fontSize: 16,
-      fontWeight: '600',
+      fontSize: theme.typography.fontSize.lg,
+      fontFamily: theme.typography.fontFamily.bodySemibold,
       color: theme.colors.text.primary,
-      marginBottom: 4,
+      marginBottom: theme.spacing.xs,
     },
     subtitle: {
-      fontSize: 13,
+      fontSize: theme.typography.fontSize.sm,
+      fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.secondary,
       lineHeight: 18,
     },
     options: {
-      marginTop: 16,
+      marginTop: theme.spacing.lg,
       borderTopWidth: 1,
-      borderTopColor: theme.colors.border.primary,
-      paddingTop: 12,
+      borderTopColor: theme.colors.mosqueMode.jummah.accentDim,
+      paddingTop: theme.spacing.md,
     },
     optionRow: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingVertical: 10,
+      paddingVertical: theme.spacing.md - 2,
     },
     optionLabel: {
-      fontSize: 14,
-      fontWeight: '500',
+      fontSize: theme.typography.fontSize.md,
+      fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.text.primary,
     },
     optionHint: {
-      fontSize: 12,
+      fontSize: theme.typography.fontSize.xs,
+      fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.secondary,
-      marginTop: 2,
+      marginTop: theme.spacing.xxs,
     },
     optionValue: {
-      fontSize: 14,
-      fontWeight: '600',
-      color: '#D4AF37',
+      fontSize: theme.typography.fontSize.md,
+      fontFamily: theme.typography.fontFamily.bodySemibold,
+      color: theme.colors.mosqueMode.jummah.accent,
     },
     chipGrid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: 8,
-      marginTop: 4,
-      marginBottom: 8,
+      gap: theme.spacing.sm,
+      marginTop: theme.spacing.xs,
+      marginBottom: theme.spacing.sm,
     },
     chip: {
-      paddingVertical: 10,
-      paddingHorizontal: 16,
-      borderRadius: 10,
+      paddingVertical: theme.spacing.md - 2,
+      paddingHorizontal: theme.spacing.lg,
+      borderRadius: theme.borderRadius.sm + 2,
       borderWidth: 1,
+      backgroundColor: theme.colors.mosqueMode.chip.bg,
+      borderColor: theme.colors.mosqueMode.jummah.accentDim,
+    },
+    chipActive: {
+      backgroundColor: theme.colors.mosqueMode.jummah.chipActiveBg,
+      borderColor: theme.colors.mosqueMode.jummah.chipActiveBg,
     },
     chipText: {
-      fontSize: 14,
-      fontWeight: '500',
+      fontSize: theme.typography.fontSize.md,
+      fontFamily: theme.typography.fontFamily.bodyMedium,
+      color: theme.colors.mosqueMode.chip.text,
+    },
+    chipTextActive: {
+      color: theme.colors.mosqueMode.jummah.chipActiveText,
+      fontWeight: '700',
     },
     iqamahSection: {
-      marginTop: 8,
-      paddingTop: 8,
+      marginTop: theme.spacing.sm,
+      paddingTop: theme.spacing.sm,
       borderTopWidth: 1,
-      borderTopColor: 'rgba(128, 128, 128, 0.1)',
+      borderTopColor: theme.colors.mosqueMode.jummah.accentDim,
     },
-    modeToggle: {
+    segmentControl: {
       flexDirection: 'row',
-      gap: 8,
-      marginTop: 10,
-      marginBottom: 8,
+      backgroundColor: theme.colors.mosqueMode.segment.bg,
+      borderRadius: theme.borderRadius.sm + 2,
+      padding: 2,
+      marginTop: theme.spacing.md - 2,
+      marginBottom: theme.spacing.sm,
     },
-    modeButton: {
+    segmentButton: {
       flex: 1,
-      paddingVertical: 8,
+      paddingVertical: theme.spacing.sm,
       alignItems: 'center',
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: 'rgba(212, 175, 55, 0.3)',
+      borderRadius: theme.borderRadius.sm,
     },
-    modeButtonText: {
-      fontSize: 13,
-      fontWeight: '600',
+    segmentButtonActive: {
+      backgroundColor: theme.colors.mosqueMode.jummah.segmentActiveBg,
+    },
+    segmentButtonText: {
+      fontSize: theme.typography.fontSize.sm,
+      fontFamily: theme.typography.fontFamily.bodySemibold,
+      color: theme.colors.mosqueMode.segment.inactiveText,
+    },
+    segmentButtonTextActive: {
+      color: theme.colors.mosqueMode.jummah.chipActiveText,
     },
     exactTimeRow: {
-      marginTop: 4,
+      marginTop: theme.spacing.xs,
     },
   });
 

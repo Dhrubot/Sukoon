@@ -20,46 +20,46 @@ const STORAGE_KEY_LAST_SCHEDULED = 'eid_notif_last_scheduled';
 
 // ── Eid al-Fitr messages ──────────────────────────────────────────
 const EID_AL_FITR_EVE = {
-  title: '🌙 Eid al-Fitr Tomorrow!',
+  title: 'Eid al-Fitr Tomorrow!',
   body: 'Taqabbal Allahu minna wa minkum. Don\'t forget Zakat al-Fitr before Eid prayer. May Allah accept your Ramadan.',
 };
 
 const EID_AL_FITR_MORNING = {
-  title: '🎉 Eid Mubarak!',
+  title: 'Eid Mubarak!',
   body: 'Eid al-Fitr Mubarak! "Say: In the bounty of Allah and His mercy — in that let them rejoice." (10:58)',
 };
 
 // ── Eid al-Adha messages ─────────────────────────────────────────
 const EID_AL_ADHA_EVE = {
-  title: '🌙 Eid al-Adha Tomorrow!',
+  title: 'Eid al-Adha Tomorrow!',
   body: 'The Day of Sacrifice approaches. Increase your Takbirat: Allahu Akbar, Allahu Akbar, La ilaha illallah.',
 };
 
 const EID_AL_ADHA_MORNING = {
-  title: '🎉 Eid Mubarak!',
+  title: 'Eid Mubarak!',
   body: 'Eid al-Adha Mubarak! "It is not their meat nor blood that reaches Allah; it is your piety." (22:37)',
 };
 
 // ── Takbirat reminders (9–13 Dhul Hijjah) ────────────────────────
 const TAKBIRAT_MESSAGES: Record<number, { title: string; body: string }> = {
   9: {
-    title: '🕋 Day of Arafah',
+    title: 'Day of Arafah',
     body: 'The best day the sun has risen upon. Fast today and recite Takbirat after every prayer: Allahu Akbar, Allahu Akbar, La ilaha illallah.',
   },
   10: {
-    title: '🎉 Eid al-Adha — Takbirat',
+    title: 'Eid al-Adha — Takbirat',
     body: 'Continue reciting Takbirat al-Tashreeq after every fard prayer. Allahu Akbar, Allahu Akbar, La ilaha illallahu wallahu Akbar.',
   },
   11: {
-    title: '📿 Ayyam al-Tashreeq — Day 1',
+    title: 'Ayyam al-Tashreeq — Day 1',
     body: 'Remember your Takbirat after every fard prayer. "Remember Allah during the appointed days." (2:203)',
   },
   12: {
-    title: '📿 Ayyam al-Tashreeq — Day 2',
+    title: 'Ayyam al-Tashreeq — Day 2',
     body: 'Keep the Takbirat going after each prayer. These are days of eating, drinking, and remembrance of Allah.',
   },
   13: {
-    title: '📿 Ayyam al-Tashreeq — Day 3',
+    title: 'Ayyam al-Tashreeq — Day 3',
     body: 'Last day of Takbirat al-Tashreeq (until Asr). May Allah accept your worship during these blessed days.',
   },
 };

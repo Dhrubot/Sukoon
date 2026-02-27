@@ -8,7 +8,10 @@ import {
 } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 import { VERSES } from '../../constants';
+import { HADITH_COLLECTION, Hadith } from '../../constants/hadithCollection';
 import { isRamadan } from '../../utils/ramadan';
 
 // Quran/Book Icon Component
@@ -41,9 +44,23 @@ const QuranIcon: React.FC<{ color: string; size: number }> = ({ color, size }) =
 
 const verses = VERSES;
 
+interface DailyContent {
+  arabic: string;
+  translation: string;
+  reference: string;
+  narrator?: string;
+  isHadith: boolean;
+}
+
 const DailyVerse: React.FC = () => {
   const { theme } = useTheme();
-  const [verse, setVerse] = useState(verses[0]);
+  const styles = useThemedStyles(createStyles);
+  const [content, setContent] = useState<DailyContent>({
+    arabic: verses[0].arabic,
+    translation: verses[0].translation,
+    reference: verses[0].reference,
+    isHadith: false,
+  });
   const [showTranslation, setShowTranslation] = useState(true);
 
   useEffect(() => {
@@ -53,24 +70,35 @@ const DailyVerse: React.FC = () => {
       (1000 * 60 * 60 * 24)
     );
 
-    // During Ramadan, bias toward Ramadan-themed verses
+    // During Ramadan, bias toward Ramadan-themed verses (always Quran)
     if (isRamadan()) {
       const ramadanVerses = verses.filter((v: any) => v.theme === 'ramadan');
       if (ramadanVerses.length > 0) {
         const idx = dayOfYear % ramadanVerses.length;
-        setVerse(ramadanVerses[idx]);
+        const v = ramadanVerses[idx];
+        setContent({ arabic: v.arabic, translation: v.translation, reference: v.reference, isHadith: false });
         return;
       }
     }
 
-    const verseIndex = dayOfYear % verses.length;
-    setVerse(verses[verseIndex]);
+    // Alternate: even days = verse, odd days = hadith
+    if (dayOfYear % 2 === 0) {
+      const idx = Math.floor(dayOfYear / 2) % verses.length;
+      const v = verses[idx];
+      setContent({ arabic: v.arabic, translation: v.translation, reference: v.reference, isHadith: false });
+    } else {
+      const idx = Math.floor(dayOfYear / 2) % HADITH_COLLECTION.length;
+      const h = HADITH_COLLECTION[idx];
+      setContent({ arabic: h.arabic, translation: h.translation, reference: h.source, narrator: h.narrator, isHadith: true });
+    }
   }, []);
 
   const handleShare = async () => {
+    const label = content.isHadith ? 'Hadith' : 'Verse';
+    const narratorLine = content.narrator ? `\nNarrated by ${content.narrator}` : '';
     try {
       await Share.share({
-        message: `${verse.translation}\n\n${verse.arabic}\n\n- ${verse.reference}\n\nShared via Sukoon 🕌`,
+        message: `${content.translation}\n\n${content.arabic}${narratorLine}\n\n- ${content.reference}\n\nShared via Sukoon`,
       });
     } catch (error) {
       console.error('Error sharing:', error);
@@ -82,24 +110,35 @@ const DailyVerse: React.FC = () => {
       <View style={styles.header}>
         <View style={styles.titleRow}>
           <QuranIcon color={theme.colors.primary.DEFAULT} size={24} />
-          <Text style={[styles.title, { color: theme.colors.text.primary }]}>Daily Verse</Text>
+          <Text style={styles.title}>
+            {content.isHadith ? 'Daily Hadith' : 'Daily Verse'}
+          </Text>
         </View>
         <TouchableOpacity onPress={handleShare}>
-          <Text style={[styles.shareButton, { color: theme.colors.primary.DEFAULT }]}>Share</Text>
+          <Text style={styles.shareButton}>Share</Text>
         </TouchableOpacity>
       </View>
 
       <TouchableOpacity
-        style={[styles.verseContainer, { backgroundColor: theme.colors.card.background, borderColor: theme.colors.border.primary }]}
+        style={styles.verseContainer}
         onPress={() => setShowTranslation(!showTranslation)}
         activeOpacity={0.8}
       >
-        <Text style={[styles.arabic, { color: theme.colors.text.primary }]}>{verse.arabic}</Text>
+        {/* Gold decorative quote mark */}
+        <Text style={[styles.quoteMark, { color: theme.colors.gold }]}>"</Text>
+
+        <Text style={styles.arabic}>{content.arabic}</Text>
+
+        {/* Gold divider */}
+        <View style={[styles.goldDivider, { backgroundColor: theme.colors.gold }]} />
         
         {showTranslation && (
           <>
-            <Text style={[styles.translation, { color: theme.colors.text.secondary }]}>"{verse.translation}"</Text>
-            <Text style={[styles.reference, { color: theme.colors.text.muted }]}>{verse.reference}</Text>
+            <Text style={styles.translation}>"{content.translation}"</Text>
+            {content.narrator && (
+              <Text style={styles.narrator}>Narrated by {content.narrator}</Text>
+            )}
+            <Text style={styles.reference}>{content.reference}</Text>
           </>
         )}
       </TouchableOpacity>
@@ -109,58 +148,91 @@ const DailyVerse: React.FC = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
-    marginHorizontal: 20,
-    marginTop: 24,
+    marginHorizontal: theme.spacing.xl,
+    marginTop: theme.spacing['2xl'],
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: theme.spacing.md,
   },
   titleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: theme.spacing.sm,
   },
   title: {
-    fontSize: 20,  // 2xl
-    fontWeight: '600',  // semibold
+    fontSize: theme.typography.fontSize['2xl'],
+    fontFamily: theme.typography.fontFamily.headingMedium,
+    color: theme.colors.text.primary,
   },
   shareButton: {
-    fontSize: 14,  // md
-    fontWeight: '600',  // semibold
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
+    color: theme.colors.primary.DEFAULT,
   },
   verseContainer: {
-    borderRadius: 16,
-    padding: 20,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.xl,
     borderWidth: 1,
+    backgroundColor: theme.colors.card.background,
+    borderColor: theme.colors.border.primary,
+  },
+  quoteMark: {
+    fontSize: 60,
+    fontFamily: theme.typography.fontFamily.headingRegular,
+    textAlign: 'center',
+    lineHeight: 60,
+    marginBottom: theme.spacing.xs,
+    opacity: 0.6,
   },
   arabic: {
-    fontSize: 24,  // 3xl
+    fontSize: theme.typography.fontSize['3xl'],
     textAlign: 'center',
-    marginBottom: 16,
+    marginBottom: theme.spacing.md,
     lineHeight: 36,
-    fontFamily: 'Amiri_400Regular',
+    fontFamily: theme.typography.fontFamily.arabic,
+    color: theme.colors.text.primary,
+  },
+  goldDivider: {
+    width: 40,
+    height: 2,
+    borderRadius: 1,
+    alignSelf: 'center',
+    marginBottom: theme.spacing.md,
+    opacity: 0.4,
   },
   translation: {
-    fontSize: 16,  // lg
+    fontSize: 17,
+    fontFamily: theme.typography.fontFamily.headingRegular,
     textAlign: 'center',
-    marginBottom: 12,
-    lineHeight: 24,
+    marginBottom: theme.spacing.md,
+    lineHeight: 26,
     fontStyle: 'italic',
+    color: theme.colors.text.secondary,
+  },
+  narrator: {
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
+    textAlign: 'center',
+    marginBottom: theme.spacing.xs,
+    fontStyle: 'italic',
+    color: theme.colors.text.muted,
   },
   reference: {
-    fontSize: 14,  // md
+    fontSize: theme.typography.fontSize.md,
     textAlign: 'center',
-    fontWeight: '500',  // medium
+    fontFamily: theme.typography.fontFamily.bodyMedium,
+    color: theme.colors.text.muted,
   },
   hint: {
-    fontSize: 13,  // sm (adjusted up)
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
     textAlign: 'center',
-    marginTop: 8,
+    marginTop: theme.spacing.sm,
   },
 });
 

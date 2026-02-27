@@ -35,7 +35,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
     beforePrayer: 10,
     vibrationEnabled: true,
     postPrayerCheck: true,
-    reminderText: "Time for {prayer} prayer 🕌",
+    reminderText: "Time for {prayer} prayer",
   });
   const [isUpdating, setIsUpdating] = useState(false);
 
@@ -305,7 +305,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
 
           {/* Tips */}
           <View style={styles.tipsSection}>
-            <Text style={styles.tipsTitle}>💡 Tips</Text>
+            <Text style={styles.tipsTitle}>Tips</Text>
             <Text style={styles.tipText}>
               • Notifications work best when the app has been opened recently
             </Text>
@@ -358,13 +358,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     elevation: 3,
   },
   tabText: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.settings.labelSecondary,
   },
   tabTextActive: {
     color: theme.colors.primary.DEFAULT,
-    fontWeight: '600',
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   scrollView: {
     flex: 1,
@@ -372,16 +372,16 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   section: {
     backgroundColor: theme.colors.settings.sectionBg,
-    marginBottom: 16,
-    padding: 20,
+    marginBottom: theme.spacing.lg,
+    padding: theme.spacing.xl,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border.primary,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: theme.typography.fontSize.xl,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.primary.DEFAULT,
-    marginBottom: 12,
+    marginBottom: theme.spacing.md,
   },
   settingRow: {
     flexDirection: 'row',
@@ -390,29 +390,30 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   settingInfo: {
     flex: 1,
-    marginRight: 16,
+    marginRight: theme.spacing.lg,
   },
   settingLabel: {
-    fontSize: 16,
-    fontWeight: '500',
+    fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.settings.labelPrimary,
-    marginBottom: 4,
+    marginBottom: theme.spacing.xs,
   },
   settingDescription: {
-    fontSize: 14,
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.settings.labelSecondary,
     lineHeight: 20,
   },
   reminderOptions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 12,
-    marginTop: 16,
+    gap: theme.spacing.md,
+    marginTop: theme.spacing.lg,
   },
   reminderOption: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.md - 2,
+    borderRadius: theme.borderRadius.xl,
     backgroundColor: theme.colors.settings.optionBg,
     borderWidth: 1,
     borderColor: theme.colors.settings.optionBorder,
@@ -422,19 +423,20 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderColor: theme.colors.settings.optionActiveBorder,
   },
   reminderOptionText: {
-    fontSize: 14,
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.settings.labelSecondary,
   },
   reminderOptionTextActive: {
     color: theme.colors.primary.DEFAULT,
-    fontWeight: '600',
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   button: {
     backgroundColor: theme.colors.settings.buttonPrimaryBg,
-    borderRadius: 8,
-    paddingVertical: 14,
+    borderRadius: theme.borderRadius.sm,
+    paddingVertical: theme.spacing.md,
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: theme.spacing.md,
   },
   secondaryButton: {
     backgroundColor: theme.colors.settings.buttonSecondaryBg,
@@ -442,8 +444,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderColor: theme.colors.settings.buttonSecondaryBorder,
   },
   buttonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.settings.buttonPrimaryText,
   },
   secondaryButtonText: {
@@ -451,22 +453,23 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   tipsSection: {
     backgroundColor: theme.colors.settings.tipsBg,
-    padding: 20,
-    marginBottom: 32,
-    borderRadius: 12,
-    marginHorizontal: 16,
+    padding: theme.spacing.xl,
+    marginBottom: theme.spacing['3xl'],
+    borderRadius: theme.borderRadius.md,
+    marginHorizontal: theme.spacing.lg,
   },
   tipsTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.settings.tipsTitle,
-    marginBottom: 12,
+    marginBottom: theme.spacing.md,
   },
   tipText: {
-    fontSize: 14,
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.settings.tipsText,
     lineHeight: 22,
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
   },
 });
 

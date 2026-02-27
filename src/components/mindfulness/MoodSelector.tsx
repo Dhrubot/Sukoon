@@ -97,11 +97,11 @@ const MoodSelector: React.FC<MoodSelectorProps> = ({
       {selectedMood > 0 && (
         <View style={styles.feedbackContainer}>
           <Text style={styles.feedbackText}>
-            {selectedMood === 1 && "It's okay, tomorrow is a new opportunity 💚"}
-            {selectedMood === 2 && "Every prayer is a step forward 🌱"}
-            {selectedMood === 3 && "Ma sha Allah! Keep building focus 🌟"}
-            {selectedMood === 4 && "Beautiful! Your khushoo is growing ✨"}
-            {selectedMood === 5 && "Alhamdulillah! May Allah accept your prayer 🤲"}
+            {selectedMood === 1 && "It's okay, tomorrow is a new opportunity"}
+            {selectedMood === 2 && "Every prayer is a step forward"}
+            {selectedMood === 3 && "Ma sha Allah! Keep building focus"}
+            {selectedMood === 4 && "Beautiful! Your khushoo is growing"}
+            {selectedMood === 5 && "Alhamdulillah! May Allah accept your prayer"}
           </Text>
         </View>
       )}
@@ -114,17 +114,18 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: theme.colors.mindfulness.textPrimary,
+    fontSize: theme.typography.fontSize.xl,
+    fontWeight: theme.typography.fontWeight.semibold,
+    fontFamily: theme.typography.fontFamily.headingRegular,
+    color: theme.colors.text.primary,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: theme.spacing['2xl'],
   },
   moodContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    gap: 12,
-    marginBottom: 24,
+    gap: theme.spacing.md,
+    marginBottom: theme.spacing['2xl'],
   },
   moodWrapper: {
     alignItems: 'center',
@@ -137,8 +138,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 2,
-    borderColor: theme.colors.mindfulness.dotInactive,
-    marginBottom: 8,
+    borderColor: theme.colors.border.secondary,
+    marginBottom: theme.spacing.sm,
   },
   moodButtonActive: {
     backgroundColor: theme.colors.mindfulness.timingInfoBg,
@@ -150,24 +151,26 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     elevation: 5,
   },
   moodEmoji: {
-    fontSize: 32,
+    fontSize: theme.typography.fontSize['5xl'],
   },
   moodLabel: {
-    fontSize: 13,
-    color: theme.colors.mindfulness.textMuted,
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
+    color: theme.colors.text.muted,
     textAlign: 'center',
   },
   moodLabelActive: {
-    color: theme.colors.mindfulness.textPrimary,
-    fontWeight: '600',
+    color: theme.colors.text.primary,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   feedbackContainer: {
-    marginTop: 16,
-    paddingHorizontal: 32,
+    marginTop: theme.spacing.lg,
+    paddingHorizontal: theme.spacing['3xl'],
   },
   feedbackText: {
-    fontSize: 16,
-    color: theme.colors.mindfulness.textSecondary,
+    fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
+    color: theme.colors.text.secondary,
     textAlign: 'center',
     fontStyle: 'italic',
   },

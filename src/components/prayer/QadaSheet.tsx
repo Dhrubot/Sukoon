@@ -165,6 +165,7 @@ const createStyles = (theme: AppTheme) =>
     },
     message: {
       fontSize: theme.typography.fontSize.base,
+      fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.secondary,
       textAlign: 'center',
       lineHeight: 22,
@@ -179,7 +180,7 @@ const createStyles = (theme: AppTheme) =>
     },
     primaryButtonText: {
       fontSize: theme.typography.fontSize.lg,
-      fontWeight: '600',
+      fontFamily: theme.typography.fontFamily.bodySemibold,
       color: theme.colors.primary.contrast,
     },
     secondaryButton: {
@@ -188,6 +189,7 @@ const createStyles = (theme: AppTheme) =>
     },
     secondaryButtonText: {
       fontSize: theme.typography.fontSize.base,
+      fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.muted,
     },
   });

@@ -39,38 +39,38 @@ const GoPremiumCard: React.FC<GoPremiumCardProps> = ({ onPress }) => {
 
 const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
-    marginHorizontal: 20,
-    marginVertical: 12,
+    marginHorizontal: theme.spacing.xl,
+    marginVertical: theme.spacing.md,
     borderRadius: theme.borderRadius.md,
     overflow: 'hidden',
   },
   content: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 16,
+    padding: theme.spacing.lg,
   },
   icon: {
-    fontSize: 28,
-    marginRight: 12,
+    fontSize: theme.typography.fontSize['4xl'],
+    marginRight: theme.spacing.md,
   },
   textContainer: {
     flex: 1,
   },
   title: {
     fontSize: theme.typography.fontSize.lg,
-    fontWeight: '700',
+    fontFamily: theme.typography.fontFamily.bodyBold,
     color: theme.colors.primary.contrast,
-    marginBottom: 2,
+    marginBottom: theme.spacing.xxs,
   },
   subtitle: {
     fontSize: theme.typography.fontSize.sm,
     color: 'rgba(255, 255, 255, 0.85)',
   },
   arrow: {
-    fontSize: 28,
-    fontWeight: '300',
+    fontSize: theme.typography.fontSize['4xl'],
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.primary.contrast,
-    marginLeft: 8,
+    marginLeft: theme.spacing.sm,
   },
 });
 

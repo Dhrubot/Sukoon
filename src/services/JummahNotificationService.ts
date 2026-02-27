@@ -19,23 +19,23 @@ const STORAGE_KEY_LAST_SCHEDULED = 'jummah_last_scheduled';
 // ── Morning messages (Surah Al-Kahf + Friday blessings) ──────────────
 const MORNING_MESSAGES: { title: string; body: string }[] = [
   {
-    title: '🕌 Jumu\'ah Mubarak',
+    title: 'Jumu\'ah Mubarak',
     body: 'The Prophet ﷺ said: "Whoever reads Surah Al-Kahf on Friday, a light will shine for him between the two Fridays." Take time to read it today.',
   },
   {
-    title: '🕌 Blessed Friday',
+    title: 'Blessed Friday',
     body: '"The best day on which the sun rises is Friday." — Prophet ﷺ. Send abundant salawat upon the Prophet ﷺ today.',
   },
   {
-    title: '🕌 Friday Blessings',
+    title: 'Friday Blessings',
     body: 'The Prophet ﷺ said: "Increase your salawat upon me on Friday, for it is witnessed by the angels." Begin your Friday with remembrance.',
   },
   {
-    title: '🕌 Surah Al-Kahf',
+    title: 'Surah Al-Kahf',
     body: '"Whoever reads Surah Al-Kahf on Friday, he will be illuminated with light between the two Fridays." — Al-Hakim. Open your Quran.',
   },
   {
-    title: '🕌 The Master of Days',
+    title: 'The Master of Days',
     body: 'Friday is the master of days and the greatest of them before Allah. Make it count with dhikr, salawat, and Surah Al-Kahf.',
   },
 ];
@@ -43,19 +43,19 @@ const MORNING_MESSAGES: { title: string; body: string }[] = [
 // ── Pre-Jummah preparation messages ──────────────────────────────────
 const PREPARATION_MESSAGES: { title: string; body: string }[] = [
   {
-    title: '🧼 Prepare for Jumu\'ah',
+    title: 'Prepare for Jumu\'ah',
     body: 'The Prophet ﷺ said: "Whoever takes a bath on Friday, goes early to the mosque... will have the reward of fasting and praying for a whole year." Perform ghusl and wear your best.',
   },
   {
-    title: '🕌 Time to Get Ready',
+    title: 'Time to Get Ready',
     body: '"Go early to the mosque — the first hour is like sacrificing a camel, the second like a cow, the third like a ram." — Prophet ﷺ. Head out early!',
   },
   {
-    title: '🕌 Jumu\'ah Preparation',
+    title: 'Jumu\'ah Preparation',
     body: 'Apply perfume, wear clean clothes, and go early. The Prophet ﷺ said: "When it is Friday, the angels stand at the gate of the mosque..."',
   },
   {
-    title: '🧼 Get Ready for the Khutbah',
+    title: 'Get Ready for the Khutbah',
     body: 'Ghusl, miswak, best clothes, and early arrival — these are the Sunnahs of Friday. The reward is immense.',
   },
 ];
@@ -63,19 +63,19 @@ const PREPARATION_MESSAGES: { title: string; body: string }[] = [
 // ── Last-hour dua messages (afternoon) ───────────────────────────────
 const DUA_MESSAGES: { title: string; body: string }[] = [
   {
-    title: '🤲 The Blessed Hour',
+    title: 'The Blessed Hour',
     body: '"There is a time on Friday at which no Muslim stands and prays, asking Allah for something, but Allah will give it to him." — Bukhari. Make dua now!',
   },
   {
-    title: '🤲 Don\'t Miss This Hour',
+    title: 'Don\'t Miss This Hour',
     body: 'The last hour before Maghrib on Friday is one of the most blessed times for dua. Ask Allah for everything you need.',
   },
   {
-    title: '🤲 Friday Dua',
+    title: 'Friday Dua',
     body: 'The Prophet ﷺ said there is an hour on Friday when dua is accepted. Scholars say it is the last hour before Maghrib. Raise your hands.',
   },
   {
-    title: '🤲 Ask Allah',
+    title: 'Ask Allah',
     body: '"Seek the hour of response on Friday." — Prophet ﷺ. The last hour before Maghrib is upon us. Make sincere dua.',
   },
 ];
@@ -155,7 +155,7 @@ class JummahNotificationServiceClass {
           'prayer',
           jummahTime,
           {
-            title: '🕌 Jumu\'ah Prayer Time',
+            title: 'Jumu\'ah Prayer Time',
             body: '"O you who believe! When the call is made for prayer on Friday, hasten to the remembrance of Allah." — Surah Al-Jumu\'ah (62:9)',
           },
         );

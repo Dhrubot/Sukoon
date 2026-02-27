@@ -8,6 +8,8 @@ import {
   Switch,
 } from 'react-native';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 
 interface SettingRowProps {
   label: string;
@@ -15,6 +17,8 @@ interface SettingRowProps {
   value?: string;
   onPress?: () => void;
   rightComponent?: React.ReactNode;
+  icon?: React.ReactNode;
+  iconColor?: string;
   isDanger?: boolean;
   disabled?: boolean;
 }
@@ -25,10 +29,13 @@ export const SettingRow: React.FC<SettingRowProps> = ({
   value,
   onPress,
   rightComponent,
+  icon,
+  iconColor,
   isDanger = false,
   disabled = false,
 }) => {
   const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   const Component = onPress ? TouchableOpacity : View;
 
@@ -38,6 +45,14 @@ export const SettingRow: React.FC<SettingRowProps> = ({
       onPress={onPress}
       disabled={disabled || !onPress}
     >
+      {icon && (
+        <View style={[
+          styles.iconWrap,
+          iconColor ? { backgroundColor: iconColor + '1A' } : { backgroundColor: theme.colors.primary.DEFAULT + '1A' },
+        ]}>
+          {icon}
+        </View>
+      )}
       <View style={styles.leftContent}>
         <Text style={[styles.settingLabel, isDanger && styles.dangerText, disabled && styles.disabledText, { color: theme.colors.text.primary }]}>{label}</Text>
         {subtitle && (
@@ -51,7 +66,7 @@ export const SettingRow: React.FC<SettingRowProps> = ({
             {value && (
               <Text style={[styles.settingValue, disabled && styles.disabledText, { color: theme.colors.text.secondary }]}>{value}</Text>
             )}
-            {onPress && <Text style={[styles.chevron, disabled && styles.disabledText, { color: theme.colors.primary.DEFAULT }]}>›</Text>}
+            {onPress && <Text style={[styles.chevron, disabled && styles.disabledText, { color: theme.colors.text.muted }]}>›</Text>}
           </>
         )}
       </View>
@@ -59,12 +74,21 @@ export const SettingRow: React.FC<SettingRowProps> = ({
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   settingRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
+    paddingVertical: theme.spacing.md,
+    gap: theme.spacing.md,
+  },
+  iconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexShrink: 0,
   },
   leftContent: {
     flex: 1,
@@ -72,23 +96,23 @@ const styles = StyleSheet.create({
   rightContent: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: theme.spacing.sm,
   },
   settingLabel: {
-    fontSize: 16,  // lg
-    fontWeight: '500',  // medium
+    fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
   },
   settingSubtext: {
-    fontSize: 13,  // sm
-    marginTop: 4,
+    fontSize: theme.typography.fontSize.sm,
+    marginTop: theme.spacing.xs,
   },
   settingValue: {
-    fontSize: 15,  // base
-    marginRight: 8,
+    fontSize: theme.typography.fontSize.base,
+    marginRight: theme.spacing.sm,
   },
   chevron: {
-    fontSize: 24,  // 3xl
-    fontWeight: '300',
+    fontSize: theme.typography.fontSize['3xl'],
+    fontFamily: theme.typography.fontFamily.body,
   },
   dangerText: {
     color: '#EF4444',

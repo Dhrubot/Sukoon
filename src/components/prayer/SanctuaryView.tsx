@@ -10,6 +10,8 @@ import {
   Dimensions,
 } from 'react-native';
 import PreAdhanSheet from './PreAdhanSheet';
+import CountdownRing from './CountdownRing';
+import StarField from './StarField';
 import { LinearGradient } from 'expo-linear-gradient';
 import { PrayerTime, PrayerRecord, PrayerName } from '../../types';
 import { format } from 'date-fns';
@@ -19,7 +21,7 @@ import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import { formatHijriDate, formatHijriDateSync } from '../../utils/hijriDate';
 import { useStore } from '../../store/useStore';
-import { isFriday } from '../../utils/ramadan';
+import { isFriday, isRamadan, getRamadanDay } from '../../utils/ramadan';
 
 const { height } = Dimensions.get('window');
 
@@ -32,6 +34,8 @@ interface MosqueModeHeroInfo {
 interface SanctuaryViewProps {
   prayer: PrayerTime;
   greeting: string;
+  userName?: string;
+  previousPrayerTime?: Date;
   record?: PrayerRecord;
   isTimeEntered?: boolean;
   missedPrayer?: PrayerTime;
@@ -46,6 +50,8 @@ interface SanctuaryViewProps {
 const SanctuaryView: React.FC<SanctuaryViewProps> = ({
   prayer,
   greeting,
+  userName,
+  previousPrayerTime,
   record,
   isTimeEntered = true,
   missedPrayer,
@@ -60,7 +66,6 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
   const styles = useThemedStyles(createStyles);
   const { userSettings } = useStore();
   const hijriAdjustment = userSettings?.hijriAdjustment ?? 0;
-  const [timeRemaining, setTimeRemaining] = useState('');
   const [hijriDateStr, setHijriDateStr] = useState(formatHijriDateSync());
   const pulseAnim = useRef(new Animated.Value(0.6)).current;
 
@@ -69,31 +74,6 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
     setHijriDateStr(formatHijriDateSync());
     formatHijriDate().then(setHijriDateStr).catch(() => {});
   }, [hijriAdjustment]);
-
-  useEffect(() => {
-    const updateTimer = () => {
-      const now = new Date();
-      const diff = prayer.time.getTime() - now.getTime();
-
-      if (diff <= 0) {
-        setTimeRemaining('Now');
-        return;
-      }
-
-      const hours = Math.floor(diff / (1000 * 60 * 60));
-      const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-
-      if (hours > 0) {
-        setTimeRemaining(`${hours}h ${minutes}m`);
-      } else {
-        setTimeRemaining(`${minutes}m`);
-      }
-    };
-
-    updateTimer();
-    const timer = setInterval(updateTimer, 30000); // Update every 30s
-    return () => clearInterval(timer);
-  }, [prayer]);
 
   // Subtle pulse animation for the CTA
   useEffect(() => {
@@ -141,6 +121,8 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
     return (gradients as any)[prayer.name] || gradients.default;
   };
 
+  const ramadanDay = isRamadan() ? getRamadanDay() : null;
+
   return (
     <>
       <LinearGradient
@@ -149,36 +131,35 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
       >
+        {/* Animated star field — nighttime prayers only */}
+        <StarField prayerName={prayer.name} />
+
         {/* Greeting + Hijri date */}
         <View style={styles.greetingContainer}>
-          <Text style={styles.greeting}>{greeting}</Text>
+          {/* Ramadan badge */}
+          {ramadanDay && (
+            <View style={styles.ramadanBadge}>
+              <Text style={styles.ramadanBadgeText}>
+                ☪ Ramadan Mubarak · Day {ramadanDay}
+              </Text>
+            </View>
+          )}
+          <Text style={styles.greeting}>
+            {userName && greeting.includes(userName)
+              ? <>{greeting.substring(0, greeting.lastIndexOf(userName))}<Text style={styles.greetingName}>{userName}</Text>{greeting.substring(greeting.lastIndexOf(userName) + userName.length)}</>
+              : greeting
+            }
+          </Text>
           <Text style={styles.hijriDate}>{hijriDateStr}</Text>
         </View>
 
-        {/* Prayer name — the focal point */}
-        <View style={styles.prayerInfo}>
-          <Text style={styles.prayerLabel}>
-            {isAlreadyPrayed ? 'Current Prayer' : 'Next Prayer'}
-          </Text>
-          <Text style={styles.prayerName}>
-            {PrayerTimeService.getPrayerDisplayName(prayer.name)}
-          </Text>
-          <Text style={styles.prayerTime}>
-            {PrayerTimeService.formatPrayerTime(prayer.time)}
-          </Text>
-          {isAlreadyPrayed ? (
-            <Text style={styles.prayedStatus}>Prayed with Presence ✓</Text>
-          ) : (
-            <Text style={styles.countdown}>in {timeRemaining}</Text>
-          )}
-          {mosqueModeInfo && (
-            <Text style={styles.iqamahText}>
-              {mosqueModeInfo.iqamahTime > new Date()
-                ? `Iqamah at ${format(mosqueModeInfo.iqamahTime, 'h:mm a')}`
-                : `Iqamah was at ${format(mosqueModeInfo.iqamahTime, 'h:mm a')}`}
-            </Text>
-          )}
-        </View>
+        {/* Countdown Ring — the focal point */}
+        <CountdownRing
+          prayer={prayer}
+          previousPrayerTime={previousPrayerTime}
+          iqamahTime={mosqueModeInfo?.iqamahTime}
+          isAlreadyPrayed={isAlreadyPrayed}
+        />
 
         {/* Jumu'ah sunnah reminders */}
         {isJummah && !isAlreadyPrayed && (
@@ -223,6 +204,9 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
             </Text>
           </TouchableOpacity>
         </Animated.View>
+
+        {/* Hero curve — content bg overlaps hero bottom */}
+        <View style={styles.heroCurve} />
       </LinearGradient>
 
       {/* Pre-Adhan Sheet — blocks fard prayer before its time, offers alternatives */}
@@ -251,71 +235,55 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: {
-      minHeight: height * 0.70,
+      minHeight: height * 0.72,
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingTop: 40,
-      paddingBottom: 32,
-      paddingHorizontal: 24,
+      paddingTop: theme.spacing['4xl'],
+      paddingBottom: theme.spacing['3xl'] + 52,
+      paddingHorizontal: theme.spacing['2xl'],
+      overflow: 'hidden',
     },
     greetingContainer: {
       alignItems: 'center',
     },
+    ramadanBadge: {
+      backgroundColor: 'rgba(201, 168, 76, 0.12)',
+      borderRadius: theme.borderRadius.full,
+      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.xs,
+      marginBottom: theme.spacing.sm,
+      borderWidth: 1,
+      borderColor: 'rgba(201, 168, 76, 0.20)',
+    },
+    ramadanBadgeText: {
+      fontSize: theme.typography.fontSize.xs,
+      fontFamily: theme.typography.fontFamily.bodyMedium,
+      color: theme.colors.goldLight,
+      letterSpacing: 0.5,
+    },
     greeting: {
-      fontSize: 16,
-      fontWeight: '400',
+      fontSize: theme.typography.fontSize.lg,
+      fontFamily: theme.typography.fontFamily.headingRegular,
       color: theme.colors.sanctuary.greeting,
       textAlign: 'center',
     },
+    greetingName: {
+      color: theme.colors.goldLight,
+    },
     hijriDate: {
-      fontSize: 12,
-      fontWeight: '400',
+      fontSize: theme.typography.fontSize.xs,
+      fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.sanctuary.label,
       textAlign: 'center',
-      marginTop: 4,
+      marginTop: theme.spacing.xs,
       opacity: 0.8,
-    },
-    prayerInfo: {
-      alignItems: 'center',
-    },
-    prayerLabel: {
-      fontSize: 12,
-      fontWeight: '500',
-      color: theme.colors.sanctuary.label,
-      letterSpacing: 2,
-      textTransform: 'uppercase',
-      marginBottom: 8,
-    },
-    prayerName: {
-      fontSize: 48,
-      fontFamily: theme.typography.fontFamily.heading,
-      color: theme.colors.sanctuary.prayerName,
-      marginBottom: 8,
-    },
-    prayerTime: {
-      fontSize: 20,
-      fontWeight: '400',
-      color: theme.colors.sanctuary.prayerTime,
-      marginBottom: 4,
-    },
-    countdown: {
-      fontSize: 16,
-      fontWeight: '300',
-      color: theme.colors.sanctuary.countdown,
-      fontStyle: 'italic',
-    },
-    prayedStatus: {
-      fontSize: 16,
-      fontWeight: '500',
-      color: theme.colors.sanctuary.prayedStatus,
-      marginTop: 4,
     },
     prepareButton: {
       borderWidth: 1,
       borderColor: theme.colors.sanctuary.buttonBorder,
-      borderRadius: 24,
-      paddingVertical: 14,
-      paddingHorizontal: 40,
+      borderRadius: theme.borderRadius.full,
+      paddingVertical: theme.spacing.md + 2,
+      paddingHorizontal: theme.spacing['4xl'],
       backgroundColor: theme.colors.sanctuary.buttonBg,
     },
     alreadyPrayedButton: {
@@ -323,8 +291,8 @@ const createStyles = (theme: AppTheme) =>
       borderColor: theme.colors.sanctuary.buttonBorderMuted,
     },
     prepareText: {
-      fontSize: 16,
-      fontWeight: '500',
+      fontSize: theme.typography.fontSize.base,
+      fontFamily: theme.typography.fontFamily.bodySemibold,
       color: theme.colors.sanctuary.buttonText,
       letterSpacing: 0.5,
     },
@@ -332,44 +300,46 @@ const createStyles = (theme: AppTheme) =>
       flexDirection: 'row',
       flexWrap: 'wrap',
       justifyContent: 'center',
-      gap: 8,
-      marginTop: 4,
+      gap: theme.spacing.sm,
+      marginTop: theme.spacing.xs,
     },
     sunnahChip: {
-      backgroundColor: 'rgba(212, 175, 55, 0.15)',
-      borderRadius: 12,
-      paddingHorizontal: 10,
-      paddingVertical: 5,
+      backgroundColor: 'rgba(201, 168, 76, 0.12)',
+      borderRadius: theme.borderRadius.md,
+      paddingHorizontal: theme.spacing.md - 2,
+      paddingVertical: theme.spacing.xs + 1,
       borderWidth: 1,
-      borderColor: 'rgba(212, 175, 55, 0.25)',
+      borderColor: 'rgba(201, 168, 76, 0.20)',
     },
     sunnahText: {
-      fontSize: 12,
+      fontSize: theme.typography.fontSize.xs,
       color: theme.colors.sanctuary.label,
-      fontWeight: '500',
-    },
-    iqamahText: {
-      fontSize: 13,
-      fontWeight: '400',
-      color: theme.colors.sanctuary.countdown,
-      marginTop: 4,
-      opacity: 0.90,
-      fontStyle: 'italic', 
+      fontFamily: theme.typography.fontFamily.bodyMedium,
     },
     mosqueModePill: {
       backgroundColor: 'rgba(255, 255, 255, 0.12)',
-      borderRadius: 16,
-      paddingVertical: 6,
-      paddingHorizontal: 14,
+      borderRadius: theme.borderRadius.lg,
+      paddingVertical: theme.spacing.xs + 2,
+      paddingHorizontal: theme.spacing.md + 2,
       alignItems: 'center',
-      marginBottom: 12,
+      marginBottom: theme.spacing.md,
     },
     mosqueModePillText: {
-      fontSize: 12,
-      fontWeight: '500',
+      fontSize: theme.typography.fontSize.xs,
+      fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.sanctuary.label,
       opacity: 0.85,
       textAlign: 'center',
+    },
+    heroCurve: {
+      position: 'absolute',
+      bottom: -1,
+      left: 0,
+      right: 0,
+      height: 40,
+      backgroundColor: theme.colors.background.primary,
+      borderTopLeftRadius: 24,
+      borderTopRightRadius: 24,
     },
   });
 

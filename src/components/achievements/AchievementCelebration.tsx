@@ -146,7 +146,7 @@ const AchievementCelebration: React.FC<AchievementCelebrationProps> = ({
               </View>
 
               <TouchableOpacity style={styles.continueButton} onPress={onClose}>
-                <Text style={styles.continueText}>Alhamdulillah! 🤲</Text>
+                <Text style={styles.continueText}>Alhamdulillah!</Text>
               </TouchableOpacity>
             </LinearGradient>
           </Animated.View>
@@ -183,8 +183,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   achievementCard: {
     width: width * 0.85,
     maxWidth: 320,
-    borderRadius: 24,
-    padding: 32,
+    borderRadius: theme.borderRadius.xl + 4,
+    padding: theme.spacing['3xl'],
     alignItems: 'center',
     shadowColor: theme.colors.achievement.shadow,
     shadowOffset: { width: 0, height: 8 },
@@ -193,56 +193,58 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     elevation: 10,
   },
   iconContainer: {
-    marginBottom: 20,
+    marginBottom: theme.spacing.xl,
   },
   achievementIcon: {
     fontSize: 80,
   },
   unlockedText: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.bodyBold,
     color: theme.colors.achievement.textSecondary,
     letterSpacing: 2,
-    marginBottom: 12,
+    marginBottom: theme.spacing.md,
   },
   achievementName: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: theme.typography.fontSize['3xl'],
+    fontWeight: theme.typography.fontWeight.bold,
+    fontFamily: theme.typography.fontFamily.heading,
     color: theme.colors.achievement.textPrimary,
     textAlign: 'center',
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
   },
   achievementDescription: {
-    fontSize: 16,
+    fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.achievement.textSecondary,
     textAlign: 'center',
-    marginBottom: 24,
+    marginBottom: theme.spacing['2xl'],
     lineHeight: 22,
   },
   tierBadge: {
     backgroundColor: theme.colors.achievement.badgeBg,
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    borderRadius: 16,
-    marginBottom: 24,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.xs + 2,
+    borderRadius: theme.borderRadius.lg,
+    marginBottom: theme.spacing['2xl'],
   },
   tierText: {
-    fontSize: 13,
-    fontWeight: '700',
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.bodyBold,
     color: theme.colors.achievement.textPrimary,
     letterSpacing: 1,
   },
   continueButton: {
     backgroundColor: theme.colors.achievement.continueBg,
-    paddingHorizontal: 32,
-    paddingVertical: 14,
-    borderRadius: 24,
+    paddingHorizontal: theme.spacing['3xl'],
+    paddingVertical: theme.spacing.md + 2,
+    borderRadius: theme.borderRadius.xl + 4,
     borderWidth: 1,
     borderColor: theme.colors.achievement.continueBorder,
   },
   continueText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.achievement.textPrimary,
   },
 });

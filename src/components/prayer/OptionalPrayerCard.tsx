@@ -3,6 +3,8 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { format } from 'date-fns';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 import { OptionalPrayerTime } from '../../types';
 
 interface OptionalPrayerCardProps {
@@ -18,10 +20,63 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 const OptionalPrayerCard: React.FC<OptionalPrayerCardProps> = ({ prayer, onPrepare }) => {
   const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
 
   const categoryLabel = CATEGORY_LABELS[prayer.category] || prayer.category;
+  const isTaraweeh = prayer.name === 'Taraweeh';
   const prayerColorKey = prayer.name.toLowerCase() as keyof typeof theme.colors.prayer;
-  const accentColor = theme.colors.prayer?.[prayerColorKey] || theme.colors.text.secondary;
+  const purpleAccent = theme.colors.prayer?.taraweeh || '#8b5cf6';
+  const accentColor = isTaraweeh ? purpleAccent : (theme.colors.prayer?.[prayerColorKey] || theme.colors.text.secondary);
+
+  const cardContent = (
+    <View style={styles.innerContent}>
+      <View style={styles.leftSection}>
+        <Text style={styles.icon}>{prayer.icon}</Text>
+        <View style={styles.nameSection}>
+          <View style={styles.nameRow}>
+            <Text style={[styles.name, { color: isTaraweeh ? purpleAccent : theme.colors.text.primary }]}>
+              {prayer.displayName}
+            </Text>
+            <View style={[styles.badge, { backgroundColor: `${accentColor}20` }]}>
+              <Text style={[styles.badgeText, { color: accentColor }]}>
+                {isTaraweeh ? '☪ Seasonal' : categoryLabel}
+              </Text>
+            </View>
+          </View>
+          <Text style={[styles.arabic, { color: isTaraweeh ? `${purpleAccent}99` : theme.colors.text.muted }]}>
+            {prayer.arabic}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.rightSection}>
+        <Text style={[styles.time, { color: isTaraweeh ? `${purpleAccent}B3` : theme.colors.text.secondary }]}>
+          {prayer.name === 'Taraweeh' ? 'After Isha' : prayer.name === 'Eid' ? 'After Sunrise' : format(prayer.time, 'h:mm a')}
+        </Text>
+        <Text style={[styles.cta, { color: accentColor }]}>
+          Prepare
+        </Text>
+      </View>
+    </View>
+  );
+
+  if (isTaraweeh) {
+    return (
+      <TouchableOpacity
+        style={[
+          styles.container,
+          {
+            backgroundColor: theme.colors.card.background,
+            borderColor: `${purpleAccent}33`,
+          },
+        ]}
+        onPress={onPrepare}
+        activeOpacity={0.7}
+      >
+        {cardContent}
+      </TouchableOpacity>
+    );
+  }
 
   return (
     <TouchableOpacity
@@ -35,47 +90,24 @@ const OptionalPrayerCard: React.FC<OptionalPrayerCardProps> = ({ prayer, onPrepa
       onPress={onPrepare}
       activeOpacity={0.7}
     >
-      <View style={styles.leftSection}>
-        <Text style={styles.icon}>{prayer.icon}</Text>
-        <View style={styles.nameSection}>
-          <View style={styles.nameRow}>
-            <Text style={[styles.name, { color: theme.colors.text.primary }]}>
-              {prayer.displayName}
-            </Text>
-            <View style={[styles.badge, { backgroundColor: `${accentColor}20` }]}>
-              <Text style={[styles.badgeText, { color: accentColor }]}>
-                {categoryLabel}
-              </Text>
-            </View>
-          </View>
-          <Text style={[styles.arabic, { color: theme.colors.text.muted }]}>
-            {prayer.arabic}
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.rightSection}>
-        <Text style={[styles.time, { color: theme.colors.text.secondary }]}>
-          {prayer.name === 'Taraweeh' ? 'After Isha' : prayer.name === 'Eid' ? 'After Sunrise' : format(prayer.time, 'h:mm a')}
-        </Text>
-        <Text style={[styles.cta, { color: accentColor }]}>
-          Prepare
-        </Text>
-      </View>
+      {cardContent}
     </TouchableOpacity>
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
-    borderRadius: 12,
-    padding: 14,
-    marginBottom: 10,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md + 2,
+    marginBottom: theme.spacing.md - 2,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    overflow: 'hidden',
+  },
+  innerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderWidth: 1,
-    borderStyle: 'dashed',
   },
   leftSection: {
     flexDirection: 'row',
@@ -83,8 +115,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   icon: {
-    fontSize: 24,
-    marginRight: 12,
+    fontSize: theme.typography.fontSize['3xl'],
+    marginRight: theme.spacing.md,
   },
   nameSection: {
     flex: 1,
@@ -92,38 +124,39 @@ const styles = StyleSheet.create({
   nameRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
+    gap: theme.spacing.sm,
   },
   name: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
   },
   badge: {
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
+    paddingHorizontal: theme.spacing.sm,
+    paddingVertical: theme.spacing.xxs,
+    borderRadius: theme.borderRadius.sm + 2,
   },
   badgeText: {
-    fontSize: 10,
-    fontWeight: '600',
+    fontSize: theme.typography.fontSize.xs - 1,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   arabic: {
-    fontSize: 12,
-    marginTop: 2,
+    fontSize: theme.typography.fontSize.xs,
+    marginTop: theme.spacing.xxs,
+    fontFamily: theme.typography.fontFamily.arabic,
   },
   rightSection: {
     alignItems: 'flex-end',
   },
   time: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
   },
   cta: {
-    fontSize: 12,
-    fontWeight: '600',
-    marginTop: 2,
+    fontSize: theme.typography.fontSize.xs,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
+    marginTop: theme.spacing.xxs,
   },
 });
 

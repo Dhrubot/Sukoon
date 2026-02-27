@@ -4,10 +4,13 @@ import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 import ReflectionGardenService from '../../services/ReflectionGardenService';
 
 const GardenTeaser: React.FC = () => {
   const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const navigation = useNavigation();
   const [summary, setSummary] = useState({ total: 0, newBlooms: 0, topEmoji: '🌱' });
 
@@ -39,44 +42,78 @@ const GardenTeaser: React.FC = () => {
     ? `${summary.newBlooms} new bloom${summary.newBlooms > 1 ? 's' : ''} this week`
     : 'Your garden is growing';
 
+  // Simple progress: cap at 7 reflections per week
+  const progressPercent = Math.min(summary.total / 7, 1);
+
   return (
     <TouchableOpacity
-      style={[styles.container, { borderColor: theme.colors.border.primary }]}
+      style={styles.container}
       onPress={handlePress}
       activeOpacity={0.8}
     >
-      <Text style={styles.emoji}>{summary.topEmoji}</Text>
-      <Text style={[styles.message, { color: theme.colors.text.muted }]}>
-        {message}
-      </Text>
-      <Text style={[styles.arrow, { color: theme.colors.text.muted }]}>→</Text>
+      <View style={styles.topRow}>
+        <Text style={styles.emoji}>{summary.topEmoji}</Text>
+        <View style={styles.textCol}>
+          <Text style={styles.title}>Reflection Garden</Text>
+          <Text style={styles.message}>{message}</Text>
+        </View>
+        <Text style={[styles.chevron, { color: theme.colors.text.muted }]}>›</Text>
+      </View>
+      <View style={styles.progressTrack}>
+        <View style={[styles.progressFill, { width: `${progressPercent * 100}%`, backgroundColor: theme.colors.interactive.active }]} />
+      </View>
     </TouchableOpacity>
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
-    marginHorizontal: 20,
-    marginBottom: 4,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 12,
+    marginTop: theme.spacing.md,
+    marginHorizontal: theme.spacing.xl,
+    marginBottom: theme.spacing.xs,
+    padding: theme.spacing.lg,
+    borderRadius: theme.borderRadius.md,
+    backgroundColor: theme.colors.card.background,
+    borderWidth: 1,
+    borderColor: theme.colors.border.secondary,
+  },
+  topRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   emoji: {
-    fontSize: 18,
-    marginRight: 10,
+    fontSize: theme.typography.fontSize.xl,
+    marginRight: theme.spacing.md - 2,
   },
-  message: {
-    fontSize: 14,
-    fontStyle: 'italic',
-    fontWeight: '300',
+  textCol: {
     flex: 1,
   },
-  arrow: {
-    fontSize: 16,
-    fontWeight: '300',
+  title: {
+    fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.xxs,
+  },
+  message: {
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
+    color: theme.colors.text.muted,
+  },
+  chevron: {
+    fontSize: theme.typography.fontSize['3xl'],
+    fontFamily: theme.typography.fontFamily.body,
+    marginLeft: theme.spacing.sm,
+  },
+  progressTrack: {
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: theme.colors.border.secondary,
+    marginTop: theme.spacing.md,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: 2,
   },
 });
 

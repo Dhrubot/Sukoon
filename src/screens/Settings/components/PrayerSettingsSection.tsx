@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } from 'react-native';
 import { format } from 'date-fns';
 import { SettingSection } from '../../../components/settings/SettingSection';
 import { SettingRow } from '../../../components/settings/SettingRow';
 import StorageService from '../../../services/StorageService';
 import NotificationService from '../../../services/NotificationService';
+import { useStore } from '../../../store/useStore';
 import { UserSettings, CalculationMethodType, PrayerTime, PrayerName } from '../../../types';
 import { isFriday } from '../../../utils/ramadan';
 import { useTheme } from '../../../providers/ThemeProvider';
@@ -46,9 +47,9 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
   onPreviewMethod,
   onRefreshPrayerTimes, // 🆕 NEW
 }) => {
+  const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
-  const [expanded, setExpanded] = useState(false);
-  const tahajjudEnabled = userSettings?.tahajjudReminders?.enabled ?? false;
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const juristicOptions = [
     {
       value: 'Standard',
@@ -102,11 +103,13 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
     
     // 🔧 FIX: Immediately refresh prayer times
     if (onRefreshPrayerTimes && hasValidLocation) {
+      setIsRefreshing(true);
       try {
         await onRefreshPrayerTimes();
         
-        // Show confirmation with new Asr time
-        const asrPrayer = todayPrayerTimes.find(p => p.name === 'Asr');
+        // Read fresh Asr time from store (props are stale in this closure)
+        const freshTimes = useStore.getState().todayPrayerTimes;
+        const asrPrayer = freshTimes.find(p => p.name === 'Asr');
         const timeStr = asrPrayer ? format(asrPrayer.time, 'h:mm a') : '';
         
         Alert.alert(
@@ -122,6 +125,8 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
           'Asr method changed. Prayer times will update on next refresh.',
           [{ text: 'OK' }]
         );
+      } finally {
+        setIsRefreshing(false);
       }
     } else if (!hasValidLocation) {
       Alert.alert(
@@ -137,12 +142,14 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
     return method?.label || 'Unknown';
   };
 
-  // Render current prayer times preview
-  const renderCurrentPrayerTimes = () => {
+  const friday = isFriday();
+
+  // Render prayer times hero list — always shows all 5 prayers
+  const renderPrayerHero = () => {
     if (!hasValidLocation) {
       return (
         <View style={styles.statusContainer}>
-          <Text style={styles.statusText}>📍 Location required to show prayer times</Text>
+          <Text style={styles.statusText}>Location required to show prayer times</Text>
         </View>
       );
     }
@@ -150,7 +157,7 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
     if (prayerTimesLoading) {
       return (
         <View style={styles.statusContainer}>
-          <Text style={styles.statusText}>⏳ Loading prayer times...</Text>
+          <Text style={styles.statusText}>Loading prayer times...</Text>
         </View>
       );
     }
@@ -158,286 +165,307 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
     if (todayPrayerTimes.length === 0) {
       return (
         <View style={styles.statusContainer}>
-          <Text style={styles.statusText}>❌ No prayer times available</Text>
+          <Text style={styles.statusText}>No prayer times available</Text>
         </View>
       );
     }
 
-    // Build display list: first 3 or all (when expanded)
-    const visiblePrayers = expanded ? todayPrayerTimes : todayPrayerTimes.slice(0, 3);
-    const hiddenCount = todayPrayerTimes.length - 3 + (tahajjudEnabled && expanded ? 1 : 0);
-    const friday = isFriday();
-
     return (
-      <View style={styles.prayerTimesContainer}>
-        <Text style={styles.prayerTimesTitle}>Today's Prayer Times</Text>
-        <View style={styles.prayerTimesList}>
-          {visiblePrayers.map((prayer) => {
-            const displayName = prayer.name === 'Dhuhr' && friday
-              ? 'Dhuhr (Jumu\'ah)'
-              : prayer.name;
-            return (
-              <View key={prayer.name} style={styles.prayerTimeRow}>
-                <View style={styles.prayerInfoSection}>
-                  <Text style={[
-                    styles.prayerName,
-                    prayer.name === nextPrayer?.name && styles.nextPrayerName,
-                    prayer.name === 'Asr' && styles.asrHighlight,
-                    prayer.name === 'Dhuhr' && friday && styles.jummahHighlight,
-                  ]}>
-                    {displayName}
-                  </Text>
-                  <Text style={[
-                    styles.prayerTime,
-                    prayer.name === nextPrayer?.name && styles.nextPrayerTime
-                  ]}>
-                    {format(prayer.time, 'h:mm a')}
-                    {prayer.name === nextPrayer?.name && ' ⭐'}
-                  </Text>
-                </View>
+      <View style={styles.prayerList}>
+        {todayPrayerTimes.map((prayer) => {
+          const isNext = prayer.name === nextPrayer?.name;
+          const displayName = prayer.name === 'Dhuhr' && friday
+            ? 'Jumu\'ah'
+            : prayer.name;
+          return (
+            <View
+              key={prayer.name}
+              style={[
+                styles.prayerItem,
+                isNext && styles.prayerItemActive,
+              ]}
+            >
+              <View style={styles.prayerNameRow}>
+                <View style={[
+                  styles.prayerDot,
+                  isNext && styles.prayerDotActive,
+                ]} />
+                <Text style={[
+                  styles.prayerName,
+                  isNext && styles.prayerNameActive,
+                ]}>
+                  {displayName}
+                </Text>
+              </View>
+              <View style={styles.prayerRight}>
+                {isNext && (
+                  <View style={styles.nextBadge}>
+                    <Text style={styles.nextBadgeText}>Next</Text>
+                  </View>
+                )}
+                <Text style={[
+                  styles.prayerTime,
+                  isNext && styles.prayerTimeActive,
+                ]}>
+                  {format(prayer.time, 'h:mm a')}
+                </Text>
                 <NotificationToggleButton
                   prayerName={prayer.name}
                   enabled={userSettings.prayerNotifications?.[prayer.name] ?? true}
                   onToggle={handleNotificationToggle}
                   disabled={!userSettings.notifications?.enabled}
-                  size={20}
+                  size={18}
                 />
               </View>
-            );
-          })}
-
-          {/* Tahajjud row (only when expanded and enabled) */}
-          {expanded && tahajjudEnabled && (
-            <View style={styles.prayerTimeRow}>
-              <View style={styles.prayerInfoSection}>
-                <Text style={[styles.prayerName, styles.tahajjudName]}>Tahajjud</Text>
-                <Text style={[styles.prayerTime, styles.tahajjudTime]}>Last third of night</Text>
-              </View>
             </View>
-          )}
-
-          {/* Expandable toggle */}
-          {!expanded && todayPrayerTimes.length > 3 && (
-            <TouchableOpacity onPress={() => setExpanded(true)} activeOpacity={0.7}>
-              <Text style={styles.moreText}>
-                Show {todayPrayerTimes.length - 3} more{tahajjudEnabled ? ' + Tahajjud' : ''} ▾
-              </Text>
-            </TouchableOpacity>
-          )}
-          {expanded && todayPrayerTimes.length > 3 && (
-            <TouchableOpacity onPress={() => setExpanded(false)} activeOpacity={0.7}>
-              <Text style={styles.moreText}>Show less ▴</Text>
-            </TouchableOpacity>
-          )}
-        </View>
+          );
+        })}
       </View>
     );
   };
 
   return (
-    <SettingSection title="Prayer Settings">
-      {/* Calculation Method */}
-      <SettingRow
-        label="Calculation Method"
-        value={isUpdatingMethod ? 'Updating...' : getCurrentMethodLabel()}
-        onPress={onCalculationMethodPress}
-        disabled={isUpdatingMethod}
-      />
-
-      {/* Current prayer times preview */}
-      {renderCurrentPrayerTimes()}
-
-      {/* Juristic Method for Asr */}
-      <View style={styles.juristicMethodWrapper}>
-        <SettingRow
-          label="Juristic Method"
-          subtitle="Asr prayer calculation - changes Asr time immediately"
-        />
-        
-        <SegmentedControl
-          options={juristicOptions}
-          selectedValue={userSettings.asrJuristic === 'Hanafi' ? 'Hanafi' : 'Standard'}
-          onValueChange={handleJuristicChange}
-          style={styles.juristicControl}
-        />
-        
-        {/* 🆕 NEW: Explanation of the difference */}
-        <View style={styles.juristicExplanation}>
-          <Text style={styles.explanationText}>
-            {userSettings.asrJuristic === 'Hanafi' 
-              ? 'Hanafi: Asr begins when shadow = 2× object length (later)'
-              : 'Standard: Asr begins when shadow = 1× object length (earlier)'
-            }
+    <>
+      {/* Hero Card — prayer times at a glance */}
+      <View style={styles.heroCard}>
+        <Text style={styles.heroLabel}>Prayer Settings</Text>
+        <TouchableOpacity onPress={onCalculationMethodPress} disabled={isUpdatingMethod}>
+          <Text style={styles.heroMethod}>
+            {isUpdatingMethod ? 'Updating...' : getCurrentMethodLabel()}
           </Text>
-        </View>
+        </TouchableOpacity>
+
+        {renderPrayerHero()}
       </View>
 
-      {/* Test calculations button */}
-      {onTestCalculations && hasValidLocation && (
-        <View style={styles.testSection}>
+      {/* Calculation & Juristic — separate card */}
+      <SettingSection title="Calculation">
+        <SettingRow
+          label="Calculation Method"
+          subtitle="Affects Fajr & Isha angles"
+          value={isUpdatingMethod ? 'Updating...' : getCurrentMethodLabel()}
+          onPress={onCalculationMethodPress}
+          disabled={isUpdatingMethod}
+        />
+
+        {/* Juristic Method inline */}
+        <View style={styles.juristicMethodWrapper}>
+          <Text style={styles.juristicLabel}>
+            Juristic Method <Text style={styles.juristicLabelSub}>· Asr timing</Text>
+          </Text>
+          
+          <View style={{ position: 'relative' }}>
+            <SegmentedControl
+              options={juristicOptions}
+              selectedValue={userSettings.asrJuristic === 'Hanafi' ? 'Hanafi' : 'Standard'}
+              onValueChange={handleJuristicChange}
+              style={styles.juristicControl}
+            />
+            {isRefreshing && (
+              <View style={styles.refreshingOverlay}>
+                <ActivityIndicator size="small" color={theme.colors.primary.DEFAULT} />
+                <Text style={styles.refreshingText}>Updating times...</Text>
+              </View>
+            )}
+          </View>
+          
+          <View style={styles.juristicExplanation}>
+            <Text style={styles.explanationText}>
+              {userSettings.asrJuristic === 'Hanafi' 
+                ? 'Shadow equals 2× object length — Asr begins later under Hanafi method'
+                : 'Shadow equals 1× object length — Asr begins earlier under Standard method'
+              }
+            </Text>
+          </View>
+        </View>
+
+        {/* Test calculations button */}
+        {onTestCalculations && hasValidLocation && (
           <TouchableOpacity 
             style={styles.testButton} 
             onPress={onTestCalculations}
             disabled={prayerTimesLoading}
           >
             <Text style={styles.testButtonText}>
-              {prayerTimesLoading ? '⏳ Loading...' : 'Test Prayer Calculations'}
+              {prayerTimesLoading ? 'Loading...' : 'Test Prayer Calculations'}
             </Text>
           </TouchableOpacity>
-        </View>
-      )}
-
-      {/* Method comparison hint */}
-      {hasValidLocation && todayPrayerTimes.length > 0 && (
-        <View style={styles.hintContainer}>
-          <Text style={styles.hintText}>
-            💡 Tap on calculation method to preview different timing methods
-          </Text>
-        </View>
-      )}
-    </SettingSection>
+        )}
+      </SettingSection>
+    </>
   );
 };
 
 const createStyles = (theme: AppTheme) => StyleSheet.create({
-  juristicMethodWrapper: {
-    marginTop: 16,
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: theme.colors.border.primary,
-  },
-  juristicControl: {
-    marginTop: 12,
-  },
-  juristicExplanation: {
-    backgroundColor: theme.colors.settings.previewBg,
-    borderRadius: 8,
-    padding: 10,
-    marginTop: 10,
-    borderLeftWidth: 3,
-    borderLeftColor: theme.colors.primary.DEFAULT,
-  },
-  explanationText: {
-    fontSize: 13,
-    color: theme.colors.settings.labelPrimary,
-    lineHeight: 18,
-  },
-  statusContainer: {
-    backgroundColor: theme.colors.settings.previewBg,
-    borderRadius: 8,
-    padding: 12,
-    marginTop: 12,
-  },
-  statusText: {
-    fontSize: 14,
-    color: theme.colors.settings.labelMuted,
-    textAlign: 'center',
-  },
-  prayerTimesContainer: {
-    backgroundColor: theme.colors.settings.previewBg,
-    borderRadius: 12,
-    padding: 16,
-    marginTop: 12,
+  // ─── Hero Card ─────────────────────────────────────
+  heroCard: {
+    backgroundColor: theme.colors.card.background,
     borderWidth: 1,
-    borderColor: theme.colors.settings.optionBorder,
+    borderColor: theme.colors.border.secondary,
+    borderRadius: 14,
+    padding: theme.spacing.lg,
+    marginHorizontal: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
   },
-  prayerTimesTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+  heroLabel: {
+    fontSize: theme.typography.fontSize.xs,
+    letterSpacing: 1.5,
+    textTransform: 'uppercase',
     color: theme.colors.primary.DEFAULT,
-    marginBottom: 12,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
+    marginBottom: theme.spacing.sm,
   },
-  prayerTimesList: {
-    gap: 8,
+  heroMethod: {
+    fontSize: theme.typography.fontSize['2xl'],
+    fontFamily: theme.typography.fontFamily.headingRegular,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.lg,
   },
-  prayerTimeRow: {
+
+  // ─── Prayer List ───────────────────────────────────
+  prayerList: {
+    gap: 2,
+  },
+  prayerItem: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border.primary,
+    justifyContent: 'space-between',
+    paddingVertical: theme.spacing.sm + 2,
+    paddingHorizontal: theme.spacing.md,
+    borderRadius: theme.borderRadius.sm,
   },
-  prayerInfoSection: {
-    flex: 1,
+  prayerItemActive: {
+    backgroundColor: theme.colors.primary.DEFAULT + '14',
+    borderWidth: 1,
+    borderColor: theme.colors.primary.DEFAULT + '26',
+  },
+  prayerNameRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginRight: 12,
+    gap: theme.spacing.sm,
+  },
+  prayerDot: {
+    width: 5,
+    height: 5,
+    borderRadius: 2.5,
+    backgroundColor: theme.colors.text.muted,
+  },
+  prayerDotActive: {
+    backgroundColor: theme.colors.primary.DEFAULT,
   },
   prayerName: {
-    fontSize: 14,
-    color: theme.colors.settings.labelPrimary,
-    fontWeight: '500',
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
+    color: theme.colors.text.secondary,
   },
-  nextPrayerName: {
+  prayerNameActive: {
+    color: theme.colors.text.primary,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
+  },
+  prayerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  nextBadge: {
+    backgroundColor: theme.colors.primary.DEFAULT + '26',
+    borderWidth: 1,
+    borderColor: theme.colors.primary.DEFAULT + '4D',
+    borderRadius: 20,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  nextBadgeText: {
+    fontSize: 9,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
     color: theme.colors.primary.DEFAULT,
-    fontWeight: '700',
-  },
-  asrHighlight: {
-    color: theme.colors.status.warning,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   prayerTime: {
-    fontSize: 14,
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
+    color: theme.colors.text.secondary,
+  },
+  prayerTimeActive: {
+    color: theme.colors.primary.light,
+  },
+
+  // ─── Status ────────────────────────────────────────
+  statusContainer: {
+    backgroundColor: theme.colors.settings.previewBg,
+    borderRadius: theme.borderRadius.sm,
+    padding: theme.spacing.md,
+    marginTop: theme.spacing.md,
+  },
+  statusText: {
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.settings.labelMuted,
-    fontWeight: '400',
-  },
-  nextPrayerTime: {
-    color: theme.colors.primary.DEFAULT,
-    fontWeight: '600',
-  },
-  jummahHighlight: {
-    color: '#D4AF37',
-    fontWeight: '700',
-  },
-  tahajjudName: {
-    color: '#7986CB',
-    fontStyle: 'italic',
-  },
-  tahajjudTime: {
-    color: '#7986CB',
-    fontStyle: 'italic',
-    fontSize: 12,
-  },
-  moreText: {
-    fontSize: 13,
-    color: theme.colors.primary.DEFAULT,
-    fontWeight: '500',
     textAlign: 'center',
-    marginTop: 8,
-    paddingVertical: 4,
   },
-  testSection: {
-    marginTop: 16,
-    paddingTop: 16,
+
+  // ─── Juristic ──────────────────────────────────────
+  juristicMethodWrapper: {
+    marginTop: theme.spacing.lg,
+    paddingTop: theme.spacing.lg,
     borderTopWidth: 1,
     borderTopColor: theme.colors.border.primary,
   },
-  testButton: {
-    backgroundColor: theme.colors.settings.optionActiveBg,
-    borderRadius: 8,
-    padding: 12,
-    alignItems: 'center',
+  juristicLabel: {
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
+    color: theme.colors.text.secondary,
+    marginBottom: theme.spacing.sm,
+  },
+  juristicLabelSub: {
+    color: theme.colors.text.muted,
+    fontSize: theme.typography.fontSize.xs,
+  },
+  juristicControl: {
+    marginTop: theme.spacing.xxs,
+  },
+  juristicExplanation: {
+    backgroundColor: theme.colors.primary.DEFAULT + '0D',
     borderWidth: 1,
-    borderColor: theme.colors.settings.optionActiveBorder,
+    borderColor: theme.colors.primary.DEFAULT + '1A',
+    borderRadius: theme.borderRadius.sm,
+    padding: theme.spacing.md,
+    marginTop: theme.spacing.md,
+  },
+  explanationText: {
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
+    color: theme.colors.text.secondary,
+    lineHeight: 18,
+  },
+
+  // ─── Test Button ───────────────────────────────────
+  testButton: {
+    marginTop: theme.spacing.lg,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.sm,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: theme.colors.primary.DEFAULT + '4D',
+    alignItems: 'center',
   },
   testButtonText: {
-    fontSize: 14,
+    fontSize: theme.typography.fontSize.sm,
     color: theme.colors.primary.DEFAULT,
-    fontWeight: '600',
+    fontFamily: theme.typography.fontFamily.bodySemibold,
+    letterSpacing: 0.2,
   },
-  hintContainer: {
-    backgroundColor: theme.colors.settings.hintBg,
-    borderRadius: 8,
-    padding: 10,
-    marginTop: 12,
-    borderWidth: 1,
-    borderColor: theme.colors.settings.hintBorder,
+  refreshingOverlay: {
+    flexDirection: 'row' as const,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+    gap: 8,
+    paddingTop: 10,
   },
-  hintText: {
-    fontSize: 13,
-    color: theme.colors.settings.hintText,
-    textAlign: 'center',
-    lineHeight: 16,
+  refreshingText: {
+    fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.secondary,
+    fontFamily: theme.typography.fontFamily.body,
   },
 });

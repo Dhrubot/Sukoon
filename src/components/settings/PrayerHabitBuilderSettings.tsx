@@ -138,7 +138,7 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
           {/* TIER 2: Persistent Reminders */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>🔔 Persistent Reminders</Text>
+              <Text style={styles.sectionTitle}>Persistent Reminders</Text>
               <Switch
                 value={localSettings.persistentReminders.enabled}
                 onValueChange={(value) =>
@@ -285,7 +285,7 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
           {/* TIER 3: Grace Period Warning */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>⚠️ Grace Period Warning</Text>
+              <Text style={styles.sectionTitle}>Grace Period Warning</Text>
               <Switch
                 value={localSettings.gracePeriodWarning.enabled}
                 onValueChange={(value) =>
@@ -423,7 +423,7 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
           {/* Quiet Hours */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>🌙 Quiet Hours</Text>
+              <Text style={styles.sectionTitle}>Quiet Hours</Text>
               <Switch
                 value={localSettings.quietHours.enabled}
                 onValueChange={(value) =>
@@ -468,7 +468,7 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
                 </View>
 
                 <Text style={styles.quietHoursHint}>
-                  💡 Quiet hours work across midnight (e.g., 22:00 to 06:00)
+                  Quiet hours work across midnight (e.g., 22:00 to 06:00)
                 </Text>
               </View>
             )}
@@ -476,7 +476,7 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
 
           {/* Info Section */}
           <View style={styles.infoSection}>
-            <Text style={styles.infoTitle}>ℹ️ How it Works</Text>
+            <Text style={styles.infoTitle}>How it Works</Text>
             <View style={styles.infoItem}>
               <Text style={styles.infoLabel}>Tier 1: Main Notification</Text>
               <Text style={styles.infoText}>
@@ -527,8 +527,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   section: {
     backgroundColor: theme.colors.settings.sectionBg,
-    marginBottom: 16,
-    padding: 20,
+    marginBottom: theme.spacing.lg,
+    padding: theme.spacing.xl,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border.primary,
   },
@@ -539,43 +539,43 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   headerInfo: {
     flex: 1,
-    marginRight: 16,
+    marginRight: theme.spacing.lg,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: theme.typography.fontSize.xl,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.primary.DEFAULT,
-    marginBottom: 4,
+    marginBottom: theme.spacing.xs,
   },
   settingDescription: {
-    fontSize: 14,
+    fontSize: theme.typography.fontSize.md,
     color: theme.colors.settings.labelSecondary,
     lineHeight: 20,
-    marginBottom: 16,
+    marginBottom: theme.spacing.lg,
   },
   sliderContainer: {
-    marginTop: 16,
+    marginTop: theme.spacing.lg,
   },
   sliderHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
   },
   sliderLabel: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.settings.labelPrimary,
   },
   sliderValue: {
-    fontSize: 15,
-    fontWeight: '600',
+    fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.primary.DEFAULT,
   },
   slider: {
@@ -583,27 +583,27 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     height: 40,
   },
   sliderHint: {
-    fontSize: 13,
+    fontSize: theme.typography.fontSize.sm,
     color: theme.colors.settings.labelMuted,
-    marginTop: 4,
+    marginTop: theme.spacing.xs,
   },
   snoozeOptions: {
-    marginTop: 12,
+    marginTop: theme.spacing.md,
   },
   optionLabel: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.settings.labelPrimary,
-    marginBottom: 12,
+    marginBottom: theme.spacing.md,
   },
   buttonRow: {
     flexDirection: 'row',
-    gap: 12,
+    gap: theme.spacing.md,
   },
   snoozeButton: {
     flex: 1,
-    paddingVertical: 12,
-    borderRadius: 8,
+    paddingVertical: theme.spacing.md,
+    borderRadius: theme.borderRadius.sm,
     backgroundColor: theme.colors.settings.optionBg,
     borderWidth: 1,
     borderColor: theme.colors.settings.optionBorder,
@@ -614,71 +614,71 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderColor: theme.colors.settings.optionActiveBorder,
   },
   snoozeButtonText: {
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.settings.labelSecondary,
   },
   snoozeButtonTextActive: {
     color: theme.colors.primary.DEFAULT,
-    fontWeight: '600',
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   timePickerContainer: {
-    marginTop: 16,
+    marginTop: theme.spacing.lg,
   },
   timePickerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: theme.spacing.md,
   },
   timeLabel: {
-    fontSize: 15,
-    fontWeight: '500',
+    fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.settings.labelPrimary,
   },
   timeButton: {
     backgroundColor: theme.colors.settings.optionActiveBg,
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
+    paddingHorizontal: theme.spacing.xl,
+    paddingVertical: theme.spacing.md - 2,
+    borderRadius: theme.borderRadius.sm,
     borderWidth: 1,
     borderColor: theme.colors.settings.optionActiveBorder,
   },
   timeButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.primary.DEFAULT,
   },
   quietHoursHint: {
-    fontSize: 13,
+    fontSize: theme.typography.fontSize.sm,
     color: theme.colors.settings.labelMuted,
-    marginTop: 8,
+    marginTop: theme.spacing.sm,
     fontStyle: 'italic',
   },
   infoSection: {
     backgroundColor: theme.colors.settings.infoBg,
-    padding: 20,
-    marginBottom: 32,
-    borderRadius: 12,
-    marginHorizontal: 16,
+    padding: theme.spacing.xl,
+    marginBottom: theme.spacing['3xl'],
+    borderRadius: theme.borderRadius.md,
+    marginHorizontal: theme.spacing.lg,
   },
   infoTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.settings.infoTitle,
-    marginBottom: 16,
+    marginBottom: theme.spacing.lg,
   },
   infoItem: {
-    marginBottom: 12,
+    marginBottom: theme.spacing.md,
   },
   infoLabel: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.settings.infoLabel,
-    marginBottom: 4,
+    marginBottom: theme.spacing.xs,
   },
   infoText: {
-    fontSize: 13,
+    fontSize: theme.typography.fontSize.sm,
     color: theme.colors.settings.infoText,
     lineHeight: 18,
   },

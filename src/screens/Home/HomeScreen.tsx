@@ -1,5 +1,5 @@
 // src/screens/Home/HomeScreen.tsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Dimensions,
   ColorValue,
   ActivityIndicator,
+  AppState,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -100,16 +101,41 @@ const HomeScreen = ({ navigation }: any) => {
   // 🎯 REMOVED: location checks - now handled by provider!
   // 🎯 REMOVED: prayer time error handling - now handled by provider!
 
+  // AppState-aware timer: pause on background, immediate sync on foreground
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
   useEffect(() => {
     // Only load non-prayer-time related data
     loadTodayRecords();
 
-    // Update time every minute
-    const timer = setInterval(() => {
-      setCurrentTime(new Date());
-    }, 60000);
+    const startTimer = () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = setInterval(() => {
+        setCurrentTime(new Date());
+      }, 60000);
+    };
 
-    return () => clearInterval(timer);
+    startTimer();
+
+    const subscription = AppState.addEventListener('change', (nextState) => {
+      if (nextState === 'active') {
+        // Immediately sync stale time and restart interval
+        setCurrentTime(new Date());
+        loadTodayRecords();
+        startTimer();
+      } else {
+        // Pause interval when backgrounded/inactive
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
+      }
+    });
+
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+      subscription.remove();
+    };
   }, []);
 
   // Check for moon sighting prompt — gates on Maghrib time for eve dates
@@ -190,6 +216,13 @@ const HomeScreen = ({ navigation }: any) => {
 
   // Prayer-aware hero: if the user already prayed the current fiqh-window prayer,
   // advance the hero to the next unprayed prayer. Returns null when all are prayed.
+  // Extract first name for gold rendering in SanctuaryView greeting
+  const heroUserName = useMemo(() => {
+    const fullName = userSettings?.name?.trim() || 'Friend';
+    const firstName = fullName.split(/\s+/)[0];
+    return firstName.charAt(0).toUpperCase() + firstName.slice(1);
+  }, [userSettings?.name]);
+
   const heroPrayer = useMemo(() => {
     if (!nextPrayer) return null;
 
@@ -211,6 +244,14 @@ const HomeScreen = ({ navigation }: any) => {
     // All remaining prayers are prayed
     return null;
   }, [nextPrayer, todayPrayerTimes, todayPrayerRecords]);
+
+  // Previous prayer time for inter-prayer ring progress
+  const previousPrayerTime = useMemo(() => {
+    if (!heroPrayer) return undefined;
+    const heroIdx = todayPrayerTimes.findIndex(p => p.name === heroPrayer.name);
+    if (heroIdx > 0) return todayPrayerTimes[heroIdx - 1].time;
+    return undefined;
+  }, [heroPrayer, todayPrayerTimes]);
 
   // Unified mosque mode info for the hero pill — scoped to heroPrayer
   const mosqueModeHeroInfo = useMemo(() => {
@@ -425,6 +466,8 @@ const HomeScreen = ({ navigation }: any) => {
           <SanctuaryView
             prayer={heroPrayer}
             greeting={getGreeting()}
+            userName={heroUserName}
+            previousPrayerTime={previousPrayerTime}
             record={heroPrayerRecord}
             isTimeEntered={isHeroPrayerTimeEntered}
             missedPrayer={missedPreviousPrayer}
@@ -433,7 +476,7 @@ const HomeScreen = ({ navigation }: any) => {
             onPraySunnah={handleSunnahPrayer}
             isFocusMode={isFocusMode}
             mosqueModeInfo={mosqueModeHeroInfo ?? undefined}
-            onMosqueModeTap={() => navigation.navigate('Menu', { screen: 'MosqueMode' })}
+            onMosqueModeTap={() => navigation.navigate('MosqueMode' as never)}
           />
         ) : (
           <LinearGradient colors={getBackgroundGradient()} style={styles.noNextPrayer}>
@@ -468,9 +511,6 @@ const HomeScreen = ({ navigation }: any) => {
           )}
 
 
-          {/* Sunrise & Sunset */}
-          <SunTimesDisplay sunrise={todaySunrise} sunset={todaySunset} />
-
           {/* Ramadan Suhoor/Iftar — only during Ramadan */}
           {isRamadan() && todayPrayerTimes.length > 0 && (() => {
             const fajr = todayPrayerTimes.find(p => p.name === 'Fajr');
@@ -497,6 +537,9 @@ const HomeScreen = ({ navigation }: any) => {
               onDismissed={() => setHijriNudge(null)}
             />
           )}
+
+          {/* Sunrise & Sunset */}
+          <SunTimesDisplay sunrise={todaySunrise} sunset={todaySunset} />
 
           {/* Garden Teaser — subtle entry point to Reflection Garden */}
           <GardenTeaser />
@@ -590,7 +633,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   focusRevealText: {
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.text.muted,
-    fontWeight: '500',
+    fontFamily: theme.typography.fontFamily.bodyMedium,
   },
   secondaryContentHidden: {
     display: 'none',
@@ -603,7 +646,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   greeting: {
     fontSize: theme.typography.fontSize['3xl'],
-    fontWeight: '400',
+    fontFamily: theme.typography.fontFamily.headingRegular,
     color: theme.colors.sanctuary.prayerName,
     textAlign: 'center',
     marginBottom: theme.spacing.sm,
@@ -616,21 +659,23 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     paddingVertical: theme.spacing['2xl'],
   },
   allPrayersComplete: {
-    fontSize: 28,
+    fontSize: theme.typography.fontSize['4xl'],
     fontWeight: '300',
+    fontFamily: theme.typography.fontFamily.headingRegular,
     color: theme.colors.text.primary,
     textAlign: 'center',
     marginTop: theme.spacing.lg,
   },
   allPrayersSubtext: {
-    fontSize: 18,
+    fontSize: theme.typography.fontSize.xl,
     fontWeight: '300',
+    fontFamily: theme.typography.fontFamily.headingRegular,
     color: theme.colors.text.secondary,
     fontStyle: 'italic',
     marginTop: theme.spacing.sm,
   },
   secondaryContent: {
-    paddingTop: theme.spacing.lg,
+    paddingTop: theme.spacing.xs,
   },
   section: {
     paddingHorizontal: theme.spacing.xl,
@@ -639,7 +684,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   sectionTitle: {
     fontSize: theme.typography.fontSize['2xl'],
-    fontWeight: '500',
+    fontFamily: theme.typography.fontFamily.headingMedium,
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.lg,
   },
@@ -651,17 +696,19 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
+    padding: theme.spacing['4xl'],
   },
   setupTitle: {
-    fontSize: 28,
+    fontSize: theme.typography.fontSize['4xl'],
     fontWeight: '700',
+    fontFamily: theme.typography.fontFamily.heading,
     color: theme.colors.text.primary,
     textAlign: 'center',
     marginBottom: theme.spacing.lg,
   },
   setupSubtitle: {
     fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     textAlign: 'center',
     marginBottom: theme.spacing['2xl'],
@@ -676,6 +723,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   setupHelpText: {
     fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     textAlign: 'center',
     lineHeight: 22,
@@ -685,10 +733,11 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
+    padding: theme.spacing['4xl'],
   },
   loadingText: {
     fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.primary,
     marginTop: theme.spacing.lg,
     textAlign: 'center',
@@ -698,17 +747,18 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 40,
+    padding: theme.spacing['4xl'],
   },
   errorTitle: {
     fontSize: theme.typography.fontSize['3xl'],
-    fontWeight: '700',
+    fontFamily: theme.typography.fontFamily.heading,
     color: theme.colors.text.primary,
     textAlign: 'center',
     marginBottom: theme.spacing.lg,
   },
   errorText: {
     fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     textAlign: 'center',
     marginBottom: theme.spacing['2xl'],
@@ -724,11 +774,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   retryButtonText: {
     fontSize: theme.typography.fontSize.base,
-    fontWeight: '600',
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
   },
   date: {
     fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     textAlign: 'center',
   },
@@ -746,7 +797,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   offlineBannerText: {
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.status.warning,
-    fontWeight: '500',
+    fontFamily: theme.typography.fontFamily.bodyMedium,
   },
 });
 

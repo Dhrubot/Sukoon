@@ -173,7 +173,7 @@ export const NotificationDebugScreen = () => {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>🔧 Notification Debugger</Text>
+        <Text style={styles.title}>Notification Debugger</Text>
         <Text style={styles.subtitle}>
           Test notification system on {Platform.OS === 'ios' ? 'iOS' : 'Android'}
         </Text>
@@ -181,7 +181,7 @@ export const NotificationDebugScreen = () => {
 
       {/* Device Info */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>📱 Device Info</Text>
+        <Text style={styles.sectionTitle}>Device Info</Text>
         <InfoRow label="Is Physical Device" value={Device.isDevice ? 'Yes' : 'No (Emulator)'} />
         <InfoRow label="Platform" value={Platform.OS} />
         <InfoRow label="Permission Status" value={permissionStatus} />
@@ -190,7 +190,7 @@ export const NotificationDebugScreen = () => {
 
       {/* Prayer Times Info */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>🕌 Prayer Times</Text>
+        <Text style={styles.sectionTitle}>Prayer Times</Text>
         <InfoRow label="Today's Prayers" value={todayPrayerTimes.length.toString()} />
         <InfoRow label="Next Prayer" value={nextPrayer?.name || 'None'} />
         <InfoRow label="Notifications Enabled" value={userSettings?.notifications?.enabled ? 'Yes' : 'No'} />
@@ -200,7 +200,7 @@ export const NotificationDebugScreen = () => {
       {/* Debug Info */}
       {debugInfo && (
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>🔍 Debug Info</Text>
+          <Text style={styles.sectionTitle}>Debug Info</Text>
           <InfoRow label="Has Prayer Source" value={debugInfo.hasSource ? 'Yes' : 'No'} />
           <InfoRow label="Has Location" value={debugInfo.sourceHasLocation ? 'Yes' : 'No'} />
           <InfoRow label="Loading" value={debugInfo.sourceLoading ? 'Yes' : 'No'} />
@@ -277,7 +277,7 @@ export const NotificationDebugScreen = () => {
         )}
         
         <TestButton
-          title="🔄 Refresh Debug Info"
+          title="Refresh Debug Info"
           onPress={loadDebugInfo}
           description="Reload debug information"
         />
@@ -285,7 +285,7 @@ export const NotificationDebugScreen = () => {
 
       {/* Important Notes */}
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>⚠️ Important Notes</Text>
+        <Text style={styles.sectionTitle}>Important Notes</Text>
         <View style={styles.noteBox}>
           <Text style={styles.noteText}>
             • On emulator: Notifications may not work perfectly{'\n'}
@@ -343,97 +343,97 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   header: {
     backgroundColor: theme.colors.primary.DEFAULT,
-    padding: 20,
+    padding: theme.spacing.xl,
     paddingTop: 60,
   },
   title: {
-    fontSize: 24,
-    fontWeight: '700',
+    fontSize: theme.typography.fontSize['3xl'],
+    fontFamily: theme.typography.fontFamily.heading,
     color: theme.colors.primary.contrast,
-    marginBottom: 4,
+    marginBottom: theme.spacing.xs,
   },
   subtitle: {
-    fontSize: 14,
+    fontSize: theme.typography.fontSize.md,
     color: theme.colors.achievement.textSecondary,
   },
   section: {
     backgroundColor: theme.colors.settings.sectionBg,
-    marginTop: 12,
-    marginHorizontal: 12,
-    padding: 16,
-    borderRadius: 12,
+    marginTop: theme.spacing.md,
+    marginHorizontal: theme.spacing.md,
+    padding: theme.spacing.lg,
+    borderRadius: theme.borderRadius.md,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginBottom: 12,
+    fontSize: theme.typography.fontSize.xl,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
+    marginBottom: theme.spacing.md,
     color: theme.colors.primary.DEFAULT,
   },
   subsectionTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginTop: 12,
-    marginBottom: 8,
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
+    marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.sm,
     color: theme.colors.text.secondary,
   },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: 8,
+    paddingVertical: theme.spacing.sm,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border.primary,
   },
   infoLabel: {
-    fontSize: 14,
+    fontSize: theme.typography.fontSize.md,
     color: theme.colors.text.secondary,
   },
   infoValue: {
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
   },
   notificationCard: {
     backgroundColor: theme.colors.settings.optionBg,
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 8,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.sm,
+    marginBottom: theme.spacing.sm,
   },
   notifText: {
-    fontSize: 13,
+    fontSize: theme.typography.fontSize.sm,
     color: theme.colors.text.secondary,
-    marginBottom: 4,
+    marginBottom: theme.spacing.xs,
   },
   testButton: {
     backgroundColor: theme.colors.settings.buttonPrimaryBg,
-    padding: 16,
-    borderRadius: 8,
-    marginBottom: 12,
+    padding: theme.spacing.lg,
+    borderRadius: theme.borderRadius.sm,
+    marginBottom: theme.spacing.md,
   },
   dangerButton: {
     backgroundColor: theme.colors.status.error,
   },
   buttonTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.settings.buttonPrimaryText,
-    marginBottom: 4,
+    marginBottom: theme.spacing.xs,
   },
   dangerText: {
     color: theme.colors.settings.buttonPrimaryText,
   },
   buttonDescription: {
-    fontSize: 13,
+    fontSize: theme.typography.fontSize.sm,
     color: theme.colors.achievement.textSecondary,
   },
   noteBox: {
     backgroundColor: theme.colors.settings.warningBg,
-    padding: 12,
-    borderRadius: 8,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.sm,
     borderLeftWidth: 4,
     borderLeftColor: theme.colors.status.warning,
   },
   noteText: {
-    fontSize: 13,
+    fontSize: theme.typography.fontSize.sm,
     color: theme.colors.text.secondary,
     lineHeight: 20,
   },

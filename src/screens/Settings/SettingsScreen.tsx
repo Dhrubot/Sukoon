@@ -86,6 +86,37 @@ const SettingsScreen = ({ navigation }: any) => {
     );
   }
 
+  // Tahajjud toggle handler
+  const handleToggleTahajjud = async () => {
+    const isEnabled = userSettings.tahajjudReminders?.enabled ?? false;
+    const updated = {
+      ...userSettings,
+      tahajjudReminders: {
+        enabled: !isEnabled,
+        frequency: userSettings.tahajjudReminders?.frequency || 'twice_weekly' as const,
+      },
+    };
+    setUserSettings(updated);
+    if (!isEnabled) {
+      await NotificationService.scheduleTahajjudEncouragement();
+    } else {
+      await NotificationService.cancelTahajjudNotifications();
+    }
+  };
+
+  // Jumu'ah toggle handler
+  const handleToggleJummah = () => {
+    const isEnabled = userSettings.jummahReminders?.enabled !== false;
+    setUserSettings({
+      ...userSettings,
+      jummahReminders: { enabled: !isEnabled },
+    });
+  };
+
+  // Theme display label
+  const themeLabel = themeMode === 'dark' ? 'Dark' : themeMode === 'light' ? 'Light' : 'Blackout';
+  const themeIcon = themeMode === 'dark' ? '🌙' : themeMode === 'light' ? '☀️' : '✦';
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -93,18 +124,15 @@ const SettingsScreen = ({ navigation }: any) => {
         contentContainerStyle={styles.scrollContent}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Settings</Text>
-          <Text style={styles.subtitle}>Customize your prayer experience</Text>
+          <Text style={styles.subtitle}>Prayer Preferences</Text>
         </View>
 
-        {/* 🎯 ENHANCED: Prayer Settings with real-time previews */}
+        {/* 1. Prayer Settings — Hero Card + Calculation */}
         <PrayerSettingsSection
           userSettings={userSettings}
           setUserSettings={setUserSettings}
           onCalculationMethodPress={() => setShowCalculationPicker(true)}
           calculationMethods={calculationMethods}
-
-          // Enhanced props
           isUpdatingMethod={isUpdatingMethod}
           todayPrayerTimes={todayPrayerTimes}
           nextPrayer={nextPrayer}
@@ -115,54 +143,16 @@ const SettingsScreen = ({ navigation }: any) => {
           onRefreshPrayerTimes={refreshPrayerTimes}
         />
 
-        {/* Notification Settings */}
+        {/* 2. Notifications — consolidated with Tahajjud & Jumu'ah */}
         <NotificationSection
           userSettings={userSettings}
           onNotificationPress={() => setShowNotificationModal(true)}
+          onToggleTahajjud={handleToggleTahajjud}
+          onToggleJummah={handleToggleJummah}
         />
 
-        {/* 🌌 Optional Prayer Settings */}
-        <SettingSection title="">
-          <SettingRow
-            label="Tahajjud Reminders"
-            subtitle="Gentle encouragement to pray the night prayer"
-            value={userSettings.tahajjudReminders?.enabled ? 'On' : 'Off'}
-            onPress={async () => {
-              const isEnabled = userSettings.tahajjudReminders?.enabled ?? false;
-              const updated = {
-                ...userSettings,
-                tahajjudReminders: {
-                  enabled: !isEnabled,
-                  frequency: userSettings.tahajjudReminders?.frequency || 'twice_weekly' as const,
-                },
-              };
-              setUserSettings(updated);
-              if (!isEnabled) {
-                await NotificationService.scheduleTahajjudEncouragement();
-              } else {
-                await NotificationService.cancelTahajjudNotifications();
-              }
-            }}
-          />
-          <SettingRow
-            label="Jumu'ah Reminders"
-            subtitle="Friday Sunnah reminders: Surah Al-Kahf, ghusl, dua hour"
-            value={userSettings.jummahReminders?.enabled !== false ? 'On' : 'Off'}
-            onPress={() => {
-              const isEnabled = userSettings.jummahReminders?.enabled !== false;
-              const updated = {
-                ...userSettings,
-                jummahReminders: {
-                  enabled: !isEnabled,
-                },
-              };
-              setUserSettings(updated);
-            }}
-          />
-        </SettingSection>
-
-        {/* 🌙 Hijri Date Adjustment (Moon Sighting) */}
-        <SettingSection title="HIJRI CALENDAR">
+        {/* 3. Hijri Calendar */}
+        <SettingSection title="Hijri Calendar">
           <SettingRow
             label="Hijri Date Adjustment"
             subtitle={(() => {
@@ -179,9 +169,7 @@ const SettingsScreen = ({ navigation }: any) => {
           />
         </SettingSection>
 
-        {/* Mosque Mode moved to dedicated screen via Menu > Mosque Mode */}
-
-        {/* 🎯 ENHANCED: Location Section with manual selection */}
+        {/* 4. Location */}
         <LocationSection
           userSettings={userSettings}
           isUpdatingLocation={isUpdatingLocation}
@@ -190,64 +178,60 @@ const SettingsScreen = ({ navigation }: any) => {
           hasValidLocation={hasValidLocation}
         />
 
-        {/* Location modal for manual update */}
         <LocationModal
           visible={showManualLocationModal}
           onClose={() => setShowManualLocationModal(false)}
         />
 
-        {/* App Data */}
+        {/* 5. Appearance */}
+        <SettingSection title="Appearance">
+          <SettingRow
+            label="App Theme"
+            subtitle="Tap to cycle themes"
+            value={`${themeIcon} ${themeLabel}`}
+            onPress={toggleTheme}
+          />
+        </SettingSection>
+
+        {/* 6. App Data */}
         <AppDataSection
           onExportData={handleExportData}
           onResetApp={handleResetApp}
         />
 
-        {__DEV__ && <TouchableOpacity onPress={() => navigation.navigate('NotificationDebug')}>
-          <Text>🔧 Notification Debugger</Text>
-        </TouchableOpacity>}
-
-        {/* Appearance Settings */}
-        <SettingSection title="APPEARANCE">
-          <SettingRow
-            label="App Theme"
-            subtitle="Switch between dark and light mode"
-            value={themeMode === 'dark' ? '🌙 Dark' : '☀️ Light'}
-            onPress={toggleTheme}
-          />
-        </SettingSection>
-
-        {/* About */}
+        {/* 7. About */}
         <AboutSection
           onPrivacyPolicy={() => handlePrivacyPolicy(navigation)}
           onShowDebugInfo={__DEV__ ? showDebugInfo : undefined}
         />
 
-        {/* 🎯 NEW: Connection status indicator */}
-       { __DEV__ && <View style={styles.statusSection}>
-          <Text style={styles.statusTitle}>🔗 Connection Status</Text>
-          <View style={styles.statusRow}>
-            <Text style={styles.statusLabel}>Prayer Times:</Text>
-            <Text style={[
-              styles.statusValue,
-              hasValidLocation ? styles.statusConnected : styles.statusDisconnected
-            ]}>
-              {hasValidLocation ? '✅ Connected' : '❌ No Location'}
-            </Text>
+        {/* Dev-only: Connection status */}
+        {__DEV__ && (
+          <View style={styles.statusSection}>
+            <Text style={styles.statusTitle}>Connection Status</Text>
+            <View style={styles.statusRow}>
+              <Text style={styles.statusLabel}>Prayer Times:</Text>
+              <Text style={[
+                styles.statusValue,
+                hasValidLocation ? styles.statusConnected : styles.statusDisconnected
+              ]}>
+                {hasValidLocation ? 'Connected' : 'No Location'}
+              </Text>
+            </View>
+            <View style={styles.statusRow}>
+              <Text style={styles.statusLabel}>Today's Prayers:</Text>
+              <Text style={styles.statusValue}>
+                {prayerTimesLoading ? 'Loading...' : `${todayPrayerTimes.length} loaded`}
+              </Text>
+            </View>
+            <View style={styles.statusRow}>
+              <Text style={styles.statusLabel}>Next Prayer:</Text>
+              <Text style={styles.statusValue}>
+                {nextPrayer ? `${nextPrayer.name}` : 'None'}
+              </Text>
+            </View>
           </View>
-          <View style={styles.statusRow}>
-            <Text style={styles.statusLabel}>Today's Prayers:</Text>
-            <Text style={styles.statusValue}>
-              {prayerTimesLoading ? '⏳ Loading...' : `${todayPrayerTimes.length} loaded`}
-            </Text>
-          </View>
-          <View style={styles.statusRow}>
-            <Text style={styles.statusLabel}>Next Prayer:</Text>
-            <Text style={styles.statusValue}>
-              {nextPrayer ? `${nextPrayer.name}` : 'None'}
-            </Text>
-          </View>
-        </View>
-        }
+        )}
       </ScrollView>
 
       {/* 🎯 ENHANCED: Calculation Method Modal with previews */}
@@ -291,71 +275,77 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     backgroundColor: theme.colors.background.primary,
   },
   scrollContent: {
-    paddingBottom: 20,
+    paddingBottom: theme.spacing.xl,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: theme.spacing.xl,
   },
   loadingText: {
-    marginTop: 16,
-    fontSize: 16,  // lg
+    marginTop: theme.spacing.lg,
+    fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
   },
   loadingSubtext: {
-    marginTop: 8,
-    fontSize: 14,  // md
+    marginTop: theme.spacing.sm,
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.muted,
     textAlign: 'center',
   },
   header: {
-    padding: 20,
-    paddingBottom: 10,
+    padding: theme.spacing.xl,
+    paddingBottom: theme.spacing.sm,
     backgroundColor: theme.colors.background.primary,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border.secondary,
   },
   title: {
-    fontSize: 32,  // 5xl
-    fontWeight: '700',  // bold
+    fontSize: theme.typography.fontSize['5xl'],
+    fontWeight: theme.typography.fontWeight.bold,
+    fontFamily: theme.typography.fontFamily.heading,
     color: theme.colors.text.primary,
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
   },
   subtitle: {
-    fontSize: 16,  // lg
+    fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
   },
 
   // 🎯 NEW: Status section styles
   statusSection: {
-    margin: 20,
-    padding: 16,
+    marginHorizontal: theme.spacing.lg,
+    marginBottom: theme.spacing.md,
+    padding: theme.spacing.lg,
     backgroundColor: theme.colors.card.background,
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
-    borderColor: theme.colors.border.primary,
+    borderColor: theme.colors.border.secondary,
   },
   statusTitle: {
-    fontSize: 14,  // md
-    fontWeight: '600',  // semibold
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.secondary,
-    marginBottom: 12,
+    marginBottom: theme.spacing.md,
     letterSpacing: 0.5,
   },
   statusRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 8,
+    marginBottom: theme.spacing.sm,
   },
   statusLabel: {
-    fontSize: 14,  // md
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
   },
   statusValue: {
-    fontSize: 14,  // md
-    fontWeight: '600',  // semibold
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
   },
   statusValueGood: {
@@ -368,16 +358,16 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     color: theme.colors.status.error,
   },
   debugButton: {
-    marginTop: 12,
+    marginTop: theme.spacing.md,
     backgroundColor: theme.colors.card.hover,
-    padding: 12,
-    borderRadius: 8,
+    padding: theme.spacing.md,
+    borderRadius: theme.borderRadius.sm,
     alignItems: 'center',
   },
   debugButtonText: {
     color: theme.colors.primary.DEFAULT,
-    fontSize: 14,  // md
-    fontWeight: '600',  // semibold
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
 });
 

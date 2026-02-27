@@ -1,6 +1,7 @@
 // src/components/prayer/RamadanTimesCard.tsx
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
+import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 
@@ -12,20 +13,21 @@ interface RamadanTimesCardProps {
 const fmt = (d: Date) => d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
 const RamadanTimesCard: React.FC<RamadanTimesCardProps> = ({ fajrTime, maghribTime }) => {
+  const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
 
   return (
     <View style={styles.ramadanCard}>
-      <Text style={styles.ramadanTitle}>🌙 Ramadan Times</Text>
+      <Text style={styles.ramadanTitle}>Ramadan Times</Text>
       <View style={styles.ramadanRow}>
         <View style={styles.ramadanItem}>
           <Text style={styles.ramadanLabel}>Suhoor ends</Text>
-          <Text style={styles.ramadanTime}>{fmt(fajrTime)}</Text>
+          <Text style={[styles.ramadanTime, { color: theme.colors.interactive.active }]}>{fmt(fajrTime)}</Text>
         </View>
         <View style={styles.ramadanDivider} />
         <View style={styles.ramadanItem}>
           <Text style={styles.ramadanLabel}>Iftar</Text>
-          <Text style={styles.ramadanTime}>{fmt(maghribTime)}</Text>
+          <Text style={[styles.ramadanTime, { color: theme.colors.goldLight }]}>{fmt(maghribTime)}</Text>
         </View>
       </View>
     </View>
@@ -36,16 +38,17 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   ramadanCard: {
     marginHorizontal: theme.spacing.xl,
     marginTop: theme.spacing.md,
+    marginBottom: theme.spacing.lg,
     backgroundColor: theme.colors.card.background,
-    borderRadius: 16,
+    borderRadius: theme.borderRadius.lg,
     padding: theme.spacing.lg,
     borderWidth: 1,
     borderColor: theme.colors.border.primary,
   },
   ramadanTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: theme.colors.text.primary,
+    fontSize: theme.typography.fontSize['2xl'],
+    fontFamily: theme.typography.fontFamily.headingRegular,
+    color: theme.colors.text.secondary,
     textAlign: 'center',
     marginBottom: theme.spacing.md,
   },
@@ -59,14 +62,15 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flex: 1,
   },
   ramadanLabel: {
-    fontSize: 13,
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
-    marginBottom: 4,
+    marginBottom: theme.spacing.xs,
   },
   ramadanTime: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: theme.colors.primary.DEFAULT,
+    fontSize: theme.typography.fontSize.xl,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
+    color: theme.colors.text.primary
   },
   ramadanDivider: {
     width: 1,
