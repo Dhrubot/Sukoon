@@ -24,34 +24,24 @@ export const MosqueModeOptions: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.sectionTitle, { color: theme.colors.text.primary }]}>
-        Silent Mode Options
-      </Text>
+      <Text style={styles.sectionTitle}>Silent Mode Options</Text>
 
       {/* Silent Duration */}
       <TouchableOpacity
-        style={[styles.row, { backgroundColor: theme.colors.card.background, borderColor: theme.colors.border.primary }]}
+        style={styles.row}
         onPress={() => setShowDurationPicker(!showDurationPicker)}
         activeOpacity={0.7}
       >
         <View style={styles.rowInfo}>
-          <Text style={[styles.rowLabel, { color: theme.colors.text.primary }]}>
-            Silent Duration
-          </Text>
-          <Text style={[styles.rowValue, { color: theme.colors.text.secondary }]}>
-            {settings.silentDuration} minutes
-          </Text>
+          <Text style={styles.rowLabel}>Silent Duration</Text>
+          <Text style={styles.rowValue}>{settings.silentDuration} minutes</Text>
         </View>
-        <Text style={[styles.chevron, { color: theme.colors.primary.DEFAULT }]}>
-          {showDurationPicker ? '▲' : '▼'}
-        </Text>
+        <Text style={styles.chevron}>{showDurationPicker ? '▲' : '▼'}</Text>
       </TouchableOpacity>
 
       {showDurationPicker && (
-        <View style={[styles.pickerContainer, { backgroundColor: theme.colors.card.hover }]}>
-          <Text style={[styles.pickerLabel, { color: theme.colors.text.secondary }]}>
-            How long should silent mode stay on?
-          </Text>
+        <View style={styles.pickerContainer}>
+          <Text style={styles.pickerLabel}>How long should silent mode stay on?</Text>
           <View style={styles.chipGrid}>
             {DURATION_OPTIONS.map((min) => {
               const isSelected = settings.silentDuration === min;
@@ -60,8 +50,7 @@ export const MosqueModeOptions: React.FC = () => {
                   key={min}
                   style={[
                     styles.chip,
-                    { borderColor: theme.colors.border.primary },
-                    isSelected && { backgroundColor: theme.colors.primary.DEFAULT, borderColor: theme.colors.primary.DEFAULT },
+                    isSelected && styles.chipActive,
                   ]}
                   onPress={() => {
                     updateMosqueModeSettings({ silentDuration: min });
@@ -72,8 +61,7 @@ export const MosqueModeOptions: React.FC = () => {
                   <Text
                     style={[
                       styles.chipText,
-                      { color: theme.colors.text.secondary },
-                      isSelected && { color: '#FFFFFF', fontWeight: '700' },
+                      isSelected && styles.chipTextActive,
                     ]}
                   >
                     {min} min
@@ -86,16 +74,10 @@ export const MosqueModeOptions: React.FC = () => {
       )}
 
       {/* Auto-Restore Toggle */}
-      <View
-        style={[styles.row, { backgroundColor: theme.colors.card.background, borderColor: theme.colors.border.primary }]}
-      >
+      <View style={styles.row}>
         <View style={styles.rowInfo}>
-          <Text style={[styles.rowLabel, { color: theme.colors.text.primary }]}>
-            Auto-Restore Ringer
-          </Text>
-          <Text style={[styles.rowValue, { color: theme.colors.text.secondary }]}>
-            Automatically restore sound after duration ends
-          </Text>
+          <Text style={styles.rowLabel}>Auto-Restore Ringer</Text>
+          <Text style={styles.rowValue}>Automatically restore sound after duration ends</Text>
         </View>
         <Switch
           value={settings.autoRestore}
@@ -106,14 +88,10 @@ export const MosqueModeOptions: React.FC = () => {
       </View>
 
       {/* Vibrate vs Silent Toggle */}
-      <View
-        style={[styles.row, { backgroundColor: theme.colors.card.background, borderColor: theme.colors.border.primary }]}
-      >
+      <View style={styles.row}>
         <View style={styles.rowInfo}>
-          <Text style={[styles.rowLabel, { color: theme.colors.text.primary }]}>
-            Vibrate Instead of Silent
-          </Text>
-          <Text style={[styles.rowValue, { color: theme.colors.text.secondary }]}>
+          <Text style={styles.rowLabel}>Vibrate Instead of Silent</Text>
+          <Text style={styles.rowValue}>
             {settings.useVibrateInsteadOfSilent ? 'Phone will vibrate during prayer' : 'Phone will be completely silent'}
           </Text>
         </View>
@@ -126,14 +104,10 @@ export const MosqueModeOptions: React.FC = () => {
       </View>
 
       {/* Confirm Before Each Prayer Toggle */}
-      <View
-        style={[styles.row, { backgroundColor: theme.colors.card.background, borderColor: theme.colors.border.primary }]}
-      >
+      <View style={styles.row}>
         <View style={styles.rowInfo}>
-          <Text style={[styles.rowLabel, { color: theme.colors.text.primary }]}>
-            Confirm Before Each Prayer
-          </Text>
-          <Text style={[styles.rowValue, { color: theme.colors.text.secondary }]}>
+          <Text style={styles.rowLabel}>Confirm Before Each Prayer</Text>
+          <Text style={styles.rowValue}>
             {settings.promptBeforeEnable
               ? 'You\'ll be asked before your phone goes silent'
               : 'Phone silences automatically at iqamah time'}
@@ -157,6 +131,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   sectionTitle: {
     fontSize: theme.typography.fontSize.lg,
     fontFamily: theme.typography.fontFamily.bodyBold,
+    color: theme.colors.text.primary,
     marginBottom: theme.spacing.md,
     paddingHorizontal: theme.spacing.xs,
   },
@@ -168,6 +143,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderRadius: theme.borderRadius.md,
     borderWidth: 1,
     marginBottom: theme.spacing.sm,
+    backgroundColor: theme.colors.mosqueMode.card.bg,
+    borderColor: theme.colors.mosqueMode.card.border,
   },
   rowInfo: {
     flex: 1,
@@ -176,25 +153,32 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   rowLabel: {
     fontSize: theme.typography.fontSize.base,
     fontFamily: theme.typography.fontFamily.bodySemibold,
+    color: theme.colors.text.primary,
     marginBottom: 3,
   },
   rowValue: {
     fontFamily: theme.typography.fontFamily.body,
     fontSize: theme.typography.fontSize.sm,
+    color: theme.colors.text.secondary,
     lineHeight: 18,
   },
   chevron: {
     fontSize: theme.typography.fontSize.lg,
     fontFamily: theme.typography.fontFamily.bodySemibold,
+    color: theme.colors.mosqueMode.accordion.chevron,
   },
   pickerContainer: {
     padding: theme.spacing.lg,
     borderRadius: theme.borderRadius.md,
     marginBottom: theme.spacing.sm,
+    backgroundColor: theme.colors.mosqueMode.card.bg,
+    borderWidth: 1,
+    borderColor: theme.colors.mosqueMode.card.border,
   },
   pickerLabel: {
     fontSize: theme.typography.fontSize.md,
     fontFamily: theme.typography.fontFamily.bodyMedium,
+    color: theme.colors.text.secondary,
     marginBottom: theme.spacing.sm,
   },
   chipGrid: {
@@ -207,9 +191,20 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     paddingHorizontal: theme.spacing.lg,
     borderRadius: theme.borderRadius.sm + 2,
     borderWidth: 1,
+    backgroundColor: theme.colors.mosqueMode.chip.bg,
+    borderColor: theme.colors.mosqueMode.chip.border,
+  },
+  chipActive: {
+    backgroundColor: theme.colors.mosqueMode.chip.activeBg,
+    borderColor: theme.colors.mosqueMode.chip.activeBorder,
   },
   chipText: {
     fontSize: theme.typography.fontSize.md,
     fontFamily: theme.typography.fontFamily.bodyMedium,
+    color: theme.colors.mosqueMode.chip.text,
+  },
+  chipTextActive: {
+    color: theme.colors.mosqueMode.chip.activeText,
+    fontWeight: '700',
   },
 });

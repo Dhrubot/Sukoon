@@ -165,15 +165,13 @@ export const MosqueModeToggle: React.FC = () => {
       : 'Get reminders to enable silent mode for prayers';
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.card.background }]}>
+    <View style={styles.container}>
       <View style={styles.content}>
         <View style={styles.textContainer}>
-          <Text style={[styles.title, { color: theme.colors.text.primary }]}>
-            Mosque Mode
-          </Text>
+          <Text style={styles.title}>Mosque Mode</Text>
           <Text style={[
             styles.description,
-            { color: nativeAvailable ? theme.colors.text.secondary : theme.colors.status.error },
+            !nativeAvailable && { color: theme.colors.status.error },
           ]}>
             {description}
           </Text>
@@ -197,7 +195,9 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     borderRadius: theme.borderRadius.md,
     padding: theme.spacing.lg,
-    marginBottom: theme.spacing.md,
+    backgroundColor: theme.colors.mosqueMode.card.bg,
+    borderWidth: 1,
+    borderColor: theme.colors.mosqueMode.card.border,
   },
   content: {
     flexDirection: 'row',
@@ -211,11 +211,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   title: {
     fontSize: theme.typography.fontSize.lg,
     fontFamily: theme.typography.fontFamily.bodySemibold,
+    color: theme.colors.text.primary,
     marginBottom: theme.spacing.xs,
   },
   description: {
     fontSize: theme.typography.fontSize.sm,
     fontFamily: theme.typography.fontFamily.body,
+    color: theme.colors.text.secondary,
     lineHeight: 18,
   },
 });

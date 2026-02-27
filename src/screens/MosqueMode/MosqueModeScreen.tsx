@@ -29,9 +29,6 @@ const MosqueModeScreen: React.FC = () => {
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.header}>
-        {/* <Text style={styles.headerTitle}>
-          Mosque Mode
-        </Text> */}
         <Text style={styles.headerSubtitle}>
           Automatically silence your phone when iqamah starts so you can focus entirely on your prayer.
         </Text>
@@ -40,20 +37,24 @@ const MosqueModeScreen: React.FC = () => {
       <MosqueModeStatus />
 
       <View style={styles.section}>
+        <Text style={styles.sectionLabel}>MODE</Text>
         <MosqueModeToggle />
       </View>
 
       {isEnabled && (
         <>
           <View style={styles.section}>
+            <Text style={styles.sectionLabel}>IQAMAH TIMES</Text>
             <IqamahTimeConfig />
           </View>
 
           <View style={styles.section}>
+            <Text style={styles.sectionLabel}>SILENT MODE OPTIONS</Text>
             <MosqueModeOptions />
           </View>
 
           <View style={styles.section}>
+            <Text style={styles.sectionLabel}>JUMU'AH SETTINGS</Text>
             <JummahMosqueConfig />
           </View>
         </>
@@ -81,32 +82,34 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     paddingTop: theme.spacing.lg,
     paddingBottom: theme.spacing.sm,
   },
-  headerTitle: {
-    fontSize: theme.typography.fontSize['3xl'],
-    fontWeight: '700',
-    fontFamily: theme.typography.fontFamily.heading,
-    color: theme.colors.text.primary,
-    marginBottom: theme.spacing.sm,
-  },
   headerSubtitle: {
     fontSize: theme.typography.fontSize.base,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     lineHeight: 22,
   },
+  sectionLabel: {
+    fontSize: theme.typography.fontSize.xs,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
+    color: theme.colors.mosqueMode.sectionLabel,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase',
+    marginBottom: theme.spacing.sm,
+  },
   section: {
-    marginTop: theme.spacing.lg,
+    marginTop: theme.spacing.xl,
     paddingHorizontal: theme.spacing.xl,
   },
   footer: {
     paddingHorizontal: theme.spacing.xl,
     paddingTop: theme.spacing['2xl'],
+    paddingBottom: theme.spacing.xl,
     alignItems: 'center',
   },
   footerText: {
     fontSize: theme.typography.fontSize.sm,
     fontFamily: theme.typography.fontFamily.body,
-    color: theme.colors.text.muted,
+    color: theme.colors.mosqueMode.footer,
     textAlign: 'center',
     fontStyle: 'italic',
     lineHeight: 20,

@@ -1,5 +1,5 @@
 // src/components/mosque/MosqueModeStatus.tsx
-import React, { useMemo } from 'react';
+import React, { useMemo, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -7,6 +7,7 @@ import {
   StyleSheet,
   Platform,
   Alert,
+  Animated,
 } from 'react-native';
 import { format } from 'date-fns';
 import { useTheme } from '../../providers/ThemeProvider';
@@ -24,6 +25,20 @@ export const MosqueModeStatus: React.FC = () => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const { isActive, activeState, manuallyRestoreRinger, isEnabled, settings, getIqamahTime } = useMosqueMode();
+  const pulseAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    if (isActive) {
+      const pulse = Animated.loop(
+        Animated.sequence([
+          Animated.timing(pulseAnim, { toValue: 0.3, duration: 1000, useNativeDriver: true }),
+          Animated.timing(pulseAnim, { toValue: 1, duration: 1000, useNativeDriver: true }),
+        ])
+      );
+      pulse.start();
+      return () => pulse.stop();
+    }
+  }, [isActive, pulseAnim]);
   const { todayPrayerTimes } = usePrayerTimes();
 
   const nextScheduled = useMemo(() => {
@@ -91,31 +106,28 @@ export const MosqueModeStatus: React.FC = () => {
     : `${nextScheduled!.prayer.name} • Iqamah at ${format(nextScheduled!.iqamahTime, 'h:mm a')}`;
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.primary.light }]}>
+    <View style={styles.container}>
       <View style={styles.content}>
-        <View style={styles.iconContainer}>
-          <Text style={styles.emoji}>🔇</Text>
+        <View style={styles.dotRow}>
+          {isActive && (
+            <Animated.View
+              style={[
+                styles.liveDot,
+                { backgroundColor: theme.colors.mosqueMode.banner.dot, opacity: pulseAnim },
+              ]}
+            />
+          )}
+          <Text style={styles.title}>{title}</Text>
         </View>
-        
-        <View style={styles.textContainer}>
-          <Text style={[styles.title, { color: theme.colors.text.primary }]}>
-            {title}
-          </Text>
-          <Text style={[styles.description, { color: theme.colors.text.primary }]}>
-            {description}
-          </Text>
-        </View>
+        <Text style={styles.description}>{description}</Text>
 
         {Platform.OS === 'android' && isActive && (
           <TouchableOpacity
-            style={[styles.button, { backgroundColor: theme.colors.card.background }]}
+            style={styles.button}
             onPress={handleManualRestore}
             activeOpacity={0.7}
           >
-            <Text style={[styles.buttonText, { color: theme.colors.primary.DEFAULT }]}
-            >
-              Restore
-            </Text>
+            <Text style={styles.buttonText}>Restore</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -129,47 +141,45 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginVertical: theme.spacing.md,
     borderRadius: theme.borderRadius.lg,
     padding: theme.spacing.lg,
-    shadowColor: theme.colors.achievement.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    backgroundColor: theme.colors.mosqueMode.banner.bg,
+    borderWidth: 1,
+    borderColor: theme.colors.mosqueMode.banner.dot,
   },
   content: {
+    gap: theme.spacing.xs,
+  },
+  dotRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: theme.spacing.sm,
   },
-  iconContainer: {
-    width: theme.spacing['4xl'] + 8,
-    height: theme.spacing['4xl'] + 8,
-    borderRadius: (theme.spacing['4xl'] + 8) / 2,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: theme.spacing.md,
-  },
-  emoji: {
-    fontSize: theme.typography.fontSize['3xl'],
-  },
-  textContainer: {
-    flex: 1,
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   title: {
     fontSize: theme.typography.fontSize.lg,
     fontFamily: theme.typography.fontFamily.bodyBold,
-    marginBottom: theme.spacing.xs,
+    color: theme.colors.mosqueMode.banner.text,
   },
   description: {
     fontSize: theme.typography.fontSize.sm,
     fontFamily: theme.typography.fontFamily.bodyMedium,
+    color: theme.colors.mosqueMode.banner.textMuted,
   },
   button: {
+    alignSelf: 'flex-start',
+    marginTop: theme.spacing.sm,
     paddingHorizontal: theme.spacing.lg,
     paddingVertical: theme.spacing.sm,
     borderRadius: theme.borderRadius.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.mosqueMode.banner.button,
   },
   buttonText: {
     fontSize: theme.typography.fontSize.md,
     fontFamily: theme.typography.fontFamily.bodySemibold,
+    color: theme.colors.mosqueMode.banner.button,
   },
 });

@@ -488,6 +488,55 @@ export const darkTheme = {
     labelSecondary:    palette.slate400,
     labelMuted:        palette.slate500,
   },
+
+  // Mosque Mode surfaces
+  mosqueMode: {
+    banner: {
+      bg:          palette.greenAlpha12,
+      dot:         palette.green400,
+      text:        palette.white,
+      textMuted:   palette.slate400,
+      button:      palette.green400,
+    },
+    sectionLabel:  palette.slate400,
+    card: {
+      bg:          palette.navy700,
+      border:      palette.navy600,
+    },
+    accordion: {
+      bg:          palette.navy700,
+      border:      palette.navy600,
+      chevron:     palette.slate400,
+    },
+    chip: {
+      bg:          'transparent',
+      border:      palette.navy500,
+      text:        palette.slate400,
+      activeBg:    palette.green500,
+      activeBorder: palette.green500,
+      activeText:  palette.white,
+    },
+    segment: {
+      bg:          palette.navy600,
+      activeBg:    palette.green500,
+      activeText:  palette.white,
+      inactiveText: palette.slate400,
+    },
+    hint: {
+      bg:          palette.greenAlpha08,
+      border:      palette.greenAlpha20,
+      text:        palette.green400,
+      icon:        palette.green400,
+    },
+    jummah: {
+      accent:        palette.gold400,
+      accentDim:     'rgba(212, 175, 55, 0.20)',
+      chipActiveBg:  palette.gold400,
+      chipActiveText: palette.white,
+      segmentActiveBg: palette.gold400,
+    },
+    footer:        palette.slate500,
+  },
 };
 
 // ─── Light-specific palette (mockup values) ──────────────────────
@@ -755,6 +804,55 @@ export const lightTheme = {
     labelPrimary:      lightPalette.text,
     labelSecondary:    lightPalette.textMuted,
     labelMuted:        lightPalette.textSub,
+  },
+
+  // Mosque Mode surfaces
+  mosqueMode: {
+    banner: {
+      bg:          lightPalette.tealDim,
+      dot:         lightPalette.teal,
+      text:        lightPalette.text,
+      textMuted:   lightPalette.textMuted,
+      button:      lightPalette.teal,
+    },
+    sectionLabel:  lightPalette.textSub,
+    card: {
+      bg:          lightPalette.card,
+      border:      lightPalette.borderBright,
+    },
+    accordion: {
+      bg:          lightPalette.card,
+      border:      lightPalette.border,
+      chevron:     lightPalette.textSub,
+    },
+    chip: {
+      bg:          'transparent',
+      border:      lightPalette.borderBright,
+      text:        lightPalette.textMuted,
+      activeBg:    lightPalette.teal,
+      activeBorder: lightPalette.teal,
+      activeText:  palette.white,
+    },
+    segment: {
+      bg:          lightPalette.cream2,
+      activeBg:    lightPalette.teal,
+      activeText:  palette.white,
+      inactiveText: lightPalette.textMuted,
+    },
+    hint: {
+      bg:          lightPalette.tealDim,
+      border:      lightPalette.tealAlpha20,
+      text:        lightPalette.teal,
+      icon:        lightPalette.teal,
+    },
+    jummah: {
+      accent:        lightPalette.gold,
+      accentDim:     lightPalette.goldDim,
+      chipActiveBg:  lightPalette.gold,
+      chipActiveText: palette.white,
+      segmentActiveBg: lightPalette.gold,
+    },
+    footer:        lightPalette.textSub,
   },
 };
 
@@ -1070,6 +1168,55 @@ export const blackoutTheme = {
     labelPrimary:      blackoutPalette.text,
     labelSecondary:    blackoutPalette.textMuted,
     labelMuted:        blackoutPalette.textSub,
+  },
+
+  // Mosque Mode surfaces
+  mosqueMode: {
+    banner: {
+      bg:          blackoutPalette.tealAlpha08,
+      dot:         blackoutPalette.teal,
+      text:        blackoutPalette.text,
+      textMuted:   blackoutPalette.textMuted,
+      button:      blackoutPalette.teal,
+    },
+    sectionLabel:  blackoutPalette.textMuted,
+    card: {
+      bg:          blackoutPalette.card,
+      border:      blackoutPalette.borderBright,
+    },
+    accordion: {
+      bg:          blackoutPalette.card,
+      border:      blackoutPalette.borderDim,
+      chevron:     blackoutPalette.textMuted,
+    },
+    chip: {
+      bg:          'transparent',
+      border:      blackoutPalette.borderBright,
+      text:        blackoutPalette.textMuted,
+      activeBg:    blackoutPalette.teal,
+      activeBorder: blackoutPalette.teal,
+      activeText:  blackoutPalette.night,
+    },
+    segment: {
+      bg:          blackoutPalette.card2,
+      activeBg:    blackoutPalette.teal,
+      activeText:  blackoutPalette.night,
+      inactiveText: blackoutPalette.textMuted,
+    },
+    hint: {
+      bg:          blackoutPalette.tealAlpha08,
+      border:      blackoutPalette.tealAlpha20,
+      text:        blackoutPalette.teal,
+      icon:        blackoutPalette.teal,
+    },
+    jummah: {
+      accent:        blackoutPalette.gold,
+      accentDim:     blackoutPalette.goldAlpha20,
+      chipActiveBg:  blackoutPalette.gold,
+      chipActiveText: blackoutPalette.night,
+      segmentActiveBg: blackoutPalette.gold,
+    },
+    footer:        blackoutPalette.textSub,
   },
 };
 

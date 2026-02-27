@@ -144,6 +144,7 @@ const DuaLibraryScreen: React.FC = () => {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
+        style={{ flexShrink: 0 }}
         contentContainerStyle={styles.chipRow}
       >
         <TouchableOpacity
@@ -225,13 +226,16 @@ const createStyles = (theme: AppTheme) =>
       color: theme.colors.text.primary,
     },
     chipRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
       paddingHorizontal: theme.spacing['2xl'],
+      paddingTop: theme.spacing.sm,
       paddingBottom: theme.spacing.md,
       gap: theme.spacing.sm,
     },
     chip: {
-      paddingVertical: theme.spacing.xs,
-      paddingHorizontal: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.lg,
       borderRadius: theme.borderRadius.full,
       backgroundColor: theme.colors.card.background,
       borderWidth: 1,
@@ -245,9 +249,10 @@ const createStyles = (theme: AppTheme) =>
       fontSize: theme.typography.fontSize.sm,
       fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.text.secondary,
+      lineHeight: 18,
     },
     chipTextActive: {
-      color: '#FFFFFF',
+      color: theme.colors.text.inverse ?? '#FFFFFF',
       fontFamily: theme.typography.fontFamily.bodySemibold,
     },
     listContent: {
