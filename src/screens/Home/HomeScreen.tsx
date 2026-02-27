@@ -476,7 +476,7 @@ const HomeScreen = ({ navigation }: any) => {
             onPraySunnah={handleSunnahPrayer}
             isFocusMode={isFocusMode}
             mosqueModeInfo={mosqueModeHeroInfo ?? undefined}
-            onMosqueModeTap={() => navigation.navigate('Menu', { screen: 'MosqueMode' })}
+            onMosqueModeTap={() => navigation.navigate('MosqueMode' as never)}
           />
         ) : (
           <LinearGradient colors={getBackgroundGradient()} style={styles.noNextPrayer}>

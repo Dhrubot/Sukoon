@@ -3,9 +3,60 @@ import React from 'react';
 import { TouchableOpacity, StyleSheet, Animated } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../providers/ThemeProvider';
-import { Icon } from './Icon';
-import { SoundOnIcon, SoundOffIcon } from '../../assets/icons';
 import { PrayerName } from '../../types';
+import Svg, { Path, Line } from 'react-native-svg';
+
+// Outline speaker-on icon (volume-2)
+const SpeakerOnIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M11 5L6 9H2v6h4l5 4V5z"
+      stroke={color}
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M19.07 4.93a10 10 0 010 14.14"
+      stroke={color}
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M15.54 8.46a5 5 0 010 7.07"
+      stroke={color}
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+// Outline speaker-off icon (volume-x)
+const SpeakerOffIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M11 5L6 9H2v6h4l5 4V5z"
+      stroke={color}
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Line
+      x1="23" y1="9" x2="17" y2="15"
+      stroke={color}
+      strokeWidth={1.8}
+      strokeLinecap="round"
+    />
+    <Line
+      x1="17" y1="9" x2="23" y2="15"
+      stroke={color}
+      strokeWidth={1.8}
+      strokeLinecap="round"
+    />
+  </Svg>
+);
 
 interface NotificationToggleButtonProps {
   prayerName: PrayerName;
@@ -63,11 +114,10 @@ export const NotificationToggleButton: React.FC<NotificationToggleButtonProps> =
         style={[styles.container, disabled && styles.disabled]}
         hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
-        <Icon
-          source={enabled ? SoundOnIcon : SoundOffIcon}
-          size={size}
-          color={getColor()}
-        />
+        {enabled
+          ? <SpeakerOnIcon color={getColor()} size={size} />
+          : <SpeakerOffIcon color={getColor()} size={size} />
+        }
       </TouchableOpacity>
     </Animated.View>
   );

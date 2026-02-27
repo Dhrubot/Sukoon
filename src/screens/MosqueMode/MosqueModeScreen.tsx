@@ -23,12 +23,14 @@ const MosqueModeScreen: React.FC = () => {
   const { isEnabled } = useMosqueMode();
 
   return (
+    <SafeAreaView style={styles.container}>
     <ScrollView
-      style={styles.container}
+      style={styles.scrollView}
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
     >
       <View style={styles.header}>
+        <Text style={styles.headerTitle}>Mosque Mode</Text>
         <Text style={styles.headerSubtitle}>
           Automatically silence your phone when iqamah starts so you can focus entirely on your prayer.
         </Text>
@@ -66,6 +68,7 @@ const MosqueModeScreen: React.FC = () => {
         </Text>
       </View>
     </ScrollView>
+    </SafeAreaView>
   );
 };
 
@@ -74,13 +77,22 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background.primary,
   },
+  scrollView: {
+    flex: 1,
+  },
   content: {
     paddingBottom: theme.spacing['4xl'],
   },
   header: {
     paddingHorizontal: theme.spacing.xl,
-    paddingTop: theme.spacing.lg,
+    paddingTop: theme.spacing.md,
     paddingBottom: theme.spacing.sm,
+  },
+  headerTitle: {
+    fontSize: 26,
+    fontFamily: theme.typography.fontFamily.headingRegular,
+    color: theme.colors.text.primary,
+    marginBottom: theme.spacing.sm,
   },
   headerSubtitle: {
     fontSize: theme.typography.fontSize.base,

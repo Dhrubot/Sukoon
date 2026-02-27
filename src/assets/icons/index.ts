@@ -16,7 +16,8 @@ export { default as DuaTabIcon } from '../../../assets/icons/dua-tab-icon.svg';
 export { default as AchievementIcon } from '../../../assets/icons/achievement-icon.svg';
 
 // ========================================
-// NOTIFICATION ICONS (SVG)
+// NOTIFICATION ICONS (now inline SVG components in NotificationToggleButton)
+// Legacy exports kept for backward compatibility
 // ========================================
 export { default as SoundOnIcon } from '../../../assets/icons/sound-on-icon.svg';
 export { default as SoundOffIcon } from '../../../assets/icons/sound-off-icon.svg';

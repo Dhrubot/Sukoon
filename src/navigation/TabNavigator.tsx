@@ -10,21 +10,28 @@ import {
 } from '../assets/icons';
 
 import HomeScreen from '../screens/Home/HomeScreen';
-import ReflectionGardenScreen from '../screens/ReflectionGarden/ReflectionGardenScreen';
+import MosqueModeScreen from '../screens/MosqueMode/MosqueModeScreen';
 import QiblaFinderScreen from '../screens/QiblaFinder/QiblaFinderScreen';
 import { MenuStackNavigator } from './MenuStackNavigator';
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
-import Svg, { Circle, Path } from 'react-native-svg';
+import Svg, { Circle, Path, Polyline } from 'react-native-svg';
 
-// Garden icon component (leaf/plant)
-const GardenIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
+// Home icon component (clean outline house with door)
+const HomeIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path
-      d="M12 22V12M12 12C12 8 9 5 5 3c0 4 2 8 7 9M12 12c0-4 3-7 7-9 0 4-2 8-7 9"
+      d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"
       stroke={color}
-      strokeWidth={2}
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Polyline
+      points="9 22 9 12 15 12 15 22"
+      stroke={color}
+      strokeWidth={1.8}
       strokeLinecap="round"
       strokeLinejoin="round"
     />
@@ -80,7 +87,7 @@ export const TabNavigator: React.FC = () => {
         options={{
           tabBarLabel: 'Home',
           tabBarIcon: ({ color }) => (
-            <Icon source={HomeTabIcon} size={26} color={color} />
+            <HomeIcon color={color} size={24} />
           ),
         }}
       />
@@ -95,12 +102,12 @@ export const TabNavigator: React.FC = () => {
         }}
       />
       <Tab.Screen
-        name="Garden"
-        component={ReflectionGardenScreen}
+        name="MosqueMode"
+        component={MosqueModeScreen}
         options={{
-          tabBarLabel: 'Garden',
+          tabBarLabel: 'Mosque',
           tabBarIcon: ({ color }) => (
-            <GardenIcon color={color} size={24} />
+            <Icon source={HomeTabIcon} size={30} color={color} />
           ),
         }}
       />

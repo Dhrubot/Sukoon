@@ -9,7 +9,6 @@ import StatsScreen from '../screens/Stats/StatsScreen';
 import SupportScreen from '../screens/Support/SupportScreen';
 import SetupHealthScreen from '../screens/SetupHealth/SetupHealthScreen';
 import ReflectionGardenScreen from '../screens/ReflectionGarden/ReflectionGardenScreen';
-import MosqueModeScreen from '../screens/MosqueMode/MosqueModeScreen';
 import AdhkarScreen from '../screens/Adhkar/AdhkarScreen';
 import TasbihScreen from '../screens/Tasbih/TasbihScreen';
 import DuaLibraryScreen from '../screens/DuaLibrary/DuaLibraryScreen';
@@ -21,7 +20,6 @@ export type MenuStackParamList = {
   DuaLibrary: undefined;
   MyJourney: undefined;
   ReflectionGarden: undefined;
-  MosqueMode: undefined;
   Support: undefined;
   Settings: undefined;
   PrivacyPolicy: undefined;
@@ -80,11 +78,6 @@ export const MenuStackNavigator: React.FC = () => {
         name="ReflectionGarden"
         component={ReflectionGardenScreen}
         options={{ title: 'My Garden' }}
-      />
-      <Stack.Screen
-        name="MosqueMode"
-        component={MosqueModeScreen}
-        options={{ title: 'Mosque Mode' }}
       />
       <Stack.Screen name="Support" component={SupportScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />

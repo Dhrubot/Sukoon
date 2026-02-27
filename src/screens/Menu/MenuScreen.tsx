@@ -1,5 +1,5 @@
 // src/screens/Menu/MenuScreen.tsx
-import React from 'react';
+import React, { useCallback, useState } from 'react';
 import {
   View,
   Text,
@@ -8,99 +8,36 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
-import { Icon } from '../../components/common/Icon';
-import { ProgressTabIcon } from '../../assets/icons';
-import Svg, { Path, Circle } from 'react-native-svg';
+import { useStore } from '../../store/useStore';
+import ReflectionGardenService from '../../services/ReflectionGardenService';
+import Svg, { Path, Circle, Line, Polyline, Rect } from 'react-native-svg';
 
-// Settings icon component
-const SettingsIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
+// ═══════════════════════════════════════════════════════════════
+// Outline SVG Icon Components
+// ═══════════════════════════════════════════════════════════════
+
+// Garden / leaf icon
+const GardenIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path
-      d="M12 15C13.6569 15 15 13.6569 15 12C15 10.3431 13.6569 9 12 9C10.3431 9 9 10.3431 9 12C9 13.6569 10.3431 15 12 15Z"
+      d="M12 22V12M12 12C12 8 9 5 5 3c0 4 2 8 7 9M12 12c0-4 3-7 7-9 0 4-2 8-7 9"
       stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <Path
-      d="M19.4 15C19.2669 15.3016 19.2272 15.6362 19.286 15.9606C19.3448 16.285 19.4995 16.5843 19.73 16.82L19.79 16.88C19.976 17.0657 20.1235 17.2863 20.2241 17.5291C20.3248 17.7719 20.3766 18.0322 20.3766 18.295C20.3766 18.5578 20.3248 18.8181 20.2241 19.0609C20.1235 19.3037 19.976 19.5243 19.79 19.71C19.6043 19.896 19.3837 20.0435 19.1409 20.1441C18.8981 20.2448 18.6378 20.2966 18.375 20.2966C18.1122 20.2966 17.8519 20.2448 17.6091 20.1441C17.3663 20.0435 17.1457 19.896 16.96 19.71L16.9 19.65C16.6643 19.4195 16.365 19.2648 16.0406 19.206C15.7162 19.1472 15.3816 19.1869 15.08 19.32C14.7842 19.4468 14.532 19.6572 14.3543 19.9255C14.1766 20.1938 14.0813 20.5082 14.08 20.83V21C14.08 21.5304 13.8693 22.0391 13.4942 22.4142C13.1191 22.7893 12.6104 23 12.08 23C11.5496 23 11.0409 22.7893 10.6658 22.4142C10.2907 22.0391 10.08 21.5304 10.08 21V20.91C10.0723 20.579 9.96512 20.258 9.77251 19.9887C9.5799 19.7194 9.31074 19.5143 9 19.4C8.69838 19.2669 8.36381 19.2272 8.03941 19.286C7.71502 19.3448 7.41568 19.4995 7.18 19.73L7.12 19.79C6.93425 19.976 6.71368 20.1235 6.47088 20.2241C6.22808 20.3248 5.96783 20.3766 5.705 20.3766C5.44217 20.3766 5.18192 20.3248 4.93912 20.2241C4.69632 20.1235 4.47575 19.976 4.29 19.79C4.10405 19.6043 3.95653 19.3837 3.85588 19.1409C3.75523 18.8981 3.70343 18.6378 3.70343 18.375C3.70343 18.1122 3.75523 17.8519 3.85588 17.6091C3.95653 17.3663 4.10405 17.1457 4.29 16.96L4.35 16.9C4.58054 16.6643 4.73519 16.365 4.794 16.0406C4.85282 15.7162 4.81312 15.3816 4.68 15.08C4.55324 14.7842 4.34276 14.532 4.07447 14.3543C3.80618 14.1766 3.49179 14.0813 3.17 14.08H3C2.46957 14.08 1.96086 13.8693 1.58579 13.4942C1.21071 13.1191 1 12.6104 1 12.08C1 11.5496 1.21071 11.0409 1.58579 10.6658C1.96086 10.2907 2.46957 10.08 3 10.08H3.09C3.42099 10.0723 3.742 9.96512 4.0113 9.77251C4.28059 9.5799 4.48572 9.31074 4.6 9C4.73312 8.69838 4.77282 8.36381 4.714 8.03941C4.65519 7.71502 4.50054 7.41568 4.27 7.18L4.21 7.12C4.02405 6.93425 3.87653 6.71368 3.77588 6.47088C3.67523 6.22808 3.62343 5.96783 3.62343 5.705C3.62343 5.44217 3.67523 5.18192 3.77588 4.93912C3.87653 4.69632 4.02405 4.47575 4.21 4.29C4.39575 4.10405 4.61632 3.95653 4.85912 3.85588C5.10192 3.75523 5.36217 3.70343 5.625 3.70343C5.88783 3.70343 6.14808 3.75523 6.39088 3.85588C6.63368 3.95653 6.85425 4.10405 7.04 4.29L7.1 4.35C7.33568 4.58054 7.63502 4.73519 7.95941 4.794C8.28381 4.85282 8.61838 4.81312 8.92 4.68H9C9.29577 4.55324 9.54802 4.34276 9.72569 4.07447C9.90337 3.80618 9.99872 3.49179 10 3.17V3C10 2.46957 10.2107 1.96086 10.5858 1.58579C10.9609 1.21071 11.4696 1 12 1C12.5304 1 13.0391 1.21071 13.4142 1.58579C13.7893 1.96086 14 2.46957 14 3V3.09C14.0013 3.41179 14.0966 3.72618 14.2743 3.99447C14.452 4.26276 14.7042 4.47324 15 4.6C15.3016 4.73312 15.6362 4.77282 15.9606 4.714C16.285 4.65519 16.5843 4.50054 16.82 4.27L16.88 4.21C17.0657 4.02405 17.2863 3.87653 17.5291 3.77588C17.7719 3.67523 18.0322 3.62343 18.295 3.62343C18.5578 3.62343 18.8181 3.67523 19.0609 3.77588C19.3037 3.87653 19.5243 4.02405 19.71 4.21C19.896 4.39575 20.0435 4.61632 20.1441 4.85912C20.2448 5.10192 20.2966 5.36217 20.2966 5.625C20.2966 5.88783 20.2448 6.14808 20.1441 6.39088C20.0435 6.63368 19.896 6.85425 19.71 7.04L19.65 7.1C19.4195 7.33568 19.2648 7.63502 19.206 7.95941C19.1472 8.28381 19.1869 8.61838 19.32 8.92V9C19.4468 9.29577 19.6572 9.54802 19.9255 9.72569C20.1938 9.90337 20.5082 9.99872 20.83 10H21C21.5304 10 22.0391 10.2107 22.4142 10.5858C22.7893 10.9609 23 11.4696 23 12C23 12.5304 22.7893 13.0391 22.4142 13.4142C22.0391 13.7893 21.5304 14 21 14H20.91C20.5882 14.0013 20.2738 14.0966 20.0055 14.2743C19.7372 14.452 19.5268 14.7042 19.4 15Z"
-      stroke={color}
-      strokeWidth="2"
+      strokeWidth={1.8}
       strokeLinecap="round"
       strokeLinejoin="round"
     />
   </Svg>
 );
 
-// Support/Heart icon component
-const SupportIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M20.84 4.61C20.3292 4.099 19.7228 3.69364 19.0554 3.41708C18.3879 3.14052 17.6725 2.99817 16.95 2.99817C16.2275 2.99817 15.5121 3.14052 14.8446 3.41708C14.1772 3.69364 13.5708 4.099 13.06 4.61L12 5.67L10.94 4.61C9.9083 3.57831 8.50903 2.99871 7.05 2.99871C5.59096 2.99871 4.19169 3.57831 3.16 4.61C2.1283 5.64169 1.54871 7.04096 1.54871 8.5C1.54871 9.95903 2.1283 11.3583 3.16 12.39L4.22 13.45L12 21.23L19.78 13.45L20.84 12.39C21.351 11.8792 21.7563 11.2728 22.0329 10.6053C22.3095 9.93789 22.4518 9.22248 22.4518 8.5C22.4518 7.77752 22.3095 7.0621 22.0329 6.39464C21.7563 5.72718 21.351 5.12075 20.84 4.61Z"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
-
-interface MenuItem {
-  icon: React.ComponentType<{ color: string; size: number }> | any;
-  title: string;
-  subtitle: string;
-  screen: string;
-  iconType?: 'component' | 'svg' | 'png' | 'emoji';
-}
-
-// Dua Library (book/hands) icon component
-const DuaLibraryIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M4 19.5C4 18.837 4.26339 18.2011 4.73223 17.7322C5.20107 17.2634 5.83696 17 6.5 17H20"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <Path
-      d="M6.5 2H20V22H6.5C5.83696 22 5.20107 21.7366 4.73223 21.2678C4.26339 20.7989 4 20.163 4 19.5V4.5C4 3.83696 4.26339 3.20107 4.73223 2.73223C5.20107 2.26339 5.83696 2 6.5 2Z"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
-
-// Adhkar (sunrise/remembrance) icon component
-const AdhkarIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M12 2L14.4 7.2L20 8L15.6 12L17 18L12 15.2L7 18L8.4 12L4 8L9.6 7.2L12 2Z"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-    <Path
-      d="M4 21H20"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-    />
-  </Svg>
-);
-
-// Tasbih (prayer beads) icon component
+// Tasbih / dhikr counter icon
 const TasbihIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Circle cx="12" cy="12" r="9" stroke={color} strokeWidth="2" />
+    <Circle cx="12" cy="12" r="9" stroke={color} strokeWidth={1.8} />
     <Circle cx="12" cy="5" r="1.5" fill={color} />
     <Circle cx="17" cy="8" r="1.5" fill={color} />
     <Circle cx="17" cy="16" r="1.5" fill={color} />
@@ -110,147 +47,442 @@ const TasbihIcon: React.FC<{ color: string; size: number }> = ({ color, size }) 
   </Svg>
 );
 
-// Mosque icon component
-const MosqueIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
+// Book / verse icon
+const VerseIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path
-      d="M12 2C12 2 8 6 8 9C8 10.1 8.4 11.1 9 11.8V20H6V22H18V20H15V11.8C15.6 11.1 16 10.1 16 9C16 6 12 2 12 2Z"
+      d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2z"
       stroke={color}
-      strokeWidth="2"
+      strokeWidth={1.8}
       strokeLinecap="round"
       strokeLinejoin="round"
     />
-    <Path d="M3 20H6V14H3V20Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-    <Path d="M18 20H21V14H18V20Z" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <Path
+      d="M22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"
+      stroke={color}
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
   </Svg>
 );
 
-const allMenuItems: MenuItem[] = [
+// Dua / book icon
+const DuaIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M4 19.5C4 18.837 4.26339 18.2011 4.73223 17.7322C5.20107 17.2634 5.83696 17 6.5 17H20"
+      stroke={color}
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Path
+      d="M6.5 2H20V22H6.5C5.83696 22 5.20107 21.7366 4.73223 21.2678C4.26339 20.7989 4 20.163 4 19.5V4.5C4 3.83696 4.26339 3.20107 4.73223 2.73223C5.20107 2.26339 5.83696 2 6.5 2Z"
+      stroke={color}
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+// Adhkar / sunrise icon
+const AdhkarIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="12" r="5" stroke={color} strokeWidth={1.8} />
+    <Line x1="12" y1="1" x2="12" y2="3" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+    <Line x1="12" y1="21" x2="12" y2="23" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+    <Line x1="4.22" y1="4.22" x2="5.64" y2="5.64" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+    <Line x1="18.36" y1="18.36" x2="19.78" y2="19.78" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+    <Line x1="1" y1="12" x2="3" y2="12" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+    <Line x1="21" y1="12" x2="23" y2="12" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+    <Line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+    <Line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
+  </Svg>
+);
+
+// Compass / qibla icon
+const CompassIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="12" r="10" stroke={color} strokeWidth={1.8} />
+    <Path
+      d="M16.24 7.76l-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z"
+      stroke={color}
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+// Journey / trending-up icon
+const JourneyIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Polyline
+      points="23 6 13.5 15.5 8.5 10.5 1 18"
+      stroke={color}
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Polyline
+      points="17 6 23 6 23 12"
+      stroke={color}
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+// Wrench / setup icon
+const SetupIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"
+      stroke={color}
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+// Settings / gear icon
+const SettingsIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="12" r="3" stroke={color} strokeWidth={1.8} />
+    <Path
+      d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"
+      stroke={color}
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+// Support / heart icon
+const SupportIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"
+      stroke={color}
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+// Chevron right icon
+const ChevronIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Polyline
+      points="9 18 15 12 9 6"
+      stroke={color}
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
+
+// ═══════════════════════════════════════════════════════════════
+// Quick Access Items
+// ═══════════════════════════════════════════════════════════════
+
+interface QuickAccessItem {
+  icon: React.FC<{ color: string; size: number }>;
+  title: string;
+  subtitle: string;
+  screen: string;
+  colorKey: 'teal' | 'gold' | 'purple' | 'amber';
+}
+
+const quickAccessItems: QuickAccessItem[] = [
   {
-    icon: DuaLibraryIcon,
-    title: 'Dua Library',
-    subtitle: 'Authentic duas from Hisnul Muslim',
+    icon: TasbihIcon,
+    title: 'Dhikr Counter',
+    subtitle: 'Tasbih tracker',
+    screen: 'Tasbih',
+    colorKey: 'teal',
+  },
+  {
+    icon: VerseIcon,
+    title: 'Daily Verse',
+    subtitle: 'Quran reflection',
     screen: 'DuaLibrary',
-    iconType: 'component',
+    colorKey: 'gold',
+  },
+  {
+    icon: DuaIcon,
+    title: 'Dua Collection',
+    subtitle: 'Supplications & prayers',
+    screen: 'DuaLibrary',
+    colorKey: 'purple',
   },
   {
     icon: AdhkarIcon,
-    title: 'Morning & Evening Adhkar',
-    subtitle: 'Daily remembrance from the Sunnah',
+    title: 'Adhkar',
+    subtitle: 'Morning & evening',
     screen: 'Adhkar',
-    iconType: 'component',
-  },
-  {
-    icon: TasbihIcon,
-    title: 'Tasbih Counter',
-    subtitle: 'Free-form dhikr counting',
-    screen: 'Tasbih',
-    iconType: 'component',
-  },
-  {
-    icon: MosqueIcon,
-    title: 'Mosque Mode',
-    subtitle: 'Auto-silence your phone for prayer',
-    screen: 'MosqueMode',
-    iconType: 'component',
-  },
-  {
-    icon: ProgressTabIcon,
-    title: 'My Journey',
-    subtitle: 'Reflect on your prayer history',
-    screen: 'MyJourney',
-    iconType: 'svg',
-  },
-  {
-    icon: SettingsIcon,
-    title: 'Setup & Health',
-    subtitle: 'Verify location, reminders, and mosque mode',
-    screen: 'SetupHealth',
-    iconType: 'component',
-  },
-  {
-    icon: SupportIcon,
-    title: 'Support Us',
-    subtitle: 'Help keep this app ad-free',
-    screen: 'Support',
-    iconType: 'component',
-  },
-  {
-    icon: SettingsIcon,
-    title: 'Settings',
-    subtitle: 'Customize your experience',
-    screen: 'Settings',
-    iconType: 'component',
+    colorKey: 'amber',
   },
 ];
 
-const menuItems = allMenuItems;
+// ═══════════════════════════════════════════════════════════════
+// More Features List Items
+// ═══════════════════════════════════════════════════════════════
+
+interface MoreFeatureItem {
+  icon: React.FC<{ color: string; size: number }>;
+  title: string;
+  subtitle: string;
+  screen: string;
+  iconBg: string;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MenuScreen Component
+// ═══════════════════════════════════════════════════════════════
 
 const MenuScreen: React.FC = () => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const navigation = useNavigation();
+  const { currentStreak, todayPrayerRecords } = useStore();
 
-  const handleItemPress = (screen: string) => {
+  // Garden data
+  const [gardenSummary, setGardenSummary] = useState({
+    totalPlants: 0,
+    newBlooms: 0,
+    streak: 0,
+  });
+
+  useFocusEffect(
+    useCallback(() => {
+      try {
+        const data = ReflectionGardenService.getGardenData(28);
+        setGardenSummary({
+          totalPlants: data.totalPlants,
+          newBlooms: data.newBlooms,
+          streak: currentStreak,
+        });
+      } catch {
+        // Silently ignore
+      }
+    }, [currentStreak])
+  );
+
+  const prayedCount = todayPrayerRecords.filter(r => r.status === 'prayed').length;
+  const totalPrayers = 5;
+  const progressPercent = prayedCount / totalPrayers;
+
+  const handleNavigate = (screen: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     navigation.navigate(screen as never);
   };
 
+  // Accent color mapping for quick access tiles
+  const getAccentColors = (colorKey: string) => {
+    switch (colorKey) {
+      case 'teal':
+        return { bg: theme.colors.interactive.active + '14', icon: theme.colors.interactive.active };
+      case 'gold':
+        return { bg: theme.colors.gold + '18', icon: theme.colors.gold };
+      case 'purple':
+        return { bg: (theme.colors as any).prayer?.taraweeh ? (theme.colors as any).prayer.taraweeh + '20' : '#a78bfa20', icon: (theme.colors as any).prayer?.taraweeh || '#a78bfa' };
+      case 'amber':
+        return { bg: '#f59e0b18', icon: '#f59e0b' };
+      default:
+        return { bg: theme.colors.card.hover, icon: theme.colors.text.secondary };
+    }
+  };
+
+  // More features list
+  const moreFeatures: MoreFeatureItem[] = [
+    {
+      icon: CompassIcon,
+      title: 'Qibla Compass',
+      subtitle: 'Find direction of prayer',
+      screen: 'QiblaFinder',
+      iconBg: theme.colors.interactive.active + '14',
+    },
+    {
+      icon: JourneyIcon,
+      title: 'My Journey',
+      subtitle: 'Reflect on your prayer history',
+      screen: 'MyJourney',
+      iconBg: theme.colors.interactive.active + '14',
+    },
+    {
+      icon: SetupIcon,
+      title: 'Setup & Health',
+      subtitle: 'Location, reminders, diagnostics',
+      screen: 'SetupHealth',
+      iconBg: theme.colors.gold + '18',
+    },
+    {
+      icon: SettingsIcon,
+      title: 'Settings',
+      subtitle: 'Prayer, notifications, theme',
+      screen: 'Settings',
+      iconBg: theme.colors.card.hover,
+    },
+    {
+      icon: SupportIcon,
+      title: 'Support Us',
+      subtitle: 'Help keep this app ad-free',
+      screen: 'Support',
+      iconBg: '#fb718518',
+    },
+  ];
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>More</Text>
-        <Text style={styles.headerSubtitle}>
-          Explore more features
-        </Text>
+        <Text style={styles.headerTitle}>Explore</Text>
+        <Text style={styles.headerSubtitle}>Features & tools for your practice</Text>
       </View>
 
-      <ScrollView style={styles.scrollView}>
-        {menuItems.map((item) => {
-          const IconComponent = item.icon;
-          return (
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* ── Your Practice: Garden Featured Card ── */}
+        <Text style={styles.sectionLabel}>YOUR PRACTICE</Text>
+        <TouchableOpacity
+          style={styles.gardenCard}
+          onPress={() => handleNavigate('ReflectionGarden')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.gardenGlow} />
+          <View style={styles.gardenTop}>
+            <View style={styles.gardenIconLg}>
+              <GardenIcon color={theme.colors.interactive.active} size={26} />
+            </View>
+            <View style={styles.gardenText}>
+              <Text style={styles.gardenTitle}>Your Garden</Text>
+              <Text style={styles.gardenSub}>
+                {gardenSummary.streak > 0
+                  ? `${gardenSummary.streak} day streak · Growing`
+                  : 'Start your spiritual garden'}
+              </Text>
+              <Text style={styles.gardenDesc}>
+                Track your prayer consistency and grow a spiritual garden with each prayer.
+              </Text>
+            </View>
+          </View>
+
+          {/* Progress bar */}
+          <View style={styles.gardenProgressRow}>
+            <View style={styles.progLabel}>
+              <Text style={styles.progLabelText}>Today's progress</Text>
+              <Text style={[styles.progLabelValue, { color: theme.colors.interactive.active }]}>
+                {prayedCount} of {totalPrayers} prayers
+              </Text>
+            </View>
+            <View style={styles.progBar}>
+              <View
+                style={[
+                  styles.progFill,
+                  {
+                    width: `${Math.max(progressPercent * 100, 2)}%`,
+                    backgroundColor: theme.colors.interactive.active,
+                  },
+                ]}
+              />
+            </View>
+          </View>
+
+          {/* Stats row */}
+          <View style={styles.gardenStats}>
+            <View style={styles.gardenStat}>
+              <Text style={[styles.gsVal, { color: theme.colors.interactive.active }]}>
+                {gardenSummary.streak}
+              </Text>
+              <Text style={styles.gsLabel}>Day streak</Text>
+            </View>
+            <View style={[styles.gardenStat, styles.gardenStatMiddle]}>
+              <Text style={[styles.gsVal, { color: theme.colors.interactive.active }]}>
+                {gardenSummary.totalPlants}
+              </Text>
+              <Text style={styles.gsLabel}>Prayers</Text>
+            </View>
+            <View style={styles.gardenStat}>
+              <Text style={[styles.gsVal, { color: theme.colors.interactive.active }]}>
+                {gardenSummary.newBlooms}
+              </Text>
+              <Text style={styles.gsLabel}>Blooms</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+
+        {/* ── Quick Access Grid ── */}
+        <Text style={styles.sectionLabel}>QUICK ACCESS</Text>
+        <View style={styles.quickGrid}>
+          {quickAccessItems.map((item) => {
+            const accent = getAccentColors(item.colorKey);
+            return (
+              <TouchableOpacity
+                key={item.title}
+                style={styles.quickTile}
+                onPress={() => handleNavigate(item.screen)}
+                activeOpacity={0.7}
+              >
+                <View style={[styles.tileIcon, { backgroundColor: accent.bg }]}>
+                  <item.icon color={accent.icon} size={18} />
+                </View>
+                <View>
+                  <Text style={styles.tileName}>{item.title}</Text>
+                  <Text style={styles.tileSub}>{item.subtitle}</Text>
+                </View>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* ── More Features List ── */}
+        <Text style={styles.sectionLabel}>MORE FEATURES</Text>
+        <View style={styles.featuresList}>
+          {moreFeatures.map((item, index) => (
             <TouchableOpacity
-              key={item.screen}
-              style={styles.menuItem}
-              onPress={() => handleItemPress(item.screen)}
+              key={item.screen + item.title}
+              style={[
+                styles.featureRow,
+                index === moreFeatures.length - 1 && styles.featureRowLast,
+              ]}
+              onPress={() => handleNavigate(item.screen)}
               activeOpacity={0.7}
             >
-              <View style={styles.iconContainer}>
-                {item.iconType === 'emoji' ? (
-                  <Text style={styles.icon}>🌿</Text>
-                ) : item.iconType === 'component' ? (
-                  <IconComponent color={theme.colors.primary.DEFAULT} size={24} />
-                ) : (
-                  <Icon source={IconComponent} size={24} color={theme.colors.primary.DEFAULT} />
-                )}
+              <View style={[styles.featureIcon, { backgroundColor: item.iconBg }]}>
+                <item.icon color={theme.colors.text.secondary} size={16} />
               </View>
-              
-              <View style={styles.textContainer}>
-                <Text style={styles.itemTitle}>
-                  {item.title}
-                </Text>
-                <Text style={styles.itemSubtitle}>
-                  {item.subtitle}
-                </Text>
+              <View style={styles.featureInfo}>
+                <Text style={styles.featureName}>{item.title}</Text>
+                <Text style={styles.featureSub}>{item.subtitle}</Text>
               </View>
-
-              <Text style={styles.chevron}>›</Text>
+              <ChevronIcon color={theme.colors.text.muted} size={16} />
             </TouchableOpacity>
-          );
-        })}
+          ))}
+        </View>
 
+        {/* ── Footer ── */}
         <View style={styles.appInfo}>
-          <Text style={styles.appVersion}>
-            Sukoon v1.0.0
-          </Text>
-          <Text style={styles.blessing}>
-            May Allah accept our efforts
-          </Text>
+          <Text style={styles.appVersion}>Sukoon v1.0.0</Text>
+          <Text style={styles.blessing}>May Allah accept our efforts</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
   );
 };
+
+// ═══════════════════════════════════════════════════════════════
+// Styles
+// ═══════════════════════════════════════════════════════════════
 
 const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
@@ -258,78 +490,243 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     backgroundColor: theme.colors.background.primary,
   },
   header: {
-    paddingHorizontal: theme.spacing['2xl'],
-    paddingTop: theme.spacing.xl,
-    paddingBottom: theme.spacing.lg,
-    backgroundColor: theme.colors.card.background,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 18,
   },
   headerTitle: {
-    fontSize: theme.typography.fontSize['4xl'],
-    fontWeight: '700',
+    fontSize: 26,
     fontFamily: theme.typography.fontFamily.headingRegular,
-    color: theme.colors.text.secondary,
-    marginBottom: theme.spacing.xs,
+    color: theme.colors.text.primary,
   },
   headerSubtitle: {
-    fontSize: theme.typography.fontSize.md,
+    fontSize: 12,
     fontFamily: theme.typography.fontFamily.body,
-    color: theme.colors.text.secondary,
+    color: theme.colors.text.muted,
+    marginTop: 3,
+    letterSpacing: 0.2,
   },
   scrollView: {
     flex: 1,
   },
-  menuItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: theme.spacing.xl,
-    paddingVertical: theme.spacing.lg,
-    borderBottomWidth: 1,
-    backgroundColor: theme.colors.card.background,
-    borderBottomColor: theme.colors.border.primary,
+  scrollContent: {
+    paddingHorizontal: 14,
+    paddingBottom: 40,
   },
-  iconContainer: {
-    width: theme.iconSizes['3xl'],
-    height: theme.iconSizes['3xl'],
-    borderRadius: theme.borderRadius.md,
+
+  // Section labels
+  sectionLabel: {
+    fontSize: 10,
+    letterSpacing: 1.8,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
+    color: theme.colors.text.muted,
+    marginBottom: 8,
+    marginTop: 20,
+    marginLeft: 2,
+  },
+
+  // ── Garden Featured Card ──
+  gardenCard: {
+    backgroundColor: theme.colors.card.background,
+    borderWidth: 1,
+    borderColor: theme.colors.interactive.active + '30',
+    borderRadius: 18,
+    overflow: 'hidden',
+    position: 'relative',
+  },
+  gardenGlow: {
+    position: 'absolute',
+    top: -30,
+    right: -30,
+    width: 150,
+    height: 150,
+    borderRadius: 75,
+    backgroundColor: theme.colors.interactive.active + '0A',
+  },
+  gardenTop: {
+    flexDirection: 'row',
+    gap: 14,
+    padding: 18,
+  },
+  gardenIconLg: {
+    width: 54,
+    height: 54,
+    borderRadius: 16,
+    backgroundColor: theme.colors.interactive.active + '14',
+    borderWidth: 1,
+    borderColor: theme.colors.interactive.active + '28',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: theme.spacing.lg,
-    backgroundColor: theme.colors.card.hover,
   },
-  icon: {
-    fontSize: theme.typography.fontSize['3xl'],
-  },
-  textContainer: {
+  gardenText: {
     flex: 1,
   },
-  itemTitle: {
-    fontSize: theme.typography.fontSize.lg,
-    fontFamily: theme.typography.fontFamily.headingRegular,
+  gardenTitle: {
+    fontSize: 17,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.text.primary,
-    marginBottom: theme.spacing.xs,
   },
-  itemSubtitle: {
-    fontSize: theme.typography.fontSize.sm,
+  gardenSub: {
+    fontSize: 12,
+    fontFamily: theme.typography.fontFamily.body,
+    color: theme.colors.interactive.active,
+    marginTop: 2,
+    opacity: 0.8,
+  },
+  gardenDesc: {
+    fontSize: 12,
+    fontFamily: theme.typography.fontFamily.body,
+    color: theme.colors.text.secondary,
+    marginTop: 6,
+    lineHeight: 17,
+  },
+  gardenProgressRow: {
+    paddingHorizontal: 18,
+    paddingBottom: 16,
+  },
+  progLabel: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 6,
+  },
+  progLabelText: {
+    fontSize: 11,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
   },
-  chevron: {
-    fontSize: theme.typography.fontSize['4xl'],
+  progLabelValue: {
+    fontSize: 11,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
+  },
+  progBar: {
+    height: 4,
+    backgroundColor: theme.colors.border.secondary,
+    borderRadius: 2,
+    overflow: 'hidden',
+  },
+  progFill: {
+    height: '100%',
+    borderRadius: 2,
+  },
+  gardenStats: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.interactive.active + '15',
+  },
+  gardenStat: {
+    flex: 1,
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  gardenStatMiddle: {
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderLeftColor: theme.colors.interactive.active + '15',
+    borderRightColor: theme.colors.interactive.active + '15',
+  },
+  gsVal: {
+    fontSize: 20,
+    fontFamily: theme.typography.fontFamily.headingRegular,
+    fontWeight: '300',
+  },
+  gsLabel: {
+    fontSize: 10,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.muted,
+    marginTop: 1,
+    letterSpacing: 0.3,
   },
+
+  // ── Quick Access Grid ──
+  quickGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  quickTile: {
+    width: '48.5%',
+    backgroundColor: theme.colors.card.background,
+    borderWidth: 1,
+    borderColor: theme.colors.border.secondary,
+    borderRadius: 12,
+    padding: 14,
+    gap: 10,
+  },
+  tileIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  tileName: {
+    fontSize: 13,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
+    color: theme.colors.text.primary,
+    lineHeight: 18,
+  },
+  tileSub: {
+    fontSize: 11,
+    fontFamily: theme.typography.fontFamily.body,
+    color: theme.colors.text.secondary,
+    marginTop: 1,
+  },
+
+  // ── More Features List ──
+  featuresList: {
+    backgroundColor: theme.colors.card.background,
+    borderWidth: 1,
+    borderColor: theme.colors.border.secondary,
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  featureRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.border.secondary,
+  },
+  featureRowLast: {
+    borderBottomWidth: 0,
+  },
+  featureIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  featureInfo: {
+    flex: 1,
+  },
+  featureName: {
+    fontSize: 14,
+    fontFamily: theme.typography.fontFamily.body,
+    color: theme.colors.text.primary,
+  },
+  featureSub: {
+    fontSize: 11,
+    fontFamily: theme.typography.fontFamily.body,
+    color: theme.colors.text.secondary,
+    marginTop: 1,
+  },
+
+  // ── Footer ──
   appInfo: {
     alignItems: 'center',
-    paddingVertical: theme.spacing['4xl'],
+    paddingVertical: 32,
   },
   appVersion: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: 12,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.muted,
-    marginBottom: theme.spacing.sm,
+    marginBottom: 4,
   },
   blessing: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: 12,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.muted,
     fontStyle: 'italic',
