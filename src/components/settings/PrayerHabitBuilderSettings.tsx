@@ -348,7 +348,7 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
 
           {/* Reminder Settings */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>🔔 Reminder Options</Text>
+            <Text style={styles.sectionTitle}>Reminder Options</Text>
             <Text style={styles.settingDescription}>
               Customize how prayer reminders follow up
             </Text>
