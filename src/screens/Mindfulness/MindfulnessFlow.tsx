@@ -187,8 +187,10 @@ const MindfulnessFlow: React.FC = () => {
   }, [currentStep]);
 
   // 🎯 Prayer validation effect - run once on mount
+  // Skip for sunnah/optional prayers (Taraweeh, Tahajjud, etc.) — no strict fiqh deadline
   useEffect(() => {
-    validatePrayerTiming();
+    if (!isSunnah) validatePrayerTiming();
+    else setHasValidated(true);
   }, []); // Empty deps - only run once on mount
 
   // 🎯 P0-G FIX: Compute fiqh-aware deadline for this prayer.
