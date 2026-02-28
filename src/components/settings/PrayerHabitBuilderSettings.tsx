@@ -346,16 +346,16 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
             )}
           </View>
 
-          {/* Snooze Settings */}
+          {/* Reminder Settings */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>⏰ Snooze Options</Text>
+            <Text style={styles.sectionTitle}>Reminder Options</Text>
             <Text style={styles.settingDescription}>
-              Customize snooze behavior for reminders
+              Customize how prayer reminders follow up
             </Text>
 
-            {/* Default Snooze Interval */}
+            {/* Default Reminder Delay */}
             <View style={styles.snoozeOptions}>
-              <Text style={styles.optionLabel}>Default Snooze Duration</Text>
+              <Text style={styles.optionLabel}>Default Reminder Delay</Text>
               <View style={styles.buttonRow}>
                 {[5, 10, 15, 30].map((minutes) => (
                   <TouchableOpacity
@@ -385,10 +385,10 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
               </View>
             </View>
 
-            {/* Max Snoozes */}
+            {/* Max Reminders */}
             <View style={styles.sliderContainer}>
               <View style={styles.sliderHeader}>
-                <Text style={styles.sliderLabel}>Max Snoozes Per Prayer</Text>
+                <Text style={styles.sliderLabel}>Max Reminders Per Prayer</Text>
                 <Text style={styles.sliderValue}>
                   {localSettings.snooze.maxSnoozesPerPrayer}
                 </Text>
@@ -415,7 +415,7 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
                 thumbTintColor={theme.colors.settings.sliderThumb}
               />
               <Text style={styles.sliderHint}>
-                Prevent excessive snoozing
+                Limit follow-up reminders
               </Text>
             </View>
           </View>

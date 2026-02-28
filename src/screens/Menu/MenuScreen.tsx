@@ -242,14 +242,27 @@ interface MoreFeatureItem {
   subtitle: string;
   screen: string;
   iconBg: string;
+  onPress?: () => void;
 }
 
 // ═══════════════════════════════════════════════════════════════
 // MenuScreen Component
 // ═══════════════════════════════════════════════════════════════
 
+// Theme / palette icon
+const ThemeIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Circle cx="12" cy="12" r="9" stroke={color} strokeWidth={1.8} />
+    <Path
+      d="M12 3v18c4.97 0 9-4.03 9-9s-4.03-9-9-9z"
+      fill={color}
+      opacity={0.3}
+    />
+  </Svg>
+);
+
 const MenuScreen: React.FC = () => {
-  const { theme } = useTheme();
+  const { theme, themeMode, toggleTheme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const navigation = useNavigation();
   const { currentStreak, todayPrayerRecords } = useStore();
@@ -325,9 +338,17 @@ const MenuScreen: React.FC = () => {
       iconBg: theme.colors.gold + '18',
     },
     {
+      icon: ThemeIcon,
+      title: 'App Theme',
+      subtitle: `Currently: ${themeMode === 'dark' ? 'Dark' : themeMode === 'light' ? 'Light' : 'Blackout'}`,
+      screen: '',
+      iconBg: theme.colors.interactive.active + '14',
+      onPress: toggleTheme,
+    },
+    {
       icon: SettingsIcon,
       title: 'Settings',
-      subtitle: 'Prayer, notifications, theme',
+      subtitle: 'Prayer & notifications',
       screen: 'Settings',
       iconBg: theme.colors.card.hover,
     },
@@ -368,7 +389,7 @@ const MenuScreen: React.FC = () => {
               <Text style={styles.gardenTitle}>Your Garden</Text>
               <Text style={styles.gardenSub}>
                 {gardenSummary.streak > 0
-                  ? `${gardenSummary.streak} day streak · Growing`
+                  ? `${gardenSummary.streak} days of devotion · Growing`
                   : 'Start your spiritual garden'}
               </Text>
               <Text style={styles.gardenDesc}>
@@ -404,7 +425,7 @@ const MenuScreen: React.FC = () => {
               <Text style={[styles.gsVal, { color: theme.colors.interactive.active }]}>
                 {gardenSummary.streak}
               </Text>
-              <Text style={styles.gsLabel}>Day streak</Text>
+              <Text style={styles.gsLabel}>Devotion</Text>
             </View>
             <View style={[styles.gardenStat, styles.gardenStatMiddle]}>
               <Text style={[styles.gsVal, { color: theme.colors.interactive.active }]}>
@@ -450,12 +471,12 @@ const MenuScreen: React.FC = () => {
         <View style={styles.featuresList}>
           {moreFeatures.map((item, index) => (
             <TouchableOpacity
-              key={item.screen + item.title}
+              key={item.title}
               style={[
                 styles.featureRow,
                 index === moreFeatures.length - 1 && styles.featureRowLast,
               ]}
-              onPress={() => handleNavigate(item.screen)}
+              onPress={() => item.onPress ? item.onPress() : handleNavigate(item.screen)}
               activeOpacity={0.7}
             >
               <View style={[styles.featureIcon, { backgroundColor: item.iconBg }]}>

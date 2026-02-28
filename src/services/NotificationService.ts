@@ -699,7 +699,7 @@ class NotificationService {
     await Notifications.scheduleNotificationAsync({
       content: {
         title: `Reminder: ${displayName} Prayer`,
-        body: `Your ${minutes}-minute snooze is up! Time to pray 🕌`,
+        body: `A gentle reminder for ${displayName} 🤲`,
         data: {
           prayer: prayerName,
           prayerId: prayerId || `${prayerName}-${format(new Date(), 'yyyy-MM-dd')}`,

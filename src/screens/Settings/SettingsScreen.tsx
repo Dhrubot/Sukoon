@@ -31,10 +31,11 @@ import { CalculationMethodModal, NotificationModal, HijriAdjustmentModal } from 
 // Services
 import NotificationService from '../../services/NotificationService';
 import { getCachedHijriDate, getRawCachedHijriDate } from '../../utils/ramadan';
+import { NotificationDebugScreen } from '../Debug/NotificationDebugScreen';
 
 const SettingsScreen = ({ navigation }: any) => {
   const styles = useThemedStyles(createStyles);
-  const { theme, themeMode, toggleTheme } = useTheme();
+  const { theme } = useTheme();
   const [showHijriModal, setShowHijriModal] = useState(false);
 
   const {
@@ -113,10 +114,6 @@ const SettingsScreen = ({ navigation }: any) => {
     });
   };
 
-  // Theme display label
-  const themeLabel = themeMode === 'dark' ? 'Dark' : themeMode === 'light' ? 'Light' : 'Blackout';
-  const themeIcon = themeMode === 'dark' ? '🌙' : themeMode === 'light' ? '☀️' : '✦';
-
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
@@ -183,17 +180,7 @@ const SettingsScreen = ({ navigation }: any) => {
           onClose={() => setShowManualLocationModal(false)}
         />
 
-        {/* 5. Appearance */}
-        <SettingSection title="Appearance">
-          <SettingRow
-            label="App Theme"
-            subtitle="Tap to cycle themes"
-            value={`${themeIcon} ${themeLabel}`}
-            onPress={toggleTheme}
-          />
-        </SettingSection>
-
-        {/* 6. App Data */}
+        {/* 5. App Data */}
         <AppDataSection
           onExportData={handleExportData}
           onResetApp={handleResetApp}
@@ -204,6 +191,11 @@ const SettingsScreen = ({ navigation }: any) => {
           onPrivacyPolicy={() => handlePrivacyPolicy(navigation)}
           onShowDebugInfo={__DEV__ ? showDebugInfo : undefined}
         />
+
+        {/* Dev only debugger screen */}
+        {__DEV__ && (
+          <NotificationDebugScreen />
+        )}
 
         {/* Dev-only: Connection status */}
         {__DEV__ && (

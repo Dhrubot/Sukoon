@@ -20,7 +20,7 @@ import { AppTheme } from '../../theme';
 
 const { width } = Dimensions.get('window');
 
-type CategoryFilter = 'all' | 'prayer' | 'streak' | 'mindfulness' | 'focus' | 'special';
+type CategoryFilter = 'all' | 'prayer' | 'devotion' | 'mindfulness' | 'focus' | 'special';
 
 const AchievementsScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -109,7 +109,7 @@ const AchievementsScreen: React.FC = () => {
   const categories = [
     { key: 'all', label: 'All', icon: '✨' },
     { key: 'prayer', label: 'Prayer', icon: '🕌' },
-    { key: 'streak', label: 'Devotion', icon: '🌿' },
+    { key: 'devotion', label: 'Devotion', icon: '🌿' },
     { key: 'mindfulness', label: 'Presence', icon: '🧘' },
     { key: 'focus', label: 'Khushu', icon: '�' },
     { key: 'special', label: 'Blessings', icon: '🌙' },

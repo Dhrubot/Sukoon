@@ -66,7 +66,7 @@ const ReflectionGardenScreen: React.FC = () => {
             onPress={() => navigation.goBack()}
           >
             <Text style={[styles.emptyCtaText, { color: theme.colors.primary.DEFAULT }]}>
-              Return to prayers 🤲
+              Return to prayers
             </Text>
           </TouchableOpacity>
         </ScrollView>

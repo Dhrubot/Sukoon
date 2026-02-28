@@ -319,10 +319,10 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
           
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{engagementStreak}</Text>
-            <Text style={styles.statLabel}>Prayer Streak</Text>
-            <Text style={styles.statSubtext}>days active</Text>
+            <Text style={styles.statLabel}>Devotion</Text>
+            <Text style={styles.statSubtext}>consecutive days</Text>
             {currentStreak > 0 && (
-              <Text style={styles.perfectStreakBadge}>{currentStreak}d perfect</Text>
+              <Text style={styles.perfectDaysBadge}>✦ {currentStreak}d all five</Text>
             )}
           </View>
           
@@ -443,10 +443,10 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
           </View>
           
           <View style={styles.insightCard}>
-            <Text style={styles.insightTitle}>🏆 Longest Streak</Text>
+            <Text style={styles.insightTitle}>� Longest Devotion</Text>
             <Text style={styles.insightValue}>{stats.longestStreak} days</Text>
             <Text style={styles.insightDescription}>
-              your personal best consecutive prayer days
+              your longest unbroken path of prayer
             </Text>
           </View>
 
@@ -597,7 +597,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     color: theme.colors.text.secondary,
     textAlign: 'center',
   },
-  perfectStreakBadge: {
+  perfectDaysBadge: {
     fontSize: theme.typography.fontSize.xs,
     fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.gold,

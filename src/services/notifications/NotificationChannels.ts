@@ -138,7 +138,7 @@ export async function setupNotificationCategories(): Promise<void> {
   await Notifications.setNotificationCategoryAsync(NOTIFICATION_CATEGORIES.PRAYER_REMINDER, [
     {
       identifier: 'snooze',
-      buttonTitle: 'Snooze',
+      buttonTitle: 'Remind Me Later',
       options: { opensAppToForeground: false },
     },
     {
@@ -164,7 +164,7 @@ export async function setupNotificationCategories(): Promise<void> {
     },
     {
       identifier: 'snooze_prayer',
-      buttonTitle: 'Remind in 10m',
+      buttonTitle: 'Remind Me in 10m',
       options: { opensAppToForeground: false },
     },
     {
