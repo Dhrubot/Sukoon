@@ -25,6 +25,6 @@ export const CHANNELS = {
 
 export const SOUNDS = {
   // Both platforms use the short (<30s) clip for lock-screen notifications
-  IOS_SHORT: 'adhan_short.caf', 
+  IOS_SHORT: 'adhan_ios.caf', 
   ANDROID_SHORT: 'adhan_short',
 };
