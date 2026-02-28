@@ -194,13 +194,13 @@ class JummahNotificationServiceClass {
         data: { type: `jummah-${type}` },
         sound: 'default',
         categoryIdentifier: NOTIFICATION_CATEGORIES.JUMMAH_REMINDER,
-        ...(Platform.OS === 'android' && {
-          channelId: CHANNELS.JUMMAH,
-        }),
       },
       trigger: {
         type: 'date',
         date,
+        ...(Platform.OS === 'android' && {
+          channelId: CHANNELS.JUMMAH,
+        }),
       } as Notifications.NotificationTriggerInput,
       identifier,
     });

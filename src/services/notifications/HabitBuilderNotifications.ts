@@ -131,14 +131,14 @@ export async function scheduleTier2PersistentReminders(
         },
         categoryIdentifier: NOTIFICATION_CATEGORIES.POST_PRAYER_CHECK,
         sound: 'default',
-        ...(Platform.OS === 'android' && {
-          channelId: CHANNELS.DEFAULT,
-          priority: i === maxReminders ? 'high' : 'default',
-        }),
       },
       trigger: {
         type: 'date',
         date: reminderTime,
+        ...(Platform.OS === 'android' && {
+          channelId: CHANNELS.DEFAULT,
+          priority: i === maxReminders ? 'high' : 'default',
+        }),
       } as Notifications.NotificationTriggerInput,
       identifier: tier2Identifier,
     });
@@ -207,14 +207,14 @@ export async function scheduleTier3GracePeriodWarning(
       },
       categoryIdentifier: NOTIFICATION_CATEGORIES.GRACE_PERIOD_WARNING,
       sound: 'default',
-      ...(Platform.OS === 'android' && {
-        channelId: CHANNELS.GRACE_WARNING,
-        priority: 'high',
-      }),
     },
     trigger: {
       type: 'date',
       date: warningTime,
+      ...(Platform.OS === 'android' && {
+        channelId: CHANNELS.GRACE_WARNING,
+        priority: 'high',
+      }),
     } as Notifications.NotificationTriggerInput,
     identifier: tier3Identifier,
   });

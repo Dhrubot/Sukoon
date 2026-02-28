@@ -34,10 +34,10 @@ const COUNTDOWN_MESSAGES: { title: string; body: string }[] = [
 const MILESTONE_MESSAGES: Record<number, { title: string; body: string }> = {
   30: { title: '30 Days to Ramadan', body: 'One month until the blessed month begins. Start preparing your heart, mind, and schedule.' },
   14: { title: 'Two Weeks to Ramadan', body: 'Ramadan is just 14 days away. Consider fasting Mondays and Thursdays to ease into it.' },
-  7:  { title: 'One Week to Ramadan!', body: 'Seven days until the gates of Paradise open. Increase your dhikr and prepare your intentions.' },
-  3:  { title: '3 Days to Ramadan', body: 'The blessed month is almost here! Stock your home, clear your heart, and set your goals.' },
-  2:  { title: '2 Days to Ramadan', body: 'Prepare your suhoor supplies and set your alarm. The Prophet ﷺ said: "Take suhoor, for in it there is blessing."' },
-  1:  { title: 'Ramadan Begins Tomorrow!', body: 'Allahu Akbar! Tomorrow the mercy descends. Make your niyyah tonight. May Allah accept from all of us.' },
+  7: { title: 'One Week to Ramadan!', body: 'Seven days until the gates of Paradise open. Increase your dhikr and prepare your intentions.' },
+  3: { title: '3 Days to Ramadan', body: 'The blessed month is almost here! Stock your home, clear your heart, and set your goals.' },
+  2: { title: '2 Days to Ramadan', body: 'Prepare your suhoor supplies and set your alarm. The Prophet ﷺ said: "Take suhoor, for in it there is blessing."' },
+  1: { title: 'Ramadan Begins Tomorrow!', body: 'Allahu Akbar! Tomorrow the mercy descends. Make your niyyah tonight. May Allah accept from all of us.' },
 };
 
 // ── During-Ramadan daily messages ────────────────────────────────────
@@ -167,13 +167,13 @@ class RamadanCountdownServiceClass {
           body: bodyWithCount,
           data: { type: 'ramadan-countdown', daysAway },
           sound: 'default',
-          ...(Platform.OS === 'android' && {
-            channelId: CHANNELS.RAMADAN_COUNTDOWN,
-          }),
         },
         trigger: {
           type: 'date',
           date: scheduledDate,
+          ...(Platform.OS === 'android' && {
+            channelId: CHANNELS.RAMADAN_COUNTDOWN,
+          }),
         } as Notifications.NotificationTriggerInput,
         identifier: `${NOTIFICATION_PREFIX}-${daysAway}`,
       });
@@ -211,13 +211,13 @@ class RamadanCountdownServiceClass {
           body: message.body,
           data: { type: 'ramadan-daily', ramadanDay },
           sound: 'default',
-          ...(Platform.OS === 'android' && {
-            channelId: CHANNELS.RAMADAN_COUNTDOWN,
-          }),
         },
         trigger: {
           type: 'date',
           date: scheduledDate,
+          ...(Platform.OS === 'android' && {
+            channelId: CHANNELS.RAMADAN_COUNTDOWN,
+          }),
         } as Notifications.NotificationTriggerInput,
         identifier: `${NOTIFICATION_PREFIX}-day-${ramadanDay}`,
       });
