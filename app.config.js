@@ -80,7 +80,8 @@ export default {
           "icon": "./assets/notification-icon.png",
           "color": "#2D8B6F",  // Warm sage primary color
           "sounds": [
-            "./assets/sounds/adhan_short.wav",
+            "./assets/sounds/adhan_short.ogg",
+            "./assets/sounds/adhan_short.caf",
             "./assets/sounds/adhan_full.mp3"
           ]
         }

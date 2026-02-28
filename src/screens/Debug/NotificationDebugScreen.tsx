@@ -16,6 +16,7 @@ import { useStore } from '../../store/useStore';
 import { usePrayerTimes } from '../../providers/PrayerTimesProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
+import { CHANNELS, SOUNDS } from '../../constants/NotificationConstants';
 
 export const NotificationDebugScreen = () => {
   const styles = useThemedStyles(createStyles);
@@ -80,6 +81,31 @@ export const NotificationDebugScreen = () => {
     }
   };
 
+  // Test 2.5 Test Dhan notification
+
+  const test10SecondAdhanNotification = async () => {
+    try {
+      await Notifications.scheduleNotificationAsync({
+        content: {
+          title: '⏰ Adhan Test',
+          body: 'This should play the adhan sound',
+          sound: SOUNDS.ANDROID_SHORT,        // ← 'adhan_short'
+          ...(Platform.OS === 'android' && {
+            channelId: CHANNELS.ADHAN,         // ← 'prayer-times-adhan-v6'
+          }),
+        },
+        trigger: {
+          type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+          seconds: 10,
+          repeats: false,
+        },
+      });
+      Alert.alert('Scheduled', 'Notification in 10 seconds — LOCK YOUR PHONE NOW');
+    } catch (error) {
+      Alert.alert('Error', `Failed: ${error}`);
+    }
+  }
+
   // 🧪 Test 3: Play/Stop full Adhan in-app
   const toggleAdhanPlayback = () => {
     if (isAdhanPlaying) {
@@ -138,11 +164,11 @@ export const NotificationDebugScreen = () => {
         id: n.identifier,
         title: n.content.title,
         prayer: n.content.data?.prayer,
-        trigger: n.trigger && 'date' in n.trigger 
-          ? new Date(n.trigger.date).toLocaleString() 
+        trigger: n.trigger && 'date' in n.trigger
+          ? new Date(n.trigger.date).toLocaleString()
           : 'Unknown',
       }));
-      
+
       Alert.alert(
         `Scheduled (${notifications.length})`,
         JSON.stringify(info, null, 2),
@@ -165,6 +191,12 @@ export const NotificationDebugScreen = () => {
       const channels = await Notifications.getNotificationChannelsAsync();
       const channelInfo = channels.map(c => `${c.name} (${c.id})`).join('\n');
       Alert.alert('Android Channels', channelInfo || 'No channels found');
+      const adhanChannel = channels.find(c => c.id.includes('adhan'));
+      if (adhanChannel) {
+        console.log('🔊 Adhan channel sound:', adhanChannel.sound);
+        console.log('🔊 Adhan channel full:', JSON.stringify(adhanChannel, null, 2));
+        Alert.alert('Adhan Channel', `Sound: ${adhanChannel.sound}\nID: ${adhanChannel.id}`);
+      }
     } catch (error) {
       Alert.alert('Error', `Failed: ${error}`);
     }
@@ -204,7 +236,7 @@ export const NotificationDebugScreen = () => {
           <InfoRow label="Has Prayer Source" value={debugInfo.hasSource ? 'Yes' : 'No'} />
           <InfoRow label="Has Location" value={debugInfo.sourceHasLocation ? 'Yes' : 'No'} />
           <InfoRow label="Loading" value={debugInfo.sourceLoading ? 'Yes' : 'No'} />
-          
+
           {debugInfo.upcomingNotifications && debugInfo.upcomingNotifications.length > 0 && (
             <>
               <Text style={styles.subsectionTitle}>Next 3 Notifications:</Text>
@@ -223,51 +255,56 @@ export const NotificationDebugScreen = () => {
       {/* Test Buttons */}
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>🧪 Quick Tests</Text>
-        
+
         <TestButton
           title="1. Test Immediate Notification"
           onPress={testImmediateNotification}
           description="Sends notification right now"
         />
-        
+
         <TestButton
           title="2. Test 10-Second Delay"
           onPress={test10SecondNotification}
           description="Notification in 10 seconds"
         />
-        
+        <TestButton
+          title="2.5 Test 10-Second Adhan"
+          onPress={test10SecondAdhanNotification}
+          description="Notification in 10 seconds"
+        />
+
         <TestButton
           title={isAdhanPlaying ? '3. ⏹ Stop Adhan' : '3. Test Adhan Sound'}
           onPress={toggleAdhanPlayback}
           description={isAdhanPlaying ? 'Tap to stop playback' : 'Play full adhan in-app'}
           danger={isAdhanPlaying}
         />
-        
+
         <TestButton
           title="4. Request Permissions"
           onPress={requestPermissions}
           description="Re-request notification permissions"
         />
-        
+
         <TestButton
           title="5. Force Reschedule All"
           onPress={forceReschedule}
           description="Reschedule all prayer notifications"
         />
-        
+
         <TestButton
           title="6. Cancel All Notifications"
           onPress={cancelAllNotifications}
           description="Clear all scheduled notifications"
           danger
         />
-        
+
         <TestButton
           title="7. View All Scheduled"
           onPress={viewScheduledNotifications}
           description="See list of scheduled notifications"
         />
-        
+
         {Platform.OS === 'android' && (
           <TestButton
             title="8. Check Android Channels"
@@ -275,7 +312,7 @@ export const NotificationDebugScreen = () => {
             description="View notification channels"
           />
         )}
-        
+
         <TestButton
           title="Refresh Debug Info"
           onPress={loadDebugInfo}
@@ -313,14 +350,14 @@ const InfoRow = ({ label, value }: { label: string; value: string }) => {
   );
 };
 
-const TestButton = ({ 
-  title, 
-  onPress, 
+const TestButton = ({
+  title,
+  onPress,
   description,
-  danger = false 
-}: { 
-  title: string; 
-  onPress: () => void; 
+  danger = false
+}: {
+  title: string;
+  onPress: () => void;
   description: string;
   danger?: boolean;
 }) => {

@@ -31,6 +31,7 @@ import { CalculationMethodModal, NotificationModal, HijriAdjustmentModal } from 
 // Services
 import NotificationService from '../../services/NotificationService';
 import { getCachedHijriDate, getRawCachedHijriDate } from '../../utils/ramadan';
+import { NotificationDebugScreen } from '../Debug/NotificationDebugScreen';
 
 const SettingsScreen = ({ navigation }: any) => {
   const styles = useThemedStyles(createStyles);
@@ -190,6 +191,11 @@ const SettingsScreen = ({ navigation }: any) => {
           onPrivacyPolicy={() => handlePrivacyPolicy(navigation)}
           onShowDebugInfo={__DEV__ ? showDebugInfo : undefined}
         />
+
+        {/* Dev only debugger screen */}
+        {__DEV__ && (
+          <NotificationDebugScreen />
+        )}
 
         {/* Dev-only: Connection status */}
         {__DEV__ && (
