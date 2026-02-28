@@ -90,14 +90,15 @@ export const NotificationDebugScreen = () => {
           title: '⏰ Adhan Test',
           body: 'This should play the adhan sound',
           sound: SOUNDS.ANDROID_SHORT,        // ← 'adhan_short'
-          ...(Platform.OS === 'android' && {
-            channelId: CHANNELS.ADHAN,         // ← 'prayer-times-adhan-v6'
-          }),
+
         },
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
           seconds: 10,
           repeats: false,
+          ...(Platform.OS === 'android' && {
+            channelId: CHANNELS.ADHAN,         // ← 'prayer-times-adhan-v6'
+          }),
         },
       });
       Alert.alert('Scheduled', 'Notification in 10 seconds — LOCK YOUR PHONE NOW');

@@ -337,10 +337,10 @@ class NotificationService {
             // Snooze for user's preferred interval
             const settingsSnooze = StorageService.getUserSettings();
             const snoozeIntervalCustom = settingsSnooze?.habitBuilder?.snooze?.defaultInterval || 10;
-            
+
             ReminderStateService.incrementSnoozeCount(data.prayerId as string);
             await this.snoozePrayerNotification(data.prayer as PrayerName, snoozeIntervalCustom, data.prayerId as string);
-            
+
             logger.log(`⏰ Prayer ${data.prayerId} snoozed for ${snoozeIntervalCustom} min`);
           }
           break;
@@ -349,10 +349,10 @@ class NotificationService {
           if (data?.prayerId && data?.prayer) {
             // User explicitly chose to skip
             ReminderStateService.markPrayerSkipped(data.prayerId as string);
-            
+
             // Cancel all future reminders for this prayer
             await this.cancelPrayerReminderFlow(data.prayerId as string);
-            
+
             AnalyticsService.logPrayerMissed(data.prayer as string);
             logger.log('⏭️ Prayer skipped:', data.prayerId);
           }
@@ -481,13 +481,13 @@ class NotificationService {
                   scheduledAt: new Date().toISOString(),
                 },
                 categoryIdentifier: NOTIFICATION_CATEGORIES.PRE_PRAYER,
-                ...(Platform.OS === 'android' && {
-                  channelId: CHANNELS.PRE_PRAYER,
-                }),
               },
               trigger: {
                 type: 'date',
                 date: preNotificationTime,
+                ...(Platform.OS === 'android' && {
+                  channelId: CHANNELS.PRE_PRAYER,
+                }),
               } as Notifications.NotificationTriggerInput,
               identifier: preIdentifier,
             });
@@ -536,14 +536,13 @@ class NotificationService {
           },
           sound: soundAsset,
           categoryIdentifier: NOTIFICATION_CATEGORIES.PRAYER_REMINDER,
-          ...(Platform.OS === 'android' && {
-            channelId: androidChannel,
-            priority: 'high',
-          }),
         },
         trigger: {
           type: 'date',
           date: prayer.time,
+          ...(Platform.OS === 'android' && {
+            channelId: androidChannel,
+          }),
         } as Notifications.NotificationTriggerInput,
         identifier: prayerIdentifier,
       });
@@ -597,13 +596,13 @@ class NotificationService {
               scheduledAt: new Date().toISOString(),
             },
             categoryIdentifier: NOTIFICATION_CATEGORIES.POST_PRAYER_CHECK,
-            ...(Platform.OS === 'android' && {
-              channelId: CHANNELS.DEFAULT,
-            }),
           },
           trigger: {
             type: 'date',
             date: postCheckTime,
+            ...(Platform.OS === 'android' && {
+              channelId: CHANNELS.DEFAULT,
+            }),
           } as Notifications.NotificationTriggerInput,
           identifier: checkIdentifier,
         });
@@ -628,13 +627,13 @@ class NotificationService {
           type: 'mindfulness-reminder',
           scheduledAt: new Date().toISOString(),
         },
-        ...(Platform.OS === 'android' && {
-          channelId: CHANNELS.MINDFULNESS,
-        }),
       },
       trigger: {
         type: 'date',
         date: reminderTime,
+        ...(Platform.OS === 'android' && {
+          channelId: CHANNELS.MINDFULNESS,
+        }),
       } as Notifications.NotificationTriggerInput,
       identifier: `mindfulness-${prayerName}-${Date.now()}`,
     });
@@ -708,14 +707,13 @@ class NotificationService {
         },
         sound: 'default',
         categoryIdentifier: NOTIFICATION_CATEGORIES.POST_PRAYER_CHECK, // Use Tier 2 category
-        ...(Platform.OS === 'android' && {
-          channelId: CHANNELS.DEFAULT,
-          priority: 'high',
-        }),
       },
       trigger: {
         type: 'date',
         date: snoozeTime,
+        ...(Platform.OS === 'android' && {
+          channelId: CHANNELS.DEFAULT,
+        }),
       } as Notifications.NotificationTriggerInput,
       identifier: `snooze-${prayerName}-${Date.now()}`,
     });

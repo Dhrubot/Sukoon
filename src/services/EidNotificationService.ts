@@ -195,13 +195,13 @@ class EidNotificationServiceClass {
         body: content.body,
         data: { type: 'eid' },
         sound: 'default',
-        ...(Platform.OS === 'android' && {
-          channelId: CHANNELS.RAMADAN_COUNTDOWN,
-        }),
       },
       trigger: {
         type: 'date',
         date,
+        ...(Platform.OS === 'android' && {
+          channelId: CHANNELS.RAMADAN_COUNTDOWN,
+        }),
       } as Notifications.NotificationTriggerInput,
       identifier,
     });
