@@ -1,11 +1,21 @@
 // src/components/garden/TreeSky.tsx
 //
-// Phase 3: Adds Ramadan mode — extra stars, brighter twinkle, gold moon halo.
-// When `isRamadan` is true, additional RAMADAN_STARS are rendered and
-// the crescent moon gets a soft gold glow behind it.
+// ╔══════════════════════════════════════════════════════════════════╗
+// ║  TREE SKY — v3                                                 ║
+// ╠══════════════════════════════════════════════════════════════════╣
+// ║  MOON: Now uses Unicode ☽ crescent (same as hero StarField)    ║
+// ║  for visual consistency across the app. Previous SVG Path      ║
+// ║  crescent was too small (20px) and looked different from hero.  ║
+// ║                                                                ║
+// ║  RAMADAN HALO: radius 28, opacity 0.35 (was 16 / 0.12).       ║
+// ║  Now actually visible as a warm gold glow behind the moon.     ║
+// ║                                                                ║
+// ║  FLOAT ANIMATION: Larger amplitude (6px) and slower duration   ║
+// ║  (8s) to match the hero's dreamy float feel.                   ║
+// ╚══════════════════════════════════════════════════════════════════╝
 
 import React, { useEffect } from 'react';
-import { View, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -15,7 +25,6 @@ import Animated, {
   withSequence,
   Easing,
 } from 'react-native-reanimated';
-import Svg, { Path, Circle } from 'react-native-svg';
 import { AppTheme } from '../../theme';
 import {
   STARS,
@@ -30,7 +39,6 @@ import {
 interface TreeSkyProps {
   theme: AppTheme;
   isRamadan?: boolean;
-  /** Ramadan moon halo color from ramadanTokens */
   moonHaloColor?: string;
 }
 
@@ -42,14 +50,13 @@ interface AnimatedStarProps {
   size: number;
   delay: number;
   color: string;
-  /** Ramadan mode boosts brightness */
   boosted?: boolean;
 }
 
 const AnimatedStar: React.FC<AnimatedStarProps> = React.memo(
   ({ x, y, size, delay, color, boosted }) => {
-    const opacity = useSharedValue(STAR_TWINKLE.minOpacity | STAR_TWINKLE.maxOpacity);
-    const scale = useSharedValue(STAR_TWINKLE.minScale | STAR_TWINKLE.maxScale);
+    const opacity = useSharedValue(STAR_TWINKLE.minOpacity as number);
+    const scale = useSharedValue(STAR_TWINKLE.minScale as number);
 
     useEffect(() => {
       const halfDuration = STAR_TWINKLE.duration / 2;
@@ -105,7 +112,16 @@ const AnimatedStar: React.FC<AnimatedStarProps> = React.memo(
   },
 );
 
-// ─── Animated Crescent Moon ────────────────────────────────────────
+// ─── Animated Crescent Moon (Hero-style Unicode ☽) ─────────────────
+//
+// v3: Switched from SVG Path crescent to Unicode ☽ <Text> element.
+// This matches the hero section's StarField.tsx CrescentMoon exactly:
+//   - Gold-tinted ☽ character
+//   - Float + gentle rotation animation
+//   - Large enough to be a recognizable landmark in the sky
+//
+// For Ramadan: a soft gold glow View sits behind the crescent,
+// significantly larger and more opaque than v1's SVG circle.
 
 interface AnimatedMoonProps {
   color: string;
@@ -113,74 +129,65 @@ interface AnimatedMoonProps {
   showHalo?: boolean;
 }
 
-const AnimatedMoon: React.FC<AnimatedMoonProps> = React.memo(({ color, haloColor, showHalo }) => {
-  const translateY = useSharedValue(0);
-  const rotation = useSharedValue(0);
+const AnimatedMoon: React.FC<AnimatedMoonProps> = React.memo(
+  ({ color, haloColor, showHalo }) => {
+    const translateY = useSharedValue(0);
+    const rotation = useSharedValue(0);
 
-  useEffect(() => {
-    const halfDuration = MOON_FLOAT.duration / 2;
-    const easing = Easing.inOut(Easing.sin);
+    useEffect(() => {
+      const halfDuration = MOON_FLOAT.duration / 2;
+      const easing = Easing.inOut(Easing.sin);
 
-    translateY.value = withRepeat(
-      withSequence(
-        withTiming(-MOON_FLOAT.amplitude, { duration: halfDuration, easing }),
-        withTiming(MOON_FLOAT.amplitude, { duration: halfDuration, easing }),
-      ),
-      -1,
-      false,
-    );
+      translateY.value = withRepeat(
+        withSequence(
+          withTiming(-MOON_FLOAT.amplitude, { duration: halfDuration, easing }),
+          withTiming(MOON_FLOAT.amplitude, { duration: halfDuration, easing }),
+        ),
+        -1,
+        false,
+      );
 
-    rotation.value = withRepeat(
-      withSequence(
-        withTiming(-MOON_FLOAT.rotationAmplitude, { duration: halfDuration, easing }),
-        withTiming(MOON_FLOAT.rotationAmplitude, { duration: halfDuration, easing }),
-      ),
-      -1,
-      false,
-    );
-  }, []);
+      rotation.value = withRepeat(
+        withSequence(
+          withTiming(-MOON_FLOAT.rotationAmplitude, { duration: halfDuration, easing }),
+          withTiming(MOON_FLOAT.rotationAmplitude, { duration: halfDuration, easing }),
+        ),
+        -1,
+        false,
+      );
+    }, []);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateY: translateY.value },
-      { rotate: `${rotation.value}deg` },
-    ],
-  }));
+    const animatedStyle = useAnimatedStyle(() => ({
+      transform: [
+        { translateY: translateY.value },
+        { rotate: `${rotation.value}deg` },
+      ],
+    }));
 
-  const svgSize = showHalo ? MOON.size + RAMADAN_MOON_HALO.radius : MOON.size;
-
-  return (
-    <Animated.View style={[styles.moonContainer, animatedStyle]}>
-      <Svg
-        width={svgSize}
-        height={svgSize}
-        viewBox={`0 0 ${svgSize} ${svgSize}`}
-        fill="none"
-      >
-        {/* Ramadan gold halo behind the moon */}
+    return (
+      <Animated.View style={[styles.moonContainer, animatedStyle]}>
+        {/* Ramadan gold halo — a glowing circle behind the crescent */}
         {showHalo && haloColor && (
-          <Circle
-            cx={svgSize / 2}
-            cy={svgSize / 2}
-            r={RAMADAN_MOON_HALO.radius}
-            fill={haloColor}
-            opacity={RAMADAN_MOON_HALO.opacity}
+          <View
+            style={[
+              styles.moonHalo,
+              {
+                width: RAMADAN_MOON_HALO.radius * 2,
+                height: RAMADAN_MOON_HALO.radius * 2,
+                borderRadius: RAMADAN_MOON_HALO.radius,
+                backgroundColor: haloColor,
+                opacity: RAMADAN_MOON_HALO.opacity,
+              },
+            ]}
           />
         )}
 
-        {/* Crescent moon */}
-        <Path
-          d={showHalo
-            ? `M ${svgSize / 2 + 9} ${svgSize / 2 + 0.79} A 9 9 0 1 1 ${svgSize / 2 - 0.79} ${svgSize / 2 - 9} A 7 7 0 0 0 ${svgSize / 2 + 9} ${svgSize / 2 + 0.79} Z`
-            : 'M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79Z'
-          }
-          fill={color}
-          opacity={0.65}
-        />
-      </Svg>
-    </Animated.View>
-  );
-});
+        {/* Unicode crescent — matches hero StarField */}
+        <Text style={[styles.crescentText, { color }]}>☽</Text>
+      </Animated.View>
+    );
+  },
+);
 
 // ─── Main TreeSky Component ────────────────────────────────────────
 
@@ -191,7 +198,6 @@ const TreeSky: React.FC<TreeSkyProps> = ({ theme, isRamadan = false, moonHaloCol
   // Skip rendering entirely in light theme
   if (theme.mode === 'light') return null;
 
-  // Combine base + Ramadan stars
   const allStars = isRamadan ? [...STARS, ...RAMADAN_STARS] : STARS;
 
   return (
@@ -209,7 +215,7 @@ const TreeSky: React.FC<TreeSkyProps> = ({ theme, isRamadan = false, moonHaloCol
         />
       ))}
 
-      {/* Floating crescent moon (with optional Ramadan halo) */}
+      {/* Floating crescent moon */}
       <AnimatedMoon
         color={moonColor}
         haloColor={moonHaloColor}
@@ -228,6 +234,18 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: `${MOON.topPercent}%`,
     right: `${MOON.rightPercent}%`,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Ramadan halo — absolutely centered behind the crescent
+  moonHalo: {
+    position: 'absolute',
+  },
+  // Unicode crescent matching hero StarField style
+  crescentText: {
+    fontSize: MOON.size,
+    lineHeight: MOON.size + 4,
+    opacity: 0.15,
   },
 });
 

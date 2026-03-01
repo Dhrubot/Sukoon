@@ -1,23 +1,10 @@
 // src/services/TubaTreeService.ts
 //
-// ╔══════════════════════════════════════════════════════════════════╗
-// ║  TUBA TREE SERVICE                                             ║
-// ╠══════════════════════════════════════════════════════════════════╣
-// ║  Transforms GardenPlant[] into TreeData for rendering.         ║
-// ║                                                                ║
-// ║  DATA-DRIVEN TRUNK: The trunk grows to reach whichever         ║
-// ║  branches actually have plant data. TRUNK_SCALE[stage] is      ║
-// ║  only a minimum floor — data always wins.                      ║
-// ║                                                                ║
-// ║  BUG-1 FIX: Leaves positioned on SCALED Bézier curve           ║
-// ║  BUG-3 FIX: Branches gated by computed trunk top               ║
-// ║  BUG-4 FIX: Empty branches = lengthScale 0, no ghost stubs     ║
-// ║                                                                ║
-// ║  v2 FIXES:                                                     ║
-// ║  FIX-2: Tip-weighted leaf distribution (power curve)           ║
-// ║  FIX-3: Tighter jitter at tips for natural clustering          ║
-// ║  FIX-4: Softer sub-branch departure angles                    ║
-// ╚══════════════════════════════════════════════════════════════════╝
+// v3 FIXES:
+//   • Tip-weighted leaf distribution (LEAF_DISTRIBUTION)
+//   • Tighter jitter at branch tips for natural clustering
+//   • Softer sub-branch departure curves (controlFactor 0.3)
+//   • __DEV__ logging to trace leaf placement issues
 
 import { PrayerName } from '../types';
 import { GardenPlant, GrowthStage } from '../types/garden';
@@ -46,41 +33,39 @@ import {
 } from '../constants/tubaTree';
 
 class TubaTreeService {
-  /**
-   * Build the complete tree visualization data from garden plants.
-   */
   buildTreeData(plants: GardenPlant[]): TreeData {
     const plantsByPrayer = this.groupByPrayer(plants);
     const totalLeaves = Math.min(plants.length, MAX_TOTAL_LEAVES);
     const stage = this.getTreeStage(plants.length);
 
     // ── DATA-DRIVEN TRUNK HEIGHT ──────────────────────────────────
-    // 1. Find the highest branch junction (smallest Y) that has data
-    // 2. Compute the scale needed to reach it (+ padding)
-    // 3. Take the MAX of that and the stage floor
-    //
-    // This means your 7 plants as a sapling: if you have Fajr data
-    // (junction y=180), the trunk grows to y≈170, even though the
-    // sapling floor would only reach y≈235.
-
-    let highestJunctionY = TRUNK.start.y; // start at base (280)
+    let highestJunctionY = TRUNK.start.y;
 
     for (const def of BRANCH_DEFINITIONS) {
       const branchPlants = plantsByPrayer[def.prayer] || [];
       if (branchPlants.length > 0) {
-        // This branch has data — trunk must reach its junction
         highestJunctionY = Math.min(highestJunctionY, def.curve.start.y);
       }
     }
 
-    // Add padding above the highest junction
     const targetY = highestJunctionY - TRUNK_TOP_PADDING;
     const dataScale = trunkScaleForY(targetY);
     const stageFloor = TRUNK_SCALE[stage];
     const effectiveScale = Math.max(stageFloor, dataScale);
-
-    // Now compute the actual trunk top for branch gating
     const currentTrunkTopY = trunkTopY(effectiveScale);
+
+    if (__DEV__) {
+      console.log('[TubaTree] ═══ buildTreeData ═══');
+      console.log(`  plants: ${plants.length}, stage: ${stage}`);
+      console.log(`  highestJunctionY: ${highestJunctionY}, targetY: ${targetY}`);
+      console.log(`  dataScale: ${dataScale.toFixed(3)}, stageFloor: ${stageFloor}, effectiveScale: ${effectiveScale.toFixed(3)}`);
+      console.log(`  trunkTopY: ${currentTrunkTopY.toFixed(1)}`);
+      for (const def of BRANCH_DEFINITIONS) {
+        const bp = plantsByPrayer[def.prayer] || [];
+        const visible = def.curve.start.y >= currentTrunkTopY;
+        console.log(`  ${def.prayer}: ${bp.length} plants, junction y=${def.curve.start.y}, visible=${visible}`);
+      }
+    }
 
     const branches: TreeBranch[] = BRANCH_DEFINITIONS.map((def) => {
       const branchPlants = plantsByPrayer[def.prayer] || [];
@@ -90,6 +75,12 @@ class TubaTreeService {
     const bloomCount = plants.filter(
       (p) => p.growthStage === 'bloom' && p.mood >= 4,
     ).length;
+
+    if (__DEV__) {
+      const totalRenderedLeaves = branches.reduce((sum, b) => sum + b.leaves.length, 0);
+      console.log(`  totalRenderedLeaves: ${totalRenderedLeaves}, bloomCount: ${bloomCount}`);
+      console.log('[TubaTree] ═══════════════════');
+    }
 
     return {
       branches,
@@ -124,14 +115,10 @@ class TubaTreeService {
     stage: TreeStage,
     currentTrunkTopY: number,
   ): TreeBranch {
-    // BUG-3 FIX: Branch visible only if trunk has grown past its junction.
-    // Y increases downward, so junction must be >= trunkTop.
     const branchVisible = def.curve.start.y >= currentTrunkTopY;
-
     const visiblePlants = branchVisible ? plants.slice(0, MAX_LEAVES_PER_BRANCH) : [];
     const leafCount = visiblePlants.length;
 
-    // BUG-4 FIX: 0 leaves = 0 length, no ghost stubs
     let lengthScale: number;
     let strokeWidth: number;
 
@@ -150,12 +137,18 @@ class TubaTreeService {
           (BRANCH_STYLE.maxStrokeWidth - BRANCH_STYLE.minStrokeWidth);
     }
 
-    // BUG-1 FIX: Leaves positioned on SCALED curve
     const leaves = this.positionLeaves(prayer, visiblePlants, def, lengthScale);
 
     const subBranches = branchVisible
       ? this.computeSubBranches(def, lengthScale, strokeWidth, stage)
       : [];
+
+    if (__DEV__ && leafCount > 0) {
+      console.log(`  [${prayer}] lengthScale=${lengthScale.toFixed(3)}, leaves=${leaves.length}`);
+      leaves.forEach((l, i) => {
+        console.log(`    leaf[${i}]: t=${l.t.toFixed(3)}, x=${l.x.toFixed(1)}, y=${l.y.toFixed(1)}, stage=${l.growthStage}`);
+      });
+    }
 
     return {
       prayer,
@@ -169,22 +162,9 @@ class TubaTreeService {
   }
 
   /**
-   * Position leaves along the SCALED branch curve.
-   *
-   * BUG-1 FIX: Uses scaledBezier() to get the same shortened curve
-   * that branchPathD() renders. Leaves can never float off-branch.
-   *
-   * ── v2 FIX-2: TIP-WEIGHTED DISTRIBUTION ────────────────────────
-   * Old: t = (index + 1) / (n + 1)  — uniform spacing
+   * v3: Tip-weighted leaf distribution.
+   * Old: t = (index+1)/(n+1)  — uniform spacing
    * New: t = floorT + range * pow(linearT, power)
-   *
-   * With power=0.7 and floorT=0.15, leaves naturally cluster toward
-   * branch tips (where real foliage grows to catch sunlight) while
-   * maintaining some presence along the inner branch.
-   *
-   * ── v2 FIX-3: TIP CLUSTER JITTER ──────────────────────────────
-   * Leaves past tipClusterT (0.7) get halved jitter magnitude,
-   * so they pack tighter at the tips creating visible foliage density.
    */
   private positionLeaves(
     prayer: PrayerName,
@@ -199,23 +179,18 @@ class TubaTreeService {
     const scaled = scaledBezier(curve.start, curve.control, curve.end, lengthScale);
 
     return plants.map((plant, index) => {
-      // ── FIX-2: Tip-weighted t ──────────────────────────────────
-      // Linear t in (0, 1) — same denominator trick as before
+      // v3: tip-weighted distribution
       const linearT = (index + 1) / (n + 1);
-      // Apply power curve to push distribution toward tips
       const t = LEAF_DISTRIBUTION.floorT
         + LEAF_DISTRIBUTION.range * Math.pow(linearT, LEAF_DISTRIBUTION.power);
 
-      // Evaluate on the SCALED curve
       const pos = quadBezierPoint(curve.start, scaled.control, scaled.end, t);
       const perp = quadBezierPerpendicular(curve.start, scaled.control, scaled.end, t);
 
       const hash = leafHash(prayer, plant.date, index);
       const jitterSign = (hash % 2 === 0) ? 1 : -1;
 
-      // ── FIX-3: Tighter jitter at tips ──────────────────────────
-      // Leaves past tipClusterT get reduced jitter so they pack
-      // tighter, creating visible foliage density at branch ends.
+      // v3: tighter jitter at tips
       const jitterScale = t > LEAF_DISTRIBUTION.tipClusterT
         ? LEAF_DISTRIBUTION.tipJitterScale
         : 1.0;
@@ -252,13 +227,7 @@ class TubaTreeService {
   }
 
   /**
-   * Sub-branches use SCALED curve for fork point (consistent with BUG-1 fix).
-   *
-   * ── v2 FIX-4: SOFTER FORK DEPARTURE ────────────────────────────
-   * Control point now sits at controlFactor=0.3 (was 0.5) along the
-   * tangent with controlSpreadFactor=0.4 (was 0.6) perpendicular
-   * spread. This creates a gentler curve that departs smoothly from
-   * the parent branch instead of a rigid "V" fork.
+   * v3: softer sub-branch fork departure.
    */
   private computeSubBranches(
     def: typeof BRANCH_DEFINITIONS[number],
@@ -288,7 +257,7 @@ class TubaTreeService {
       const endX = forkPoint.x + Math.cos(tangentRad) * subLength + perp.x * spread;
       const endY = forkPoint.y + Math.sin(tangentRad) * subLength + perp.y * spread;
 
-      // ── FIX-4: Softer control point placement ──────────────────
+      // v3: softer control point placement
       const ctrlX = forkPoint.x
         + Math.cos(tangentRad) * subLength * SUB_BRANCH.controlFactor
         + perp.x * spread * SUB_BRANCH.controlSpreadFactor;
