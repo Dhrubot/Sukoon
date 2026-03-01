@@ -230,7 +230,7 @@ const createStyles = (theme: AppTheme) =>
       color: theme.colors.sanctuary.prayedStatus,
     },
     iqamah: {
-      fontSize: theme.typography.fontSize.xs,
+      fontSize: theme.typography.fontSize.sm,
       fontFamily: theme.typography.fontFamily.sanctuaryItalic,
       fontStyle: 'italic' as const,
       color: theme.colors.goldLight,

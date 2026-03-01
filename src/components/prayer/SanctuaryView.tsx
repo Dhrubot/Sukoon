@@ -140,7 +140,7 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
           {ramadanDay && (
             <View style={styles.ramadanBadge}>
               <Text style={styles.ramadanBadgeText}>
-                ☪ Ramadan Mubarak · Day {ramadanDay}
+                Ramadan Mubarak · Day {ramadanDay}
               </Text>
             </View>
           )}
@@ -256,13 +256,13 @@ const createStyles = (theme: AppTheme) =>
       borderColor: 'rgba(201, 168, 76, 0.20)',
     },
     ramadanBadgeText: {
-      fontSize: theme.typography.fontSize.xs,
+      fontSize: theme.typography.fontSize.sm,
       fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.goldLight,
       letterSpacing: 0.5,
     },
     greeting: {
-      fontSize: theme.typography.fontSize.lg,
+      fontSize: theme.typography.fontSize.xl,
       fontFamily: theme.typography.fontFamily.headingRegular,
       color: theme.colors.sanctuary.greeting,
       textAlign: 'center',
@@ -271,7 +271,7 @@ const createStyles = (theme: AppTheme) =>
       color: theme.colors.goldLight,
     },
     hijriDate: {
-      fontSize: theme.typography.fontSize.xs,
+      fontSize: theme.typography.fontSize.sm,
       fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.sanctuary.label,
       textAlign: 'center',

@@ -36,3 +36,12 @@ export interface GardenData {
   newBlooms: number; // blooms added this week
   isEmpty: boolean;
 }
+
+export type {
+  TreeStage,
+  TreeData,
+  TreeBranch,
+  TreeLeafData,
+  SubBranch,
+  LeafDetailData,
+} from './tubaTree';

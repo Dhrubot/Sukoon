@@ -393,7 +393,7 @@ const MenuScreen: React.FC = () => {
                   : 'Start your spiritual garden'}
               </Text>
               <Text style={styles.gardenDesc}>
-                Track your prayer consistency and grow a spiritual garden with each prayer.
+                Track your prayer consistency and grow a spiritual tree with each prayer.
               </Text>
             </View>
           </View>

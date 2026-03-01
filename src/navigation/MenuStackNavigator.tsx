@@ -12,6 +12,7 @@ import ReflectionGardenScreen from '../screens/ReflectionGarden/ReflectionGarden
 import AdhkarScreen from '../screens/Adhkar/AdhkarScreen';
 import TasbihScreen from '../screens/Tasbih/TasbihScreen';
 import DuaLibraryScreen from '../screens/DuaLibrary/DuaLibraryScreen';
+import TubaTreeInfoScreen from '../screens/ReflectionGarden/TubaTreeInfoScreen';
 
 export type MenuStackParamList = {
   MenuHome: undefined;
@@ -20,6 +21,7 @@ export type MenuStackParamList = {
   DuaLibrary: undefined;
   MyJourney: undefined;
   ReflectionGarden: undefined;
+  TubaTreeInfo: undefined;
   Support: undefined;
   Settings: undefined;
   PrivacyPolicy: undefined;
@@ -78,6 +80,11 @@ export const MenuStackNavigator: React.FC = () => {
         name="ReflectionGarden"
         component={ReflectionGardenScreen}
         options={{ title: 'My Garden' }}
+      />
+      <Stack.Screen
+        name="TubaTreeInfo"
+        component={TubaTreeInfoScreen}
+        options={{ title: 'About the Tree' }}
       />
       <Stack.Screen name="Support" component={SupportScreen} />
       <Stack.Screen name="Settings" component={SettingsScreen} />
