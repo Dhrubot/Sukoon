@@ -1,17 +1,17 @@
 // src/components/garden/TubaTreeCanvas.tsx
 //
 // ╔══════════════════════════════════════════════════════════════════╗
-// ║  TUBA TREE CANVAS — v3                                         ║
+// ║  TUBA TREE CANVAS — v4                                         ║
 // ╠══════════════════════════════════════════════════════════════════╣
-// ║  CRITICAL FIX: Reverted from v2 AnimatedPath (which broke       ║
-// ║  leaf rendering) back to AnimatedG.                             ║
 // ║                                                                ║
-// ║  SWAY: Uses translateX/Y on AnimatedG via useAnimatedProps     ║
-// ║  with the perpendicular sway direction from constants.         ║
-// ║  This is safe across ALL react-native-svg versions.            ║
+// ║  SWAY: Uses AnimatedG with `rotation` prop (proven in v1).     ║
+// ║  The `originX/originY` is set to the branch's trunk junction   ║
+// ║  so the branch swings like a pendulum from its base.           ║
 // ║                                                                ║
-// ║  DEBUG: __DEV__ logging shows branch visibility and leaf       ║
-// ║  counts so we can trace data pipeline issues.                  ║
+// ║  This is the SAME approach that worked before v2 broke things. ║
+// ║  Amplitude is gentle (1.2°) for subtle organic motion.         ║
+// ║                                                                ║
+// ║  The actual leaf rendering bug was in TreeLeaf.tsx, not here.  ║
 // ╚══════════════════════════════════════════════════════════════════╝
 
 import React, { useMemo, useEffect, useCallback } from 'react';
@@ -54,7 +54,6 @@ import {
   BRANCH_SWAY,
   RAMADAN_GOLD_BLEND,
   branchPathD,
-  branchSwayDirection,
 } from '../../constants/tubaTree';
 
 const AnimatedG = Animated.createAnimatedComponent(G);
@@ -101,20 +100,19 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
 
-  // Build tree data from plants
   const treeData: TreeData = useMemo(
     () => TubaTreeService.buildTreeData(plants),
     [plants],
   );
 
-  // __DEV__ canvas-level logging
+  // __DEV__ logging
   useEffect(() => {
     if (__DEV__) {
       const totalRendered = treeData.branches.reduce((s, b) => s + b.leaves.length, 0);
-      console.log(`[TubaTreeCanvas] plants=${plants.length}, totalRendered=${totalRendered}, stage=${treeData.stage}`);
+      console.log(`[TubaTreeCanvas] plants=${plants.length}, rendered=${totalRendered}, stage=${treeData.stage}`);
       treeData.branches.forEach((b) => {
         if (b.lengthScale > 0) {
-          console.log(`  [${b.prayer}] scale=${b.lengthScale.toFixed(2)}, leaves=${b.leaves.length}, stroke=${b.strokeWidth.toFixed(1)}`);
+          console.log(`  [${b.prayer}] scale=${b.lengthScale.toFixed(2)}, leaves=${b.leaves.length}`);
         }
       });
     }
@@ -123,22 +121,20 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
   // Sky gradient — circadian
   const skyGradient = useMemo(() => {
     const hour = new Date().getHours();
-    const gradients = theme.colors.prayerGradients;
-    if (hour < 5 || hour >= 21) return gradients.Isha;
-    if (hour < 7) return gradients.Fajr;
-    if (hour < 14) return gradients.Dhuhr;
-    if (hour < 17) return gradients.Asr;
-    if (hour < 19) return gradients.Maghrib;
-    return gradients.Isha;
+    const g = theme.colors.prayerGradients;
+    if (hour < 5 || hour >= 21) return g.Isha;
+    if (hour < 7) return g.Fajr;
+    if (hour < 14) return g.Dhuhr;
+    if (hour < 17) return g.Asr;
+    if (hour < 19) return g.Maghrib;
+    return g.Isha;
   }, [theme]);
 
-  // Ramadan tokens
   const ramadanThemeTokens = useMemo(() => {
     const key = theme.mode as keyof typeof ramadanTokens;
     return ramadanTokens[key] || ramadanTokens.dark;
   }, [theme.mode]);
 
-  // Prayer color resolver
   const getPrayerColor = useCallback((prayer: string): string => {
     const key = prayer.toLowerCase() as keyof typeof theme.colors.prayer;
     const base = theme.colors.prayer?.[key] || theme.colors.primary.DEFAULT;
@@ -148,7 +144,7 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
     return base;
   }, [theme, isRamadan, ramadanThemeTokens]);
 
-  // ── BUG-2 FIX: Data-driven trunk path ─────────────────────────
+  // Data-driven trunk
   const trunkScale = treeData.trunkScale ?? TRUNK_SCALE[treeData.stage];
 
   const trunkPath = useMemo(() => {
@@ -180,14 +176,12 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
         colors={skyGradient as readonly string[] as any}
         style={styles.gradient}
       >
-        {/* Animated sky (stars, moon, Ramadan halo) */}
         <TreeSky
           theme={theme}
           isRamadan={isRamadan}
           moonHaloColor={isRamadan ? ramadanThemeTokens.moonHalo : undefined}
         />
 
-        {/* SVG Tree */}
         <Svg
           viewBox={`0 0 ${TREE_VIEWBOX.width} ${TREE_VIEWBOX.height}`}
           style={styles.svg}
@@ -209,7 +203,7 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
             })}
           </Defs>
 
-          {/* Roots — progressive by stage */}
+          {/* Roots */}
           {ROOTS.slice(0, visibleRootCount).map((root, i) => (
             <Path
               key={`root-${i}`}
@@ -238,7 +232,7 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
             strokeLinecap="round"
           />
 
-          {/* Branches + Sub-Branches + Leaves */}
+          {/* Branches + Leaves */}
           {treeData.branches.map((branch, branchIndex) => (
             <AnimatedBranchGroup
               key={branch.prayer}
@@ -251,7 +245,7 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
           ))}
         </Svg>
 
-        {/* Full-width soil gradient */}
+        {/* Soil gradient */}
         <LinearGradient
           colors={groundConfig.colors as any}
           locations={groundConfig.locations as any}
@@ -295,27 +289,20 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
 };
 
 // ═══════════════════════════════════════════════════════════════════
-// ANIMATED BRANCH GROUP — v3 SAFE SWAY
+// ANIMATED BRANCH GROUP — v4 ROTATION SWAY
 // ═══════════════════════════════════════════════════════════════════
 //
-// v1 (original): AnimatedG rotation — rigid pendulum around base
-// v2 (broken):   AnimatedPath with animated `d` string — broke leaves
-// v3 (safe):     AnimatedG with translate perpendicular to branch flow
+// Uses the SAME approach that worked in v1: AnimatedG with a
+// `rotation` animated prop, pivoting around the branch's trunk
+// junction (originX/originY = curve.start).
 //
-// WHY TRANSLATE INSTEAD OF ROTATION:
-//   rotation pivots the entire group like a rigid plank.
-//   translate shifts the group sideways, which at small amplitudes
-//   (3.5 viewBox units ≈ 1% of width) looks like organic drift.
-//   The branch, leaves, and sub-branches all move together,
-//   which matches how real branches sway — the whole structure
-//   shifts, foliage included.
+// Amplitude is gentle (1.2°) for subtle organic motion.
+// Each branch has a phase offset for natural stagger.
 //
-// WHY NOT ANIMATED PATH `d`:
-//   String prop animation via useAnimatedProps is unreliable
-//   across react-native-svg versions. Some versions don't support
-//   animating the `d` attribute at all, causing the AnimatedPath
-//   to fail silently and break child element rendering.
-//   NEVER animate string SVG props — only numeric ones.
+// This approach is proven reliable with react-native-svg 15.x +
+// react-native-reanimated 3.17.x. The `rotation` prop on G is
+// a numeric value handled natively — no string animation, no
+// fragile workarounds.
 // ═══════════════════════════════════════════════════════════════════
 
 interface AnimatedBranchGroupProps {
@@ -330,33 +317,20 @@ const AnimatedBranchGroup: React.FC<AnimatedBranchGroupProps> = React.memo(
   ({ branch, branchIndex, prayerColor, bloomGlowColor, onLeafPress }) => {
     const { curve, lengthScale, strokeWidth, leaves, prayer, subBranches } = branch;
 
-    // BUG-4: Don't render zero-length branches
-    if (lengthScale <= 0) return null;
-
-    // Compute sway direction — perpendicular to branch midpoint
-    const swayDir = useMemo(
-      () => branchSwayDirection(curve.start, curve.control, curve.end, lengthScale),
-      [curve, lengthScale],
-    );
-
-    // Extract primitives for worklet (objects can't cross the bridge)
-    const perpX = swayDir.x;
-    const perpY = swayDir.y;
-    const tipDisp = BRANCH_SWAY.tipDisplacement;
-
-    // Sway oscillation: -1 → +1 → -1 (infinite)
-    const swayProgress = useSharedValue(0);
+    const swayRotation = useSharedValue(0);
 
     useEffect(() => {
+      if (lengthScale <= 0) return;
+
       const phaseDelay = branchIndex * BRANCH_SWAY.phaseOffset;
       const halfDuration = BRANCH_SWAY.duration / 2;
       const easing = Easing.inOut(Easing.sin);
 
       const timer = setTimeout(() => {
-        swayProgress.value = withRepeat(
+        swayRotation.value = withRepeat(
           withSequence(
-            withTiming(1, { duration: halfDuration, easing }),
-            withTiming(-1, { duration: halfDuration, easing }),
+            withTiming(BRANCH_SWAY.amplitude, { duration: halfDuration, easing }),
+            withTiming(-BRANCH_SWAY.amplitude, { duration: halfDuration, easing }),
           ),
           -1,
           false,
@@ -364,23 +338,23 @@ const AnimatedBranchGroup: React.FC<AnimatedBranchGroupProps> = React.memo(
       }, phaseDelay);
 
       return () => clearTimeout(timer);
-    }, [lengthScale, branchIndex]);
+    }, [lengthScale]);
 
-    // Animate G element translate — SAFE numeric props only
-    const animatedProps = useAnimatedProps(() => {
-      'worklet';
-      const sway = swayProgress.value;
-      return {
-        x: sway * tipDisp * perpX,
-        y: sway * tipDisp * perpY,
-      };
-    });
+    const animatedProps = useAnimatedProps(() => ({
+      rotation: swayRotation.value,
+    }));
 
-    // Static branch path
+    // Don't render zero-length branches
+    if (lengthScale <= 0) return null;
+
     const d = branchPathD(curve.start, curve.control, curve.end, lengthScale);
 
     return (
-      <AnimatedG animatedProps={animatedProps}>
+      <AnimatedG
+        animatedProps={animatedProps}
+        originX={curve.start.x}
+        originY={curve.start.y}
+      >
         {/* Main branch */}
         <Path
           d={d}
@@ -403,7 +377,7 @@ const AnimatedBranchGroup: React.FC<AnimatedBranchGroupProps> = React.memo(
           />
         ))}
 
-        {/* Leaves — rendered at absolute viewBox positions */}
+        {/* Leaves */}
         {leaves.map((leaf, leafIndex) => (
           <TreeLeaf
             key={leaf.id}
