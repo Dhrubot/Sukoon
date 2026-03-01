@@ -1,15 +1,14 @@
 // src/constants/tubaTree.ts
 //
 // ╔══════════════════════════════════════════════════════════════════╗
-// ║  TUBA TREE — Geometry & Growth Constants                       ║
+// ║  TUBA TREE — Geometry & Growth Constants — v4                  ║
 // ║                                                                ║
-// ║  v3 FIXES:                                                     ║
-// ║  • BRANCH_SWAY: translate-based (not rotation), safe for all   ║
-// ║    react-native-svg versions                                   ║
-// ║  • LEAF_DISTRIBUTION: tip-weighted power curve                 ║
-// ║  • SUB_BRANCH: softer fork departure angle                    ║
-// ║  • MOON: larger, matches hero crescent style                   ║
-// ║  • RAMADAN_MOON_HALO: opacity 0.12→0.35 (actually visible)    ║
+// ║  v4 changes from v3:                                           ║
+// ║  • BRANCH_SWAY: back to rotation amplitude (degrees) — the    ║
+// ║    proven v1 approach. Removed tipDisplacement + perp vector.  ║
+// ║  • Removed branchSwayDirection() — no longer needed.           ║
+// ║  • All other v3 improvements preserved (leaf distribution,     ║
+// ║    moon size, sub-branch curves, Ramadan halo constants).      ║
 // ╚══════════════════════════════════════════════════════════════════╝
 
 import { PrayerName } from '../types';
@@ -72,6 +71,10 @@ export const STAGE_INFO: Record<TreeStage, { name: string; arabic: string }> = {
   ancient: { name: 'Ancient', arabic: 'عَتِيقَة' },
 };
 
+// ═══════════════════════════════════════════════════════════════════
+// LEAF RENDERING
+// ═══════════════════════════════════════════════════════════════════
+
 export const LEAF_SIZES: Record<GrowthStage, { rx: number; ry: number }> = {
   seed: { rx: 3, ry: 4.5 }, sprout: { rx: 4, ry: 6.5 }, bloom: { rx: 5.5, ry: 8 },
 };
@@ -84,7 +87,11 @@ export const MAX_LEAVES_PER_BRANCH = 12;
 export const MAX_TOTAL_LEAVES = 60;
 export const LEAF_JITTER = { maxOffset: 8, maxRotation: 25 } as const;
 
-// ── TIP-WEIGHTED LEAF DISTRIBUTION ─────────────────────────────────
+// ── TIP-WEIGHTED LEAF DISTRIBUTION (v3) ────────────────────────────
+// t = floorT + range × pow(linearT, power)
+// floorT 0.15 = inner 15% of branch stays bare
+// power 0.7  = sub-linear → pushes leaves toward tips
+// tipClusterT = leaves past this t get halved jitter → tighter clusters
 export const LEAF_DISTRIBUTION = {
   floorT: 0.15,
   range: 0.85,
@@ -93,7 +100,10 @@ export const LEAF_DISTRIBUTION = {
   tipJitterScale: 0.5,
 } as const;
 
-// ─── Ground / Soil Colors ──────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// GROUND / SOIL
+// ═══════════════════════════════════════════════════════════════════
+
 export const GROUND_COLORS = {
   dark: {
     colors: ['transparent', '#1a1c14cc', '#2a2a1aee', '#1a1c14'],
@@ -111,6 +121,10 @@ export const GROUND_COLORS = {
 
 export const GROUND_HEIGHT_RATIO = 0.22;
 
+// ═══════════════════════════════════════════════════════════════════
+// SKY ELEMENTS
+// ═══════════════════════════════════════════════════════════════════
+
 export const STARS = [
   { x: 48, y: 24, size: 2, animDelay: 0 }, { x: 234, y: 36, size: 3, animDelay: 0.9 },
   { x: 147, y: 15, size: 2, animDelay: 1.5 }, { x: 282, y: 60, size: 2, animDelay: 0.4 },
@@ -123,35 +137,34 @@ export const TREE_CANVAS_HEIGHT = 296;
 // ANIMATION CONSTANTS
 // ═══════════════════════════════════════════════════════════════════
 
-// ── v3: ORGANIC SWAY VIA TRANSLATE ──────────────────────────────
-// Uses AnimatedG with translateX/translateY instead of rotation.
-// The displacement is applied perpendicular to the branch direction
-// at its midpoint — base stays nearly fixed, tip sways most.
-// This is compatible with ALL react-native-svg versions.
+// v4: ROTATION-BASED SWAY (proven v1 approach)
+// AnimatedG rotates around the branch's trunk junction point.
+// Amplitude in degrees — 1.2° is subtle organic motion.
 export const BRANCH_SWAY = {
-  /** Max viewBox-unit displacement at the branch tip */
-  tipDisplacement: 3.5,
-  /** Full oscillation cycle in ms */
-  duration: 10000,
+  /** Max rotation in degrees */
+  amplitude: 1.0,
+  /** Full cycle duration in ms */
+  duration: 16000,
   /** Stagger between branches in ms */
-  phaseOffset: 400,
+  phaseOffset: 300,
 } as const;
 
 export const LEAF_ENTRY = { duration: 600, baseDelay: 300, staggerPerLeaf: 80, staggerPerBranch: 150 } as const;
 export const BLOOM_PULSE = { minOpacity: 0.45, maxOpacity: 0.95, duration: 2400 } as const;
 export const STAR_TWINKLE = { minOpacity: 0.15, maxOpacity: 0.70, minScale: 0.9, maxScale: 1.5, duration: 7000 } as const;
 
-// ── v3: MOON — matches hero StarField crescent ──────────────────
-// Larger size, gold tint, same float amplitude as hero (8px vs 3)
+// v4: MOON — matches hero StarField crescent
 export const MOON_FLOAT = { amplitude: 6, duration: 8000, rotationAmplitude: 5 } as const;
 export const MOON = { size: 44, topPercent: 3, rightPercent: 5 } as const;
 
-// ── v3: RAMADAN HALO — actually visible ─────────────────────────
-// Old: radius 16, opacity 0.12 — invisible on most screens
-// New: radius 28, opacity 0.35 — warm gold glow you can actually see
+// v4: RAMADAN HALO — glow layers defined in TreeSky, not a flat circle
+// This constant is kept for backwards compat but the actual glow
+// is now multi-layered in the TreeSky component.
 export const RAMADAN_MOON_HALO = { radius: 28, opacity: 0.35 } as const;
 
-// ─── Bézier Math ───────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// BÉZIER MATH
+// ═══════════════════════════════════════════════════════════════════
 
 export function quadBezierPoint(start: Point, control: Point, end: Point, t: number): Point {
   const mt = 1 - t;
@@ -176,6 +189,7 @@ export function quadBezierPerpendicular(start: Point, control: Point, end: Point
   return { x: -dy / len, y: dx / len };
 }
 
+/** Scale a Bézier curve from its start point. BUG-1 FIX. */
 export function scaledBezier(start: Point, control: Point, end: Point, scale: number): { control: Point; end: Point } {
   return {
     control: { x: start.x + (control.x - start.x) * scale, y: start.y + (control.y - start.y) * scale },
@@ -183,23 +197,14 @@ export function scaledBezier(start: Point, control: Point, end: Point, scale: nu
   };
 }
 
+/** Build SVG path d-string for a branch curve at a given scale. */
 export function branchPathD(start: Point, control: Point, end: Point, scale: number = 1): string {
   if (scale >= 1) return `M ${start.x} ${start.y} Q ${control.x} ${control.y} ${end.x} ${end.y}`;
   const sc = scaledBezier(start, control, end, scale);
   return `M ${start.x} ${start.y} Q ${sc.control.x.toFixed(1)} ${sc.control.y.toFixed(1)} ${sc.end.x.toFixed(1)} ${sc.end.y.toFixed(1)}`;
 }
 
-/**
- * Compute the sway direction for a branch — perpendicular to its
- * general flow at the midpoint. Returns a unit vector.
- */
-export function branchSwayDirection(
-  start: Point, control: Point, end: Point, scale: number,
-): Point {
-  const sc = scaledBezier(start, control, end, scale);
-  return quadBezierPerpendicular(start, sc.control, sc.end, 0.5);
-}
-
+/** Deterministic hash for leaf jitter consistency. */
 export function leafHash(prayer: string, date: string, index: number): number {
   let hash = 0;
   const str = `${prayer}-${date}-${index}`;

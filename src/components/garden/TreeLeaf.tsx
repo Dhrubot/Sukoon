@@ -1,8 +1,27 @@
 // src/components/garden/TreeLeaf.tsx
 //
-// Phase 3: Adds onPress callback for leaf detail interaction.
-// An invisible, larger Circle serves as the touch hit target.
-// Entry animation + bloom pulse unchanged from Phase 2.
+// ╔══════════════════════════════════════════════════════════════════╗
+// ║  TREE LEAF — v4                                                ║
+// ╠══════════════════════════════════════════════════════════════════╣
+// ║                                                                ║
+// ║  CRITICAL FIX: originX / originY changed from leaf.x/leaf.y   ║
+// ║  to 0/0. The old values caused a DOUBLE TRANSLATION:          ║
+// ║                                                                ║
+// ║    transform = translate(x, y)                                 ║
+// ║               × translate(originX, originY)                    ║
+// ║               × rotate(angle)                                  ║
+// ║               × translate(-originX, -originY)                  ║
+// ║                                                                ║
+// ║  With originX=139 originY=170 and rotation=25°, a child at    ║
+// ║  (0,0) was rendered at (224, 127) instead of (139, 170).      ║
+// ║  With rotation near 0° the error was negligible, explaining   ║
+// ║  why exactly 2 leaves (those with near-zero rotation) were    ║
+// ║  visible while the other 7 were thrown offscreen.             ║
+// ║                                                                ║
+// ║  FIX 2: bloomOpacity init was bitwise OR (|) not numeric.     ║
+// ║  0.95 | 0.45 = 0 in JavaScript.                               ║
+// ║                                                                ║
+// ╚══════════════════════════════════════════════════════════════════╝
 
 import React, { useEffect, useMemo } from 'react';
 import { G, Ellipse, Circle } from 'react-native-svg';
@@ -24,21 +43,15 @@ import {
   LEAF_DETAIL,
 } from '../../constants/tubaTree';
 
-// Create animated SVG components once at module level
 const AnimatedEllipse = Animated.createAnimatedComponent(Ellipse);
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 interface TreeLeafProps {
   leaf: TreeLeafData;
-  /** Prayer color from theme.colors.prayer */
   color: string;
-  /** Bloom glow color from theme.colors.garden.bloomGlow */
   bloomGlowColor: string;
-  /** Branch index (0–4) for stagger calculation */
   branchIndex: number;
-  /** Leaf index within its branch for stagger calculation */
   leafIndex: number;
-  /** Called when user taps this leaf */
   onPress?: (leaf: TreeLeafData) => void;
 }
 
@@ -52,7 +65,7 @@ const TreeLeaf: React.FC<TreeLeafProps> = ({
 }) => {
   const size = LEAF_SIZES[leaf.growthStage];
 
-  // ── Entry animation shared values ──────────────────────────────
+  // ── Entry animation ────────────────────────────────────────────
   const entryProgress = useSharedValue(0);
 
   const entryDelay = useMemo(
@@ -79,8 +92,10 @@ const TreeLeaf: React.FC<TreeLeafProps> = ({
     opacity: leaf.opacity * entryProgress.value,
   }));
 
-  // ── Bloom pulse animation ──────────────────────────────────────
-  const bloomOpacity = useSharedValue(BLOOM_PULSE.maxOpacity | BLOOM_PULSE.minOpacity);
+  // ── Bloom pulse ────────────────────────────────────────────────
+  // FIX: Was `useSharedValue(BLOOM_PULSE.maxOpacity | BLOOM_PULSE.minOpacity)`
+  //      Bitwise OR on floats: 0.95 | 0.45 = 0. Must be plain number.
+  const bloomOpacity = useSharedValue(BLOOM_PULSE.maxOpacity as number);
 
   useEffect(() => {
     if (!leaf.isBloom) return;
@@ -118,10 +133,23 @@ const TreeLeaf: React.FC<TreeLeafProps> = ({
       x={leaf.x}
       y={leaf.y}
       rotation={leaf.rotation}
-      originX={leaf.x}
-      originY={leaf.y}
+      // ═══════════════════════════════════════════════════════════
+      // CRITICAL FIX (v4):
+      // originX/originY MUST be 0 — rotation around local center.
+      //
+      // G's x/y already positions the group at (leaf.x, leaf.y).
+      // Setting originX/Y to leaf.x/leaf.y caused the rotation
+      // pivot to be (leaf.x, leaf.y) in PARENT space, which when
+      // combined with the translation created:
+      //   translate(139,170) × rotate_around(139,170) → double offset
+      //
+      // With origin at (0,0), rotation pivots at the leaf center:
+      //   translate(139,170) × rotate_around(0,0) → correct position
+      // ═══════════════════════════════════════════════════════════
+      originX={0}
+      originY={0}
     >
-      {/* Main leaf body — animated entry */}
+      {/* Main leaf body */}
       <AnimatedEllipse
         cx={0}
         cy={0}
@@ -129,7 +157,7 @@ const TreeLeaf: React.FC<TreeLeafProps> = ({
         animatedProps={leafAnimatedProps}
       />
 
-      {/* Gold bloom sparkle — pulsing */}
+      {/* Gold bloom sparkle */}
       {leaf.isBloom && (
         <AnimatedCircle
           cx={sparkleOffsetX}
@@ -151,7 +179,7 @@ const TreeLeaf: React.FC<TreeLeafProps> = ({
         />
       )}
 
-      {/* Invisible touch hit target — larger than the visual leaf */}
+      {/* Touch target */}
       {onPress && (
         <Circle
           cx={0}

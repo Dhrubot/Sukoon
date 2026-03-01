@@ -1,17 +1,19 @@
 // src/components/garden/TreeSky.tsx
 //
 // ╔══════════════════════════════════════════════════════════════════╗
-// ║  TREE SKY — v3                                                 ║
+// ║  TREE SKY — v4                                                 ║
 // ╠══════════════════════════════════════════════════════════════════╣
-// ║  MOON: Now uses Unicode ☽ crescent (same as hero StarField)    ║
-// ║  for visual consistency across the app. Previous SVG Path      ║
-// ║  crescent was too small (20px) and looked different from hero.  ║
 // ║                                                                ║
-// ║  RAMADAN HALO: radius 28, opacity 0.35 (was 16 / 0.12).       ║
-// ║  Now actually visible as a warm gold glow behind the moon.     ║
+// ║  MOON: Unicode ☽ crescent matching hero StarField.             ║
 // ║                                                                ║
-// ║  FLOAT ANIMATION: Larger amplitude (6px) and slower duration   ║
-// ║  (8s) to match the hero's dreamy float feel.                   ║
+// ║  RAMADAN GLOW: Multi-layer radial glow instead of flat circle. ║
+// ║  Three concentric layers with gaussian-like opacity falloff:   ║
+// ║    Inner:  r=14, opacity=0.30 (bright core)                    ║
+// ║    Middle: r=26, opacity=0.15 (warm spread)                    ║
+// ║    Outer:  r=40, opacity=0.06 (soft edge)                      ║
+// ║  This creates a natural light-diffusion effect like actual     ║
+// ║  moonlight glow through atmosphere.                            ║
+// ║                                                                ║
 // ╚══════════════════════════════════════════════════════════════════╝
 
 import React, { useEffect } from 'react';
@@ -32,7 +34,6 @@ import {
   STAR_TWINKLE,
   MOON_FLOAT,
   MOON,
-  RAMADAN_MOON_HALO,
   TREE_VIEWBOX,
 } from '../../constants/tubaTree';
 
@@ -61,8 +62,12 @@ const AnimatedStar: React.FC<AnimatedStarProps> = React.memo(
     useEffect(() => {
       const halfDuration = STAR_TWINKLE.duration / 2;
       const easing = Easing.inOut(Easing.sin);
-      const maxOp = boosted ? Math.min(STAR_TWINKLE.maxOpacity + 0.15, 1) : STAR_TWINKLE.maxOpacity;
-      const maxSc = boosted ? STAR_TWINKLE.maxScale * 1.2 : STAR_TWINKLE.maxScale;
+      const maxOp = boosted
+        ? Math.min(STAR_TWINKLE.maxOpacity + 0.15, 1)
+        : STAR_TWINKLE.maxOpacity;
+      const maxSc = boosted
+        ? STAR_TWINKLE.maxScale * 1.2
+        : STAR_TWINKLE.maxScale;
 
       opacity.value = withDelay(
         delay,
@@ -112,16 +117,42 @@ const AnimatedStar: React.FC<AnimatedStarProps> = React.memo(
   },
 );
 
-// ─── Animated Crescent Moon (Hero-style Unicode ☽) ─────────────────
-//
-// v3: Switched from SVG Path crescent to Unicode ☽ <Text> element.
-// This matches the hero section's StarField.tsx CrescentMoon exactly:
-//   - Gold-tinted ☽ character
-//   - Float + gentle rotation animation
-//   - Large enough to be a recognizable landmark in the sky
-//
-// For Ramadan: a soft gold glow View sits behind the crescent,
-// significantly larger and more opaque than v1's SVG circle.
+// ─── Ramadan Moon Glow ─────────────────────────────────────────────
+// Multi-layer radial glow that simulates light diffusion.
+// Three concentric circles with decreasing opacity create a natural
+// "bloom" effect, like moonlight through thin clouds.
+
+const GLOW_LAYERS = [
+  { radius: 40, opacity: 0.06 },  // outer — barely there, atmospheric
+  { radius: 26, opacity: 0.15 },  // middle — warm spread
+  { radius: 14, opacity: 0.30 },  // inner — bright core around crescent
+] as const;
+
+interface MoonGlowProps {
+  color: string;
+}
+
+const MoonGlow: React.FC<MoonGlowProps> = React.memo(({ color }) => (
+  <View style={styles.glowContainer}>
+    {GLOW_LAYERS.map((layer, i) => (
+      <View
+        key={`glow-${i}`}
+        style={[
+          styles.glowLayer,
+          {
+            width: layer.radius * 2,
+            height: layer.radius * 2,
+            borderRadius: layer.radius,
+            backgroundColor: color,
+            opacity: layer.opacity,
+          },
+        ]}
+      />
+    ))}
+  </View>
+));
+
+// ─── Animated Crescent Moon ────────────────────────────────────────
 
 interface AnimatedMoonProps {
   color: string;
@@ -166,20 +197,9 @@ const AnimatedMoon: React.FC<AnimatedMoonProps> = React.memo(
 
     return (
       <Animated.View style={[styles.moonContainer, animatedStyle]}>
-        {/* Ramadan gold halo — a glowing circle behind the crescent */}
+        {/* Ramadan glow — multi-layer radial bloom */}
         {showHalo && haloColor && (
-          <View
-            style={[
-              styles.moonHalo,
-              {
-                width: RAMADAN_MOON_HALO.radius * 2,
-                height: RAMADAN_MOON_HALO.radius * 2,
-                borderRadius: RAMADAN_MOON_HALO.radius,
-                backgroundColor: haloColor,
-                opacity: RAMADAN_MOON_HALO.opacity,
-              },
-            ]}
-          />
+          <MoonGlow color={haloColor} />
         )}
 
         {/* Unicode crescent — matches hero StarField */}
@@ -189,20 +209,22 @@ const AnimatedMoon: React.FC<AnimatedMoonProps> = React.memo(
   },
 );
 
-// ─── Main TreeSky Component ────────────────────────────────────────
+// ─── Main Component ────────────────────────────────────────────────
 
-const TreeSky: React.FC<TreeSkyProps> = ({ theme, isRamadan = false, moonHaloColor }) => {
+const TreeSky: React.FC<TreeSkyProps> = ({
+  theme,
+  isRamadan = false,
+  moonHaloColor,
+}) => {
   const starColor = theme.colors.garden.skyStars;
   const moonColor = theme.colors.garden.moonColor;
 
-  // Skip rendering entirely in light theme
   if (theme.mode === 'light') return null;
 
   const allStars = isRamadan ? [...STARS, ...RAMADAN_STARS] : STARS;
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      {/* Twinkling stars */}
       {allStars.map((star, i) => (
         <AnimatedStar
           key={`star-${i}`}
@@ -215,7 +237,6 @@ const TreeSky: React.FC<TreeSkyProps> = ({ theme, isRamadan = false, moonHaloCol
         />
       ))}
 
-      {/* Floating crescent moon */}
       <AnimatedMoon
         color={moonColor}
         haloColor={moonHaloColor}
@@ -237,11 +258,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Ramadan halo — absolutely centered behind the crescent
-  moonHalo: {
+  // Glow container — centers all layers behind the crescent
+  glowContainer: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  // Each glow layer is absolutely positioned and centered
+  glowLayer: {
     position: 'absolute',
   },
-  // Unicode crescent matching hero StarField style
+  // Unicode crescent
   crescentText: {
     fontSize: MOON.size,
     lineHeight: MOON.size + 4,
