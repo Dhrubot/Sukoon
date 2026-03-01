@@ -1,15 +1,21 @@
 // src/components/garden/TubaTreeCanvas.tsx
 //
-// Phase 3: Complete Tuba Tree with all features:
-//   - Sub-branches at Flourishing/Ancient stages
-//   - Ramadan mode: gold-blended gradients, enhanced sky, day counter
-//   - Leaf press interaction: tappable leaves for detail overlay
-//   - Branch sway animation (Phase 2 carried forward)
+// FIXES:
+//   BUG-2: Trunk height is data-driven (trunkScale from service)
+//   SOIL:  Full-width RN LinearGradient positioned absolutely at bottom
+//          (replaces old groundFade View AND SVG Rect approach)
+//   ROOTS: Progressive visibility by stage
 
 import React, { useMemo, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Path, G, Defs, LinearGradient as SvgGradient, Stop } from 'react-native-svg';
+import Svg, {
+  Path,
+  G,
+  Defs,
+  LinearGradient as SvgGradient,
+  Stop,
+} from 'react-native-svg';
 import Animated, {
   useSharedValue,
   useAnimatedProps,
@@ -31,28 +37,27 @@ import {
   TREE_VIEWBOX,
   TREE_CANVAS_HEIGHT,
   TRUNK,
+  TRUNK_SCALE,
   ROOTS,
+  ROOT_VISIBILITY,
+  GROUND_COLORS,
+  GROUND_HEIGHT_RATIO,
   STAGE_INFO,
   BRANCH_SWAY,
   RAMADAN_GOLD_BLEND,
   branchPathD,
 } from '../../constants/tubaTree';
 
-// Create animated SVG G component for branch sway
 const AnimatedG = Animated.createAnimatedComponent(G);
 
 interface TubaTreeCanvasProps {
   plants: GardenPlant[];
-  /** Whether it's currently Ramadan */
   isRamadan?: boolean;
-  /** Ramadan day number (1-30) */
   ramadanDay?: number | null;
-  /** Called when a leaf is tapped */
   onLeafPress?: (leaf: TreeLeafData) => void;
 }
 
 // ─── Color blending utility ────────────────────────────────────────
-// Blends a hex color toward gold during Ramadan.
 function blendTowardGold(hexColor: string, goldHex: string, ratio: number): string {
   try {
     const parseHex = (h: string) => {
@@ -83,13 +88,13 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
 
-  // Compute tree data (memoized)
+  // Compute tree data — now includes data-driven trunkScale
   const treeData: TreeData = useMemo(
     () => TubaTreeService.buildTreeData(plants),
     [plants],
   );
 
-  // Sky gradient based on time of day
+  // Sky gradient
   const skyGradient = useMemo(() => {
     const hour = new Date().getHours();
     const gradients = theme.colors.prayerGradients;
@@ -101,13 +106,13 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
     return gradients.Isha;
   }, [theme]);
 
-  // Ramadan tokens for current theme
+  // Ramadan tokens
   const ramadanThemeTokens = useMemo(() => {
     const key = theme.mode as keyof typeof ramadanTokens;
     return ramadanTokens[key] || ramadanTokens.dark;
   }, [theme.mode]);
 
-  // Resolve prayer color with optional Ramadan gold blend
+  // Prayer color resolver
   const getPrayerColor = useCallback((prayer: string): string => {
     const key = prayer.toLowerCase() as keyof typeof theme.colors.prayer;
     const base = theme.colors.prayer?.[key] || theme.colors.primary.DEFAULT;
@@ -117,23 +122,42 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
     return base;
   }, [theme, isRamadan, ramadanThemeTokens]);
 
-  // Trunk SVG path
-  const trunkPath = useMemo(
-    () =>
-      `M ${TRUNK.start.x} ${TRUNK.start.y} Q ${TRUNK.control.x} ${TRUNK.control.y} ${TRUNK.end.x} ${TRUNK.end.y}`,
-    [],
-  );
+  // ── BUG-2 FIX: Data-driven trunk path ─────────────────────────
+  const trunkScale = treeData.trunkScale ?? TRUNK_SCALE[treeData.stage];
 
-  // Stage info
+  const trunkPath = useMemo(() => {
+    const { start, control, end } = TRUNK;
+    const sc = {
+      x: start.x + (control.x - start.x) * trunkScale,
+      y: start.y + (control.y - start.y) * trunkScale,
+    };
+    const se = {
+      x: start.x + (end.x - start.x) * trunkScale,
+      y: start.y + (end.y - start.y) * trunkScale,
+    };
+    return `M ${start.x} ${start.y} Q ${sc.x} ${sc.y} ${se.x} ${se.y}`;
+  }, [trunkScale]);
+
+  // Root visibility
+  const visibleRootCount = ROOT_VISIBILITY[treeData.stage];
+
+  // Ground gradient colors for this theme
+  const groundConfig = useMemo(() => {
+    const themeKey = theme.mode as keyof typeof GROUND_COLORS;
+    return GROUND_COLORS[themeKey] || GROUND_COLORS.dark;
+  }, [theme.mode]);
+
   const stageInfo = STAGE_INFO[treeData.stage];
+  const groundHeight = Math.round(TREE_CANVAS_HEIGHT * GROUND_HEIGHT_RATIO);
 
   return (
     <View style={styles.container}>
+      {/* Sky gradient — full canvas background */}
       <LinearGradient
         colors={skyGradient as readonly string[] as any}
         style={styles.gradient}
       >
-        {/* Animated sky (Ramadan-aware: extra stars + moon halo) */}
+        {/* Animated sky (stars, moon, Ramadan halo) */}
         <TreeSky
           theme={theme}
           isRamadan={isRamadan}
@@ -147,35 +171,23 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
           preserveAspectRatio="xMidYMax meet"
         >
           <Defs>
-            {/* Branch gradient definitions — optionally gold-blended for Ramadan */}
             {treeData.branches.map((branch) => {
               const prayerColor = getPrayerColor(branch.prayer);
               return (
                 <SvgGradient
                   key={`grad-${branch.prayer}`}
                   id={`branchGrad-${branch.prayer}`}
-                  x1="0"
-                  y1="1"
-                  x2="1"
-                  y2="0"
+                  x1="0" y1="1" x2="1" y2="0"
                 >
-                  <Stop
-                    offset="0%"
-                    stopColor={theme.colors.garden.trunk}
-                    stopOpacity="1"
-                  />
-                  <Stop
-                    offset="100%"
-                    stopColor={prayerColor}
-                    stopOpacity="0.75"
-                  />
+                  <Stop offset="0%" stopColor={theme.colors.garden.trunk} stopOpacity="1" />
+                  <Stop offset="100%" stopColor={prayerColor} stopOpacity="0.75" />
                 </SvgGradient>
               );
             })}
           </Defs>
 
-          {/* Roots */}
-          {ROOTS.map((root, i) => (
+          {/* Roots — progressive by stage */}
+          {ROOTS.slice(0, visibleRootCount).map((root, i) => (
             <Path
               key={`root-${i}`}
               d={root.d}
@@ -187,7 +199,7 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
             />
           ))}
 
-          {/* Trunk */}
+          {/* Trunk — scaled by data-driven trunkScale */}
           <Path
             d={trunkPath}
             stroke={theme.colors.garden.trunk}
@@ -195,8 +207,6 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
             fill="none"
             strokeLinecap="round"
           />
-
-          {/* Trunk highlight */}
           <Path
             d={trunkPath}
             stroke={theme.colors.garden.trunkHighlight}
@@ -205,7 +215,7 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
             strokeLinecap="round"
           />
 
-          {/* Animated Branches, Sub-Branches, and Leaves */}
+          {/* Branches + Sub-Branches + Leaves */}
           {treeData.branches.map((branch, branchIndex) => (
             <AnimatedBranchGroup
               key={branch.prayer}
@@ -218,12 +228,24 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
           ))}
         </Svg>
 
-        {/* Ground fade */}
-        <View
-          style={[
-            styles.groundFade,
-            { backgroundColor: theme.colors.garden.groundFade },
-          ]}
+        {/* ── FULL-WIDTH SOIL GRADIENT ────────────────────────────
+             Positioned absolutely at the bottom of the canvas.
+             This is a RN LinearGradient, NOT an SVG element, so it
+             naturally spans the full container width regardless of
+             the SVG viewBox's aspect ratio.
+             
+             The old approach used either:
+               - A flat-color View (groundFade) — no gradient richness
+               - An SVG <Rect> — clipped by preserveAspectRatio gaps
+             
+             This RN LinearGradient sits ABOVE the SVG (zIndex: 4)
+             and uses transparent→earthy colors so the tree trunk
+             and roots show through the upper portion.
+        ──────────────────────────────────────────────────────── */}
+        <LinearGradient
+          colors={groundConfig.colors as any}
+          locations={groundConfig.locations as any}
+          style={[styles.groundGradient, { height: groundHeight }]}
         />
 
         {/* Empty state */}
@@ -236,7 +258,7 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
         )}
       </LinearGradient>
 
-      {/* Stage label — shows Ramadan day during Ramadan */}
+      {/* Stage label */}
       {plants.length > 0 && (
         <View style={styles.stageRow}>
           <Text style={[styles.stageName, { color: theme.colors.text.muted }]}>
@@ -263,7 +285,6 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
 };
 
 // ─── Animated Branch Group ─────────────────────────────────────────
-// Renders: main branch path + sub-branches + leaves with sway animation.
 
 interface AnimatedBranchGroupProps {
   branch: TreeBranch;
@@ -277,7 +298,6 @@ const AnimatedBranchGroup: React.FC<AnimatedBranchGroupProps> = React.memo(
   ({ branch, branchIndex, prayerColor, bloomGlowColor, onLeafPress }) => {
     const { curve, lengthScale, strokeWidth, leaves, prayer, subBranches } = branch;
 
-    // Sway animation
     const swayRotation = useSharedValue(0);
 
     useEffect(() => {
@@ -305,9 +325,10 @@ const AnimatedBranchGroup: React.FC<AnimatedBranchGroupProps> = React.memo(
       rotation: swayRotation.value,
     }));
 
-    const d = branchPathD(curve.start, curve.control, curve.end, lengthScale);
-
+    // BUG-4: Don't render zero-length branches
     if (lengthScale <= 0) return null;
+
+    const d = branchPathD(curve.start, curve.control, curve.end, lengthScale);
 
     return (
       <AnimatedG
@@ -315,7 +336,6 @@ const AnimatedBranchGroup: React.FC<AnimatedBranchGroupProps> = React.memo(
         originX={curve.start.x}
         originY={curve.start.y}
       >
-        {/* Main branch path */}
         <Path
           d={d}
           stroke={`url(#branchGrad-${prayer})`}
@@ -324,7 +344,6 @@ const AnimatedBranchGroup: React.FC<AnimatedBranchGroupProps> = React.memo(
           strokeLinecap="round"
         />
 
-        {/* Sub-branches — Phase 3: thinner paths forking from the main branch */}
         {subBranches.map((sub: SubBranch, i: number) => (
           <Path
             key={`sub-${prayer}-${i}`}
@@ -337,7 +356,6 @@ const AnimatedBranchGroup: React.FC<AnimatedBranchGroupProps> = React.memo(
           />
         ))}
 
-        {/* Animated leaves */}
         {leaves.map((leaf, leafIndex) => (
           <TreeLeaf
             key={leaf.id}
@@ -375,13 +393,14 @@ const createStyles = (theme: AppTheme) =>
       bottom: 0,
       zIndex: 3,
     },
-    groundFade: {
+    // ── FULL-WIDTH SOIL ──────────────────────────────────────────
+    // Absolutely positioned at bottom, left: 0, right: 0 means it
+    // spans the entire container width. No SVG clipping.
+    groundGradient: {
       position: 'absolute',
       bottom: 0,
       left: 0,
       right: 0,
-      height: 60,
-      opacity: 0.85,
       zIndex: 4,
     },
     emptyOverlay: {

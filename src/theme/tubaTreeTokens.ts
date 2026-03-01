@@ -25,11 +25,16 @@ export const darkTreeTokens = {
   skyStars:        '#ffffff',
   moonColor:       'rgba(255, 255, 255, 0.55)',
   bloomGlow:       '#D4AF37',       // palette.gold400
-  groundFade:      '#181D38',       // palette.navy900 — matches background.primary
+  groundFade:      '#181D38',       // palette.navy900 — matches background.primary (kept for backward compat)
   dawamPillBg:     'rgba(212, 175, 55, 0.08)',
   dawamPillBorder: 'rgba(212, 175, 55, 0.18)',
   dawamPillText:   '#D4AF37',       // palette.gold400
   dawamDot:        '#D4AF37',       // palette.gold400
+  // Soil gradient — earthy tones that blend from sky to ground
+  soilTop:         '#151c12',       // dark olive — blends with sky
+  soilMid:         '#1e2016',       // mid earth
+  soilBase:        '#2a2a1a',       // rich dark soil
+  soilBottom:      '#1a1c14',       // deepest earth
 } as const;
 
 // ─── Light Theme Tree Tokens ───────────────────────────────────────
@@ -39,12 +44,17 @@ export const lightTreeTokens = {
   trunkHighlight:  'rgba(0, 0, 0, 0.08)',
   skyStars:        'transparent',    // no stars in light theme
   moonColor:       'transparent',    // no moon in light theme
-  bloomGlow:       '#b08c2a',       // lightPalette.gold
-  groundFade:      '#faf7f2',       // lightPalette.cream — matches background.primary
+  bloomGlow:       '#b08c2a',        // lightPalette.gold
+  groundFade:      '#faf7f2',        // lightPalette.cream — matches background.primary
   dawamPillBg:     'rgba(176, 140, 42, 0.07)',
   dawamPillBorder: 'rgba(176, 140, 42, 0.18)',
-  dawamPillText:   '#b08c2a',       // lightPalette.gold
-  dawamDot:        '#b08c2a',       // lightPalette.gold
+  dawamPillText:   '#b08c2a',        // lightPalette.gold
+  dawamDot:        '#b08c2a',        // lightPalette.gold
+  // Soil gradient — warm cream to sandy earth
+  soilTop:         '#e8dcc8',        // warm cream — blends with light sky
+  soilMid:         '#c8b898',        // sandy mid-tone
+  soilBase:        '#b8a888',        // warm earth
+  soilBottom:      '#c8b898',        // base sand
 } as const;
 
 // ─── Blackout Theme Tree Tokens ────────────────────────────────────
@@ -60,6 +70,11 @@ export const blackoutTreeTokens = {
   dawamPillBorder: 'rgba(201, 168, 76, 0.20)',
   dawamPillText:   '#e8c97a',       // blackoutPalette.goldLight
   dawamDot:        '#e8c97a',       // blackoutPalette.goldLight
+  // Soil gradient — ultra-dark earthy tones
+  soilTop:         '#0a0d08',       // near-black olive
+  soilMid:         '#14160e',       // very dark earth
+  soilBase:        '#1a1c12',       // deep soil
+  soilBottom:      '#10120c',       // base dark
 } as const;
 
 // ─── Merged export for convenience ─────────────────────────────────

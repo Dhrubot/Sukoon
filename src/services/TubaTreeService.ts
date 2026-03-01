@@ -1,4 +1,18 @@
 // src/services/TubaTreeService.ts
+//
+// ╔══════════════════════════════════════════════════════════════════╗
+// ║  TUBA TREE SERVICE                                             ║
+// ╠══════════════════════════════════════════════════════════════════╣
+// ║  Transforms GardenPlant[] into TreeData for rendering.         ║
+// ║                                                                ║
+// ║  DATA-DRIVEN TRUNK: The trunk grows to reach whichever         ║
+// ║  branches actually have plant data. TRUNK_SCALE[stage] is      ║
+// ║  only a minimum floor — data always wins.                      ║
+// ║                                                                ║
+// ║  BUG-1 FIX: Leaves positioned on SCALED Bézier curve           ║
+// ║  BUG-3 FIX: Branches gated by computed trunk top               ║
+// ║  BUG-4 FIX: Empty branches = lengthScale 0, no ghost stubs     ║
+// ╚══════════════════════════════════════════════════════════════════╝
 
 import { PrayerName } from '../types';
 import { GardenPlant, GrowthStage } from '../types/garden';
@@ -6,8 +20,9 @@ import { TreeData, TreeBranch, TreeLeafData, TreeStage, SubBranch } from '../typ
 import {
   BRANCH_DEFINITIONS,
   TRUNK,
+  TRUNK_SCALE,
+  TRUNK_TOP_PADDING,
   STAGE_THRESHOLDS,
-  LEAF_SIZES,
   LEAF_OPACITY,
   LEAF_JITTER,
   BRANCH_STYLE,
@@ -18,8 +33,10 @@ import {
   quadBezierPoint,
   quadBezierTangentAngle,
   quadBezierPerpendicular,
-  branchPathD,
+  scaledBezier,
   leafHash,
+  trunkTopY,
+  trunkScaleForY,
 } from '../constants/tubaTree';
 
 class TubaTreeService {
@@ -31,32 +48,58 @@ class TubaTreeService {
     const totalLeaves = Math.min(plants.length, MAX_TOTAL_LEAVES);
     const stage = this.getTreeStage(plants.length);
 
+    // ── DATA-DRIVEN TRUNK HEIGHT ──────────────────────────────────
+    // 1. Find the highest branch junction (smallest Y) that has data
+    // 2. Compute the scale needed to reach it (+ padding)
+    // 3. Take the MAX of that and the stage floor
+    //
+    // This means your 7 plants as a sapling: if you have Fajr data
+    // (junction y=180), the trunk grows to y≈170, even though the
+    // sapling floor would only reach y≈235.
+
+    let highestJunctionY = TRUNK.start.y; // start at base (280)
+
+    for (const def of BRANCH_DEFINITIONS) {
+      const branchPlants = plantsByPrayer[def.prayer] || [];
+      if (branchPlants.length > 0) {
+        // This branch has data — trunk must reach its junction
+        highestJunctionY = Math.min(highestJunctionY, def.curve.start.y);
+      }
+    }
+
+    // Add padding above the highest junction
+    const targetY = highestJunctionY - TRUNK_TOP_PADDING;
+    const dataScale = trunkScaleForY(targetY);
+    const stageFloor = TRUNK_SCALE[stage];
+    const effectiveScale = Math.max(stageFloor, dataScale);
+
+    // Now compute the actual trunk top for branch gating
+    const currentTrunkTopY = trunkTopY(effectiveScale);
+
     const branches: TreeBranch[] = BRANCH_DEFINITIONS.map((def) => {
       const branchPlants = plantsByPrayer[def.prayer] || [];
-      return this.buildBranch(def.prayer, branchPlants, def, stage);
+      return this.buildBranch(def.prayer, branchPlants, def, stage, currentTrunkTopY);
     });
 
     const bloomCount = plants.filter(
-      (p) => p.growthStage === 'bloom' && p.mood >= 4
+      (p) => p.growthStage === 'bloom' && p.mood >= 4,
     ).length;
-
-    const trunkWidth = TRUNK.baseWidth[stage];
 
     return {
       branches,
       stage,
       totalLeaves,
       bloomCount,
-      trunkWidth,
+      trunkWidth: TRUNK.baseWidth[stage],
+      trunkScale: effectiveScale,
     };
   }
 
   private groupByPrayer(plants: GardenPlant[]): Record<string, GardenPlant[]> {
     const groups: Record<string, GardenPlant[]> = {};
     for (const plant of plants) {
-      const key = plant.prayer;
-      if (!groups[key]) groups[key] = [];
-      groups[key].push(plant);
+      if (!groups[plant.prayer]) groups[plant.prayer] = [];
+      groups[plant.prayer].push(plant);
     }
     return groups;
   }
@@ -73,25 +116,40 @@ class TubaTreeService {
     plants: GardenPlant[],
     def: typeof BRANCH_DEFINITIONS[number],
     stage: TreeStage,
+    currentTrunkTopY: number,
   ): TreeBranch {
-    const visiblePlants = plants.slice(0, MAX_LEAVES_PER_BRANCH);
+    // BUG-3 FIX: Branch visible only if trunk has grown past its junction.
+    // Y increases downward, so junction must be >= trunkTop.
+    const branchVisible = def.curve.start.y >= currentTrunkTopY;
+
+    const visiblePlants = branchVisible ? plants.slice(0, MAX_LEAVES_PER_BRANCH) : [];
     const leafCount = visiblePlants.length;
 
-    const lengthScale = leafCount === 0
-      ? 0.15
-      : Math.min(0.3 + (leafCount / MAX_LEAVES_PER_BRANCH) * 0.7, 1.0);
+    // BUG-4 FIX: 0 leaves = 0 length, no ghost stubs
+    let lengthScale: number;
+    let strokeWidth: number;
 
-    const strokeWidth = leafCount === 0
-      ? BRANCH_STYLE.minStrokeWidth * 0.5
-      : BRANCH_STYLE.minStrokeWidth +
+    if (!branchVisible || leafCount === 0) {
+      lengthScale = 0;
+      strokeWidth = 0;
+    } else {
+      lengthScale = Math.min(
+        0.25 + (leafCount / MAX_LEAVES_PER_BRANCH) * 0.75,
+        1.0,
+      );
+      strokeWidth =
+        BRANCH_STYLE.minStrokeWidth +
         (Math.min(leafCount, BRANCH_STYLE.fullThicknessAt) /
           BRANCH_STYLE.fullThicknessAt) *
           (BRANCH_STYLE.maxStrokeWidth - BRANCH_STYLE.minStrokeWidth);
+    }
 
-    const leaves = this.positionLeaves(prayer, visiblePlants, def);
+    // BUG-1 FIX: Leaves positioned on SCALED curve
+    const leaves = this.positionLeaves(prayer, visiblePlants, def, lengthScale);
 
-    // Phase 3: Sub-branches
-    const subBranches = this.computeSubBranches(def, lengthScale, strokeWidth, stage);
+    const subBranches = branchVisible
+      ? this.computeSubBranches(def, lengthScale, strokeWidth, stage)
+      : [];
 
     return {
       prayer,
@@ -104,20 +162,30 @@ class TubaTreeService {
     };
   }
 
+  /**
+   * Position leaves along the SCALED branch curve.
+   *
+   * BUG-1 FIX: Uses scaledBezier() to get the same shortened curve
+   * that branchPathD() renders. Leaves can never float off-branch.
+   */
   private positionLeaves(
     prayer: PrayerName,
     plants: GardenPlant[],
     def: typeof BRANCH_DEFINITIONS[number],
+    lengthScale: number,
   ): TreeLeafData[] {
-    if (plants.length === 0) return [];
+    if (plants.length === 0 || lengthScale <= 0) return [];
 
-    const { curve, baseAngle } = def;
+    const { curve } = def;
     const n = plants.length;
+    const scaled = scaledBezier(curve.start, curve.control, curve.end, lengthScale);
 
     return plants.map((plant, index) => {
       const t = (index + 1) / (n + 1);
-      const pos = quadBezierPoint(curve.start, curve.control, curve.end, t);
-      const perp = quadBezierPerpendicular(curve.start, curve.control, curve.end, t);
+
+      // Evaluate on the SCALED curve
+      const pos = quadBezierPoint(curve.start, scaled.control, scaled.end, t);
+      const perp = quadBezierPerpendicular(curve.start, scaled.control, scaled.end, t);
 
       const hash = leafHash(prayer, plant.date, index);
       const jitterSign = (hash % 2 === 0) ? 1 : -1;
@@ -127,7 +195,7 @@ class TubaTreeService {
       const x = pos.x + perp.x * jitterMagnitude;
       const y = pos.y + perp.y * jitterMagnitude;
 
-      const tangentAngle = quadBezierTangentAngle(curve.start, curve.control, curve.end, t);
+      const tangentAngle = quadBezierTangentAngle(curve.start, scaled.control, scaled.end, t);
       const rotation = tangentAngle + rotationJitter;
 
       const opacityConfig = LEAF_OPACITY[plant.growthStage];
@@ -146,7 +214,6 @@ class TubaTreeService {
         isBloom,
         hasText: plant.hasText,
         opacity,
-        // Phase 3: detail fields
         prayer,
         date: plant.date,
         mood: plant.mood,
@@ -154,11 +221,8 @@ class TubaTreeService {
     });
   }
 
-  // ─── Sub-Branch Computation (Phase 3) ─────────────────────────
-
   /**
-   * Compute sub-branches for a main branch based on tree stage.
-   * Sub-branches fork from a point along the parent curve and diverge outward.
+   * Sub-branches use SCALED curve for fork point (consistent with BUG-1 fix).
    */
   private computeSubBranches(
     def: typeof BRANCH_DEFINITIONS[number],
@@ -171,34 +235,27 @@ class TubaTreeService {
 
     const results: SubBranch[] = [];
     const { curve } = def;
+    const scaled = scaledBezier(curve.start, curve.control, curve.end, parentLengthScale);
 
     for (let i = 0; i < maxSubs; i++) {
       const forkT = i === 0 ? SUB_BRANCH.forkT.first : SUB_BRANCH.forkT.second;
-      const effectiveT = forkT * parentLengthScale;
       const direction = SUB_BRANCH.directions[i] ?? 1;
 
-      // Fork point on parent curve
-      const forkPoint = quadBezierPoint(curve.start, curve.control, curve.end, effectiveT);
-      const perp = quadBezierPerpendicular(curve.start, curve.control, curve.end, effectiveT);
-      const tangent = quadBezierTangentAngle(curve.start, curve.control, curve.end, effectiveT);
+      const forkPoint = quadBezierPoint(curve.start, scaled.control, scaled.end, forkT);
+      const perp = quadBezierPerpendicular(curve.start, scaled.control, scaled.end, forkT);
+      const tangent = quadBezierTangentAngle(curve.start, scaled.control, scaled.end, forkT);
 
-      // Sub-branch curves outward from fork point
       const spread = SUB_BRANCH.spread * direction;
-      const subLength = SUB_BRANCH.lengthRatio * parentLengthScale * 80; // scale to viewBox
-
-      // Tangent direction in radians
+      const subLength = SUB_BRANCH.lengthRatio * parentLengthScale * 80;
       const tangentRad = (tangent * Math.PI) / 180;
+
       const endX = forkPoint.x + Math.cos(tangentRad) * subLength + perp.x * spread;
       const endY = forkPoint.y + Math.sin(tangentRad) * subLength + perp.y * spread;
-
-      // Control point midway with perpendicular offset
       const ctrlX = forkPoint.x + Math.cos(tangentRad) * subLength * 0.5 + perp.x * spread * 0.6;
       const ctrlY = forkPoint.y + Math.sin(tangentRad) * subLength * 0.5 + perp.y * spread * 0.6;
 
-      const d = `M ${forkPoint.x.toFixed(1)} ${forkPoint.y.toFixed(1)} Q ${ctrlX.toFixed(1)} ${ctrlY.toFixed(1)} ${endX.toFixed(1)} ${endY.toFixed(1)}`;
-
       results.push({
-        d,
+        d: `M ${forkPoint.x.toFixed(1)} ${forkPoint.y.toFixed(1)} Q ${ctrlX.toFixed(1)} ${ctrlY.toFixed(1)} ${endX.toFixed(1)} ${endY.toFixed(1)}`,
         strokeWidth: parentStrokeWidth * SUB_BRANCH.strokeRatio,
         opacity: SUB_BRANCH.opacity,
       });
