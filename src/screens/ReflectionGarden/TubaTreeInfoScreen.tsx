@@ -252,7 +252,7 @@ const TubaTreeInfoScreen: React.FC = () => {
             </Text>
           </View>
           <Text style={styles.bodyText}>
-            Your Tuba Tree in PrayerBuddy is a living mirror of your spiritual practice.
+            Your Tuba Tree in Sukoon is a living mirror of your spiritual practice.
             It grows only through genuine reflection — not just marking prayers complete,
             but pausing to breathe, to feel, to connect.
           </Text>
@@ -269,7 +269,7 @@ const TubaTreeInfoScreen: React.FC = () => {
             <View style={styles.stepContent}>
               <Text style={styles.stepTitle}>Pray with reflection</Text>
               <Text style={styles.stepBody}>
-                After any prayer, complete the mindfulness flow — breathe, reflect,
+                During any prayer, complete the mindfulness flow — breathe, reflect,
                 and rate your focus. This creates a leaf on your tree.
               </Text>
             </View>
