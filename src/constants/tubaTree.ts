@@ -5,6 +5,11 @@
 // ║  KEY DESIGN: Trunk height is DATA-DRIVEN.                      ║
 // ║  It grows to reach whatever branches have plant data.           ║
 // ║  TRUNK_SCALE provides a MINIMUM floor per stage.               ║
+// ║                                                                ║
+// ║  v2 FIXES:                                                     ║
+// ║  • BRANCH_SWAY: organic vertex displacement (not G-rotation)   ║
+// ║  • LEAF_DISTRIBUTION: tip-weighted power curve                 ║
+// ║  • SUB_BRANCH: softer fork departure angle (0.3 not 0.5)      ║
 // ╚══════════════════════════════════════════════════════════════════╝
 
 import { PrayerName } from '../types';
@@ -25,7 +30,7 @@ export const TRUNK = {
 // MINIMUM trunk height floor per stage. Actual height is data-driven:
 //   effectiveScale = max(TRUNK_SCALE[stage], scaleNeededForBranchData)
 export const TRUNK_SCALE: Record<TreeStage, number> = {
-  seedling:    0.15,   // short nub — data drives the real height
+  seedling:    0.15,
   sapling:     0.25,
   growing:     0.45,
   flourishing: 0.70,
@@ -82,6 +87,27 @@ export const MAX_LEAVES_PER_BRANCH = 12;
 export const MAX_TOTAL_LEAVES = 60;
 export const LEAF_JITTER = { maxOffset: 8, maxRotation: 25 } as const;
 
+// ═══════════════════════════════════════════════════════════════════
+// FIX 3: TIP-WEIGHTED LEAF DISTRIBUTION
+// ═══════════════════════════════════════════════════════════════════
+// Leaves bias toward the outer half of branches (like real foliage).
+// `power` < 1 pushes distribution outward; `floorT` keeps inner
+// branch from being completely bare.
+// `tipClusterT` is the threshold above which jitter is reduced
+// so leaves cluster tighter at tips, creating natural density.
+export const LEAF_DISTRIBUTION = {
+  /** Minimum t value — prevents leaves right at the trunk junction */
+  floorT: 0.15,
+  /** Range of t above the floor (leaves span floorT .. floorT+range) */
+  range: 0.85,
+  /** Power curve exponent — values < 1 push toward tips */
+  power: 0.7,
+  /** t threshold above which jitter magnitude is halved */
+  tipClusterT: 0.7,
+  /** Jitter reduction factor for leaves past tipClusterT */
+  tipJitterScale: 0.5,
+} as const;
+
 // ─── Ground / Soil Colors ──────────────────────────────────────────
 // Full-width RN LinearGradient at canvas bottom. Edge-to-edge.
 export const GROUND_COLORS = {
@@ -112,7 +138,27 @@ export const TREE_CANVAS_HEIGHT = 296;
 // ═══════════════════════════════════════════════════════════════════
 // ANIMATION CONSTANTS
 // ═══════════════════════════════════════════════════════════════════
-export const BRANCH_SWAY = { amplitude: 1.0, duration: 10000, phaseOffset: 400 } as const;
+
+// ── FIX 1: ORGANIC VERTEX SWAY ──────────────────────────────────
+// Instead of rotating the entire <G> container (rigid pendulum),
+// we animate the Bézier control & end points to create organic bending.
+//
+// The branch BASE (start point) stays fixed. The CONTROL point shifts
+// slightly, and the END (tip) shifts more — mimicking how real branches
+// bend progressively toward the tip.
+//
+// `tipDisplacement`: max viewBox-unit shift at the branch tip
+// `controlRatio`:    how much the control point moves relative to tip
+//                    (0.3 = control moves 30% as much as tip)
+// `duration`:        full oscillation cycle in ms
+// `phaseOffset`:     ms delay between branches for natural staggering
+export const BRANCH_SWAY = {
+  tipDisplacement: 4,
+  controlRatio: 0.3,
+  duration: 10000,
+  phaseOffset: 400,
+} as const;
+
 export const LEAF_ENTRY = { duration: 600, baseDelay: 300, staggerPerLeaf: 80, staggerPerBranch: 150 } as const;
 export const BLOOM_PULSE = { minOpacity: 0.45, maxOpacity: 0.95, duration: 2400 } as const;
 export const STAR_TWINKLE = { minOpacity: 0.15, maxOpacity: 0.70, minScale: 0.9, maxScale: 1.5, duration: 7000 } as const;
@@ -158,6 +204,24 @@ export function branchPathD(start: Point, control: Point, end: Point, scale: num
   return `M ${start.x} ${start.y} Q ${sc.control.x} ${sc.control.y} ${sc.end.x} ${sc.end.y}`;
 }
 
+/**
+ * Compute the perpendicular displacement vector at the midpoint of
+ * the SCALED branch. Used by the sway animation to determine which
+ * direction the branch should bend (perpendicular to its general flow).
+ *
+ * Returns a unit vector perpendicular to the tangent at t=0.5 on
+ * the scaled curve.
+ */
+export function branchSwayDirection(
+  start: Point,
+  control: Point,
+  end: Point,
+  scale: number,
+): Point {
+  const sc = scaledBezier(start, control, end, scale);
+  return quadBezierPerpendicular(start, sc.control, sc.end, 0.5);
+}
+
 export function leafHash(prayer: string, date: string, index: number): number {
   let hash = 0;
   const str = `${prayer}-${date}-${index}`;
@@ -178,11 +242,28 @@ export function trunkScaleForY(targetY: number): number {
 // ═══════════════════════════════════════════════════════════════════
 // PHASE 3 CONSTANTS
 // ═══════════════════════════════════════════════════════════════════
+
+// ── FIX 4: SOFTER SUB-BRANCH CURVES ─────────────────────────────
+// Changed controlFactor from 0.5 → 0.3 so the control point sits
+// closer to the fork origin. This creates a gentler departure angle
+// instead of a rigid "V" fork.
 export const SUB_BRANCH = {
-  forkT: { first: 0.70, second: 0.50 }, lengthRatio: 0.45, spread: 35,
-  strokeRatio: 0.5, opacity: 0.65, directions: [1, -1] as readonly number[],
+  forkT: { first: 0.70, second: 0.50 },
+  lengthRatio: 0.45,
+  spread: 35,
+  strokeRatio: 0.5,
+  opacity: 0.65,
+  directions: [1, -1] as readonly number[],
+  /** How far along the sub-branch tangent the control point sits.
+   *  Lower = softer departure from parent. Was 0.5, now 0.3. */
+  controlFactor: 0.3,
+  /** How much of the spread the control point inherits.
+   *  Lower = tighter initial curve. Was 0.6, now 0.4. */
+  controlSpreadFactor: 0.4,
 } as const;
+
 export const SUB_BRANCH_STAGES: Record<string, number> = { flourishing: 1, ancient: 2 };
+
 export const RAMADAN_STARS = [
   { x: 70, y: 18, size: 2.5, animDelay: 0.3 }, { x: 190, y: 28, size: 2, animDelay: 1.1 },
   { x: 260, y: 15, size: 2.5, animDelay: 0.6 }, { x: 35, y: 78, size: 1.5, animDelay: 1.8 },

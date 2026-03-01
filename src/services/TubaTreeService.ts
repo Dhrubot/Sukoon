@@ -12,6 +12,11 @@
 // ║  BUG-1 FIX: Leaves positioned on SCALED Bézier curve           ║
 // ║  BUG-3 FIX: Branches gated by computed trunk top               ║
 // ║  BUG-4 FIX: Empty branches = lengthScale 0, no ghost stubs     ║
+// ║                                                                ║
+// ║  v2 FIXES:                                                     ║
+// ║  FIX-2: Tip-weighted leaf distribution (power curve)           ║
+// ║  FIX-3: Tighter jitter at tips for natural clustering          ║
+// ║  FIX-4: Softer sub-branch departure angles                    ║
 // ╚══════════════════════════════════════════════════════════════════╝
 
 import { PrayerName } from '../types';
@@ -25,6 +30,7 @@ import {
   STAGE_THRESHOLDS,
   LEAF_OPACITY,
   LEAF_JITTER,
+  LEAF_DISTRIBUTION,
   BRANCH_STYLE,
   MAX_LEAVES_PER_BRANCH,
   MAX_TOTAL_LEAVES,
@@ -167,6 +173,18 @@ class TubaTreeService {
    *
    * BUG-1 FIX: Uses scaledBezier() to get the same shortened curve
    * that branchPathD() renders. Leaves can never float off-branch.
+   *
+   * ── v2 FIX-2: TIP-WEIGHTED DISTRIBUTION ────────────────────────
+   * Old: t = (index + 1) / (n + 1)  — uniform spacing
+   * New: t = floorT + range * pow(linearT, power)
+   *
+   * With power=0.7 and floorT=0.15, leaves naturally cluster toward
+   * branch tips (where real foliage grows to catch sunlight) while
+   * maintaining some presence along the inner branch.
+   *
+   * ── v2 FIX-3: TIP CLUSTER JITTER ──────────────────────────────
+   * Leaves past tipClusterT (0.7) get halved jitter magnitude,
+   * so they pack tighter at the tips creating visible foliage density.
    */
   private positionLeaves(
     prayer: PrayerName,
@@ -181,7 +199,12 @@ class TubaTreeService {
     const scaled = scaledBezier(curve.start, curve.control, curve.end, lengthScale);
 
     return plants.map((plant, index) => {
-      const t = (index + 1) / (n + 1);
+      // ── FIX-2: Tip-weighted t ──────────────────────────────────
+      // Linear t in (0, 1) — same denominator trick as before
+      const linearT = (index + 1) / (n + 1);
+      // Apply power curve to push distribution toward tips
+      const t = LEAF_DISTRIBUTION.floorT
+        + LEAF_DISTRIBUTION.range * Math.pow(linearT, LEAF_DISTRIBUTION.power);
 
       // Evaluate on the SCALED curve
       const pos = quadBezierPoint(curve.start, scaled.control, scaled.end, t);
@@ -189,7 +212,14 @@ class TubaTreeService {
 
       const hash = leafHash(prayer, plant.date, index);
       const jitterSign = (hash % 2 === 0) ? 1 : -1;
-      const jitterMagnitude = ((hash % 100) / 100) * LEAF_JITTER.maxOffset * jitterSign;
+
+      // ── FIX-3: Tighter jitter at tips ──────────────────────────
+      // Leaves past tipClusterT get reduced jitter so they pack
+      // tighter, creating visible foliage density at branch ends.
+      const jitterScale = t > LEAF_DISTRIBUTION.tipClusterT
+        ? LEAF_DISTRIBUTION.tipJitterScale
+        : 1.0;
+      const jitterMagnitude = ((hash % 100) / 100) * LEAF_JITTER.maxOffset * jitterSign * jitterScale;
       const rotationJitter = ((hash % 200 - 100) / 100) * LEAF_JITTER.maxRotation;
 
       const x = pos.x + perp.x * jitterMagnitude;
@@ -223,6 +253,12 @@ class TubaTreeService {
 
   /**
    * Sub-branches use SCALED curve for fork point (consistent with BUG-1 fix).
+   *
+   * ── v2 FIX-4: SOFTER FORK DEPARTURE ────────────────────────────
+   * Control point now sits at controlFactor=0.3 (was 0.5) along the
+   * tangent with controlSpreadFactor=0.4 (was 0.6) perpendicular
+   * spread. This creates a gentler curve that departs smoothly from
+   * the parent branch instead of a rigid "V" fork.
    */
   private computeSubBranches(
     def: typeof BRANCH_DEFINITIONS[number],
@@ -251,8 +287,14 @@ class TubaTreeService {
 
       const endX = forkPoint.x + Math.cos(tangentRad) * subLength + perp.x * spread;
       const endY = forkPoint.y + Math.sin(tangentRad) * subLength + perp.y * spread;
-      const ctrlX = forkPoint.x + Math.cos(tangentRad) * subLength * 0.5 + perp.x * spread * 0.6;
-      const ctrlY = forkPoint.y + Math.sin(tangentRad) * subLength * 0.5 + perp.y * spread * 0.6;
+
+      // ── FIX-4: Softer control point placement ──────────────────
+      const ctrlX = forkPoint.x
+        + Math.cos(tangentRad) * subLength * SUB_BRANCH.controlFactor
+        + perp.x * spread * SUB_BRANCH.controlSpreadFactor;
+      const ctrlY = forkPoint.y
+        + Math.sin(tangentRad) * subLength * SUB_BRANCH.controlFactor
+        + perp.y * spread * SUB_BRANCH.controlSpreadFactor;
 
       results.push({
         d: `M ${forkPoint.x.toFixed(1)} ${forkPoint.y.toFixed(1)} Q ${ctrlX.toFixed(1)} ${ctrlY.toFixed(1)} ${endX.toFixed(1)} ${endY.toFixed(1)}`,

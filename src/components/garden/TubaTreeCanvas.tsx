@@ -1,10 +1,22 @@
 // src/components/garden/TubaTreeCanvas.tsx
 //
-// FIXES:
-//   BUG-2: Trunk height is data-driven (trunkScale from service)
-//   SOIL:  Full-width RN LinearGradient positioned absolutely at bottom
-//          (replaces old groundFade View AND SVG Rect approach)
-//   ROOTS: Progressive visibility by stage
+// ╔══════════════════════════════════════════════════════════════════╗
+// ║  TUBA TREE CANVAS                                              ║
+// ╠══════════════════════════════════════════════════════════════════╣
+// ║  FIXES:                                                        ║
+// ║  BUG-2: Trunk height is data-driven (trunkScale from service)  ║
+// ║  SOIL:  Full-width RN LinearGradient at bottom                 ║
+// ║  ROOTS: Progressive visibility by stage                        ║
+// ║                                                                ║
+// ║  v2 FIX-1: ORGANIC VERTEX SWAY                                ║
+// ║  Replaced rigid <AnimatedG rotation={...}> with per-branch     ║
+// ║  AnimatedPath that displaces Bézier control/end points.         ║
+// ║  The branch BASE stays fixed, CONTROL shifts slightly, and      ║
+// ║  END (tip) shifts the most — creating organic, whip-like bend. ║
+// ║  Leaves remain at their pre-computed positions, which is MORE   ║
+// ║  realistic: in real trees, the branch structure sways while     ║
+// ║  foliage stays roughly in place.                               ║
+// ╚══════════════════════════════════════════════════════════════════╝
 
 import React, { useMemo, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
@@ -46,9 +58,12 @@ import {
   BRANCH_SWAY,
   RAMADAN_GOLD_BLEND,
   branchPathD,
+  scaledBezier,
+  branchSwayDirection,
 } from '../../constants/tubaTree';
 
-const AnimatedG = Animated.createAnimatedComponent(G);
+// ── Animated SVG component for organic branch bending ──────────────
+const AnimatedPath = Animated.createAnimatedComponent(Path);
 
 interface TubaTreeCanvasProps {
   plants: GardenPlant[];
@@ -57,63 +72,53 @@ interface TubaTreeCanvasProps {
   onLeafPress?: (leaf: TreeLeafData) => void;
 }
 
-// ─── Color blending utility ────────────────────────────────────────
-function blendTowardGold(hexColor: string, goldHex: string, ratio: number): string {
-  try {
-    const parseHex = (h: string) => {
-      const c = h.replace('#', '');
-      return [
-        parseInt(c.substring(0, 2), 16),
-        parseInt(c.substring(2, 4), 16),
-        parseInt(c.substring(4, 6), 16),
-      ];
-    };
-    const [r1, g1, b1] = parseHex(hexColor);
-    const [r2, g2, b2] = parseHex(goldHex);
-    const r = Math.round(r1 + (r2 - r1) * ratio);
-    const g = Math.round(g1 + (g2 - g1) * ratio);
-    const b = Math.round(b1 + (b2 - b1) * ratio);
-    return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${b.toString(16).padStart(2, '0')}`;
-  } catch {
-    return hexColor;
-  }
+// ─── Color blending helper ─────────────────────────────────────────
+function blendTowardGold(hex: string, goldHex: string, ratio: number): string {
+  const parse = (h: string) => {
+    const c = h.replace('#', '');
+    return [parseInt(c.slice(0, 2), 16), parseInt(c.slice(2, 4), 16), parseInt(c.slice(4, 6), 16)];
+  };
+  const [r1, g1, b1] = parse(hex);
+  const [r2, g2, b2] = parse(goldHex);
+  const mix = (a: number, b: number) => Math.round(a + (b - a) * ratio);
+  const toHex = (n: number) => n.toString(16).padStart(2, '0');
+  return `#${toHex(mix(r1, r2))}${toHex(mix(g1, g2))}${toHex(mix(b1, b2))}`;
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// MAIN CANVAS COMPONENT
+// ═══════════════════════════════════════════════════════════════════
 
 const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
   plants,
   isRamadan = false,
-  ramadanDay,
+  ramadanDay = null,
   onLeafPress,
 }) => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
 
-  // Compute tree data — now includes data-driven trunkScale
-  const treeData: TreeData = useMemo(
-    () => TubaTreeService.buildTreeData(plants),
-    [plants],
-  );
+  // Build tree data from plants
+  const treeData = useMemo(() => TubaTreeService.buildTreeData(plants), [plants]);
 
-  // Sky gradient
+  // Ramadan theme tokens
+  const ramadanThemeTokens = useMemo(() => {
+    if (!isRamadan) return ramadanTokens.dark;
+    return ramadanTokens[theme.mode as keyof typeof ramadanTokens] || ramadanTokens.dark;
+  }, [isRamadan, theme.mode]);
+
+  // Sky gradient from theme
   const skyGradient = useMemo(() => {
-    const hour = new Date().getHours();
-    const gradients = theme.colors.prayerGradients;
-    if (hour < 5 || hour >= 21) return gradients.Isha;
-    if (hour < 7) return gradients.Fajr;
-    if (hour < 14) return gradients.Dhuhr;
-    if (hour < 17) return gradients.Asr;
-    if (hour < 19) return gradients.Maghrib;
-    return gradients.Isha;
+    const gradients = theme.colors.prayerGradients || {};
+    const current = Object.values(gradients)[0];
+    if (Array.isArray(current) && current.length >= 2) return current;
+    return theme.mode === 'dark'
+      ? ['#0d1b2a', '#1b2838', '#1a237e']
+      : ['#87CEEB', '#B0E0E6', '#E0F7FA'];
   }, [theme]);
 
-  // Ramadan tokens
-  const ramadanThemeTokens = useMemo(() => {
-    const key = theme.mode as keyof typeof ramadanTokens;
-    return ramadanTokens[key] || ramadanTokens.dark;
-  }, [theme.mode]);
-
-  // Prayer color resolver
-  const getPrayerColor = useCallback((prayer: string): string => {
+  // Prayer color getter (with Ramadan gold blend)
+  const getPrayerColor = useCallback((prayer: string) => {
     const key = prayer.toLowerCase() as keyof typeof theme.colors.prayer;
     const base = theme.colors.prayer?.[key] || theme.colors.primary.DEFAULT;
     if (isRamadan) {
@@ -228,20 +233,7 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
           ))}
         </Svg>
 
-        {/* ── FULL-WIDTH SOIL GRADIENT ────────────────────────────
-             Positioned absolutely at the bottom of the canvas.
-             This is a RN LinearGradient, NOT an SVG element, so it
-             naturally spans the full container width regardless of
-             the SVG viewBox's aspect ratio.
-             
-             The old approach used either:
-               - A flat-color View (groundFade) — no gradient richness
-               - An SVG <Rect> — clipped by preserveAspectRatio gaps
-             
-             This RN LinearGradient sits ABOVE the SVG (zIndex: 4)
-             and uses transparent→earthy colors so the tree trunk
-             and roots show through the upper portion.
-        ──────────────────────────────────────────────────────── */}
+        {/* ── FULL-WIDTH SOIL GRADIENT ──────────────────────────── */}
         <LinearGradient
           colors={groundConfig.colors as any}
           locations={groundConfig.locations as any}
@@ -284,7 +276,43 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
   );
 };
 
-// ─── Animated Branch Group ─────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════
+// FIX 1: ORGANIC VERTEX SWAY — AnimatedBranchGroup
+// ═══════════════════════════════════════════════════════════════════
+//
+// OLD APPROACH (rigid):
+//   <AnimatedG rotation={swayRotation} originX={start.x} originY={start.y}>
+//     <Path d={staticD} />
+//     {leaves}
+//   </AnimatedG>
+//
+//   Problem: entire group pivots as a rigid plank around the base.
+//   Looks mechanical, breaks the illusion of life.
+//
+// NEW APPROACH (organic):
+//   <G>
+//     <AnimatedPath d={animatedD} />   ← branch BENDS
+//     <Path d={subBranch.d} />         ← sub-branches (static, small)
+//     {leaves}                          ← stay at computed positions
+//   </G>
+//
+//   The AnimatedPath constructs a new `d` string every frame by
+//   displacing the Bézier CONTROL and END points perpendicular to
+//   the branch's flow direction. The START stays locked to the trunk.
+//
+//   The displacement is proportional:
+//     tip (end)     → full BRANCH_SWAY.tipDisplacement
+//     mid (control) → tipDisplacement × BRANCH_SWAY.controlRatio
+//
+//   This creates organic, whip-like bending where the base barely
+//   moves and the tip sways the most — exactly like real branches.
+//
+//   Leaves staying at their computed positions is MORE realistic:
+//   in nature, branches sway as structure, but individual leaves
+//   flutter independently from micro-currents, not from the branch
+//   sweep itself. The visual effect of the path moving beneath
+//   stationary leaves creates a subtle, living depth.
+// ═══════════════════════════════════════════════════════════════════
 
 interface AnimatedBranchGroupProps {
   branch: TreeBranch;
@@ -298,20 +326,48 @@ const AnimatedBranchGroup: React.FC<AnimatedBranchGroupProps> = React.memo(
   ({ branch, branchIndex, prayerColor, bloomGlowColor, onLeafPress }) => {
     const { curve, lengthScale, strokeWidth, leaves, prayer, subBranches } = branch;
 
-    const swayRotation = useSharedValue(0);
+    // BUG-4: Don't render zero-length branches
+    if (lengthScale <= 0) return null;
+
+    // ── Pre-compute static geometry for the worklet ────────────────
+    // These values are captured by the worklet closure as primitives.
+    const scaled = useMemo(
+      () => scaledBezier(curve.start, curve.control, curve.end, lengthScale),
+      [curve, lengthScale],
+    );
+
+    // Perpendicular direction at the branch midpoint — this is the
+    // axis along which the sway displacement occurs.
+    const swayDir = useMemo(
+      () => branchSwayDirection(curve.start, curve.control, curve.end, lengthScale),
+      [curve, lengthScale],
+    );
+
+    // Extract primitives for worklet closure (objects can't cross the bridge)
+    const startX = curve.start.x;
+    const startY = curve.start.y;
+    const ctrlX = scaled.control.x;
+    const ctrlY = scaled.control.y;
+    const endX = scaled.end.x;
+    const endY = scaled.end.y;
+    const perpX = swayDir.x;
+    const perpY = swayDir.y;
+    const tipDisp = BRANCH_SWAY.tipDisplacement;
+    const ctrlRatio = BRANCH_SWAY.controlRatio;
+
+    // ── Sway oscillation: -1 → 1 → -1 (infinite) ─────────────────
+    const swayProgress = useSharedValue(0);
 
     useEffect(() => {
-      if (lengthScale <= 0) return;
-
       const phaseDelay = branchIndex * BRANCH_SWAY.phaseOffset;
       const halfDuration = BRANCH_SWAY.duration / 2;
       const easing = Easing.inOut(Easing.sin);
 
       const timer = setTimeout(() => {
-        swayRotation.value = withRepeat(
+        swayProgress.value = withRepeat(
           withSequence(
-            withTiming(BRANCH_SWAY.amplitude, { duration: halfDuration, easing }),
-            withTiming(-BRANCH_SWAY.amplitude, { duration: halfDuration, easing }),
+            withTiming(1, { duration: halfDuration, easing }),
+            withTiming(-1, { duration: halfDuration, easing }),
           ),
           -1,
           false,
@@ -319,31 +375,58 @@ const AnimatedBranchGroup: React.FC<AnimatedBranchGroupProps> = React.memo(
       }, phaseDelay);
 
       return () => clearTimeout(timer);
-    }, [lengthScale]);
+    }, [lengthScale, branchIndex]);
 
-    const animatedProps = useAnimatedProps(() => ({
-      rotation: swayRotation.value,
-    }));
+    // ── Animated branch path — organic Bézier bending ─────────────
+    // Each frame, the worklet:
+    // 1. Reads the current sway value (-1 to 1)
+    // 2. Computes perpendicular displacement for control & end points
+    // 3. Constructs a new SVG path `d` string
+    //
+    // The start point NEVER moves (locked to trunk junction).
+    // The control point moves slightly (controlRatio × tipDisplacement).
+    // The end point moves the most (full tipDisplacement).
+    const branchAnimatedProps = useAnimatedProps(() => {
+      'worklet';
+      const sway = swayProgress.value;
 
-    // BUG-4: Don't render zero-length branches
-    if (lengthScale <= 0) return null;
+      // Tip displacement (full amplitude)
+      const tipDx = sway * tipDisp * perpX;
+      const tipDy = sway * tipDisp * perpY;
 
-    const d = branchPathD(curve.start, curve.control, curve.end, lengthScale);
+      // Control point displacement (fraction of tip)
+      const cDx = tipDx * ctrlRatio;
+      const cDy = tipDy * ctrlRatio;
+
+      // Construct displaced path
+      // Using Math.round * 10 / 10 for single-decimal precision
+      // (more worklet-safe than .toFixed)
+      const cx = Math.round((ctrlX + cDx) * 10) / 10;
+      const cy = Math.round((ctrlY + cDy) * 10) / 10;
+      const ex = Math.round((endX + tipDx) * 10) / 10;
+      const ey = Math.round((endY + tipDy) * 10) / 10;
+
+      return {
+        d: 'M ' + startX + ' ' + startY + ' Q ' + cx + ' ' + cy + ' ' + ex + ' ' + ey,
+      };
+    });
+
+    // Static path for initial render / fallback
+    const staticD = branchPathD(curve.start, curve.control, curve.end, lengthScale);
 
     return (
-      <AnimatedG
-        animatedProps={animatedProps}
-        originX={curve.start.x}
-        originY={curve.start.y}
-      >
-        <Path
-          d={d}
+      <G>
+        {/* Branch — animated organic bend */}
+        <AnimatedPath
+          animatedProps={branchAnimatedProps}
+          d={staticD}
           stroke={`url(#branchGrad-${prayer})`}
           strokeWidth={strokeWidth}
           fill="none"
           strokeLinecap="round"
         />
 
+        {/* Sub-branches — static paths (small scale = stiffness imperceptible) */}
         {subBranches.map((sub: SubBranch, i: number) => (
           <Path
             key={`sub-${prayer}-${i}`}
@@ -356,6 +439,9 @@ const AnimatedBranchGroup: React.FC<AnimatedBranchGroupProps> = React.memo(
           />
         ))}
 
+        {/* Leaves — at pre-computed positions (no group animation).
+            In real trees, branches sway as structure while foliage
+            stays roughly in place. This creates natural visual depth. */}
         {leaves.map((leaf, leafIndex) => (
           <TreeLeaf
             key={leaf.id}
@@ -367,7 +453,7 @@ const AnimatedBranchGroup: React.FC<AnimatedBranchGroupProps> = React.memo(
             onPress={onLeafPress}
           />
         ))}
-      </AnimatedG>
+      </G>
     );
   },
 );
@@ -394,8 +480,6 @@ const createStyles = (theme: AppTheme) =>
       zIndex: 3,
     },
     // ── FULL-WIDTH SOIL ──────────────────────────────────────────
-    // Absolutely positioned at bottom, left: 0, right: 0 means it
-    // spans the entire container width. No SVG clipping.
     groundGradient: {
       position: 'absolute',
       bottom: 0,
@@ -410,26 +494,28 @@ const createStyles = (theme: AppTheme) =>
       zIndex: 5,
     },
     emptyText: {
-      fontSize: theme.typography.fontSize.base,
+      fontSize: theme.typography.fontSize.sm,
       fontFamily: theme.typography.fontFamily.body,
       fontStyle: 'italic',
+      opacity: 0.7,
     },
     stageRow: {
       flexDirection: 'row',
+      justifyContent: 'space-between',
       alignItems: 'center',
-      justifyContent: 'center',
-      gap: 8,
-      paddingTop: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.md,
+      paddingTop: theme.spacing.xs,
+      paddingBottom: theme.spacing.sm,
     },
     stageName: {
       fontSize: theme.typography.fontSize.xs,
-      fontFamily: theme.typography.fontFamily.bodyMedium,
-      letterSpacing: 0.5,
+      fontFamily: theme.typography.fontFamily.body,
       textTransform: 'uppercase',
+      letterSpacing: 1,
     },
     stageArabic: {
-      fontSize: 13,
-      fontFamily: Platform.OS === 'ios' ? 'Amiri' : theme.typography.fontFamily.body,
+      fontSize: theme.typography.fontSize.sm,
+      fontFamily: Platform.OS === 'ios' ? 'Geeza Pro' : 'sans-serif',
     },
   });
 
