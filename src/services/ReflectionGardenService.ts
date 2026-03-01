@@ -1,6 +1,7 @@
 // src/services/ReflectionGardenService.ts
 import { format, subDays, startOfWeek, addDays, isToday } from 'date-fns';
 import StorageService from './StorageService';
+import TubaTreeService from './TubaTreeService';
 import { PrayerName } from '../types';
 import {
   GardenPlant,
@@ -9,6 +10,7 @@ import {
   WeekDay,
   ReflectionEntry,
 } from '../types/garden';
+import { TreeData } from '../types/tubaTree';
 
 // Plant emoji lookup: prayer × growth stage
 const PLANT_EMOJI: Record<string, Record<GrowthStage, string>> = {
@@ -42,6 +44,16 @@ class ReflectionGardenService {
       newBlooms,
       isEmpty: plants.length === 0,
     };
+  }
+
+  /**
+   * Build tree visualization data from the last N days of reflections.
+   * Delegates to TubaTreeService for geometry computation.
+   * (Phase 3 addition)
+   */
+  getTreeData(days: number = 28): TreeData {
+    const plants = this.getPlants(days);
+    return TubaTreeService.buildTreeData(plants);
   }
 
   /**
