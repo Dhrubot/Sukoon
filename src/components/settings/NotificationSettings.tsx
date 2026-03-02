@@ -19,6 +19,7 @@ import PrayerHabitBuilderSettings from './PrayerHabitBuilderSettings';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
+import { applyIntensityPreset, NotificationIntensity } from '../../utils/notificationPresets';
 
 interface NotificationSettingsProps {
   userSettings: UserSettings;
@@ -106,6 +107,35 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
     }
   };
 
+  const handleIntensityChange = async (intensity: NotificationIntensity) => {
+    // Save the intensity label on notifications for UI
+    const newNotifications = { ...localSettings, intensity };
+    setLocalSettings(newNotifications);
+
+    // Apply the preset to habitBuilder so scheduling actually changes
+    const updatedHabitBuilder = { ...userSettings.habitBuilder };
+    applyIntensityPreset(updatedHabitBuilder, intensity);
+
+    const updated: UserSettings = {
+      ...userSettings,
+      notifications: newNotifications,
+      habitBuilder: updatedHabitBuilder,
+    };
+
+    try {
+      setIsUpdating(true);
+      StorageService.setUserSettings(updated);
+      onUpdateSettings(updated);
+      await NotificationService.scheduleAllPrayerNotifications();
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch (error) {
+      console.error('Failed to update intensity settings:', error);
+      Alert.alert('Error', 'Failed to update reminder intensity');
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const testNotification = async () => {
     await NotificationService.sendTestNotification();
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -115,7 +145,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
     const scheduled = await NotificationService.getScheduledNotifications();
     Alert.alert(
       'Scheduled Notifications',
-      `You have ${scheduled.length} prayer notifications scheduled for the next 48 hours.`,
+      `You have ${scheduled.length} prayer notifications scheduled over the next 7 days.`,
       [{ text: 'OK' }]
     );
   };
@@ -270,7 +300,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
                     (localSettings.intensity || 'balanced') === opt.key && styles.reminderOptionActive,
                     { flex: 1 },
                   ]}
-                  onPress={() => updateSettings({ intensity: opt.key })}
+                  onPress={() => handleIntensityChange(opt.key)}
                 >
                   <Text
                     style={[

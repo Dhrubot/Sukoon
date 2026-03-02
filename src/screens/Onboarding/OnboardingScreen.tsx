@@ -28,6 +28,7 @@ import LocationService from '../../services/LocationService';
 import RingerControlService from '../../services/RingerControlService';
 import { Location as AppLocation } from '../../types'
 import { Switch } from 'react-native';
+import { applyIntensityPreset } from '../../utils/notificationPresets';
 
 interface OnboardingScreenProps {
   onComplete: () => void;
@@ -232,27 +233,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
     }
 
     // Apply notification intensity preset to habitBuilder
-    switch (notificationIntensity) {
-      case 'gentle':
-        settings.habitBuilder.enabled = false;
-        break;
-      case 'balanced':
-        settings.habitBuilder.enabled = true;
-        settings.habitBuilder.persistentReminders.enabled = true;
-        settings.habitBuilder.persistentReminders.maxReminders = 1;
-        settings.habitBuilder.persistentReminders.firstCheckDelay = 20;
-        settings.habitBuilder.gracePeriodWarning.enabled = false;
-        break;
-      case 'persistent':
-        settings.habitBuilder.enabled = true;
-        settings.habitBuilder.persistentReminders.enabled = true;
-        settings.habitBuilder.persistentReminders.maxReminders = 3;
-        settings.habitBuilder.persistentReminders.firstCheckDelay = 15;
-        settings.habitBuilder.persistentReminders.interval = 15;
-        settings.habitBuilder.gracePeriodWarning.enabled = true;
-        settings.habitBuilder.gracePeriodWarning.minutesBeforeNext = 15;
-        break;
-    }
+    applyIntensityPreset(settings.habitBuilder, notificationIntensity);
 
     // Apply mosque mode toggle
     if (enableMosqueModeOnboarding) {
