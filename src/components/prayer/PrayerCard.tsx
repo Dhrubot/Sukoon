@@ -24,6 +24,7 @@ interface PrayerCardProps {
   prayer: PrayerTime;
   record?: PrayerRecord;
   onComplete: () => void;
+  onLongPress?: () => void;
   currentTime: Date;
   nextPrayer?: PrayerTime | null; // Used to determine grace period
 }
@@ -34,6 +35,7 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
   prayer,
   record,
   onComplete,
+  onLongPress,
   currentTime,
   nextPrayer,
 }) => {
@@ -148,6 +150,8 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
         isMissed() && [styles.missedContainer, { backgroundColor: theme.colors.status.error + '10', borderColor: theme.colors.status.error + '25' }],
       ]}
       onPress={onComplete}
+      onLongPress={onLongPress}
+      delayLongPress={400}
       disabled={
         Boolean(
           record?.status === 'prayed' ||

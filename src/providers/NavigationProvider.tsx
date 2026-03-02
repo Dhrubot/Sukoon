@@ -96,7 +96,15 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
             break;
           }
           default:
-            navigationRef.current.navigate("MainTabs");
+            // Pass prayer name so HomeScreen can show QuickLogSheet
+            if (prayer) {
+              navigationRef.current.navigate("MainTabs", {
+                screen: "Home",
+                params: { quickLogPrayer: prayer },
+              });
+            } else {
+              navigationRef.current.navigate("MainTabs");
+            }
             break;
         }
       }

@@ -717,7 +717,7 @@ const MindfulnessFlow: React.FC = () => {
         style={styles.finishPrayerButton}
         onPress={finishPrayer}
       >
-        <Text style={styles.finishPrayerText}>Finished Praying ✓</Text>
+        <Text style={styles.finishPrayerText}>Finished Praying</Text>
       </TouchableOpacity>
     </Animated.View>
   );
