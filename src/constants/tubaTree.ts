@@ -103,23 +103,36 @@ export const LEAF_DISTRIBUTION = {
 // ═══════════════════════════════════════════════════════════════════
 // GROUND / SOIL
 // ═══════════════════════════════════════════════════════════════════
+//
+// KEY CHANGE: the bottom colour is now the *screen background* for
+// each theme, not a soil tone.  Combined with removing the bottom
+// border-radius from the canvas container
+// this makes the tree look like it grows out of the page itself —
+//
+// The mid-stop still carries a subtle earth tone so there's a hint
+// of soil, but it dissolves cleanly into the background.
 
 export const GROUND_COLORS = {
   dark: {
-    colors: ['transparent', '#1a1c14cc', '#2a2a1aee', '#1a1c14'],
-    locations: [0, 0.2, 0.55, 1],
+    // transparent → faint earth → screen bg
+    colors: ['transparent', 'rgba(30,32,22,0.45)', 'rgba(24,29,56,0.82)', '#181D38'],
+    locations: [0, 0.28, 0.65, 1],
   },
   light: {
-    colors: ['transparent', '#d4c4a888', '#c8b898dd', '#c8b898'],
-    locations: [0, 0.2, 0.55, 1],
+    // transparent → warm soil haze → screen bg
+    colors: ['transparent', 'rgba(210,192,160,0.35)', 'rgba(250,247,242,0.80)', '#faf7f2'],
+    locations: [0, 0.28, 0.65, 1],
   },
   blackout: {
-    colors: ['transparent', '#10120ccc', '#1a1c12ee', '#10120c'],
-    locations: [0, 0.2, 0.55, 1],
+    // transparent → near-black earth → screen bg
+    colors: ['transparent', 'rgba(16,18,12,0.50)', 'rgba(9,13,24,0.85)', '#090d18'],
+    locations: [0, 0.28, 0.65, 1],
   },
 } as const;
 
-export const GROUND_HEIGHT_RATIO = 0.22;
+// Increase ratio slightly so the fade starts higher up the canvas —
+// this gives more "ground merge" room without eating into the tree.
+export const GROUND_HEIGHT_RATIO = 0.28;
 
 // ═══════════════════════════════════════════════════════════════════
 // SKY ELEMENTS
@@ -137,16 +150,38 @@ export const TREE_CANVAS_HEIGHT = 296;
 // ANIMATION CONSTANTS
 // ═══════════════════════════════════════════════════════════════════
 
-// v4: ROTATION-BASED SWAY (proven v1 approach)
-// AnimatedG rotates around the branch's trunk junction point.
-// Amplitude in degrees — 1.2° is subtle organic motion.
+// ═══════════════════════════════════════════════════════════════════
+// BRANCH_SWAY
+// ═══════════════════════════════════════════════════════════════════
+//
+// Natural-wind model:
+//   • Each branch has its own period (heavier/longer = slower).
+//   • Wind gust takes 38 % of the cycle (fast); gravity settle 62 %.
+//   • Amplitude varies per branch (outer branches catch more wind).
+//   • Phase delays are spread far apart — branches never look synced.
+//
+// Easing strategy:
+//   • Forward (gust) : Easing.out(Easing.cubic)  — snappy start, decel
+//   • Return (settle): Easing.inOut(Easing.sin)  — smooth, natural arc
+//
+// Branch order: [Fajr, Dhuhr, Asr, Maghrib, Isha] (matches BRANCHES array)
+
 export const BRANCH_SWAY = {
-  /** Max rotation in degrees */
-  amplitude: 1.0,
-  /** Full cycle duration in ms */
-  duration: 16000,
-  /** Stagger between branches in ms */
-  phaseOffset: 300,
+  /** Period (ms) for each branch's full sway cycle.
+   *  Outer/lighter branches are faster; trunk-close ones slower. */
+  periods: [15200, 18800, 13400, 20200, 16600],
+
+  /** Max rotation amplitude (degrees) per branch.
+   *  Outer branches catch more wind → slightly larger. */
+  amplitudes: [0.90, 1.15, 0.80, 1.00, 1.05],
+
+  /** Fraction of the period spent on the "gust" phase.
+   *  0.38 → fast forward, slow return — mirrors real wind behaviour. */
+  windRatio: 0.38,
+
+  /** Startup delay (ms) before each branch begins animating.
+   *  Spread far apart so no two branches look in sync. */
+  phaseDelays: [0, 3200, 1100, 5400, 2000],
 } as const;
 
 export const LEAF_ENTRY = { duration: 600, baseDelay: 300, staggerPerLeaf: 80, staggerPerBranch: 150 } as const;

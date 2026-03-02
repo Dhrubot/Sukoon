@@ -319,26 +319,49 @@ const AnimatedBranchGroup: React.FC<AnimatedBranchGroupProps> = React.memo(
 
     const swayRotation = useSharedValue(0);
 
+    // ──────────────────────────
+    // Natural-wind sway: asymmetric timing, per-branch period/amplitude,
+    // staggered phase delays.  Gust forward (38% of cycle) with cubic
+    // ease-out; settle back (62%) with sinusoidal ease-in-out.
+
     useEffect(() => {
       if (lengthScale <= 0) return;
 
-      const phaseDelay = branchIndex * BRANCH_SWAY.phaseOffset;
-      const halfDuration = BRANCH_SWAY.duration / 2;
-      const easing = Easing.inOut(Easing.sin);
+      const idx = branchIndex % BRANCH_SWAY.periods.length;
+      const period = BRANCH_SWAY.periods[idx];
+      const amp = BRANCH_SWAY.amplitudes[idx];
+      const delay = BRANCH_SWAY.phaseDelays[idx];
+
+      const gustMs = Math.round(period * BRANCH_SWAY.windRatio);
+      const settleMs = period - gustMs;
 
       const timer = setTimeout(() => {
         swayRotation.value = withRepeat(
           withSequence(
-            withTiming(BRANCH_SWAY.amplitude, { duration: halfDuration, easing }),
-            withTiming(-BRANCH_SWAY.amplitude, { duration: halfDuration, easing }),
+            // Fast gust in wind direction
+            withTiming(amp, {
+              duration: gustMs,
+              easing: Easing.out(Easing.cubic),
+            }),
+            // Slow, smooth return
+            withTiming(-amp * 0.65, {
+              duration: settleMs,
+              easing: Easing.inOut(Easing.sin),
+            }),
           ),
           -1,
+          // reverses=false keeps the sequence playing forward-only,
+          // which is what we want for asymmetric wind feel
           false,
         );
-      }, phaseDelay);
+      }, delay);
 
-      return () => clearTimeout(timer);
-    }, [lengthScale]);
+      return () => {
+        clearTimeout(timer);
+        // Cancel the animation on cleanup so hot-reload doesn't stack
+        swayRotation.value = 0;
+      };
+    }, [lengthScale, branchIndex]);
 
     const animatedProps = useAnimatedProps(() => ({
       rotation: swayRotation.value,
@@ -400,12 +423,17 @@ const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: {
       marginHorizontal: theme.spacing.xl,
-      borderRadius: theme.borderRadius.xl,
-      overflow: 'hidden',
+      borderTopLeftRadius: theme.borderRadius.xl,
+      borderTopRightRadius: theme.borderRadius.xl,
+      // No bottom radius — ground gradient merges into page background
+      overflow: 'visible',
     },
     gradient: {
       height: TREE_CANVAS_HEIGHT,
       position: 'relative',
+      borderTopLeftRadius: theme.borderRadius.xl,
+      borderTopRightRadius: theme.borderRadius.xl,
+      overflow: 'hidden',
     },
     svg: {
       position: 'absolute',
