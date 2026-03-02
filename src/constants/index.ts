@@ -69,16 +69,16 @@ export const PRAYER_NAMES = {
       target: 5,
     },
     {
-      id: 'week_streak',
+      id: 'week_dawam',
       name: 'Consistent Week',
-      description: 'Maintain a 7-day streak',
+      description: 'Maintain 7 days of dawam',
       icon: '🔥',
       target: 7,
     },
     {
-      id: 'month_streak',
+      id: 'month_dawam',
       name: 'Steadfast Month',
-      description: 'Maintain a 30-day streak',
+      description: 'Maintain 30 days of dawam',
       icon: '🏆',
       target: 30,
     },
@@ -984,6 +984,6 @@ export const PRAYER_NAMES = {
     USER_SETTINGS: 'user_settings',
     PRAYER_RECORDS: 'prayer_records',
     ACHIEVEMENTS: 'achievements',
-    STREAKS: 'streaks',
+    DAWAM: 'dawam',
     FIRST_LAUNCH: 'first_launch',
   } as const;

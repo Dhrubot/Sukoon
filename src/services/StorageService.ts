@@ -245,27 +245,27 @@ class StorageService {
     this.storage.set(`daily_stats_${date}`, JSON.stringify(stats));
   }
 
-  // Streaks — dual system: engagement (≥1 prayer) + perfect (5/5)
-  getCurrentStreak(): number {
-    return this.storage.getNumber("current_streak") || 0;
+  // Dawam — dual system: engagement (≥1 prayer) + perfect (5/5)
+  getCurrentDawam(): number {
+    return this.storage.getNumber("current_dawam") || 0;
   }
 
-  setStreak(value: number): void {
-    this.storage.set("current_streak", value);
+  setDawam(value: number): void {
+    this.storage.set("current_dawam", value);
   }
 
-  getEngagementStreak(): number {
-    return this.storage.getNumber("engagement_streak") || 0;
+  getEngagementDawam(): number {
+    return this.storage.getNumber("engagement_dawam") || 0;
   }
 
-  setEngagementStreak(value: number): void {
-    this.storage.set("engagement_streak", value);
+  setEngagementDawam(value: number): void {
+    this.storage.set("engagement_dawam", value);
   }
 
-  // Dual streak update: engagement streak rewards any effort (≥1 prayer),
-  // perfect streak rewards full completion (5/5). This avoids the
+  // Dual dawam update: engagement dawam rewards any effort (≥1 prayer),
+  // perfect dawam rewards full completion (5/5). This avoids the
   // "abstinence violation effect" where partial progress feels like failure.
-  updateStreak(): void {
+  updateDawam(): void {
     const today = getLocalDateKey();
     const yesterday = getLocalDateKey(new Date(Date.now() - 86400000));
 
@@ -275,73 +275,73 @@ class StorageService {
     const todayCompleted = todayStats?.prayersCompleted ?? 0;
     const yesterdayCompleted = yesterdayStats?.prayersCompleted ?? 0;
 
-    // ── Engagement Streak (≥1 prayer today) ──
+    // ── Engagement Dawam (≥1 prayer today) ──
     if (todayCompleted >= 1) {
-      const lastEngagementDate = this.storage.getString("last_engagement_streak_date");
+      const lastEngagementDate = this.storage.getString("last_engagement_dawam_date");
       if (lastEngagementDate !== today) {
         if (yesterdayCompleted >= 1) {
-          this.storage.set("engagement_streak", this.getEngagementStreak() + 1);
+          this.storage.set("engagement_dawam", this.getEngagementDawam() + 1);
         } else {
-          this.storage.set("engagement_streak", 1);
+          this.storage.set("engagement_dawam", 1);
         }
-        this.storage.set("last_engagement_streak_date", today);
+        this.storage.set("last_engagement_dawam_date", today);
       }
     } else {
       if (yesterdayCompleted < 1) {
-        this.storage.set("engagement_streak", 0);
+        this.storage.set("engagement_dawam", 0);
       }
     }
 
-    // ── Perfect Streak (5/5 prayers) ──
-    const lastStreakDate = this.storage.getString("last_streak_update_date");
+    // ── Perfect Dawam (5/5 prayers) ──
+    const lastDawamDate = this.storage.getString("last_dawam_update_date");
 
     if (todayCompleted === 5) {
-      if (lastStreakDate === today) {
-        // Already calculated perfect streak for today — skip
+      if (lastDawamDate === today) {
+        // Already calculated perfect dawam for today — skip
       } else {
         if (yesterdayCompleted === 5) {
-          this.storage.set("current_streak", this.getCurrentStreak() + 1);
+          this.storage.set("current_dawam", this.getCurrentDawam() + 1);
         } else {
-          this.storage.set("current_streak", 1);
+          this.storage.set("current_dawam", 1);
         }
-        this.storage.set("last_streak_update_date", today);
+        this.storage.set("last_dawam_update_date", today);
       }
     } else {
       if (yesterdayCompleted < 5) {
-        this.storage.set("current_streak", 0);
+        this.storage.set("current_dawam", 0);
       }
     }
 
-    // Update longest streaks (both types)
-    const currentPerfect = this.getCurrentStreak();
-    const longestPerfect = this.storage.getNumber("longest_streak") || 0;
+    // Update longest dawam (both types)
+    const currentPerfect = this.getCurrentDawam();
+    const longestPerfect = this.storage.getNumber("longest_dawam") || 0;
     if (currentPerfect > longestPerfect) {
-      this.storage.set("longest_streak", currentPerfect);
+      this.storage.set("longest_dawam", currentPerfect);
     }
 
-    const currentEngagement = this.getEngagementStreak();
-    const longestEngagement = this.storage.getNumber("longest_engagement_streak") || 0;
+    const currentEngagement = this.getEngagementDawam();
+    const longestEngagement = this.storage.getNumber("longest_engagement_dawam") || 0;
     if (currentEngagement > longestEngagement) {
-      this.storage.set("longest_engagement_streak", currentEngagement);
+      this.storage.set("longest_engagement_dawam", currentEngagement);
     }
 
-    // Log streak milestones for both types
+    // Log dawam milestones for both types
     const milestones = [7, 30, 60, 100, 365];
     if (milestones.includes(currentPerfect)) {
-      AnalyticsService.logStreakMilestone(currentPerfect);
+      AnalyticsService.logDawamMilestone(currentPerfect);
     }
     if (milestones.includes(currentEngagement)) {
-      AnalyticsService.logStreakMilestone(currentEngagement);
+      AnalyticsService.logDawamMilestone(currentEngagement);
     }
   }
 
-  // Get longest streaks ever recorded
-  getLongestStreak(): number {
-    return this.storage.getNumber("longest_streak") || 0;
+  // Get longest dawam ever recorded
+  getLongestDawam(): number {
+    return this.storage.getNumber("longest_dawam") || 0;
   }
 
-  getLongestEngagementStreak(): number {
-    return this.storage.getNumber("longest_engagement_streak") || 0;
+  getLongestEngagementDawam(): number {
+    return this.storage.getNumber("longest_engagement_dawam") || 0;
   }
 
   // Get prayer records for a date range
@@ -422,8 +422,8 @@ class StorageService {
     const exportData = {
       exportDate: new Date().toISOString(),
       userSettings: this.getUserSettings(),
-      currentStreak: this.getCurrentStreak(),
-      longestStreak: this.getLongestStreak(),
+      currentDawam: this.getCurrentDawam(),
+      longestDawam: this.getLongestDawam(),
       achievements: this.getAchievements(),
       prayers: [] as any[],
       dailyStats: [] as any[],
@@ -637,8 +637,8 @@ class StorageService {
     // Update daily stats (idempotent — recalculates from records)
     this.updateDailyStats(record.date);
 
-    // Update streaks (idempotent after fix)
-    this.updateStreak();
+    // Update dawam (idempotent after fix)
+    this.updateDawam();
 
     // Update consecutive prayer counts
     if (isNewCompletion) {
@@ -761,9 +761,9 @@ class StorageService {
         icon: "✨",
       },
       {
-        id: "week_streak",
+        id: "week_dawam",
         name: "Consistent Week",
-        description: "Maintain a 7-day streak",
+        description: "Maintain 7 days of dawam",
         icon: "🔥",
       },
       {

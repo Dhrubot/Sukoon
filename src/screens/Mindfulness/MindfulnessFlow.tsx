@@ -299,7 +299,7 @@ const MindfulnessFlow: React.FC = () => {
   // ── PRE-PRAYER: Save in_progress record and enter "praying" state ──
   // P0-E FIX: No longer marks prayer as "prayed" before salah begins.
   // Saves as "in_progress" so the app knows a flow is active (crash recovery),
-  // but counters/streaks are NOT incremented until finishPrayer.
+  // but counters/dawam are NOT incremented until finishPrayer.
   const beginPrayer = () => {
     const recordId = `prayer_${Date.now()}`;
     const prayerRecord: PrayerRecord = {

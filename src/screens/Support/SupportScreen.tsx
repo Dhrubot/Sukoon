@@ -344,9 +344,9 @@ const SupportScreen: React.FC = () => {
     <SafeAreaView style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
-          <Text style={styles.title}>Keep Sukoon Free</Text>
+          <Text style={styles.title}>Support Sukoon</Text>
           <Text style={styles.subtitle}>
-            Sukoon is built with love for the Ummah. Your support keeps it alive.
+            Sukoon is built with love for the Ummah. Your support keeps it free and growing.
           </Text>
         </View>
 

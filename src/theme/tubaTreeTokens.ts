@@ -45,8 +45,8 @@ export const lightTreeTokens = {
   soilBottom:      '#c8b898',
 } as const;
 
-// ─── Blackout Theme Tree Tokens ────────────────────────────────────
-export const blackoutTreeTokens = {
+// ─── Midnight Theme Tree Tokens ────────────────────────────────────
+export const midnightTreeTokens = {
   trunk:           '#4a3728',
   trunkHighlight:  'rgba(255, 255, 255, 0.04)',
   skyStars:        '#ffffff',
@@ -66,7 +66,7 @@ export const blackoutTreeTokens = {
 export const tubaTreeTokens = {
   dark:     darkTreeTokens,
   light:    lightTreeTokens,
-  blackout: blackoutTreeTokens,
+  midnight: midnightTreeTokens,
 } as const;
 
 // ─── Ramadan Mode Overrides (v3) ───────────────────────────────────
@@ -85,8 +85,8 @@ export const ramadanTokens = {
     goldBlend:  '#b08c2a',
     stageLabel: '#b08c2a',
   },
-  blackout: {
-    moonHalo:   '#e8c97a',       // bright gold for blackout
+  midnight: {
+    moonHalo:   '#e8c97a',       // bright gold for midnight
     goldBlend:  '#e8c97a',
     stageLabel: '#e8c97a',
   },

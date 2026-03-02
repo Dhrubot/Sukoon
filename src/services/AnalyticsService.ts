@@ -14,7 +14,7 @@ type AnalyticsEvent =
   | 'ad_watched'
   | 'ad_failed'
   | 'donation_made'
-  | 'streak_milestone'
+  | 'dawam_milestone'
   | 'qibla_opened'
   | 'mosque_mode_activated'
   | 'mosque_mode_deactivated'
@@ -90,8 +90,8 @@ class AnalyticsService {
   }
 
   // Convenience: engagement
-  async logStreakMilestone(days: number): Promise<void> {
-    await this.logEvent('streak_milestone', { days });
+  async logDawamMilestone(days: number): Promise<void> {
+    await this.logEvent('dawam_milestone', { days });
   }
 
   async logMosqueModeActivated(): Promise<void> {

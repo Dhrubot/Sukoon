@@ -46,10 +46,10 @@ interface AppState {
   setCurrentMindfulnessSession: (session: MindfulnessSession | null) => void;
   
   // Stats
-  currentStreak: number;
-  setCurrentStreak: (streak: number) => void;
-  engagementStreak: number;
-  setEngagementStreak: (streak: number) => void;
+  currentDawam: number;
+  setCurrentDawam: (dawam: number) => void;
+  engagementDawam: number;
+  setEngagementDawam: (dawam: number) => void;
   todayStats: DailyStats | null;
   setTodayStats: (stats: DailyStats | null) => void;
   
@@ -143,15 +143,15 @@ export const useStore = create<AppState>((set) => ({
     set({ currentMindfulnessSession: session }),
   
   // Stats — write-through to StorageService
-  currentStreak: 0,
-  setCurrentStreak: (streak) => {
-    StorageService.setStreak(streak);
-    set({ currentStreak: streak });
+  currentDawam: 0,
+  setCurrentDawam: (dawam) => {
+    StorageService.setDawam(dawam);
+    set({ currentDawam: dawam });
   },
-  engagementStreak: 0,
-  setEngagementStreak: (streak) => {
-    StorageService.setEngagementStreak(streak);
-    set({ engagementStreak: streak });
+  engagementDawam: 0,
+  setEngagementDawam: (dawam) => {
+    StorageService.setEngagementDawam(dawam);
+    set({ engagementDawam: dawam });
   },
   todayStats: null,
   setTodayStats: (stats) => set({ todayStats: stats }),
@@ -223,14 +223,14 @@ export const usePrayerRecords = () => useStore(
 );
 
 /**
- * Hook for stats and streaks
+ * Hook for stats and dawam
  */
 export const useStats = () => useStore(
   useShallow((state) => ({
-    currentStreak: state.currentStreak,
-    setCurrentStreak: state.setCurrentStreak,
-    engagementStreak: state.engagementStreak,
-    setEngagementStreak: state.setEngagementStreak,
+    currentDawam: state.currentDawam,
+    setCurrentDawam: state.setCurrentDawam,
+    engagementDawam: state.engagementDawam,
+    setEngagementDawam: state.setEngagementDawam,
     todayStats: state.todayStats,
     setTodayStats: state.setTodayStats,
   }))

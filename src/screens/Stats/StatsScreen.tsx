@@ -11,7 +11,9 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
-import { BarChart, LineChart, PieChart } from 'react-native-chart-kit';
+import PrayerDotGrid from '../../components/charts/PrayerDotGrid';
+import FocusRing from '../../components/charts/FocusRing';
+import PrayerBreakdownBar from '../../components/charts/PrayerBreakdownBar';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, subDays, startOfMonth } from 'date-fns';
 
 // Store and Services
@@ -42,7 +44,7 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
   } = usePrayerTimes();
 
   // Keep existing store state for other features
-  const { currentStreak, engagementStreak, todayPrayerRecords } = useStore();
+  const { currentDawam, engagementDawam, todayPrayerRecords } = useStore();
   
   const [timeRange, setTimeRange] = useState<TimeRange>('week');
   const [isLoading, setIsLoading] = useState(true);
@@ -51,7 +53,7 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
     completedPrayers: 0,
     averageDailyCompletion: 0,
     averageFocusScore: 0,
-    longestStreak: 0,
+    longestDawam: 0,
     mindfulnessRate: 0,
   });
   const [weeklyData, setWeeklyData] = useState<number[]>([]);
@@ -153,8 +155,8 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
         ? (mindfulPrayers / completedPrayers) * 100
         : 0;
 
-      // Get longest streak
-      const longestStreak = StorageService.getLongestStreak();
+      // Get longest dawam
+      const longestDawam = StorageService.getLongestDawam();
 
       // Prepare prayer breakdown for pie chart
       const breakdown = Object.entries(prayerCounts)
@@ -178,7 +180,7 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
         completedPrayers,
         averageDailyCompletion: avgCompletion,
         averageFocusScore: avgFocus,
-        longestStreak,
+        longestDawam,
         mindfulnessRate,
       });
       
@@ -198,22 +200,6 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
     return colors[prayer.toLowerCase() as keyof typeof colors] || theme.colors.primary.DEFAULT;
   };
 
-  const chartConfig = {
-    backgroundColor: theme.colors.chart.background,
-    backgroundGradientFrom: theme.colors.chart.gradientFrom,
-    backgroundGradientTo: theme.colors.chart.gradientTo,
-    decimalPlaces: 0,
-    color: (opacity = 1) => `rgba(45, 139, 111, ${opacity})`,
-    labelColor: (opacity = 1) => `rgba(100, 116, 139, ${opacity})`,
-    style: {
-      borderRadius: 16,
-    },
-    propsForDots: {
-      r: '6',
-      strokeWidth: '2',
-      stroke: theme.colors.chart.dot,
-    },
-  };
 
   // 🎯 NEW: Handle invalid location state
   if (!hasValidLocation) {
@@ -318,18 +304,18 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
           </View>
           
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{engagementStreak}</Text>
-            <Text style={styles.statLabel}>Devotion</Text>
-            <Text style={styles.statSubtext}>consecutive days</Text>
-            {currentStreak > 0 && (
-              <Text style={styles.perfectDaysBadge}>✦ {currentStreak}d all five</Text>
+            <Text style={styles.statValue}>{engagementDawam > 0 ? engagementDawam : '—'}</Text>
+            <Text style={styles.statLabel}>Dawam</Text>
+            <Text style={styles.statSubtext}>{engagementDawam > 0 ? 'days of constancy' : 'pray today to begin'}</Text>
+            {currentDawam > 0 && (
+              <Text style={styles.perfectDaysBadge}>✦ {currentDawam}d all five</Text>
             )}
           </View>
           
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{stats.averageFocusScore.toFixed(0)}</Text>
+            <Text style={styles.statValue}>{stats.averageFocusScore > 0 ? stats.averageFocusScore.toFixed(0) : '—'}</Text>
             <Text style={styles.statLabel}>Focus Score</Text>
-            <Text style={styles.statSubtext}>average rating</Text>
+            <Text style={styles.statSubtext}>{stats.averageFocusScore > 0 ? 'average rating' : 'complete a reflection'}</Text>
           </View>
         </View>
 
@@ -367,66 +353,27 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
           </View>
         </View>
 
-        {/* Weekly Progress Chart */}
+        {/* Weekly Progress — Dot Grid */}
         {timeRange === 'week' && weeklyData.some(d => d > 0) && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>This Week</Text>
-            <BarChart
-              data={{
-                labels: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
-                datasets: [{ data: weeklyData }],
-              }}
-              width={width - 40}
-              height={220}
-              yAxisLabel=""
-              yAxisSuffix=""
-              chartConfig={chartConfig}
-              style={styles.chart}
-            />
+            <PrayerDotGrid data={weeklyData} />
           </View>
         )}
 
-        {/* Focus Trend */}
+        {/* Focus Trend — Ring */}
         {focusTrend.some(score => score > 0) && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Focus Trend (Last 7 Days)</Text>
-            <LineChart
-              data={{
-                labels: Array.from({ length: 7 }, (_, i) => 
-                  format(subDays(new Date(), 6 - i), 'dd')
-                ),
-                datasets: [{ data: focusTrend }],
-              }}
-              width={width - 40}
-              height={220}
-              yAxisLabel=""
-              yAxisSuffix=""
-              chartConfig={chartConfig}
-              style={styles.chart}
-            />
+            <FocusRing data={focusTrend} average={stats.averageFocusScore} />
           </View>
         )}
 
-        {/* Prayer Breakdown */}
+        {/* Prayer Breakdown — Stacked Bar */}
         {prayerBreakdown.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Prayer Breakdown</Text>
-            <PieChart
-              data={prayerBreakdown.map((item, index) => ({
-                name: item.name,
-                population: item.count,
-                color: item.color,
-                legendFontColor: theme.colors.chart.legendFont,
-                legendFontSize: 14,
-              }))}
-              width={width - 40}
-              height={220}
-              chartConfig={chartConfig}
-              accessor="population"
-              backgroundColor="transparent"
-              paddingLeft="15"
-              style={styles.chart}
-            />
+            <PrayerBreakdownBar data={prayerBreakdown} />
           </View>
         )}
 
@@ -443,10 +390,10 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
           </View>
           
           <View style={styles.insightCard}>
-            <Text style={styles.insightTitle}>� Longest Devotion</Text>
-            <Text style={styles.insightValue}>{stats.longestStreak} days</Text>
+            <Text style={styles.insightTitle}>💪 Longest Dawam</Text>
+            <Text style={styles.insightValue}>{stats.longestDawam > 0 ? `${stats.longestDawam} days` : '—'}</Text>
             <Text style={styles.insightDescription}>
-              your longest unbroken path of prayer
+              {stats.longestDawam > 0 ? 'your longest unbroken path of prayer' : 'every journey begins with a single step'}
             </Text>
           </View>
 
@@ -648,10 +595,6 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontSize: theme.typography.fontSize.md,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
-  },
-  chart: {
-    marginVertical: theme.spacing.sm,
-    borderRadius: theme.borderRadius.lg,
   },
   insightCard: {
     backgroundColor: theme.colors.card.background,

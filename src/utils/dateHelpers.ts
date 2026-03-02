@@ -100,7 +100,7 @@ export const formatTime = (minutes: number): string => {
 /**
  * Returns a local-timezone date key in 'yyyy-MM-dd' format.
  * 
- * IMPORTANT: All prayer record keys, streak calculations, and daily stats
+ * IMPORTANT: All prayer record keys, dawam calculations, and daily stats
  * MUST use this function instead of `toISOString().split('T')[0]` which
  * returns the UTC date and causes day-drift around midnight in non-UTC
  * timezones.

@@ -184,18 +184,18 @@ const ReflectionGardenScreen: React.FC = () => {
           </View>
           <View style={[styles.statBlock, styles.statBlockBorder]}>
             <Text style={[styles.statVal, { color: theme.colors.interactive.active }]}>
-              {dawamDays}
+              {dawamDays > 0 ? dawamDays : '—'}
             </Text>
             <Text style={[styles.statLabel, { color: theme.colors.text.muted }]}>
-              days of dawam
+              {dawamDays > 0 ? 'days of dawam' : 'begin today'}
             </Text>
           </View>
           <View style={[styles.statBlock, styles.statBlockBorder]}>
             <Text style={[styles.statVal, { color: theme.colors.primary.DEFAULT }]}>
-              {bloomCount}
+              {bloomCount > 0 ? bloomCount : '—'}
             </Text>
             <Text style={[styles.statLabel, { color: theme.colors.text.muted }]}>
-              blooms ✦
+              {bloomCount > 0 ? 'blooms ✦' : 'blooms'}
             </Text>
           </View>
         </View>

@@ -96,7 +96,7 @@ class AchievementService {
 
     // Devotion Achievements (perfect 5/5 days)
     {
-      id: 'streak_3',
+      id: 'dawam_3',
       name: 'Seeds of Habit',
       description: 'All five prayers for 3 consecutive days',
       icon: '🌿',
@@ -104,12 +104,12 @@ class AchievementService {
       tier: 'seed',
       target: 3,
       checkCondition: () => {
-        const streak = StorageService.getCurrentStreak();
-        return streak >= 3;
+        const dawam = StorageService.getCurrentDawam();
+        return dawam >= 3;
       },
     },
     {
-      id: 'streak_7',
+      id: 'dawam_7',
       name: 'A Week of Devotion',
       description: 'All five prayers for 7 consecutive days',
       icon: '🌙',
@@ -117,12 +117,12 @@ class AchievementService {
       tier: 'sapling',
       target: 7,
       checkCondition: () => {
-        const streak = StorageService.getCurrentStreak();
-        return streak >= 7;
+        const dawam = StorageService.getCurrentDawam();
+        return dawam >= 7;
       },
     },
     {
-      id: 'streak_30',
+      id: 'dawam_30',
       name: 'Unwavering Faith',
       description: 'All five prayers for 30 consecutive days',
       icon: '🕋',
@@ -130,12 +130,12 @@ class AchievementService {
       tier: 'tree',
       target: 30,
       checkCondition: () => {
-        const streak = StorageService.getCurrentStreak();
-        return streak >= 30;
+        const dawam = StorageService.getCurrentDawam();
+        return dawam >= 30;
       },
     },
     {
-      id: 'streak_100',
+      id: 'dawam_100',
       name: 'The Constant Servant',
       description: 'All five prayers for 100 consecutive days',
       icon: '💎',
@@ -143,8 +143,8 @@ class AchievementService {
       tier: 'garden',
       target: 100,
       checkCondition: () => {
-        const streak = StorageService.getCurrentStreak();
-        return streak >= 100;
+        const dawam = StorageService.getCurrentDawam();
+        return dawam >= 100;
       },
     },
 
@@ -158,8 +158,8 @@ class AchievementService {
       tier: 'seed',
       target: 3,
       checkCondition: () => {
-        const streak = StorageService.getEngagementStreak();
-        return streak >= 3;
+        const dawam = StorageService.getEngagementDawam();
+        return dawam >= 3;
       },
     },
     {
@@ -171,8 +171,8 @@ class AchievementService {
       tier: 'sapling',
       target: 7,
       checkCondition: () => {
-        const streak = StorageService.getEngagementStreak();
-        return streak >= 7;
+        const dawam = StorageService.getEngagementDawam();
+        return dawam >= 7;
       },
     },
     {
@@ -184,8 +184,8 @@ class AchievementService {
       tier: 'tree',
       target: 30,
       checkCondition: () => {
-        const streak = StorageService.getEngagementStreak();
-        return streak >= 30;
+        const dawam = StorageService.getEngagementDawam();
+        return dawam >= 30;
       },
     },
     {
@@ -197,8 +197,8 @@ class AchievementService {
       tier: 'garden',
       target: 100,
       checkCondition: () => {
-        const streak = StorageService.getEngagementStreak();
-        return streak >= 100;
+        const dawam = StorageService.getEngagementDawam();
+        return dawam >= 100;
       },
     },
 
@@ -335,7 +335,7 @@ class AchievementService {
       tier: 'garden',
       target: 30,
       checkCondition: async () => {
-        // Check if current month is Ramadan and perfect streak
+        // Check if current month is Ramadan and perfect dawam
         return false; // Implement Ramadan detection
       },
     },
@@ -407,17 +407,17 @@ class AchievementService {
       case 'prayer_1000':
         return await this.getTotalPrayersCount();
         
-      case 'streak_3':
-      case 'streak_7':
-      case 'streak_30':
-      case 'streak_100':
-        return StorageService.getCurrentStreak();
+      case 'dawam_3':
+      case 'dawam_7':
+      case 'dawam_30':
+      case 'dawam_100':
+        return StorageService.getCurrentDawam();
         
       case 'devotion_3':
       case 'devotion_7':
       case 'devotion_30':
       case 'devotion_100':
-        return StorageService.getEngagementStreak();
+        return StorageService.getEngagementDawam();
         
       case 'mindful_first':
       case 'mindful_10':
@@ -486,7 +486,7 @@ class AchievementService {
       if (fajr) {
         count++;
       } else {
-        break; // Streak broken
+        break; // Dawam broken
       }
       
       currentDate.setDate(currentDate.getDate() - 1);
@@ -508,7 +508,7 @@ class AchievementService {
       if (isha) {
         count++;
       } else {
-        break; // Streak broken
+        break; // Dawam broken
       }
       
       currentDate.setDate(currentDate.getDate() - 1);

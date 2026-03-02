@@ -196,12 +196,12 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
       // Push data to iOS widget
       const todayStr = getLocalDateKey();
       const todayRecords = StorageService.getDayPrayerRecords(todayStr);
-      const streak = StorageService.getCurrentStreak();
+      const dawam = StorageService.getCurrentDawam();
       WidgetService.updateWidgetData(
         todayResult.prayerTimes,
         todayRecords,
         nextPrayer,
-        streak
+        dawam
       );
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load prayer times';

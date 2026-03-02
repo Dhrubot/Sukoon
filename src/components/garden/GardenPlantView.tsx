@@ -1,20 +1,20 @@
 // src/components/garden/GardenPlantView.tsx
 import React, { useEffect, useRef } from 'react';
-import { View, Text, Animated, TouchableOpacity, StyleSheet, Alert } from 'react-native';
+import { View, Text, Animated, TouchableOpacity, StyleSheet } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../providers/ThemeProvider';
 import { GardenPlant } from '../../types/garden';
-import StorageService from '../../services/StorageService';
 import { isRamadan } from '../../utils/ramadan';
 
 interface GardenPlantViewProps {
   plant: GardenPlant;
   delay?: number; // stagger animation delay in ms
+  onPlantPress?: (plant: GardenPlant) => void;
 }
 
 const SCALE_MAP = { seed: 0.7, sprout: 0.85, bloom: 1.0 };
 
-const GardenPlantView: React.FC<GardenPlantViewProps> = ({ plant, delay = 0 }) => {
+const GardenPlantView: React.FC<GardenPlantViewProps> = ({ plant, delay = 0, onPlantPress }) => {
   const { theme } = useTheme();
   const breathAnim = useRef(new Animated.Value(1)).current;
   const entryAnim = useRef(new Animated.Value(0)).current;
@@ -57,16 +57,7 @@ const GardenPlantView: React.FC<GardenPlantViewProps> = ({ plant, delay = 0 }) =
 
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    const text = StorageService.getReflectionText(plant.date, plant.prayer);
-    const moodLabels = ['', 'Distracted', 'Neutral', 'Focused', 'Peaceful', 'Connected'];
-    const moodLabel = moodLabels[plant.mood] || '';
-
-    Alert.alert(
-      `${plant.emoji} ${plant.prayer} · ${plant.date}`,
-      text
-        ? `"${text}"\n\nMood: ${moodLabel}`
-        : `Reflected with ${moodLabel.toLowerCase()} focus`,
-    );
+    onPlantPress?.(plant);
   };
 
   const baseScale = SCALE_MAP[plant.growthStage];

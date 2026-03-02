@@ -15,6 +15,8 @@ import * as Location from 'expo-location';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Magnetometer } from 'expo-sensors';
 import { useTheme } from '../../providers/ThemeProvider';
+import { useThemedStyles } from '../../hooks/useThemedStyles';
+import { AppTheme } from '../../theme';
 import { useIsFocused } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import LocationService from '../../services/LocationService';
@@ -113,6 +115,7 @@ type InterferenceLevel = 'none' | 'high' | 'anomaly';
 
 const QiblaFinderScreen: React.FC = () => {
   const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
   const [qiblaDirection, setQiblaDirection] = useState<number>(0);
   const [location, setLocation] = useState<{ latitude: number; longitude: number } | null>(null);
   const [locationName, setLocationName] = useState<string>('Locating...');
@@ -828,7 +831,7 @@ const QiblaFinderScreen: React.FC = () => {
     </SafeAreaView>
   );
 };
-const styles = StyleSheet.create({
+const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
   },
@@ -848,21 +851,21 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 28,
-    fontFamily: 'Lora_700Bold',
+    fontFamily: theme.typography.fontFamily.heading,
   },
   headerCity: {
     fontSize: 14,
-    fontFamily: 'DMSans_500Medium',
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     marginTop: 2,
   },
   headerDistance: {
     fontSize: 14,
-    fontFamily: 'DMSans_500Medium',
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     marginTop: 4,
   },
   verifyLink: {
     fontSize: 13,
-    fontFamily: 'DMSans_600SemiBold',
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     marginTop: 4,
   },
   centeredContent: {
@@ -877,7 +880,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    fontFamily: 'DMSans_500Medium',
+    fontFamily: theme.typography.fontFamily.bodyMedium,
   },
   errorIcon: {
     fontSize: 60,
@@ -885,13 +888,13 @@ const styles = StyleSheet.create({
   },
   errorTitle: {
     fontSize: 20,
-    fontFamily: 'DMSans_700Bold',
+    fontFamily: theme.typography.fontFamily.bodyBold,
     marginBottom: 12,
     textAlign: 'center',
   },
   errorText: {
     fontSize: 15,
-    fontFamily: 'DMSans_400Regular',
+    fontFamily: theme.typography.fontFamily.body,
     textAlign: 'center',
     lineHeight: 22,
     paddingHorizontal: 20,
@@ -904,7 +907,7 @@ const styles = StyleSheet.create({
   },
   settingsButtonText: {
     fontSize: 14,
-    fontFamily: 'DMSans_700Bold',
+    fontFamily: theme.typography.fontFamily.bodyBold,
   },
   calibrationBanner: {
     marginHorizontal: 24,
@@ -916,7 +919,7 @@ const styles = StyleSheet.create({
   },
   calibrationText: {
     fontSize: 13,
-    fontFamily: 'DMSans_600SemiBold',
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   compassArea: {
     flex: 1,
@@ -967,7 +970,7 @@ const styles = StyleSheet.create({
   cardinal: {
     position: 'absolute',
     fontSize: 12,
-    fontFamily: 'DMSans_700Bold',
+    fontFamily: theme.typography.fontFamily.bodyBold,
   },
   cardinalN: {
     top: 10,
@@ -984,7 +987,7 @@ const styles = StyleSheet.create({
   intercardinal: {
     position: 'absolute',
     fontSize: 9,
-    fontFamily: 'DMSans_600SemiBold',
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     opacity: 0.7,
   },
   intercardinalNE: {
@@ -1041,7 +1044,7 @@ const styles = StyleSheet.create({
   },
   kaabaLabel: {
     fontSize: 10,
-    fontFamily: 'DMSans_700Bold',
+    fontFamily: theme.typography.fontFamily.bodyBold,
     marginTop: 4,
     letterSpacing: 1,
     textTransform: 'uppercase',
@@ -1066,7 +1069,7 @@ const styles = StyleSheet.create({
   },
   bearingLabel: {
     fontSize: 11,
-    fontFamily: 'DMSans_600SemiBold',
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: 2,
@@ -1078,7 +1081,7 @@ const styles = StyleSheet.create({
   },
   directionValue: {
     fontSize: 28,
-    fontFamily: 'DMSans_700Bold',
+    fontFamily: theme.typography.fontFamily.bodyBold,
   },
   turnHintContainer: {
     flexDirection: 'row',
@@ -1092,7 +1095,7 @@ const styles = StyleSheet.create({
   },
   turnHint: {
     fontSize: 14,
-    fontFamily: 'DMSans_500Medium',
+    fontFamily: theme.typography.fontFamily.bodyMedium,
   },
   footer: {
     paddingVertical: 16,
@@ -1101,7 +1104,7 @@ const styles = StyleSheet.create({
   },
   footerHint: {
     fontSize: 13,
-    fontFamily: 'DMSans_400Regular',
+    fontFamily: theme.typography.fontFamily.body,
   },
 });
 
