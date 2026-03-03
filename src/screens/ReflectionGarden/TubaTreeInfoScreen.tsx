@@ -388,7 +388,7 @@ const TubaTreeInfoScreen: React.FC = () => {
   // Sky background colour for the illustration tile — matches the mockup's
   // dark forest-green sky used in the stage panels
   const stageSkyBg =
-    theme.mode === 'blackout' ? '#080E2A' :
+    theme.mode === 'midnight' ? '#080E2A' :
     theme.mode === 'dark'     ? '#0D1940' :
                                 '#1a3a2e'; // warm dark even in light mode
 

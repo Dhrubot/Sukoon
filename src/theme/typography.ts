@@ -40,10 +40,10 @@ export const typography = {
   },
 };
 
-// ─── Blackout Typography ─────────────────────────────────────────
+// ─── Midnight Typography ─────────────────────────────────────────
 // Cormorant Garamond serif + lighter DM Sans weights.
 // Slightly smaller, more airy sizing — premium, editorial feel.
-export const blackoutTypography = {
+export const midnightTypography = {
   fontFamily: {
     heading: 'CormorantGaramond_600SemiBold',
     headingMedium: 'CormorantGaramond_500Medium',

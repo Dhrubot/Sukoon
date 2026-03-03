@@ -115,6 +115,15 @@ const ReflectionGardenScreen: React.FC = () => {
               Return to prayers
             </Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.emptyInfoLink}
+            onPress={() => (navigation as any).navigate('TubaTreeInfo')}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.emptyInfoLinkText, { color: theme.colors.interactive.active }]}>
+              Learn about the Tuba Tree →
+            </Text>
+          </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
     );
@@ -176,7 +185,7 @@ const ReflectionGardenScreen: React.FC = () => {
         <View style={styles.statsRow}>
           <View style={styles.statBlock}>
             <Text style={[styles.statVal, { color: theme.colors.garden.dawamPillText }]}>
-              {plants.length}
+              {plants.length > 0 ? plants.length : '—'}
             </Text>
             <Text style={[styles.statLabel, { color: theme.colors.text.muted }]}>
               leaves
@@ -184,18 +193,18 @@ const ReflectionGardenScreen: React.FC = () => {
           </View>
           <View style={[styles.statBlock, styles.statBlockBorder]}>
             <Text style={[styles.statVal, { color: theme.colors.interactive.active }]}>
-              {dawamDays}
+              {dawamDays > 0 ? dawamDays : '—'}
             </Text>
             <Text style={[styles.statLabel, { color: theme.colors.text.muted }]}>
-              days of dawam
+              {dawamDays > 0 ? 'days of dawam' : 'begin today'}
             </Text>
           </View>
           <View style={[styles.statBlock, styles.statBlockBorder]}>
             <Text style={[styles.statVal, { color: theme.colors.primary.DEFAULT }]}>
-              {bloomCount}
+              {bloomCount > 0 ? bloomCount : '—'}
             </Text>
             <Text style={[styles.statLabel, { color: theme.colors.text.muted }]}>
-              blooms ✦
+              {bloomCount > 0 ? 'blooms ✦' : 'blooms'}
             </Text>
           </View>
         </View>
@@ -375,6 +384,13 @@ const createStyles = (theme: AppTheme) =>
     },
     emptyCtaText: {
       fontSize: theme.typography.fontSize.lg,
+      fontFamily: theme.typography.fontFamily.bodyMedium,
+    },
+    emptyInfoLink: {
+      marginTop: theme.spacing.xl,
+    },
+    emptyInfoLinkText: {
+      fontSize: theme.typography.fontSize.sm,
       fontFamily: theme.typography.fontFamily.bodyMedium,
     },
   });

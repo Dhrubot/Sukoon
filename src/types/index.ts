@@ -125,7 +125,7 @@ export interface UserSettings {
     enabled: boolean;
   };
   hijriAdjustment?: -1 | 0 | 1;
-  theme: "light" | "dark" | "blackout" | "auto";
+  theme: "light" | "dark" | "midnight" | "auto";
 }
 
 // Mindfulness types

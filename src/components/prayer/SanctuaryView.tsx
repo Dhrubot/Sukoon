@@ -42,6 +42,7 @@ interface SanctuaryViewProps {
   onPrepare: () => void;
   onPrepareQada?: () => void;
   onPraySunnah?: () => void;
+  onQuickLog?: () => void;
   isFocusMode?: boolean;
   mosqueModeInfo?: MosqueModeHeroInfo;
   onMosqueModeTap?: () => void;
@@ -58,6 +59,7 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
   onPrepare,
   onPrepareQada,
   onPraySunnah,
+  onQuickLog,
   isFocusMode = false,
   mosqueModeInfo,
   onMosqueModeTap,
@@ -197,6 +199,8 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
               (isAlreadyPrayed || !isTimeEntered) && styles.alreadyPrayedButton,
             ]}
             onPress={handlePress}
+            onLongPress={!isAlreadyPrayed ? onQuickLog : undefined}
+            delayLongPress={400}
             activeOpacity={0.7}
           >
             <Text style={styles.prepareText}>

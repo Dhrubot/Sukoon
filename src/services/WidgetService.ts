@@ -18,7 +18,7 @@ interface WidgetData {
   nextPrayerTime: string;
   completedCount: number;
   totalPrayers: number;
-  streak: number;
+  dawam: number;
   hijriDate: string;
   dailyVerse: string;
   dailyVerseRef: string;
@@ -68,7 +68,7 @@ class WidgetService {
     prayerTimes: PrayerTime[],
     records: PrayerRecord[],
     nextPrayer: PrayerTime | null,
-    streak: number
+    dawam: number
   ): Promise<void> {
     if (Platform.OS === 'web') return;
     if (!SukoonWidgetBridge) {
@@ -110,7 +110,7 @@ class WidgetService {
         nextPrayerTime: nextPrayer?.time?.toISOString() || '',
         completedCount,
         totalPrayers: 5,
-        streak,
+        dawam,
         hijriDate,
         dailyVerse: verse[0],
         dailyVerseRef: verse[1],

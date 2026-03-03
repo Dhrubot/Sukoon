@@ -23,7 +23,7 @@ const MosqueModeScreen: React.FC = () => {
   const { isEnabled } = useMosqueMode();
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
     <ScrollView
       style={styles.scrollView}
       contentContainerStyle={styles.content}

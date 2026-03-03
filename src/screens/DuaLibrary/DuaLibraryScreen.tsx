@@ -125,9 +125,8 @@ const DuaLibraryScreen: React.FC = () => {
 
   const keyExtractor = useCallback((item: Dua) => String(item.id), []);
 
-  return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      {/* Search bar */}
+  const listHeader = (
+    <>
       <View style={styles.searchRow}>
         <TextInput
           style={styles.searchInput}
@@ -140,11 +139,9 @@ const DuaLibraryScreen: React.FC = () => {
         />
       </View>
 
-      {/* Category chips */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={{ flexShrink: 0 }}
         contentContainerStyle={styles.chipRow}
       >
         <TouchableOpacity
@@ -185,14 +182,19 @@ const DuaLibraryScreen: React.FC = () => {
           </TouchableOpacity>
         ))}
       </ScrollView>
+    </>
+  );
 
-      {/* Dua list */}
+  return (
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <FlatList
         data={filteredDuas}
         keyExtractor={keyExtractor}
         renderItem={renderDuaCard}
+        ListHeaderComponent={listHeader}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>No duas found</Text>
@@ -211,8 +213,8 @@ const createStyles = (theme: AppTheme) =>
     },
     searchRow: {
       paddingHorizontal: theme.spacing['2xl'],
-      paddingTop: theme.spacing.md,
-      paddingBottom: theme.spacing.sm,
+      paddingTop: theme.spacing.sm,
+      paddingBottom: theme.spacing.xs,
     },
     searchInput: {
       backgroundColor: theme.colors.card.background,
@@ -228,9 +230,10 @@ const createStyles = (theme: AppTheme) =>
     chipRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: theme.spacing['2xl'],
-      paddingTop: theme.spacing.sm,
-      paddingBottom: theme.spacing.md,
+      paddingLeft: theme.spacing.sm,
+      paddingRight: theme.spacing['2xl'],
+      paddingTop: theme.spacing.xs,
+      paddingBottom: theme.spacing.sm,
       gap: theme.spacing.sm,
     },
     chip: {
@@ -256,7 +259,6 @@ const createStyles = (theme: AppTheme) =>
       fontFamily: theme.typography.fontFamily.bodySemibold,
     },
     listContent: {
-      paddingHorizontal: theme.spacing['2xl'],
       paddingBottom: theme.spacing['4xl'],
     },
     duaCard: {
@@ -264,6 +266,7 @@ const createStyles = (theme: AppTheme) =>
       borderRadius: theme.borderRadius.lg,
       padding: theme.spacing.xl,
       marginBottom: theme.spacing.md,
+      marginHorizontal: theme.spacing['2xl'],
       borderWidth: 1,
       borderColor: theme.colors.border.primary,
     },
@@ -322,6 +325,7 @@ const createStyles = (theme: AppTheme) =>
     emptyState: {
       alignItems: 'center',
       paddingTop: theme.spacing['4xl'],
+      marginHorizontal: theme.spacing['2xl'],
     },
     emptyText: {
       fontSize: theme.typography.fontSize.md,

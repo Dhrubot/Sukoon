@@ -123,7 +123,7 @@ export const GROUND_COLORS = {
     colors: ['transparent', 'rgba(210,192,160,0.35)', 'rgba(250,247,242,0.80)', '#faf7f2'],
     locations: [0, 0.28, 0.65, 1],
   },
-  blackout: {
+  midnight: {
     // transparent → near-black earth → screen bg
     colors: ['transparent', 'rgba(16,18,12,0.50)', 'rgba(9,13,24,0.85)', '#090d18'],
     locations: [0, 0.28, 0.65, 1],

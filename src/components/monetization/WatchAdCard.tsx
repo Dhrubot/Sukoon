@@ -64,13 +64,12 @@ export const WatchAdCard: React.FC<WatchAdCardProps> = ({ onRewardEarned }) => {
     }
   };
 
+  // TODO: [PREMIUM] Re-add hoursLeft/cooldown messaging when premium features are implemented
   const statusText = hasActiveReward
-    ? `You've already supported today — JazakAllah Khair!`
+    ? 'JazakAllah Khair for your support!'
     : canWatch
       ? 'Watch a short halal ad to help keep Sukoon free'
-      : hoursLeft > 0
-        ? `Next ad available in ${hoursLeft}h`
-        : 'Loading ad...';
+      : 'Loading ad...';
 
   return (
     <View style={[styles.card, { backgroundColor: theme.colors.card.background }]}>
@@ -116,13 +115,10 @@ export const WatchAdCard: React.FC<WatchAdCardProps> = ({ onRewardEarned }) => {
               },
             ]}
           >
-            {hasActiveReward
-              ? 'Already Active'
-              : canWatch
-                ? 'Watch Ad'
-                : hoursLeft > 0
-                  ? `Available in ${hoursLeft}h`
-                  : 'Ad Loading...'}
+            {/* TODO: [PREMIUM] Re-add cooldown button states when premium features are implemented */}
+            {canWatch
+              ? 'Watch Ad'
+              : 'Ad Loading...'}
           </Text>
         )}
       </TouchableOpacity>

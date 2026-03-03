@@ -868,14 +868,14 @@ export const lightTheme = {
 };
 
 // ═══════════════════════════════════════════════════════════════════
-// BLACKOUT THEME — "Midnight & Gold"
+// MIDNIGHT THEME — "Midnight & Gold"
 // True-black canvas, gold ornamentation, teal interactive accents.
 // Inspired by mosque interiors at night: dark stone, gilded arches,
 // moonlight through geometric screens.
 // ═══════════════════════════════════════════════════════════════════
 
-// ─── Blackout-specific palette (not shared with dark/light) ──────
-const blackoutPalette = {
+// ─── Midnight-specific palette (not shared with dark/light) ──────
+const midnightPalette = {
   night:       '#090d18',
   deep:        '#0d1424',
   card:        '#111827',
@@ -914,8 +914,8 @@ const blackoutPalette = {
   danger:      '#e85d75',
 } as const;
 
-// ─── Blackout prayer gradients ───────────────────────────────────
-const blackoutPrayerGradients = {
+// ─── Midnight prayer gradients ───────────────────────────────────
+const midnightPrayerGradients = {
   Fajr:     ['#080E2A', '#0D1940', '#121F4A'] as const,
   Dhuhr:    ['#0D1820', '#091E1C', '#0A2818'] as const,
   Asr:      ['#1A1808', '#151C0E', '#122214'] as const,
@@ -927,8 +927,8 @@ const blackoutPrayerGradients = {
   default:  ['#0D1820', '#091E1C', '#0A2818'] as const,
 } as const;
 
-// ─── Blackout prayer identity colors ─────────────────────────────
-const blackoutPrayerColors = {
+// ─── Midnight prayer identity colors ─────────────────────────────
+const midnightPrayerColors = {
   fajr:     '#7986CB',
   dhuhr:    '#81C784',
   asr:      '#DCE775',
@@ -936,100 +936,100 @@ const blackoutPrayerColors = {
   isha:     '#9FA8DA',
   taraweeh: '#B39DDB',
   tahajjud: '#7986CB',
-  jumah:    blackoutPalette.gold,
+  jumah:    midnightPalette.gold,
 } as const;
 
-export const blackoutTheme = {
+export const midnightTheme = {
   background: {
-    primary:   blackoutPalette.night,
-    secondary: blackoutPalette.deep,
-    tertiary:  blackoutPalette.card2,
+    primary:   midnightPalette.night,
+    secondary: midnightPalette.deep,
+    tertiary:  midnightPalette.card2,
     overlay:   palette.blackAlpha60,
   },
 
   text: {
-    primary:   blackoutPalette.text,
-    secondary: blackoutPalette.textMuted,
-    muted:     blackoutPalette.textSub,
-    inverse:   blackoutPalette.night,
+    primary:   midnightPalette.text,
+    secondary: midnightPalette.textMuted,
+    muted:     midnightPalette.textSub,
+    inverse:   midnightPalette.night,
   },
 
   primary: {
-    DEFAULT:  blackoutPalette.teal,
+    DEFAULT:  midnightPalette.teal,
     light:    '#5eead4',
     dark:     '#14b8a6',
-    contrast: blackoutPalette.night,
+    contrast: midnightPalette.night,
   },
 
   secondary: {
-    DEFAULT: blackoutPalette.textMuted,
-    light:   blackoutPalette.textSub,
+    DEFAULT: midnightPalette.textMuted,
+    light:   midnightPalette.textSub,
     dark:    '#5C6493',
   },
 
   status: {
     success: '#4ade80',
     warning: palette.statusWarning,
-    error:   blackoutPalette.danger,
+    error:   midnightPalette.danger,
     info:    palette.statusInfo,
   },
 
-  prayer: blackoutPrayerColors,
+  prayer: midnightPrayerColors,
 
   border: {
-    primary:   blackoutPalette.borderBright,
-    secondary: blackoutPalette.borderDim,
-    focus:     blackoutPalette.teal,
+    primary:   midnightPalette.borderBright,
+    secondary: midnightPalette.borderDim,
+    focus:     midnightPalette.teal,
   },
 
   card: {
-    background: blackoutPalette.card,
-    hover:      blackoutPalette.card2,
-    border:     blackoutPalette.borderBright,
+    background: midnightPalette.card,
+    hover:      midnightPalette.card2,
+    border:     midnightPalette.borderBright,
   },
 
   interactive: {
-    active:   blackoutPalette.teal,
-    hover:    blackoutPalette.card2,
-    disabled: blackoutPalette.textSub,
+    active:   midnightPalette.teal,
+    hover:    midnightPalette.card2,
+    disabled: midnightPalette.textSub,
   },
 
-  gold:        blackoutPalette.gold,
-  goldLight:   blackoutPalette.goldLight,
+  gold:        midnightPalette.gold,
+  goldLight:   midnightPalette.goldLight,
   goldDark:    '#A07C1F',
 
   mindfulness: {
-    circleBg:        blackoutPalette.goldAlpha10,
-    circleBorder:    blackoutPalette.goldAlpha30,
-    circleShadow:    blackoutPalette.gold,
-    innerCircleBg:   blackoutPalette.goldAlpha12,
-    outerRingBorder: blackoutPalette.goldAlpha20,
-    progressFill:    blackoutPalette.goldAlpha20,
+    circleBg:        midnightPalette.goldAlpha10,
+    circleBorder:    midnightPalette.goldAlpha30,
+    circleShadow:    midnightPalette.gold,
+    innerCircleBg:   midnightPalette.goldAlpha12,
+    outerRingBorder: midnightPalette.goldAlpha20,
+    progressFill:    midnightPalette.goldAlpha20,
     progressRingBg:  palette.whiteAlpha10,
-    accent:          blackoutPalette.gold,
-    textPrimary:     blackoutPalette.text,
+    accent:          midnightPalette.gold,
+    textPrimary:     midnightPalette.text,
     textSecondary:   palette.whiteAlpha80,
     textMuted:       palette.whiteAlpha70,
     textSubtle:      palette.whiteAlpha60,
     textHint:        palette.whiteAlpha50,
     inputBg:         palette.whiteAlpha08,
-    inputBorder:     blackoutPalette.goldAlpha25,
-    quickOptionBg:   blackoutPalette.goldAlpha10,
-    quickOptionBorder: blackoutPalette.goldAlpha20,
-    buttonBg:        blackoutPalette.goldAlpha20,
-    buttonBorder:    blackoutPalette.goldAlpha40,
-    timingInfoBg:    blackoutPalette.goldAlpha12,
-    timingInfoBorder: blackoutPalette.goldAlpha25,
-    dotActive:       blackoutPalette.gold,
+    inputBorder:     midnightPalette.goldAlpha25,
+    quickOptionBg:   midnightPalette.goldAlpha10,
+    quickOptionBorder: midnightPalette.goldAlpha20,
+    buttonBg:        midnightPalette.goldAlpha20,
+    buttonBorder:    midnightPalette.goldAlpha40,
+    timingInfoBg:    midnightPalette.goldAlpha12,
+    timingInfoBorder: midnightPalette.goldAlpha25,
+    dotActive:       midnightPalette.gold,
     dotInactive:     palette.whiteAlpha25,
   },
 
   onboarding: {
-    gradient:        [blackoutPalette.night, blackoutPalette.deep, blackoutPalette.night] as const,
+    gradient:        [midnightPalette.night, midnightPalette.deep, midnightPalette.night] as const,
     inputBg:         palette.whiteAlpha15,
     inputBorder:     palette.whiteAlpha30,
-    buttonBg:        blackoutPalette.goldAlpha20,
-    buttonBorder:    blackoutPalette.goldAlpha40,
+    buttonBg:        midnightPalette.goldAlpha20,
+    buttonBorder:    midnightPalette.goldAlpha40,
     optionBg:        palette.whiteAlpha10,
     optionBorder:    palette.whiteAlpha20,
     optionActiveBg:  palette.whiteAlpha20,
@@ -1046,7 +1046,7 @@ export const blackoutTheme = {
   achievement: {
     overlayBg:       palette.blackAlpha80,
     shadow:          palette.black,
-    textPrimary:     blackoutPalette.text,
+    textPrimary:     midnightPalette.text,
     textSecondary:   palette.whiteAlpha90,
     badgeBg:         palette.whiteAlpha20,
     continueBg:      palette.whiteAlpha25,
@@ -1055,56 +1055,56 @@ export const blackoutTheme = {
   },
 
   garden: {
-    soil:          blackoutPalette.card,
-    soilBorder:    blackoutPalette.borderBright,
+    soil:          midnightPalette.card,
+    soilBorder:    midnightPalette.borderBright,
     stem:          '#A07C1F',
-    sparkle:       blackoutPalette.goldLight,
+    sparkle:       midnightPalette.goldLight,
     emptyDot:      palette.whiteAlpha15,
-    todayRing:     blackoutPalette.gold,
-    cardBg:        blackoutPalette.card,
-    journalBorder: blackoutPalette.borderBright,
+    todayRing:     midnightPalette.gold,
+    cardBg:        midnightPalette.card,
+    journalBorder: midnightPalette.borderBright,
     accentFajr:    '#7986CB',
     accentMaghrib: '#CE93D8',
     trunk:           '#4a3728',
     trunkHighlight:  'rgba(255, 255, 255, 0.04)',
     skyStars:        '#ffffff',
     moonColor:       'rgba(255, 255, 255, 0.65)',
-    bloomGlow:       blackoutPalette.goldLight,
-    groundFade:      blackoutPalette.night,
+    bloomGlow:       midnightPalette.goldLight,
+    groundFade:      midnightPalette.night,
     dawamPillBg:     'rgba(201, 168, 76, 0.08)',
     dawamPillBorder: 'rgba(201, 168, 76, 0.20)',
-    dawamPillText:   blackoutPalette.goldLight,
-    dawamDot:        blackoutPalette.goldLight,
+    dawamPillText:   midnightPalette.goldLight,
+    dawamDot:        midnightPalette.goldLight,
   },
 
   qibla: {
-    compassBg:              blackoutPalette.card,
-    compassRing:            blackoutPalette.borderBright,
-    compassRingAligned:     blackoutPalette.gold,
-    needleBeam:             blackoutPalette.gold,
-    needleBeamAligned:      blackoutPalette.goldLight,
-    needleTip:              blackoutPalette.goldLight,
-    alignedGlow:            blackoutPalette.gold,
+    compassBg:              midnightPalette.card,
+    compassRing:            midnightPalette.borderBright,
+    compassRingAligned:     midnightPalette.gold,
+    needleBeam:             midnightPalette.gold,
+    needleBeamAligned:      midnightPalette.goldLight,
+    needleTip:              midnightPalette.goldLight,
+    alignedGlow:            midnightPalette.gold,
     alignedGlowShadow:     '#A07C1F',
-    kaabaIcon:              blackoutPalette.text,
-    kaabaGold:              blackoutPalette.gold,
-    bearingText:            blackoutPalette.goldLight,
-    hintText:               blackoutPalette.textMuted,
+    kaabaIcon:              midnightPalette.text,
+    kaabaGold:              midnightPalette.gold,
+    bearingText:            midnightPalette.goldLight,
+    hintText:               midnightPalette.textMuted,
     interferenceWarningBg:  'rgba(232, 93, 117, 0.15)',
-    interferenceWarningText: blackoutPalette.danger,
+    interferenceWarningText: midnightPalette.danger,
     anomalyWarningBg:       'rgba(245, 158, 11, 0.15)',
     anomalyWarningText:     palette.statusWarning,
-    cardinalN:              blackoutPalette.text,
-    cardinalMuted:          blackoutPalette.textSub,
-    tickCardinal:           blackoutPalette.textMuted,
-    tickMinor:              blackoutPalette.borderBright,
-    verifyLink:             blackoutPalette.goldLight,
+    cardinalN:              midnightPalette.text,
+    cardinalMuted:          midnightPalette.textSub,
+    tickCardinal:           midnightPalette.textMuted,
+    tickMinor:              midnightPalette.borderBright,
+    verifyLink:             midnightPalette.goldLight,
   },
 
   sanctuary: {
     greeting:        palette.whiteAlpha70,
     label:           palette.whiteAlpha50,
-    prayerName:      blackoutPalette.text,
+    prayerName:      midnightPalette.text,
     prayerTime:      palette.whiteAlpha80,
     countdown:       palette.whiteAlpha60,
     prayedStatus:    palette.whiteAlpha80,
@@ -1112,7 +1112,7 @@ export const blackoutTheme = {
     buttonBorder:    palette.whiteAlpha30,
     buttonBgMuted:   palette.whiteAlpha05,
     buttonBorderMuted: palette.whiteAlpha15,
-    buttonText:      blackoutPalette.text,
+    buttonText:      midnightPalette.text,
     ring: {
       innerGradCenter: 'rgba(10,30,22,0.8)',
       innerGradEdge:   'rgba(7,20,14,0.95)',
@@ -1122,47 +1122,47 @@ export const blackoutTheme = {
     },
   },
 
-  prayerGradients: blackoutPrayerGradients,
+  prayerGradients: midnightPrayerGradients,
 
   switch: {
-    trackFalse: blackoutPalette.card2,
-    trackTrue:  blackoutPalette.teal,
+    trackFalse: midnightPalette.card2,
+    trackTrue:  midnightPalette.teal,
     thumb:      palette.white,
   },
 
   chart: {
-    background:         blackoutPalette.card,
-    gradientFrom:       blackoutPalette.card,
-    gradientTo:         blackoutPalette.card,
-    line:               blackoutPalette.gold,
-    dot:                blackoutPalette.goldLight,
-    label:              blackoutPalette.textMuted,
-    legendFont:         blackoutPalette.textMuted,
+    background:         midnightPalette.card,
+    gradientFrom:       midnightPalette.card,
+    gradientTo:         midnightPalette.card,
+    line:               midnightPalette.gold,
+    dot:                midnightPalette.goldLight,
+    label:              midnightPalette.textMuted,
+    legendFont:         midnightPalette.textMuted,
   },
 
   settings: {
-    sectionBg:         blackoutPalette.card,
-    containerBg:       blackoutPalette.night,
-    inputBg:           blackoutPalette.card2,
-    inputBorder:       blackoutPalette.gold,
-    inputText:         blackoutPalette.text,
-    sliderMin:         blackoutPalette.goldLight,
-    sliderMax:         blackoutPalette.textSub,
-    sliderThumb:       blackoutPalette.gold,
+    sectionBg:         midnightPalette.card,
+    containerBg:       midnightPalette.night,
+    inputBg:           midnightPalette.card2,
+    inputBorder:       midnightPalette.gold,
+    inputText:         midnightPalette.text,
+    sliderMin:         midnightPalette.goldLight,
+    sliderMax:         midnightPalette.textSub,
+    sliderThumb:       midnightPalette.gold,
     sliderWarningMin:  palette.statusWarning,
     sliderWarningThumb: '#F57C00',
-    optionBg:          blackoutPalette.card2,
-    optionBorder:      blackoutPalette.borderBright,
-    optionActiveBg:    blackoutPalette.goldAlpha12,
-    optionActiveBorder: blackoutPalette.gold,
-    buttonPrimaryBg:   blackoutPalette.teal,
-    buttonPrimaryText: blackoutPalette.night,
+    optionBg:          midnightPalette.card2,
+    optionBorder:      midnightPalette.borderBright,
+    optionActiveBg:    midnightPalette.goldAlpha12,
+    optionActiveBorder: midnightPalette.gold,
+    buttonPrimaryBg:   midnightPalette.teal,
+    buttonPrimaryText: midnightPalette.night,
     buttonSecondaryBg: 'transparent',
-    buttonSecondaryBorder: blackoutPalette.teal,
-    buttonSecondaryText: blackoutPalette.teal,
-    cancelBg:          blackoutPalette.card2,
-    cancelBorder:      blackoutPalette.borderBright,
-    cancelText:        blackoutPalette.textMuted,
+    buttonSecondaryBorder: midnightPalette.teal,
+    buttonSecondaryText: midnightPalette.teal,
+    cancelBg:          midnightPalette.card2,
+    cancelBorder:      midnightPalette.borderBright,
+    cancelText:        midnightPalette.textMuted,
     infoBg:            'rgba(59, 130, 246, 0.1)',
     infoTitle:         palette.statusInfo,
     infoLabel:         palette.statusInfo,
@@ -1170,78 +1170,78 @@ export const blackoutTheme = {
     warningBg:         'rgba(245, 158, 11, 0.1)',
     warningBorder:     'rgba(245, 158, 11, 0.3)',
     warningText:       palette.statusWarning,
-    hintBg:            blackoutPalette.goldAlpha05,
-    hintBorder:        blackoutPalette.goldAlpha10,
-    hintText:          blackoutPalette.gold,
-    tipsBg:            blackoutPalette.goldGlow,
-    tipsTitle:         blackoutPalette.goldLight,
-    tipsText:          blackoutPalette.gold,
+    hintBg:            midnightPalette.goldAlpha05,
+    hintBorder:        midnightPalette.goldAlpha10,
+    hintText:          midnightPalette.gold,
+    tipsBg:            midnightPalette.goldGlow,
+    tipsTitle:         midnightPalette.goldLight,
+    tipsText:          midnightPalette.gold,
     modalOverlay:      palette.blackAlpha60,
-    modalBg:           blackoutPalette.card,
+    modalBg:           midnightPalette.card,
     modalShadow:       palette.black,
-    modalBorder:       blackoutPalette.borderBright,
-    modalTitle:        blackoutPalette.gold,
-    modalClose:        blackoutPalette.gold,
-    modalCloseDisabled: blackoutPalette.textSub,
-    previewBg:         blackoutPalette.card2,
-    previewBorder:     blackoutPalette.gold,
-    labelPrimary:      blackoutPalette.text,
-    labelSecondary:    blackoutPalette.textMuted,
-    labelMuted:        blackoutPalette.textSub,
+    modalBorder:       midnightPalette.borderBright,
+    modalTitle:        midnightPalette.gold,
+    modalClose:        midnightPalette.gold,
+    modalCloseDisabled: midnightPalette.textSub,
+    previewBg:         midnightPalette.card2,
+    previewBorder:     midnightPalette.gold,
+    labelPrimary:      midnightPalette.text,
+    labelSecondary:    midnightPalette.textMuted,
+    labelMuted:        midnightPalette.textSub,
   },
 
   // Mosque Mode surfaces
   mosqueMode: {
     banner: {
-      bg:          blackoutPalette.tealAlpha08,
-      dot:         blackoutPalette.teal,
-      text:        blackoutPalette.text,
-      textMuted:   blackoutPalette.textMuted,
-      button:      blackoutPalette.teal,
+      bg:          midnightPalette.tealAlpha08,
+      dot:         midnightPalette.teal,
+      text:        midnightPalette.text,
+      textMuted:   midnightPalette.textMuted,
+      button:      midnightPalette.teal,
     },
-    sectionLabel:  blackoutPalette.textMuted,
+    sectionLabel:  midnightPalette.textMuted,
     card: {
-      bg:          blackoutPalette.card,
-      border:      blackoutPalette.borderBright,
+      bg:          midnightPalette.card,
+      border:      midnightPalette.borderBright,
     },
     accordion: {
-      bg:          blackoutPalette.card,
-      border:      blackoutPalette.borderDim,
-      chevron:     blackoutPalette.textMuted,
+      bg:          midnightPalette.card,
+      border:      midnightPalette.borderDim,
+      chevron:     midnightPalette.textMuted,
     },
     chip: {
       bg:          'transparent',
-      border:      blackoutPalette.borderBright,
-      text:        blackoutPalette.textMuted,
-      activeBg:    blackoutPalette.teal,
-      activeBorder: blackoutPalette.teal,
-      activeText:  blackoutPalette.night,
+      border:      midnightPalette.borderBright,
+      text:        midnightPalette.textMuted,
+      activeBg:    midnightPalette.teal,
+      activeBorder: midnightPalette.teal,
+      activeText:  midnightPalette.night,
     },
     segment: {
-      bg:          blackoutPalette.card2,
-      activeBg:    blackoutPalette.teal,
-      activeText:  blackoutPalette.night,
-      inactiveText: blackoutPalette.textMuted,
+      bg:          midnightPalette.card2,
+      activeBg:    midnightPalette.teal,
+      activeText:  midnightPalette.night,
+      inactiveText: midnightPalette.textMuted,
     },
     hint: {
-      bg:          blackoutPalette.tealAlpha08,
-      border:      blackoutPalette.tealAlpha20,
-      text:        blackoutPalette.teal,
-      icon:        blackoutPalette.teal,
+      bg:          midnightPalette.tealAlpha08,
+      border:      midnightPalette.tealAlpha20,
+      text:        midnightPalette.teal,
+      icon:        midnightPalette.teal,
     },
     jummah: {
-      accent:        blackoutPalette.gold,
-      accentDim:     blackoutPalette.goldAlpha20,
-      chipActiveBg:  blackoutPalette.gold,
-      chipActiveText: blackoutPalette.night,
-      segmentActiveBg: blackoutPalette.gold,
+      accent:        midnightPalette.gold,
+      accentDim:     midnightPalette.goldAlpha20,
+      chipActiveBg:  midnightPalette.gold,
+      chipActiveText: midnightPalette.night,
+      segmentActiveBg: midnightPalette.gold,
     },
-    footer:        blackoutPalette.textSub,
+    footer:        midnightPalette.textSub,
   },
 };
 
 // ─── Type Utilities ────────────────────────────────────────────────
-// Widen literal string types so darkTheme, lightTheme, and blackoutTheme satisfy Theme.
+// Widen literal string types so darkTheme, lightTheme, and midnightTheme satisfy Theme.
 type DeepStringify<T> =
   T extends readonly (infer U)[]
     ? readonly DeepStringify<U>[]
@@ -1254,6 +1254,6 @@ type DeepStringify<T> =
           : T;
 
 // ─── Exports ───────────────────────────────────────────────────────
-export { palette, lightPalette, blackoutPalette, prayerGradients, achievementTiers };
+export { palette, lightPalette, midnightPalette, prayerGradients, achievementTiers };
 export type Theme = DeepStringify<typeof darkTheme>;
 export type ThemeColors = keyof Theme;

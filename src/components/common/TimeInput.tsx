@@ -84,12 +84,12 @@ const createStyles = (theme: AppTheme) =>
     },
     label: {
       fontSize: 14,
-      fontFamily: 'DMSans_500Medium',
+      fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.text.primary,
     },
     timeDisplay: {
       fontSize: 16,
-      fontFamily: 'DMSans_600SemiBold',
+      fontFamily: theme.typography.fontFamily.bodySemibold,
       color: theme.colors.primary.DEFAULT,
     },
     timeDisplayDisabled: {

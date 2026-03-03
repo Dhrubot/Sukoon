@@ -36,12 +36,19 @@ import RamadanTimesCard from "../../components/prayer/RamadanTimesCard";
 import OptionalPrayersSection from "../../components/prayer/OptionalPrayersSection";
 import GardenTeaser from "../../components/garden/GardenTeaser";
 import CatchUpCard from "../../components/prayer/CatchUpCard";
+import QuickLogSheet from "../../components/prayer/QuickLogSheet";
 
 // Types
-import { PrayerTime, OptionalPrayerTime } from "../../types";
+import { PrayerTime, PrayerRecord, OptionalPrayerTime, PrayerName } from "../../types";
 
 import { isRamadan, getRamadanDay, isEidDay, getEidName, isTashreeqDays, getTashreeqDayLabel } from "../../utils/ramadan";
 import { getMoonSightingEvent, getDeferredMoonSightingEvent, getHijriNudgeEvent, MoonSightingEvent, HijriNudgeEvent } from "../../utils/moonSighting";
+import * as Haptics from "expo-haptics";
+import { useRoute } from "@react-navigation/native";
+import ReminderStateService from "../../services/ReminderStateService";
+import NotificationService from "../../services/NotificationService";
+import WidgetService from "../../services/WidgetService";
+import { getLocalDateKey } from "../../utils/dateHelpers";
 import MoonSightingPrompt from "../../components/MoonSightingPrompt";
 import MoonSightingCard from "../../components/MoonSightingCard";
 import HijriNudgeCard from "../../components/HijriNudgeCard";
@@ -89,6 +96,71 @@ const HomeScreen = ({ navigation }: any) => {
   const [moonSightingEvent, setMoonSightingEvent] = useState<MoonSightingEvent | null>(null);
   const [deferredMoonEvent, setDeferredMoonEvent] = useState<MoonSightingEvent | null>(null);
   const [hijriNudge, setHijriNudge] = useState<HijriNudgeEvent | null>(null);
+
+  // Quick-log state
+  const [quickLogPrayer, setQuickLogPrayer] = useState<PrayerTime | null>(null);
+  const route = useRoute<any>();
+  const { addPrayerRecord } = useStore();
+
+  // Handle notification tap → auto-show QuickLogSheet
+  useEffect(() => {
+    const prayerName = route.params?.quickLogPrayer as PrayerName | undefined;
+    if (!prayerName || todayPrayerTimes.length === 0) return;
+
+    const prayer = todayPrayerTimes.find(p => p.name === prayerName);
+    const existing = todayPrayerRecords.find(r => r.prayer === prayerName);
+
+    if (prayer && existing?.status !== 'prayed') {
+      setQuickLogPrayer(prayer);
+    }
+
+    // Clear the param so it doesn't re-trigger
+    navigation.setParams({ quickLogPrayer: undefined });
+  }, [route.params?.quickLogPrayer, todayPrayerTimes]);
+
+  const handleQuickLogTrigger = (prayer: PrayerTime) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    setQuickLogPrayer(prayer);
+  };
+
+  const handleQuickLogConfirm = () => {
+    if (!quickLogPrayer) return;
+
+    const dateKey = getLocalDateKey();
+    const existing = StorageService.getPrayerRecord(dateKey, quickLogPrayer.name);
+
+    if (!existing || existing.status !== 'prayed') {
+      const record: PrayerRecord = {
+        id: `prayer_${Date.now()}`,
+        date: dateKey,
+        prayer: quickLogPrayer.name,
+        status: 'prayed',
+        prayedAt: new Date(),
+        mindfulnessCompleted: false,
+        reflectionAdded: false,
+      };
+      StorageService.savePrayerRecordWithTracking(record);
+      addPrayerRecord(record);
+      WidgetService.reloadWidgets();
+      loadTodayRecords();
+    }
+
+    // Close reminder flow + cancel pending notifications
+    const prayerId = `${quickLogPrayer.name}-${dateKey}`;
+    ReminderStateService.markPrayerCompleted(prayerId);
+    NotificationService.cancelPrayerReminderFlow(prayerId).catch(() => {});
+
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    setQuickLogPrayer(null);
+  };
+
+  const handleQuickLogOpenFlow = () => {
+    const prayer = quickLogPrayer;
+    setQuickLogPrayer(null);
+    if (prayer) {
+      handlePrayerComplete(prayer);
+    }
+  };
 
   // Mosque mode prompt: notification tap path
   useEffect(() => {
@@ -434,7 +506,7 @@ const HomeScreen = ({ navigation }: any) => {
   // 🎯 NEW: Handle invalid location state
   if (!hasValidLocation) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]} edges={['top']}>
         <LinearGradient colors={getBackgroundGradient()} style={styles.container}>
           <View style={styles.locationSetupContainer}>
             <Text style={styles.setupTitle}>Welcome to Sukoon</Text>
@@ -455,7 +527,7 @@ const HomeScreen = ({ navigation }: any) => {
   // 🎯 NEW: Handle loading state
   if (prayerTimesLoading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]} edges={['top']}>
         <LinearGradient colors={getBackgroundGradient()} style={styles.container}>
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={theme.colors.primary.DEFAULT} />
@@ -469,7 +541,7 @@ const HomeScreen = ({ navigation }: any) => {
   // 🎯 NEW: Handle error state
   if (prayerTimesError) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]} edges={['top']}>
         <LinearGradient colors={getBackgroundGradient()} style={styles.container}>
           <View style={styles.errorContainer}>
             <Text style={styles.errorTitle}>⚠️ Prayer Times Unavailable</Text>
@@ -485,7 +557,7 @@ const HomeScreen = ({ navigation }: any) => {
 
   // 🎯 MAIN UI: SanctuaryView hero + secondary content below
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]} edges={['top']}>
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
@@ -504,6 +576,7 @@ const HomeScreen = ({ navigation }: any) => {
             onPrepare={() => handlePrayerComplete(heroPrayer)}
             onPrepareQada={missedPreviousPrayer ? () => handlePrayerComplete(missedPreviousPrayer) : undefined}
             onPraySunnah={handleSunnahPrayer}
+            onQuickLog={() => handleQuickLogTrigger(heroPrayer)}
             isFocusMode={isFocusMode}
             mosqueModeInfo={mosqueModeHeroInfo ?? undefined}
             onMosqueModeTap={() => navigation.navigate('MosqueMode' as never)}
@@ -593,6 +666,7 @@ const HomeScreen = ({ navigation }: any) => {
                     prayer={prayer}
                     record={record} 
                     onComplete={() => handlePrayerComplete(prayer)}
+                    onLongPress={() => handleQuickLogTrigger(prayer)}
                     currentTime={currentTime}
                     nextPrayer={nextPrayerInList}
                   />
@@ -644,6 +718,15 @@ const HomeScreen = ({ navigation }: any) => {
           }}
         />
       )}
+
+      {/* Quick-log sheet — long-press or notification tap */}
+      <QuickLogSheet
+        visible={!!quickLogPrayer}
+        prayerName={quickLogPrayer?.name ?? null}
+        onConfirm={handleQuickLogConfirm}
+        onOpenFlow={handleQuickLogOpenFlow}
+        onDismiss={() => setQuickLogPrayer(null)}
+      />
     </SafeAreaView>
   );
 };

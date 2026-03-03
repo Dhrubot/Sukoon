@@ -265,13 +265,13 @@ const MenuScreen: React.FC = () => {
   const { theme, themeMode, toggleTheme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const navigation = useNavigation();
-  const { currentStreak, todayPrayerRecords } = useStore();
+  const { currentDawam, todayPrayerRecords } = useStore();
 
   // Garden data
   const [gardenSummary, setGardenSummary] = useState({
     totalPlants: 0,
     newBlooms: 0,
-    streak: 0,
+    dawam: 0,
   });
 
   useFocusEffect(
@@ -281,12 +281,12 @@ const MenuScreen: React.FC = () => {
         setGardenSummary({
           totalPlants: data.totalPlants,
           newBlooms: data.newBlooms,
-          streak: currentStreak,
+          dawam: currentDawam,
         });
       } catch {
         // Silently ignore
       }
-    }, [currentStreak])
+    }, [currentDawam])
   );
 
   const prayedCount = todayPrayerRecords.filter(r => r.status === 'prayed').length;
@@ -316,13 +316,13 @@ const MenuScreen: React.FC = () => {
 
   // More features list
   const moreFeatures: MoreFeatureItem[] = [
-    {
-      icon: CompassIcon,
-      title: 'Qibla Compass',
-      subtitle: 'Find direction of prayer',
-      screen: 'QiblaFinder',
-      iconBg: theme.colors.interactive.active + '14',
-    },
+    // {
+    //   icon: CompassIcon,
+    //   title: 'Qibla Compass',
+    //   subtitle: 'Find direction of prayer',
+    //   screen: 'QiblaFinder',
+    //   iconBg: theme.colors.interactive.active + '14',
+    // },
     {
       icon: JourneyIcon,
       title: 'My Journey',
@@ -340,7 +340,7 @@ const MenuScreen: React.FC = () => {
     {
       icon: ThemeIcon,
       title: 'App Theme',
-      subtitle: `Currently: ${themeMode === 'dark' ? 'Dark' : themeMode === 'light' ? 'Light' : 'Blackout'}`,
+      subtitle: `Currently: ${themeMode === 'dark' ? 'Dark' : themeMode === 'light' ? 'Light' : 'Midnight'}`,
       screen: '',
       iconBg: theme.colors.interactive.active + '14',
       onPress: toggleTheme,
@@ -362,7 +362,7 @@ const MenuScreen: React.FC = () => {
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Explore</Text>
         <Text style={styles.headerSubtitle}>Features & tools for your practice</Text>
@@ -388,9 +388,9 @@ const MenuScreen: React.FC = () => {
             <View style={styles.gardenText}>
               <Text style={styles.gardenTitle}>Your Garden</Text>
               <Text style={styles.gardenSub}>
-                {gardenSummary.streak > 0
-                  ? `${gardenSummary.streak} days of devotion · Growing`
-                  : 'Start your spiritual garden'}
+                {gardenSummary.dawam > 0
+                  ? `${gardenSummary.dawam} days of dawam · Growing`
+                  : 'Your garden awaits'}
               </Text>
               <Text style={styles.gardenDesc}>
                 Track your prayer consistency and grow a spiritual tree with each prayer.
@@ -403,7 +403,7 @@ const MenuScreen: React.FC = () => {
             <View style={styles.progLabel}>
               <Text style={styles.progLabelText}>Today's progress</Text>
               <Text style={[styles.progLabelValue, { color: theme.colors.interactive.active }]}>
-                {prayedCount} of {totalPrayers} prayers
+                {prayedCount > 0 ? `${prayedCount} of ${totalPrayers} prayers` : 'ready when you are'}
               </Text>
             </View>
             <View style={styles.progBar}>
@@ -423,19 +423,19 @@ const MenuScreen: React.FC = () => {
           <View style={styles.gardenStats}>
             <View style={styles.gardenStat}>
               <Text style={[styles.gsVal, { color: theme.colors.interactive.active }]}>
-                {gardenSummary.streak}
+                {gardenSummary.dawam > 0 ? gardenSummary.dawam : '—'}
               </Text>
-              <Text style={styles.gsLabel}>Devotion</Text>
+              <Text style={styles.gsLabel}>Dawam</Text>
             </View>
             <View style={[styles.gardenStat, styles.gardenStatMiddle]}>
               <Text style={[styles.gsVal, { color: theme.colors.interactive.active }]}>
-                {gardenSummary.totalPlants}
+                {gardenSummary.totalPlants > 0 ? gardenSummary.totalPlants : '—'}
               </Text>
               <Text style={styles.gsLabel}>Prayers</Text>
             </View>
             <View style={styles.gardenStat}>
               <Text style={[styles.gsVal, { color: theme.colors.interactive.active }]}>
-                {gardenSummary.newBlooms}
+                {gardenSummary.newBlooms > 0 ? gardenSummary.newBlooms : '—'}
               </Text>
               <Text style={styles.gsLabel}>Blooms</Text>
             </View>

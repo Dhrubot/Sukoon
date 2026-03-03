@@ -148,29 +148,28 @@ class AdService {
   }
 
   /**
-   * Check if user is eligible to watch an ad (not premium, not watched in last 24h).
+   * Check if user is eligible to watch an ad.
+   * TODO: [PREMIUM] Re-add 24h cooldown when premium features are implemented:
+   *   const lastWatch = StorageService.getLastAdWatchTime();
+   *   if (lastWatch) {
+   *     const hoursSince = (Date.now() - lastWatch.getTime()) / (1000 * 60 * 60);
+   *     if (hoursSince < 24) return false;
+   *   }
    */
   async canShowAd(): Promise<boolean> {
     const isPremium = await StorageService.isPremiumActive();
     if (isPremium) return false;
-
-    const lastWatch = StorageService.getLastAdWatchTime();
-    if (lastWatch) {
-      const hoursSince = (Date.now() - lastWatch.getTime()) / (1000 * 60 * 60);
-      if (hoursSince < 24) return false;
-    }
 
     return this.isRewardedAdLoaded;
   }
 
   /**
    * Hours remaining until user can watch next ad.
+   * TODO: [PREMIUM] Re-add cooldown logic when premium features are implemented.
+   * Currently always returns 0 (no cooldown).
    */
   getHoursUntilNextAd(): number {
-    const lastWatch = StorageService.getLastAdWatchTime();
-    if (!lastWatch) return 0;
-    const hoursSince = (Date.now() - lastWatch.getTime()) / (1000 * 60 * 60);
-    return Math.max(0, Math.ceil(24 - hoursSince));
+    return 0;
   }
 
   isAdReady(): boolean {

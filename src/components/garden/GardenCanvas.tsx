@@ -1,12 +1,14 @@
 // src/components/garden/GardenCanvas.tsx
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback, useState } from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import { GardenPlant } from '../../types/garden';
+import { LeafDetailData } from '../../types/tubaTree';
 import GardenPlantView from './GardenPlantView';
+import LeafDetailSheet from './LeafDetailSheet';
 
 interface GardenCanvasProps {
   plants: GardenPlant[];
@@ -31,6 +33,19 @@ function simpleHash(str: string): number {
 const GardenCanvas: React.FC<GardenCanvasProps> = ({ plants }) => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
+  const [selectedDetail, setSelectedDetail] = useState<LeafDetailData | null>(null);
+
+  const handlePlantPress = useCallback((plant: GardenPlant) => {
+    setSelectedDetail({
+      prayer: plant.prayer,
+      date: plant.date,
+      mood: plant.mood,
+      growthStage: plant.growthStage,
+      hasText: plant.hasText,
+      screenX: 0,
+      screenY: 0,
+    });
+  }, []);
 
   // Get current time-of-day gradient
   const skyGradient = useMemo(() => {
@@ -73,7 +88,7 @@ const GardenCanvas: React.FC<GardenCanvasProps> = ({ plants }) => {
             key={`${plant.date}-${plant.prayer}-${i}`}
             style={[styles.plantPosition, { left: x, top: y }]}
           >
-            <GardenPlantView plant={plant} delay={delay} />
+            <GardenPlantView plant={plant} delay={delay} onPlantPress={handlePlantPress} />
           </View>
         ))}
 
@@ -87,6 +102,9 @@ const GardenCanvas: React.FC<GardenCanvasProps> = ({ plants }) => {
           </View>
         )}
       </LinearGradient>
+
+      {/* Leaf detail overlay */}
+      <LeafDetailSheet detail={selectedDetail} onDismiss={() => setSelectedDetail(null)} />
     </View>
   );
 };

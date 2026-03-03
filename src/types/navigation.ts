@@ -4,7 +4,7 @@ import { MenuStackParamList } from '../navigation/MenuStackNavigator';
 
 // Tab navigator parameter types (only visible tabs)
 export type TabParamList = {
-  Home: undefined;
+  Home: { quickLogPrayer?: string } | undefined;
   MosqueMode: undefined;
   QiblaFinder: undefined;
   Menu: NavigatorScreenParams<MenuStackParamList>; // Nested stack

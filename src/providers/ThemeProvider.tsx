@@ -1,6 +1,6 @@
 // src/providers/ThemeProvider.tsx
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
-import { StatusBar } from 'react-native';
+import { StatusBar, Appearance } from 'react-native';
 import { AppTheme, ThemeMode, createTheme } from '../theme';
 import StorageService from '../services/StorageService';
 
@@ -18,8 +18,14 @@ interface ThemeProviderProps {
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  const [themeMode, setThemeModeState] = useState<ThemeMode>('blackout');
-  const [theme, setTheme] = useState<AppTheme>(createTheme('blackout'));
+  const [themeMode, setThemeModeState] = useState<ThemeMode>(() => {
+    const os = Appearance.getColorScheme();
+    return os === 'light' ? 'light' : 'midnight';
+  });
+  const [theme, setTheme] = useState<AppTheme>(() => {
+    const os = Appearance.getColorScheme();
+    return createTheme(os === 'light' ? 'light' : 'midnight');
+  });
 
   // Load saved theme preference on mount
   useEffect(() => {
@@ -31,7 +37,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     const newTheme = createTheme(themeMode);
     setTheme(newTheme);
     
-    // Update status bar (blackout uses light-content like dark)
+    // Update status bar (midnight uses light-content like dark)
     StatusBar.setBarStyle(
       themeMode === 'light' ? 'dark-content' : 'light-content',
       true
@@ -45,7 +51,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     try {
       const settings = StorageService.getUserSettings();
       const savedTheme = settings?.theme;
-      if (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'blackout') {
+      if (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'midnight') {
         setThemeModeState(savedTheme);
       }
     } catch (error) {
@@ -75,8 +81,8 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     setThemeModeState((prev) => {
       const cycle: Record<ThemeMode, ThemeMode> = {
         dark: 'light',
-        light: 'blackout',
-        blackout: 'dark',
+        light: 'midnight',
+        midnight: 'dark',
       };
       return cycle[prev];
     });

@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontFamily: 'Lora_700Bold',
+    fontFamily: 'DMSans_700Bold',
     color: '#FFFFFF',
     textAlign: 'center',
     marginBottom: 12,
