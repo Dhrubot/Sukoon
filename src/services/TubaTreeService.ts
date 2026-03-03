@@ -172,22 +172,20 @@ class TubaTreeService {
       // directly relative to trunk top. lengthScale=0 means no Path is drawn.
       lengthScale = 0;
       strokeWidth = 0;
-    } else if (leafCount <= 2) {
-      // Sapling with 1–2 leaves: hairline branch line so it doesn't look like
-      // leaves floating in mid-air. Previously strokeWidth=0 caused the balloon look.
-      lengthScale = 0.20 + (leafCount - 1) * 0.08; // 0.20 for n=1, 0.28 for n=2
-      strokeWidth = 1.0; // hairline — visible but delicate
     } else {
-      // n=3  → ratio=(1/10) → 0.10+0.09 = 0.19
-      // n=6  → ratio=(4/10) → 0.10+0.36 = 0.46
-      // n=12 → ratio=(10/10) → 1.00
-      const ratio = (leafCount - 2) / (MAX_LEAVES_PER_BRANCH - 2);
-      lengthScale = Math.min(0.10 + ratio * 0.90, 1.0);
-      strokeWidth =
-        BRANCH_STYLE.minStrokeWidth +
-        (Math.min(leafCount, BRANCH_STYLE.fullThicknessAt) /
-          BRANCH_STYLE.fullThicknessAt) *
-          (BRANCH_STYLE.maxStrokeWidth - BRANCH_STYLE.minStrokeWidth);
+      if (leafCount === 1) {
+        lengthScale = 0.50;  // half-grown branch, bud at tip
+        strokeWidth = 1.2;   // hairline
+      } else if (leafCount === 2) {
+        lengthScale = 0.58;
+        strokeWidth = 1.8;
+      } else {
+        // n=3→35%, n=6→55%, n=9→76%, n=12→100%
+        const ratio = (leafCount - 3) / (MAX_LEAVES_PER_BRANCH - 3);
+        lengthScale = Math.min(0.35 + ratio * 0.65, 1.0);
+        strokeWidth = 2.5 + (Math.min(leafCount, BRANCH_STYLE.fullThicknessAt) /
+          BRANCH_STYLE.fullThicknessAt) * (BRANCH_STYLE.maxStrokeWidth - 2.5);
+      }
     }
 
     const leaves = this.positionLeaves(
@@ -308,14 +306,21 @@ class TubaTreeService {
       // Base-first: oldest leaf at junction (t≈floorT), newest at tip.
       // n=1 → linearT=0 → t=floorT (junction)
       // n=12, last leaf → linearT=1 → t=0.93 (near tip)
-      const linearT = n === 1 ? 0 : index / (n - 1);
-      const t = LEAF_DISTRIBUTION.floorT + LEAF_DISTRIBUTION.range * linearT;
+      // (v6 tip-first T):
+      let t: number;
+      if (n === 1) {
+        t = 0.82;  // single bud: always at tip
+      } else if (n === 2) {
+        t = index === 0 ? 0.35 : 0.82;  // base + tip, 47px apart on Fajr
+      } else {
+        t = 0.05 + 0.88 * (index / (n - 1));  // linear base→tip
+      }
 
-      const pos  = quadBezierPoint(curve.start, scaled.control, scaled.end, t);
+      const pos = quadBezierPoint(curve.start, scaled.control, scaled.end, t);
       const perp = quadBezierPerpendicular(curve.start, scaled.control, scaled.end, t);
 
       const hash = leafHash(prayer, plant.date, index);
-      const jitterSign  = (hash % 2 === 0) ? 1 : -1;
+      const jitterSign = (hash % 2 === 0) ? 1 : -1;
       const jitterScale = t > LEAF_DISTRIBUTION.tipClusterT
         ? LEAF_DISTRIBUTION.tipJitterScale
         : 1.0;
@@ -329,13 +334,13 @@ class TubaTreeService {
       // baseAngle: Fajr=-45, Dhuhr=+45, Asr=+55, Maghrib=-55, Isha=0
       // Leaves always tilt outward and skyward — never point down.
       const outwardLean = def.baseAngle * 0.55;
-      const tipTilt     = (t - 0.3) * 12;
-      const rotJitter   = ((hash % 140 - 70) / 70) * 28;
-      const rotation    = outwardLean + tipTilt + rotJitter;
+      const tipTilt = (t - 0.3) * 12;
+      const rotJitter = ((hash % 140 - 70) / 70) * 28;
+      const rotation = outwardLean + tipTilt + rotJitter;
 
-      const opacityConfig  = LEAF_OPACITY[plant.growthStage];
+      const opacityConfig = LEAF_OPACITY[plant.growthStage];
       const opacityVariance = ((hash % 50 - 25) / 25) * opacityConfig.variance;
-      const opacity         = Math.max(0.4, Math.min(1, opacityConfig.base + opacityVariance));
+      const opacity = Math.max(0.4, Math.min(1, opacityConfig.base + opacityVariance));
 
       const isBloom = plant.mood >= 4 && plant.growthStage === 'bloom';
 
@@ -370,16 +375,16 @@ class TubaTreeService {
     const scaled = scaledBezier(curve.start, curve.control, curve.end, parentLengthScale);
 
     for (let i = 0; i < maxSubs; i++) {
-      const forkT     = i === 0 ? SUB_BRANCH.forkT.first : SUB_BRANCH.forkT.second;
+      const forkT = i === 0 ? SUB_BRANCH.forkT.first : SUB_BRANCH.forkT.second;
       const direction = SUB_BRANCH.directions[i] ?? 1;
 
       const forkPoint = quadBezierPoint(curve.start, scaled.control, scaled.end, forkT);
-      const perp      = quadBezierPerpendicular(curve.start, scaled.control, scaled.end, forkT);
-      const tangent   = quadBezierTangentAngle(curve.start, scaled.control, scaled.end, forkT);
+      const perp = quadBezierPerpendicular(curve.start, scaled.control, scaled.end, forkT);
+      const tangent = quadBezierTangentAngle(curve.start, scaled.control, scaled.end, forkT);
 
-      const spread       = SUB_BRANCH.spread * direction;
-      const subLength    = SUB_BRANCH.lengthRatio * parentLengthScale * 80;
-      const tangentRad   = (tangent * Math.PI) / 180;
+      const spread = SUB_BRANCH.spread * direction;
+      const subLength = SUB_BRANCH.lengthRatio * parentLengthScale * 80;
+      const tangentRad = (tangent * Math.PI) / 180;
 
       const endX = forkPoint.x + Math.cos(tangentRad) * subLength + perp.x * spread;
       const endY = forkPoint.y + Math.sin(tangentRad) * subLength + perp.y * spread;
