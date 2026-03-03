@@ -230,7 +230,8 @@ const createStyles = (theme: AppTheme) =>
     chipRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingHorizontal: theme.spacing['2xl'],
+      paddingLeft: theme.spacing.sm,
+      paddingRight: theme.spacing['2xl'],
       paddingTop: theme.spacing.xs,
       paddingBottom: theme.spacing.sm,
       gap: theme.spacing.sm,
@@ -258,7 +259,6 @@ const createStyles = (theme: AppTheme) =>
       fontFamily: theme.typography.fontFamily.bodySemibold,
     },
     listContent: {
-      paddingHorizontal: theme.spacing['2xl'],
       paddingBottom: theme.spacing['4xl'],
     },
     duaCard: {
@@ -266,6 +266,7 @@ const createStyles = (theme: AppTheme) =>
       borderRadius: theme.borderRadius.lg,
       padding: theme.spacing.xl,
       marginBottom: theme.spacing.md,
+      marginHorizontal: theme.spacing['2xl'],
       borderWidth: 1,
       borderColor: theme.colors.border.primary,
     },
@@ -324,6 +325,7 @@ const createStyles = (theme: AppTheme) =>
     emptyState: {
       alignItems: 'center',
       paddingTop: theme.spacing['4xl'],
+      marginHorizontal: theme.spacing['2xl'],
     },
     emptyText: {
       fontSize: theme.typography.fontSize.md,
