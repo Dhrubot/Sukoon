@@ -147,6 +147,29 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
   // Data-driven trunk
   const trunkScale = treeData.trunkScale ?? TRUNK_SCALE[treeData.stage];
 
+  const trunkStrokeColor = useMemo(() => {
+    const stageColors: Record<string, string> = {
+      seedling: '#9CAF88',  // soft green — a living stem, not wood yet
+      sapling: '#7A8C5E',  // greener wood
+      growing: '#6B5A3E',  // transitioning to brown
+      flourishing: '#4E3A25',  // proper bark brown
+      ancient: '#3A2A15',  // deep rich old-growth brown
+    };
+    return stageColors[treeData.stage] || theme.colors.garden.trunk;
+  }, [treeData.stage, theme]);
+
+  const trunkHighlightColor = useMemo(() => {
+    // Highlight is slightly lighter than trunk
+    const highlightColors: Record<string, string> = {
+      seedling: '#B8CCAA',
+      sapling: '#96A87A',
+      growing: '#8A7252',
+      flourishing: '#6B5438',
+      ancient: '#5A4428',
+    };
+    return highlightColors[treeData.stage] || theme.colors.garden.trunkHighlight;
+  }, [treeData.stage, theme]);
+
   const trunkPath = useMemo(() => {
     const { start, control, end } = TRUNK;
     const sc = {
@@ -219,15 +242,15 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
           {/* Trunk */}
           <Path
             d={trunkPath}
-            stroke={theme.colors.garden.trunk}
+            stroke={trunkStrokeColor}
             strokeWidth={treeData.trunkWidth}
             fill="none"
             strokeLinecap="round"
           />
           <Path
             d={trunkPath}
-            stroke={theme.colors.garden.trunkHighlight}
-            strokeWidth={Math.max(2, treeData.trunkWidth * 0.4)}
+            stroke={trunkHighlightColor}       // ← was theme.colors.garden.trunkHighlight
+            strokeWidth={Math.max(0.8, treeData.trunkWidth * 0.3)}  // ← was Math.max(2, *0.4)
             fill="none"
             strokeLinecap="round"
           />
@@ -368,7 +391,7 @@ const AnimatedBranchGroup: React.FC<AnimatedBranchGroupProps> = React.memo(
     }));
 
     // Don't render zero-length branches
-    if (lengthScale <= 0) return null;
+    if (lengthScale <= 0 && leaves.length === 0) return null;
 
     const d = branchPathD(curve.start, curve.control, curve.end, lengthScale);
 
