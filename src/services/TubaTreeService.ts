@@ -1,10 +1,15 @@
 // src/services/TubaTreeService.ts
 //
-// v3 FIXES:
-//   • Tip-weighted leaf distribution (LEAF_DISTRIBUTION)
-//   • Tighter jitter at branch tips for natural clustering
-//   • Softer sub-branch departure curves (controlFactor 0.3)
-//   • __DEV__ logging to trace leaf placement issues
+// ╔══════════════════════════════════════════════════════════════════╗
+// ║  v5 FIXES — complete rewrite of seedling positioning            ║
+// ╚══════════════════════════════════════════════════════════════════╝
+//
+// v5 FIXES:
+//   • globalLeafStartIndex threaded from buildTreeData → buildBranch → positionLeaves
+//   • Seedling side/position driven by GLOBAL index, not per-branch index
+//   • Seedling leaves n=3,4 no longer stack on n=1,2 (root cause: same x,y formula)
+//   • Sapling branch lines visible even for 1–2 leaves (hairline stroke)
+//   • Cotyledon pattern: first 2 leaves wide at base, next 2 higher & narrower
 
 import { PrayerName } from '../types';
 import { GardenPlant, GrowthStage } from '../types/garden';
@@ -51,11 +56,13 @@ class TubaTreeService {
     const targetY = highestJunctionY - TRUNK_TOP_PADDING;
     const dataScale = trunkScaleForY(targetY);
     const stageFloor = TRUNK_SCALE[stage];
-    // Seedling: keep trunk short (stub). Data-driven scaling starts at sapling.
-    // Without this cap, 1 leaf at y=180 forces 61% trunk — looks like a pole.
+
+    // Seedling: cap at stageFloor + 0.20 so trunk stays short (stub).
+    // Without this, 1 Fajr leaf at junction y=180 forces 61% trunk height.
     const effectiveScale = stage === 'seedling'
-      ? stageFloor + 0.2
+      ? stageFloor + 0.20
       : Math.max(stageFloor, dataScale);
+
     const currentTrunkTopY = trunkTopY(effectiveScale);
 
     if (__DEV__) {
@@ -64,16 +71,27 @@ class TubaTreeService {
       console.log(`  highestJunctionY: ${highestJunctionY}, targetY: ${targetY}`);
       console.log(`  dataScale: ${dataScale.toFixed(3)}, stageFloor: ${stageFloor}, effectiveScale: ${effectiveScale.toFixed(3)}`);
       console.log(`  trunkTopY: ${currentTrunkTopY.toFixed(1)}`);
-      for (const def of BRANCH_DEFINITIONS) {
-        const bp = plantsByPrayer[def.prayer] || [];
-        const visible = def.curve.start.y >= currentTrunkTopY;
-        console.log(`  ${def.prayer}: ${bp.length} plants, junction y=${def.curve.start.y}, visible=${visible}`);
-      }
     }
+
+    // ── THREAD globalLeafStartIndex through each branch ───────────
+    // This is the critical fix: every branch gets the running count
+    // of leaves already placed, so seedling positioning uses a global
+    // index rather than a per-branch one.
+    let globalLeafStartIndex = 0;
 
     const branches: TreeBranch[] = BRANCH_DEFINITIONS.map((def) => {
       const branchPlants = plantsByPrayer[def.prayer] || [];
-      return this.buildBranch(def.prayer, branchPlants, def, stage, currentTrunkTopY);
+      const branch = this.buildBranch(
+        def.prayer,
+        branchPlants,
+        def,
+        stage,
+        currentTrunkTopY,
+        globalLeafStartIndex,   // ← NEW: passed in, used in seedling mode
+      );
+      // Advance global counter by the number of plants on THIS branch
+      globalLeafStartIndex += Math.min(branchPlants.length, MAX_LEAVES_PER_BRANCH);
+      return branch;
     });
 
     const bloomCount = plants.filter(
@@ -81,8 +99,23 @@ class TubaTreeService {
     ).length;
 
     if (__DEV__) {
+      for (const def of BRANCH_DEFINITIONS) {
+        const bp = plantsByPrayer[def.prayer] || [];
+        const visible = stage === 'seedling'
+          ? bp.length > 0
+          : def.curve.start.y >= currentTrunkTopY;
+        console.log(`  ${def.prayer}: ${bp.length} plants, junction y=${def.curve.start.y}, visible=${visible}`);
+      }
       const totalRenderedLeaves = branches.reduce((sum, b) => sum + b.leaves.length, 0);
       console.log(`  totalRenderedLeaves: ${totalRenderedLeaves}, bloomCount: ${bloomCount}`);
+      branches.forEach((b) => {
+        if (b.leaves.length > 0) {
+          console.log(`  [${b.prayer}] lengthScale=${b.lengthScale.toFixed(3)}, leaves=${b.leaves.length}`);
+          b.leaves.forEach((l, i) => {
+            console.log(`    leaf[${i}]: t=${l.t.toFixed(3)}, x=${l.x.toFixed(1)}, y=${l.y.toFixed(1)}, stage=${l.growthStage}`);
+          });
+        }
+      });
       console.log('[TubaTree] ═══════════════════');
     }
 
@@ -118,10 +151,13 @@ class TubaTreeService {
     def: typeof BRANCH_DEFINITIONS[number],
     stage: TreeStage,
     currentTrunkTopY: number,
+    globalLeafStartIndex: number,   // ← NEW PARAM
   ): TreeBranch {
+    // Seedling: every branch with plants is "visible" — leaves render at trunk top
     const branchVisible = stage === 'seedling'
       ? plants.length > 0
       : def.curve.start.y >= currentTrunkTopY;
+
     const visiblePlants = branchVisible ? plants.slice(0, MAX_LEAVES_PER_BRANCH) : [];
     const leafCount = visiblePlants.length;
 
@@ -132,39 +168,39 @@ class TubaTreeService {
       lengthScale = 0;
       strokeWidth = 0;
     } else if (stage === 'seedling') {
-      // Seedling: NO branch line at all. Leaves will be placed at trunk
-      // top directly in positionLeaves() — exactly like the SeedlingSVG.
+      // Seedling: no branch geometry needed — positionLeaves handles placement
+      // directly relative to trunk top. lengthScale=0 means no Path is drawn.
       lengthScale = 0;
       strokeWidth = 0;
-    } else if (leafCount <= 2) {
-      // Sapling with 1-2 leaves on a branch: micro-stub, barely visible
-      lengthScale = 0.14;
-      strokeWidth = 0;   // still no visible line — leaf only
     } else {
-      // n=3  → 0.10 + (1/10)*0.90 = 0.19 (first visible stub)
-      // n=6  → 0.10 + (4/10)*0.90 = 0.46
-      // n=12 → 0.10 + (10/10)*0.90 = 1.00
-      const ratio = (leafCount - 2) / (MAX_LEAVES_PER_BRANCH - 2);
-      lengthScale = Math.min(0.10 + ratio * 0.90, 1.0);
-      strokeWidth =
-        BRANCH_STYLE.minStrokeWidth +
-        (Math.min(leafCount, BRANCH_STYLE.fullThicknessAt) /
-          BRANCH_STYLE.fullThicknessAt) *
-        (BRANCH_STYLE.maxStrokeWidth - BRANCH_STYLE.minStrokeWidth);
+      if (leafCount === 1) {
+        lengthScale = 0.50;  // half-grown branch, bud at tip
+        strokeWidth = 1.2;   // hairline
+      } else if (leafCount === 2) {
+        lengthScale = 0.58;
+        strokeWidth = 1.8;
+      } else {
+        // n=3→35%, n=6→55%, n=9→76%, n=12→100%
+        const ratio = (leafCount - 3) / (MAX_LEAVES_PER_BRANCH - 3);
+        lengthScale = Math.min(0.35 + ratio * 0.65, 1.0);
+        strokeWidth = 2.5 + (Math.min(leafCount, BRANCH_STYLE.fullThicknessAt) /
+          BRANCH_STYLE.fullThicknessAt) * (BRANCH_STYLE.maxStrokeWidth - 2.5);
+      }
     }
 
-    const leaves = this.positionLeaves(prayer, visiblePlants, def, lengthScale, stage, currentTrunkTopY);
+    const leaves = this.positionLeaves(
+      prayer,
+      visiblePlants,
+      def,
+      lengthScale,
+      stage,
+      currentTrunkTopY,
+      globalLeafStartIndex,  // ← passed through
+    );
 
     const subBranches = branchVisible
       ? this.computeSubBranches(def, lengthScale, strokeWidth, stage)
       : [];
-
-    if (__DEV__ && leafCount > 0) {
-      console.log(`  [${prayer}] lengthScale=${lengthScale.toFixed(3)}, leaves=${leaves.length}`);
-      leaves.forEach((l, i) => {
-        console.log(`    leaf[${i}]: t=${l.t.toFixed(3)}, x=${l.x.toFixed(1)}, y=${l.y.toFixed(1)}, stage=${l.growthStage}`);
-      });
-    }
 
     return {
       prayer,
@@ -177,11 +213,6 @@ class TubaTreeService {
     };
   }
 
-  /**
-   * v3: Tip-weighted leaf distribution.
-   * Old: t = (index+1)/(n+1)  — uniform spacing
-   * New: t = floorT + range * pow(linearT, power)
-   */
   private positionLeaves(
     prayer: PrayerName,
     plants: GardenPlant[],
@@ -189,32 +220,68 @@ class TubaTreeService {
     lengthScale: number,
     stage: TreeStage,
     currentTrunkTopY: number,
+    globalLeafStartIndex: number,  // ← NEW PARAM
   ): TreeLeafData[] {
     if (plants.length === 0) return [];
 
     const n = plants.length;
 
-    // ── SEEDLING MODE ─────────────────────────────────────────────
-    // No branch at all. Leaves bud directly at trunk top, alternating
-    // left/right — exactly matching the SeedlingSVG illustration.
+    // ═══════════════════════════════════════════════════════════════
+    // SEEDLING MODE (total plants 1–4)
+    //
+    // Each leaf grows on a tiny stub that exits in its branch's own
+    // geometric direction: normalize(control − start).
+    //
+    //   Fajr    dir=(-0.800,-0.600)  → upper-left
+    //   Dhuhr   dir=(+0.800,-0.600)  → upper-right
+    //   Asr     dir=(+0.958,-0.287)  → right-low
+    //   Maghrib dir=(-0.958,-0.287)  → left-low
+    //   Isha    dir=(+0.025,-1.000)  → straight-up
+    //
+    // Five distinct directions = zero overlaps for n=1..5 guaranteed.
+    //
+    // Stub length shrinks per global pair:
+    //   pair 0 (global 0–1): 14px  widest spread (cotyledons)
+    //   pair 1 (global 2–3): 11px  narrower      (first true leaves)
+    //   pair 2 (global 4+):   8px  narrowest     (subsequent whorls)
+    //
+    // CRITICAL FIX: position driven by BRANCH DIRECTION VECTOR, not
+    // by (index%2===0)?-1:1 which stacked all first-leaves at same xy.
+    // ═══════════════════════════════════════════════════════════════
     if (stage === 'seedling') {
-      return plants.slice(0, 4).map((plant, index) => {
-        const hash = leafHash(prayer, plant.date, index);
-        const side = (index % 2 === 0) ? -1 : 1;
-        // Spread leaves around trunk top: inner pair close, outer pair wider
-        // NEW — n=1: nearly centered. n=2: symmetric pair. n=3+: spread out:
-        const baseSpread = n === 1 ? 4 : n === 2 ? 8 : (10 + (index < 2 ? 0 : 5));
-        const xOffset = side * (baseSpread + (hash % 4));
-        const yOffset = -(hash % 6);   // slight upward variation (0–5px above trunk top)
-        // Rotation: always upward, slight outward tilt. Never exceeds ±50°.
-        const rotation = side * (12 + (hash % 28));  // 12–40°, mirrored per side
+      // Branch exit direction = normalize(control − start)
+      const ddx = def.curve.control.x - def.curve.start.x;
+      const ddy = def.curve.control.y - def.curve.start.y;
+      const dlen = Math.sqrt(ddx * ddx + ddy * ddy) || 1;
+      const dirX = ddx / dlen;
+      const dirY = ddy / dlen;
+
+      return plants.slice(0, 4).map((plant, localIndex) => {
+        const globalIdx = globalLeafStartIndex + localIndex;
+        const hash = leafHash(prayer, plant.date, localIndex);
+
+        // Stub length by global pair index
+        const pairIndex = Math.floor(globalIdx / 2);
+        const stubLen = Math.max(8, 14 - pairIndex * 3); // 14 → 11 → 8
+
+        // ±1px organic jitter
+        const jitter = (hash % 3) - 1;
+
+        const x = TRUNK.start.x + dirX * stubLen + jitter;
+        const y = currentTrunkTopY + dirY * stubLen + jitter;
+
+        // Rotation: align with stub direction.
+        // atan2(dy,dx) gives angle from right axis.
+        // +90° because SVG ellipse ry>rx is vertical at rotation=0.
+        const angleDeg = (Math.atan2(dirY, dirX) * 180) / Math.PI;
+        const rotation = angleDeg + 90 + ((hash % 20) - 10);
 
         const opacityConfig = LEAF_OPACITY[plant.growthStage];
         return {
-          id: `${prayer}-${plant.date}-${index}`,
+          id: `${prayer}-${plant.date}-${localIndex}`,
           t: 0,
-          x: TRUNK.start.x + xOffset,  // centered on trunk (x=160)
-          y: currentTrunkTopY + yOffset,
+          x,
+          y,
           rotation,
           growthStage: plant.growthStage,
           isBloom: false,
@@ -227,18 +294,27 @@ class TubaTreeService {
       });
     }
 
-    // ── NORMAL BRANCH MODE (sapling+) ────────────────────────────
+    // ═══════════════════════════════════════════════════════════════
+    // NORMAL BRANCH MODE (sapling, growing, flourishing, ancient)
+    // ═══════════════════════════════════════════════════════════════
     if (lengthScale <= 0) return [];
 
     const { curve } = def;
     const scaled = scaledBezier(curve.start, curve.control, curve.end, lengthScale);
 
     return plants.map((plant, index) => {
-      // Base-first distribution: oldest leaf at junction, newest at tip
-      // n=1 → linearT=0 → t=floorT (right at junction)
-      // n=12, last → linearT=1 → t=0.93 (near tip)
-      const linearT = n === 1 ? 0 : index / (n - 1);
-      const t = LEAF_DISTRIBUTION.floorT + LEAF_DISTRIBUTION.range * linearT;
+      // Base-first: oldest leaf at junction (t≈floorT), newest at tip.
+      // n=1 → linearT=0 → t=floorT (junction)
+      // n=12, last leaf → linearT=1 → t=0.93 (near tip)
+      // (v6 tip-first T):
+      let t: number;
+      if (n === 1) {
+        t = 0.82;  // single bud: always at tip
+      } else if (n === 2) {
+        t = index === 0 ? 0.35 : 0.82;  // base + tip, 47px apart on Fajr
+      } else {
+        t = 0.05 + 0.88 * (index / (n - 1));  // linear base→tip
+      }
 
       const pos = quadBezierPoint(curve.start, scaled.control, scaled.end, t);
       const perp = quadBezierPerpendicular(curve.start, scaled.control, scaled.end, t);
@@ -254,16 +330,11 @@ class TubaTreeService {
       const x = pos.x + perp.x * jitterMagnitude;
       const y = pos.y + perp.y * jitterMagnitude;
 
-      // ── SKY-BIASED ROTATION ─────────────────────────────────────
-      // OLD: used raw tangentAngle (~217° for Fajr) → leaves pointed DOWN.
-      //
-      // NEW: base on def.baseAngle (branch's natural outward direction):
-      //   Fajr=-45, Dhuhr=+45, Asr=+55, Maghrib=-55, Isha=0
-      // 55% of baseAngle gives an upward-biased tilt toward each branch's
-      // side. ±28° jitter adds organic variation. Result always stays in
-      // the [-80°, +80°] range → leaves ALWAYS point upward. ✓
+      // ── SKY-BIASED ROTATION ────────────────────────────────────
+      // baseAngle: Fajr=-45, Dhuhr=+45, Asr=+55, Maghrib=-55, Isha=0
+      // Leaves always tilt outward and skyward — never point down.
       const outwardLean = def.baseAngle * 0.55;
-      const tipTilt = (t - 0.3) * 12;  // small extra tilt as you approach tip
+      const tipTilt = (t - 0.3) * 12;
       const rotJitter = ((hash % 140 - 70) / 70) * 28;
       const rotation = outwardLean + tipTilt + rotJitter;
 
@@ -290,9 +361,6 @@ class TubaTreeService {
     });
   }
 
-  /**
-   * v3: softer sub-branch fork departure.
-   */
   private computeSubBranches(
     def: typeof BRANCH_DEFINITIONS[number],
     parentLengthScale: number,
@@ -321,7 +389,6 @@ class TubaTreeService {
       const endX = forkPoint.x + Math.cos(tangentRad) * subLength + perp.x * spread;
       const endY = forkPoint.y + Math.sin(tangentRad) * subLength + perp.y * spread;
 
-      // v3: softer control point placement
       const ctrlX = forkPoint.x
         + Math.cos(tangentRad) * subLength * SUB_BRANCH.controlFactor
         + perp.x * spread * SUB_BRANCH.controlSpreadFactor;
