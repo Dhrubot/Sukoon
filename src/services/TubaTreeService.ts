@@ -23,9 +23,11 @@ import {
   LEAF_JITTER,
   LEAF_DISTRIBUTION,
   MAX_LEAVES_PER_BRANCH,
+  MAX_LEAVES_PER_SUB_BRANCH,
   MAX_TOTAL_LEAVES,
   SUB_BRANCH,
   SUB_BRANCH_STAGES,
+  ANCIENT_FULL_THRESHOLD,
   PHYLLOTAXIS,
   quadBezierPoint,
   quadBezierTangentAngle,
@@ -98,11 +100,13 @@ class TubaTreeService {
         currentTrunkTopY,
         branchWidthCap,
         globalLeafStartIndex,
+        growthState.totalLifetimeReflections,
       );
+      const subLeafCount = branch.subBranches.reduce((s, sb) => s + sb.leaves.length, 0);
       globalLeafStartIndex += Math.min(
         Math.max(lifetimeCount, branchPlants.length),
         MAX_LEAVES_PER_BRANCH,
-      );
+      ) + subLeafCount;
       return branch;
     });
 
@@ -113,11 +117,15 @@ class TubaTreeService {
     const totalLeaves = Math.min(growthState.totalLifetimeReflections, MAX_TOTAL_LEAVES);
 
     if (__DEV__) {
-      const totalRenderedLeaves = branches.reduce((sum, b) => sum + b.leaves.length, 0);
+      const totalRenderedLeaves = branches.reduce((sum, b) => {
+        const subLeaves = b.subBranches.reduce((s, sb) => s + sb.leaves.length, 0);
+        return sum + b.leaves.length + subLeaves;
+      }, 0);
       console.log(`  totalRenderedLeaves: ${totalRenderedLeaves}, bloomCount: ${bloomCount}`);
       branches.forEach((b) => {
-        if (b.leaves.length > 0) {
-          console.log(`  [${b.prayer}] lengthScale=${b.lengthScale.toFixed(3)}, leaves=${b.leaves.length}`);
+        const subLeaves = b.subBranches.reduce((s, sb) => s + sb.leaves.length, 0);
+        if (b.leaves.length > 0 || subLeaves > 0) {
+          console.log(`  [${b.prayer}] lengthScale=${b.lengthScale.toFixed(3)}, leaves=${b.leaves.length}, subLeaves=${subLeaves}`);
         }
       });
       console.log('[TubaTree] ═══════════════════');
@@ -153,6 +161,7 @@ class TubaTreeService {
     currentTrunkTopY: number,
     branchWidthCap: number,
     globalLeafStartIndex: number,
+    totalLifetimeReflections: number,
   ): TreeBranch {
     // Use lifetime count for geometry (never regresses)
     const geometryCount = Math.min(lifetimeCount, MAX_LEAVES_PER_BRANCH);
@@ -205,8 +214,18 @@ class TubaTreeService {
       globalLeafStartIndex,
     );
 
+    // ── OVERFLOW LEAVES → SUB-BRANCHES ──────────────────────────
+    // Any leaves beyond MAX_LEAVES_PER_BRANCH spill onto sub-branches.
+    const overflowTotal = Math.max(0, lifetimeCount - MAX_LEAVES_PER_BRANCH);
+    const overflowRecent = recentPlants.slice(MAX_LEAVES_PER_BRANCH);
+
     const subBranches = branchVisible
-      ? this.computeSubBranches(def, lengthScale, strokeWidth, stage)
+      ? this.computeSubBranches(
+          prayer, def, lengthScale, strokeWidth, stage, g, currentTrunkTopY,
+          overflowTotal, overflowRecent,
+          globalLeafStartIndex + leaves.length,
+          totalLifetimeReflections,
+        )
       : [];
 
     return {
@@ -389,20 +408,33 @@ class TubaTreeService {
   }
 
   private computeSubBranches(
+    prayer: PrayerName,
     def: typeof BRANCH_DEFINITIONS[number],
     parentLengthScale: number,
     parentStrokeWidth: number,
     stage: TreeStage,
+    g: number,
+    currentTrunkTopY: number,
+    overflowTotal: number,
+    overflowRecent: GardenPlant[],
+    subLeafGlobalStart: number,
+    totalLifetimeReflections: number,
   ): SubBranch[] {
-    const maxSubs = SUB_BRANCH_STAGES[stage] ?? 0;
+    // Resolve effective sub-branch count: ancientFull (3) at 1000+ reflections
+    const effectiveStage = (stage === 'ancient' && totalLifetimeReflections >= ANCIENT_FULL_THRESHOLD)
+      ? 'ancientFull'
+      : stage;
+    const maxSubs = SUB_BRANCH_STAGES[effectiveStage] ?? 0;
     if (maxSubs === 0 || parentLengthScale < 0.4) return [];
 
     const results: SubBranch[] = [];
     const { curve } = def;
     const scaled = scaledBezier(curve.start, curve.control, curve.end, parentLengthScale);
 
+    let overflowOffset = 0;
+
     for (let i = 0; i < maxSubs; i++) {
-      const forkT = i === 0 ? SUB_BRANCH.forkT.first : SUB_BRANCH.forkT.second;
+      const forkT = SUB_BRANCH.forkT[i] ?? 0.35;
       const direction = SUB_BRANCH.directions[i] ?? 1;
 
       const forkPoint = quadBezierPoint(curve.start, scaled.control, scaled.end, forkT);
@@ -423,14 +455,128 @@ class TubaTreeService {
         + Math.sin(tangentRad) * subLength * SUB_BRANCH.controlFactor
         + perp.y * spread * SUB_BRANCH.controlSpreadFactor;
 
+      // ── Position overflow leaves on this sub-branch ──────────
+      const subOverflowAvail = Math.max(0, overflowTotal - overflowOffset);
+      const subLeafCount = Math.min(subOverflowAvail, MAX_LEAVES_PER_SUB_BRANCH);
+      const subRecentSlice = overflowRecent.slice(overflowOffset, overflowOffset + subLeafCount);
+      const subArchivedCount = Math.max(0, subLeafCount - subRecentSlice.length);
+
+      const subCurve = {
+        start: forkPoint,
+        control: { x: ctrlX, y: ctrlY },
+        end: { x: endX, y: endY },
+      };
+
+      const subLeaves = this.positionSubBranchLeaves(
+        prayer, subCurve, subLeafCount, subRecentSlice, subArchivedCount,
+        def.baseAngle, direction, g, currentTrunkTopY,
+        subLeafGlobalStart + overflowOffset,
+      );
+
+      overflowOffset += subLeafCount;
+
       results.push({
         d: `M ${forkPoint.x.toFixed(1)} ${forkPoint.y.toFixed(1)} Q ${ctrlX.toFixed(1)} ${ctrlY.toFixed(1)} ${endX.toFixed(1)} ${endY.toFixed(1)}`,
         strokeWidth: parentStrokeWidth * SUB_BRANCH.strokeRatio,
         opacity: SUB_BRANCH.opacity,
+        leaves: subLeaves,
       });
     }
 
     return results;
+  }
+
+  // ─── Position leaves along a sub-branch curve ───────────────────
+  private positionSubBranchLeaves(
+    prayer: PrayerName,
+    curve: { start: { x: number; y: number }; control: { x: number; y: number }; end: { x: number; y: number } },
+    totalCount: number,
+    recentPlants: GardenPlant[],
+    archivedCount: number,
+    parentBaseAngle: number,
+    direction: number,
+    g: number,
+    currentTrunkTopY: number,
+    globalStartIndex: number,
+  ): TreeLeafData[] {
+    if (totalCount === 0) return [];
+
+    const n = totalCount;
+    const leaves: TreeLeafData[] = [];
+
+    for (let index = 0; index < n; index++) {
+      const isArchived = index < archivedCount;
+      const recentIdx = index - archivedCount;
+      const plant = isArchived ? null : (recentPlants[recentIdx] ?? null);
+
+      // ── T-POSITION: spread along sub-branch ────────────────
+      let t: number;
+      if (n === 1) {
+        t = 0.65;
+      } else {
+        t = 0.15 + 0.70 * (index / (n - 1));
+      }
+
+      const pos = quadBezierPoint(curve.start, curve.control, curve.end, t);
+      const perp = quadBezierPerpendicular(curve.start, curve.control, curve.end, t);
+
+      // ── PHYLLOTAXIS: alternating sides, tighter than main branch ──
+      const hash = leafHash(prayer, plant?.date ?? `sub-${index}`, globalStartIndex + index);
+      const phyllSign = (index % 2 === 0) ? 1 : -1;
+      const offsetMag = PHYLLOTAXIS.alternateOffset * 0.6 * (1 - t * 0.5);
+      const jitterFrac = ((hash % 100) / 100) * 0.2;
+      const perpMag = (offsetMag + jitterFrac) * LEAF_JITTER.maxOffset * 0.7 * phyllSign;
+
+      let x = pos.x + perp.x * perpMag;
+      let y = pos.y + perp.y * perpMag;
+
+      // ── CANOPY CLAMP ──────────────────────────────────────
+      const clamped = clampToCanopy(x, y, currentTrunkTopY);
+      x = clamped.x;
+      y = clamped.y;
+
+      // ── ROTATION ──────────────────────────────────────────
+      const outwardLean = parentBaseAngle * 0.4 * direction;
+      const tipTilt = (t - 0.3) * 8;
+      const phyllRot = phyllSign * 15 * (1 - t * 0.5);
+      const rotJitter = ((hash % 40 - 20) / 20) * 10;
+      const rotation = outwardLean + tipTilt + phyllRot + rotJitter;
+
+      // ── GROWTH STAGE + OPACITY ────────────────────────────
+      const growthStage: GrowthStage = plant?.growthStage ?? 'sprout';
+      const opacityConfig = LEAF_OPACITY[growthStage];
+      const rawOpacity = isArchived
+        ? opacityConfig.base * 0.80
+        : Math.max(0.4, Math.min(1, opacityConfig.base));
+
+      // ── AGE FRACTION ──────────────────────────────────────
+      // Sub-branch leaves are newer than main branch leaves
+      const ageFraction = n > 1 ? 1 - (index / (n - 1)) : 0;
+      // Scale down: sub-branch leaves are overall younger
+      const adjustedAge = ageFraction * 0.6;
+      const opacity = ageAdjustedOpacity(rawOpacity, adjustedAge);
+
+      const isBloom = !isArchived && (plant?.mood ?? 0) >= 4 && growthStage === 'bloom';
+
+      leaves.push({
+        id: `${prayer}-sub-${plant?.date ?? `arch-${index}`}-${globalStartIndex + index}`,
+        t,
+        x,
+        y,
+        rotation,
+        growthStage,
+        isBloom,
+        hasText: plant?.hasText ?? false,
+        opacity,
+        isArchived,
+        ageFraction: adjustedAge,
+        prayer,
+        date: plant?.date ?? '',
+        mood: plant?.mood ?? 3,
+      });
+    }
+
+    return leaves;
   }
 }
 

@@ -124,6 +124,8 @@ export interface SubBranch {
   strokeWidth: number;
   /** Opacity */
   opacity: number;
+  /** Leaves positioned along this sub-branch */
+  leaves: TreeLeafData[];
 }
 
 // ─── Leaf Detail (Phase 3) ─────────────────────────────────────────

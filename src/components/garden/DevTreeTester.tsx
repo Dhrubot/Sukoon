@@ -36,11 +36,11 @@ interface StagePreset {
 }
 
 const STAGE_PRESETS: StagePreset[] = [
-  { stage: 'seedling',    label: 'Seedling',    totalReflections: 3,   emoji: '🌱' },
-  { stage: 'sapling',     label: 'Sapling',     totalReflections: 12,  emoji: '🌿' },
-  { stage: 'growing',     label: 'Growing',     totalReflections: 35,  emoji: '🌳' },
-  { stage: 'flourishing', label: 'Flourishing', totalReflections: 75,  emoji: '🌸' },
-  { stage: 'ancient',     label: 'Ancient',     totalReflections: 120, emoji: '🏛️' },
+  { stage: 'seedling',    label: 'Seedling',    totalReflections: 8,    emoji: '🌱' },
+  { stage: 'sapling',     label: 'Sapling',     totalReflections: 45,   emoji: '🌿' },
+  { stage: 'growing',     label: 'Growing',     totalReflections: 160,  emoji: '🌳' },
+  { stage: 'flourishing', label: 'Flourishing', totalReflections: 500,  emoji: '🌸' },
+  { stage: 'ancient',     label: 'Ancient',     totalReflections: 1100, emoji: '🏛️' },
 ];
 
 const PRAYERS: PrayerName[] = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];

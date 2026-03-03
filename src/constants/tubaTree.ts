@@ -60,11 +60,11 @@ export const BRANCH_DEFINITIONS: BranchDefinition[] = [
 ];
 
 export const STAGE_THRESHOLDS: { stage: TreeStage; min: number; max: number }[] = [
-  { stage: 'seedling', min: 0, max: 4 },
-  { stage: 'sapling', min: 5, max: 19 },
-  { stage: 'growing', min: 20, max: 49 },
-  { stage: 'flourishing', min: 50, max: 99 },
-  { stage: 'ancient', min: 100, max: Infinity },
+  { stage: 'seedling', min: 0, max: 14 },        // ~3 days at 5/day
+  { stage: 'sapling', min: 15, max: 74 },         // ~3 days to ~2 weeks
+  { stage: 'growing', min: 75, max: 249 },        // ~2 weeks to ~7 weeks
+  { stage: 'flourishing', min: 250, max: 749 },   // ~7 weeks to ~5 months
+  { stage: 'ancient', min: 750, max: Infinity },   // ~5+ months
 ];
 
 export const STAGE_INFO: Record<TreeStage, { name: string; arabic: string }> = {
@@ -90,7 +90,8 @@ export const LEAF_OPACITY: Record<GrowthStage, { base: number; variance: number 
 export const BLOOM_SPARKLE = { radius: 2, offsetRatio: 0.7 } as const;
 export const BRANCH_STYLE = { minStrokeWidth: 2.5, maxStrokeWidth: 5.5, fullThicknessAt: 10 } as const;
 export const MAX_LEAVES_PER_BRANCH = 12;
-export const MAX_TOTAL_LEAVES = 60;
+export const MAX_LEAVES_PER_SUB_BRANCH = 6;
+export const MAX_TOTAL_LEAVES = 150;
 export const LEAF_JITTER = { maxOffset: 8, maxRotation: 25 } as const;
 
 // ── TIP-WEIGHTED LEAF DISTRIBUTION (v3) ────────────────────────────
@@ -273,19 +274,21 @@ export function trunkScaleForY(targetY: number): number {
 // ═══════════════════════════════════════════════════════════════════
 
 export const SUB_BRANCH = {
-  forkT: { first: 0.70, second: 0.50 },
+  forkT: [0.70, 0.50, 0.35] as readonly number[],
   lengthRatio: 0.45,
   spread: 35,
   strokeRatio: 0.5,
   opacity: 0.65,
-  directions: [1, -1] as readonly number[],
+  directions: [1, -1, 1] as readonly number[],
   /** v3: softer departure — was 0.5 */
   controlFactor: 0.3,
   /** v3: tighter initial curve — was 0.6 */
   controlSpreadFactor: 0.4,
 } as const;
 
-export const SUB_BRANCH_STAGES: Record<string, number> = { flourishing: 1, ancient: 2 };
+export const SUB_BRANCH_STAGES: Record<string, number> = { flourishing: 1, ancient: 2, ancientFull: 3 };
+// ancientFull threshold: 1000+ lifetime reflections triggers 3rd sub-branch
+export const ANCIENT_FULL_THRESHOLD = 1000;
 
 export const RAMADAN_STARS = [
   { x: 70, y: 18, size: 2.5, animDelay: 0.3 }, { x: 190, y: 28, size: 2, animDelay: 1.1 },
@@ -311,19 +314,40 @@ export const MINI_TREE = {
 // ═══════════════════════════════════════════════════════════════════
 
 // ── GROWTH CURVE ──────────────────────────────────────────────────
-// Logistic S-curve: slow start, rewarding middle, graceful plateau.
-// g(0)≈0, g(60)=0.50, g(120)≈0.97
+// Dual S-curve: fast initial growth (first weeks) + slow long-tail
+// maturation (evolves over months, approaches 1.0 around a year).
+//
+// At 5 prayers/day:
+//   n=25  (~5 days):   g ≈ 0.10  — visible seedling
+//   n=75  (~2 weeks):  g ≈ 0.30  — sapling with branches
+//   n=250 (~7 weeks):  g ≈ 0.60  — lush growing tree
+//   n=500 (~3 months): g ≈ 0.80  — flourishing canopy
+//   n=750 (~5 months): g ≈ 0.88  — ancient tree
+//   n=1825 (~1 year):  g ≈ 0.99  — fully mature
+//
 export const GROWTH_CURVE = {
-  midpoint: 60,
-  steepness: 0.06,
+  // Fast curve: drives visible growth in first ~2 months
+  fast: { midpoint: 80, steepness: 0.04 },
+  // Slow curve: drives maturation over months
+  slow: { midpoint: 600, steepness: 0.006 },
+  // Blend: 55% fast + 45% slow — ensures both early reward and long tail
+  fastWeight: 0.55,
+  slowWeight: 0.45,
 } as const;
 
 export function computeG(n: number): number {
   if (n <= 0) return 0;
-  const { steepness, midpoint } = GROWTH_CURVE;
-  const raw = 1 / (1 + Math.exp(-steepness * (n - midpoint)));
-  const floor = 1 / (1 + Math.exp(steepness * midpoint));
-  return Math.min(1, (raw - floor) / (1 - floor));
+  const { fast, slow, fastWeight, slowWeight } = GROWTH_CURVE;
+
+  const sigmoid = (x: number, mid: number, k: number) => {
+    const raw = 1 / (1 + Math.exp(-k * (x - mid)));
+    const floor = 1 / (1 + Math.exp(k * mid));
+    return (raw - floor) / (1 - floor);
+  };
+
+  const gFast = sigmoid(n, fast.midpoint, fast.steepness);
+  const gSlow = sigmoid(n, slow.midpoint, slow.steepness);
+  return Math.min(1, gFast * fastWeight + gSlow * slowWeight);
 }
 
 // ── STAGE FROM N (kept for discrete decisions: root count, sub-branches) ──

@@ -388,17 +388,30 @@ const AnimatedBranchGroup: React.FC<AnimatedBranchGroupProps> = React.memo(
           strokeLinecap="round"
         />
 
-        {/* Sub-branches */}
+        {/* Sub-branches + their leaves */}
         {subBranches.map((sub: SubBranch, i: number) => (
-          <Path
-            key={`sub-${prayer}-${i}`}
-            d={sub.d}
-            stroke={prayerColor}
-            strokeWidth={sub.strokeWidth}
-            fill="none"
-            strokeLinecap="round"
-            opacity={sub.opacity}
-          />
+          <React.Fragment key={`sub-${prayer}-${i}`}>
+            <Path
+              d={sub.d}
+              stroke={prayerColor}
+              strokeWidth={sub.strokeWidth}
+              fill="none"
+              strokeLinecap="round"
+              opacity={sub.opacity}
+            />
+            {sub.leaves.map((leaf, leafIdx) => (
+              <TreeLeaf
+                key={leaf.id}
+                leaf={leaf}
+                color={prayerColor}
+                bloomGlowColor={bloomGlowColor}
+                branchIndex={branchIndex}
+                leafIndex={leaves.length + leafIdx}
+                growthG={growthG}
+                onPress={onLeafPress}
+              />
+            ))}
+          </React.Fragment>
         ))}
 
         {/* Leaves */}

@@ -66,8 +66,9 @@ class TreeGrowthStateService {
       state.firstReflectionDate = dateStr;
     }
 
-    // Recompute g from lifetime total
-    state.g = computeG(state.totalLifetimeReflections);
+    // Recompute g from lifetime total — ratcheted: never regress
+    const newG = computeG(state.totalLifetimeReflections);
+    state.g = Math.max(state.g, newG);
 
     // Ratchet stage — only advance, never regress
     const newStage = computeStage(state.totalLifetimeReflections);
