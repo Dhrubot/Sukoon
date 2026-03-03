@@ -38,6 +38,7 @@ import { AppTheme } from '../../theme';
 import { GardenPlant } from '../../types/garden';
 import { TreeData, TreeBranch, TreeLeafData, SubBranch } from '../../types/tubaTree';
 import TubaTreeService from '../../services/TubaTreeService';
+import TreeGrowthStateService from '../../services/TreeGrowthStateService';
 import TreeLeaf from './TreeLeaf';
 import TreeSky from './TreeSky';
 import { ramadanTokens } from '../../theme/tubaTreeTokens';
@@ -45,7 +46,6 @@ import {
   TREE_VIEWBOX,
   TREE_CANVAS_HEIGHT,
   TRUNK,
-  TRUNK_SCALE,
   ROOTS,
   ROOT_VISIBILITY,
   GROUND_COLORS,
@@ -54,6 +54,11 @@ import {
   BRANCH_SWAY,
   RAMADAN_GOLD_BLEND,
   branchPathD,
+  trunkColor,
+  swayMultiplier,
+  rootWidthScale,
+  trunkTaperSegments,
+  BRANCH_TAPER,
 } from '../../constants/tubaTree';
 
 const AnimatedG = Animated.createAnimatedComponent(G);
@@ -100,10 +105,10 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
 
-  const treeData: TreeData = useMemo(
-    () => TubaTreeService.buildTreeData(plants),
-    [plants],
-  );
+  const treeData: TreeData = useMemo(() => {
+    const growthState = TreeGrowthStateService.getState();
+    return TubaTreeService.buildTreeData(growthState, plants);
+  }, [plants]);
 
   // __DEV__ logging
   useEffect(() => {
@@ -144,46 +149,20 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
     return base;
   }, [theme, isRamadan, ramadanThemeTokens]);
 
-  // Data-driven trunk
-  const trunkScale = treeData.trunkScale ?? TRUNK_SCALE[treeData.stage];
+  // Continuous trunk geometry from g
+  const trunkScale = treeData.trunkScale;
+  const g = treeData.g;
 
-  const trunkStrokeColor = useMemo(() => {
-    const stageColors: Record<string, string> = {
-      seedling: '#9CAF88',  // soft green — a living stem, not wood yet
-      sapling: '#7A8C5E',  // greener wood
-      growing: '#6B5A3E',  // transitioning to brown
-      flourishing: '#4E3A25',  // proper bark brown
-      ancient: '#3A2A15',  // deep rich old-growth brown
-    };
-    return stageColors[treeData.stage] || theme.colors.garden.trunk;
-  }, [treeData.stage, theme]);
+  const trunkStrokeColor = useMemo(() => trunkColor(g), [g]);
 
-  const trunkHighlightColor = useMemo(() => {
-    // Highlight is slightly lighter than trunk
-    const highlightColors: Record<string, string> = {
-      seedling: '#B8CCAA',
-      sapling: '#96A87A',
-      growing: '#8A7252',
-      flourishing: '#6B5438',
-      ancient: '#5A4428',
-    };
-    return highlightColors[treeData.stage] || theme.colors.garden.trunkHighlight;
-  }, [treeData.stage, theme]);
-
-  const trunkPath = useMemo(() => {
-    const { start, control, end } = TRUNK;
-    const sc = {
-      x: start.x + (control.x - start.x) * trunkScale,
-      y: start.y + (control.y - start.y) * trunkScale,
-    };
-    const se = {
-      x: start.x + (end.x - start.x) * trunkScale,
-      y: start.y + (end.y - start.y) * trunkScale,
-    };
-    return `M ${start.x} ${start.y} Q ${sc.x} ${sc.y} ${se.x} ${se.y}`;
-  }, [trunkScale]);
+  // Trunk taper: 12 segments with interpolated width
+  const taperSegs = useMemo(
+    () => trunkTaperSegments(TRUNK.start, TRUNK.control, TRUNK.end, trunkScale, treeData.trunkWidth),
+    [trunkScale, treeData.trunkWidth],
+  );
 
   const visibleRootCount = ROOT_VISIBILITY[treeData.stage];
+  const rootScale = useMemo(() => rootWidthScale(g), [g]);
 
   const groundConfig = useMemo(() => {
     const themeKey = theme.mode as keyof typeof GROUND_COLORS;
@@ -226,34 +205,30 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
             })}
           </Defs>
 
-          {/* Roots */}
+          {/* Roots — scaled by g */}
           {ROOTS.slice(0, visibleRootCount).map((root, i) => (
             <Path
               key={`root-${i}`}
               d={root.d}
-              stroke={theme.colors.garden.trunk}
-              strokeWidth={root.width}
+              stroke={trunkStrokeColor}
+              strokeWidth={root.width * rootScale}
               fill="none"
               strokeLinecap="round"
               opacity={root.opacity}
             />
           ))}
 
-          {/* Trunk */}
-          <Path
-            d={trunkPath}
-            stroke={trunkStrokeColor}
-            strokeWidth={treeData.trunkWidth}
-            fill="none"
-            strokeLinecap="round"
-          />
-          <Path
-            d={trunkPath}
-            stroke={trunkHighlightColor}       // ← was theme.colors.garden.trunkHighlight
-            strokeWidth={Math.max(0.8, treeData.trunkWidth * 0.3)}  // ← was Math.max(2, *0.4)
-            fill="none"
-            strokeLinecap="round"
-          />
+          {/* Trunk — 12-segment taper */}
+          {taperSegs.map((seg, i) => (
+            <Path
+              key={`trunk-${i}`}
+              d={`M ${seg.x1.toFixed(1)} ${seg.y1.toFixed(1)} L ${seg.x2.toFixed(1)} ${seg.y2.toFixed(1)}`}
+              stroke={trunkStrokeColor}
+              strokeWidth={seg.width}
+              fill="none"
+              strokeLinecap="round"
+            />
+          ))}
 
           {/* Branches + Leaves */}
           {treeData.branches.map((branch, branchIndex) => (
@@ -263,6 +238,7 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
               branchIndex={branchIndex}
               prayerColor={getPrayerColor(branch.prayer)}
               bloomGlowColor={theme.colors.garden.bloomGlow}
+              growthG={g}
               onLeafPress={onLeafPress}
             />
           ))}
@@ -333,11 +309,12 @@ interface AnimatedBranchGroupProps {
   branchIndex: number;
   prayerColor: string;
   bloomGlowColor: string;
+  growthG: number;
   onLeafPress?: (leaf: TreeLeafData) => void;
 }
 
 const AnimatedBranchGroup: React.FC<AnimatedBranchGroupProps> = React.memo(
-  ({ branch, branchIndex, prayerColor, bloomGlowColor, onLeafPress }) => {
+  ({ branch, branchIndex, prayerColor, bloomGlowColor, growthG, onLeafPress }) => {
     const { curve, lengthScale, strokeWidth, leaves, prayer, subBranches } = branch;
 
     const swayRotation = useSharedValue(0);
@@ -346,13 +323,14 @@ const AnimatedBranchGroup: React.FC<AnimatedBranchGroupProps> = React.memo(
     // Natural-wind sway: asymmetric timing, per-branch period/amplitude,
     // staggered phase delays.  Gust forward (38% of cycle) with cubic
     // ease-out; settle back (62%) with sinusoidal ease-in-out.
+    // Amplitude scaled by g: seedlings are whippy, ancient trees stately.
 
     useEffect(() => {
       if (lengthScale <= 0) return;
 
       const idx = branchIndex % BRANCH_SWAY.periods.length;
       const period = BRANCH_SWAY.periods[idx];
-      const amp = BRANCH_SWAY.amplitudes[idx];
+      const amp = BRANCH_SWAY.amplitudes[idx] * swayMultiplier(growthG);
       const delay = BRANCH_SWAY.phaseDelays[idx];
 
       const gustMs = Math.round(period * BRANCH_SWAY.windRatio);
@@ -432,6 +410,7 @@ const AnimatedBranchGroup: React.FC<AnimatedBranchGroupProps> = React.memo(
             bloomGlowColor={bloomGlowColor}
             branchIndex={branchIndex}
             leafIndex={leafIndex}
+            growthG={growthG}
             onPress={onLeafPress}
           />
         ))}

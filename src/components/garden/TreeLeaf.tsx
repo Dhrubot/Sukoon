@@ -41,6 +41,8 @@ import {
   LEAF_ENTRY,
   BLOOM_PULSE,
   LEAF_DETAIL,
+  leafSizeMultiplier,
+  ageAdjustedColor,
 } from '../../constants/tubaTree';
 
 const AnimatedEllipse = Animated.createAnimatedComponent(Ellipse);
@@ -52,6 +54,7 @@ interface TreeLeafProps {
   bloomGlowColor: string;
   branchIndex: number;
   leafIndex: number;
+  growthG: number;
   onPress?: (leaf: TreeLeafData) => void;
 }
 
@@ -61,9 +64,18 @@ const TreeLeaf: React.FC<TreeLeafProps> = ({
   bloomGlowColor,
   branchIndex,
   leafIndex,
+  growthG,
   onPress,
 }) => {
-  const size = LEAF_SIZES[leaf.growthStage];
+  const baseSize = LEAF_SIZES[leaf.growthStage];
+  const sizeScale = leafSizeMultiplier(growthG);
+  const size = { rx: baseSize.rx * sizeScale, ry: baseSize.ry * sizeScale };
+
+  // Age-adjusted leaf color: youngest (tip) lighter, oldest (base) deeper
+  const leafColor = useMemo(
+    () => ageAdjustedColor(color, leaf.ageFraction),
+    [color, leaf.ageFraction],
+  );
 
   // ── Entry animation ────────────────────────────────────────────
   const entryProgress = useSharedValue(0);
@@ -153,7 +165,7 @@ const TreeLeaf: React.FC<TreeLeafProps> = ({
       <AnimatedEllipse
         cx={0}
         cy={0}
-        fill={color}
+        fill={leafColor}
         animatedProps={leafAnimatedProps}
       />
 

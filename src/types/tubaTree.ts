@@ -63,6 +63,10 @@ export interface TreeLeafData {
   hasText: boolean;
   /** Opacity — slightly varied for organic feel */
   opacity: number;
+  /** Whether this leaf is an archived (lifetime) leaf with no backing recent record */
+  isArchived: boolean;
+  /** Age fraction: 0 = newest (tip), 1 = oldest (base) — drives color variation */
+  ageFraction: number;
   /** Prayer name (for detail overlay) */
   prayer: string;
   /** Date string YYYY-MM-DD (for detail overlay) */
@@ -100,12 +104,14 @@ export interface TreeData {
   /**
    * Trunk height scale factor (0–1).
    * Data-driven trunk scale computed as:
-   *   max(TRUNK_SCALE[stage], scaleToReachHighestBranchWithData)
+   *   max(trunkScaleFromG(g), scaleToReachHighestBranchWithData)
    *
    * At seedling it renders as a short stub;
    * at ancient it reaches full height.
    */
   trunkScale: number;
+  /** Continuous growth parameter [0, 1] — drives all geometry interpolation */
+  g: number;
 }
 
 // ─── Sub-Branch (Phase 3) ──────────────────────────────────────────

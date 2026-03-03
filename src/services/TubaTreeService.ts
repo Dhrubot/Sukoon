@@ -14,20 +14,19 @@
 import { PrayerName } from '../types';
 import { GardenPlant, GrowthStage } from '../types/garden';
 import { TreeData, TreeBranch, TreeLeafData, TreeStage, SubBranch } from '../types/tubaTree';
+import { TreeGrowthState } from '../types/treeGrowthState';
 import {
   BRANCH_DEFINITIONS,
   TRUNK,
-  TRUNK_SCALE,
   TRUNK_TOP_PADDING,
-  STAGE_THRESHOLDS,
   LEAF_OPACITY,
   LEAF_JITTER,
   LEAF_DISTRIBUTION,
-  BRANCH_STYLE,
   MAX_LEAVES_PER_BRANCH,
   MAX_TOTAL_LEAVES,
   SUB_BRANCH,
   SUB_BRANCH_STAGES,
+  PHYLLOTAXIS,
   quadBezierPoint,
   quadBezierTangentAngle,
   quadBezierPerpendicular,
@@ -35,85 +34,90 @@ import {
   leafHash,
   trunkTopY,
   trunkScaleForY,
+  trunkScaleFromG,
+  trunkBaseWidthFromG,
+  maxBranchWidth,
+  clampToCanopy,
+  ageAdjustedOpacity,
 } from '../constants/tubaTree';
 
 class TubaTreeService {
-  buildTreeData(plants: GardenPlant[]): TreeData {
-    const plantsByPrayer = this.groupByPrayer(plants);
-    const totalLeaves = Math.min(plants.length, MAX_TOTAL_LEAVES);
-    const stage = this.getTreeStage(plants.length);
+  buildTreeData(growthState: TreeGrowthState, recentPlants: GardenPlant[]): TreeData {
+    const { g, stage } = growthState;
+    const plantsByPrayer = this.groupByPrayer(recentPlants);
 
-    // ── DATA-DRIVEN TRUNK HEIGHT ──────────────────────────────────
+    // ── CONTINUOUS TRUNK GEOMETRY FROM g ─────────────────────────
+    const gScale = trunkScaleFromG(g);
+    const trunkWidth = trunkBaseWidthFromG(g);
+
+    // Data-driven override: ensure trunk reaches highest branch with data
     let highestJunctionY = TRUNK.start.y;
-
     for (const def of BRANCH_DEFINITIONS) {
-      const branchPlants = plantsByPrayer[def.prayer] || [];
-      if (branchPlants.length > 0) {
+      const lifetimeCount = growthState.branchLifetimeLeaves[def.prayer] || 0;
+      if (lifetimeCount > 0) {
         highestJunctionY = Math.min(highestJunctionY, def.curve.start.y);
       }
     }
 
     const targetY = highestJunctionY - TRUNK_TOP_PADDING;
     const dataScale = trunkScaleForY(targetY);
-    const stageFloor = TRUNK_SCALE[stage];
 
-    // Seedling: cap at stageFloor + 0.20 so trunk stays short (stub).
-    // Without this, 1 Fajr leaf at junction y=180 forces 61% trunk height.
+    // Seedling: cap trunk height so it stays a short stub
     const effectiveScale = stage === 'seedling'
-      ? stageFloor + 0.20
-      : Math.max(stageFloor, dataScale);
+      ? Math.min(gScale + 0.20, 0.35)
+      : Math.max(gScale, dataScale);
 
     const currentTrunkTopY = trunkTopY(effectiveScale);
 
+    // ── DA VINCI BRANCH WIDTH CONSTRAINT ─────────────────────────
+    const activeBranches = BRANCH_DEFINITIONS.filter(
+      (def) => (growthState.branchLifetimeLeaves[def.prayer] || 0) > 0,
+    ).length;
+    const branchWidthCap = maxBranchWidth(trunkWidth, Math.max(1, activeBranches));
+
     if (__DEV__) {
-      console.log('[TubaTree] ═══ buildTreeData ═══');
-      console.log(`  plants: ${plants.length}, stage: ${stage}`);
-      console.log(`  highestJunctionY: ${highestJunctionY}, targetY: ${targetY}`);
-      console.log(`  dataScale: ${dataScale.toFixed(3)}, stageFloor: ${stageFloor}, effectiveScale: ${effectiveScale.toFixed(3)}`);
-      console.log(`  trunkTopY: ${currentTrunkTopY.toFixed(1)}`);
+      console.log('[TubaTree] ═══ buildTreeData (v6 continuous) ═══');
+      console.log(`  g: ${g.toFixed(3)}, stage: ${stage}, lifetime: ${growthState.totalLifetimeReflections}`);
+      console.log(`  trunkWidth: ${trunkWidth.toFixed(1)}, gScale: ${gScale.toFixed(3)}, effectiveScale: ${effectiveScale.toFixed(3)}`);
+      console.log(`  branchWidthCap: ${branchWidthCap.toFixed(1)}, activeBranches: ${activeBranches}`);
     }
 
-    // ── THREAD globalLeafStartIndex through each branch ───────────
-    // This is the critical fix: every branch gets the running count
-    // of leaves already placed, so seedling positioning uses a global
-    // index rather than a per-branch one.
+    // ── BUILD BRANCHES ───────────────────────────────────────────
     let globalLeafStartIndex = 0;
 
     const branches: TreeBranch[] = BRANCH_DEFINITIONS.map((def) => {
       const branchPlants = plantsByPrayer[def.prayer] || [];
+      const lifetimeCount = growthState.branchLifetimeLeaves[def.prayer] || 0;
       const branch = this.buildBranch(
         def.prayer,
         branchPlants,
+        lifetimeCount,
         def,
         stage,
+        g,
         currentTrunkTopY,
-        globalLeafStartIndex,   // ← NEW: passed in, used in seedling mode
+        branchWidthCap,
+        globalLeafStartIndex,
       );
-      // Advance global counter by the number of plants on THIS branch
-      globalLeafStartIndex += Math.min(branchPlants.length, MAX_LEAVES_PER_BRANCH);
+      globalLeafStartIndex += Math.min(
+        Math.max(lifetimeCount, branchPlants.length),
+        MAX_LEAVES_PER_BRANCH,
+      );
       return branch;
     });
 
-    const bloomCount = plants.filter(
+    const bloomCount = recentPlants.filter(
       (p) => p.growthStage === 'bloom' && p.mood >= 4,
     ).length;
 
+    const totalLeaves = Math.min(growthState.totalLifetimeReflections, MAX_TOTAL_LEAVES);
+
     if (__DEV__) {
-      for (const def of BRANCH_DEFINITIONS) {
-        const bp = plantsByPrayer[def.prayer] || [];
-        const visible = stage === 'seedling'
-          ? bp.length > 0
-          : def.curve.start.y >= currentTrunkTopY;
-        console.log(`  ${def.prayer}: ${bp.length} plants, junction y=${def.curve.start.y}, visible=${visible}`);
-      }
       const totalRenderedLeaves = branches.reduce((sum, b) => sum + b.leaves.length, 0);
       console.log(`  totalRenderedLeaves: ${totalRenderedLeaves}, bloomCount: ${bloomCount}`);
       branches.forEach((b) => {
         if (b.leaves.length > 0) {
           console.log(`  [${b.prayer}] lengthScale=${b.lengthScale.toFixed(3)}, leaves=${b.leaves.length}`);
-          b.leaves.forEach((l, i) => {
-            console.log(`    leaf[${i}]: t=${l.t.toFixed(3)}, x=${l.x.toFixed(1)}, y=${l.y.toFixed(1)}, stage=${l.growthStage}`);
-          });
         }
       });
       console.log('[TubaTree] ═══════════════════');
@@ -124,8 +128,9 @@ class TubaTreeService {
       stage,
       totalLeaves,
       bloomCount,
-      trunkWidth: TRUNK.baseWidth[stage],
+      trunkWidth,
       trunkScale: effectiveScale,
+      g,
     };
   }
 
@@ -138,64 +143,66 @@ class TubaTreeService {
     return groups;
   }
 
-  private getTreeStage(totalReflections: number): TreeStage {
-    for (const { stage, min, max } of STAGE_THRESHOLDS) {
-      if (totalReflections >= min && totalReflections <= max) return stage;
-    }
-    return 'ancient';
-  }
-
   private buildBranch(
     prayer: PrayerName,
-    plants: GardenPlant[],
+    recentPlants: GardenPlant[],
+    lifetimeCount: number,
     def: typeof BRANCH_DEFINITIONS[number],
     stage: TreeStage,
+    g: number,
     currentTrunkTopY: number,
-    globalLeafStartIndex: number,   // ← NEW PARAM
+    branchWidthCap: number,
+    globalLeafStartIndex: number,
   ): TreeBranch {
-    // Seedling: every branch with plants is "visible" — leaves render at trunk top
-    const branchVisible = stage === 'seedling'
-      ? plants.length > 0
-      : def.curve.start.y >= currentTrunkTopY;
+    // Use lifetime count for geometry (never regresses)
+    const geometryCount = Math.min(lifetimeCount, MAX_LEAVES_PER_BRANCH);
 
-    const visiblePlants = branchVisible ? plants.slice(0, MAX_LEAVES_PER_BRANCH) : [];
-    const leafCount = visiblePlants.length;
+    // Seedling: every branch with lifetime leaves is "visible"
+    const branchVisible = stage === 'seedling'
+      ? lifetimeCount > 0
+      : def.curve.start.y >= currentTrunkTopY;
 
     let lengthScale: number;
     let strokeWidth: number;
 
-    if (!branchVisible || leafCount === 0) {
+    if (!branchVisible || geometryCount === 0) {
       lengthScale = 0;
       strokeWidth = 0;
     } else if (stage === 'seedling') {
-      // Seedling: no branch geometry needed — positionLeaves handles placement
-      // directly relative to trunk top. lengthScale=0 means no Path is drawn.
       lengthScale = 0;
       strokeWidth = 0;
     } else {
-      if (leafCount === 1) {
-        lengthScale = 0.50;  // half-grown branch, bud at tip
-        strokeWidth = 1.2;   // hairline
-      } else if (leafCount === 2) {
+      if (geometryCount === 1) {
+        lengthScale = 0.50;
+        strokeWidth = 1.2;
+      } else if (geometryCount === 2) {
         lengthScale = 0.58;
         strokeWidth = 1.8;
       } else {
-        // n=3→35%, n=6→55%, n=9→76%, n=12→100%
-        const ratio = (leafCount - 3) / (MAX_LEAVES_PER_BRANCH - 3);
+        const ratio = (geometryCount - 3) / (MAX_LEAVES_PER_BRANCH - 3);
         lengthScale = Math.min(0.35 + ratio * 0.65, 1.0);
-        strokeWidth = 2.5 + (Math.min(leafCount, BRANCH_STYLE.fullThicknessAt) /
-          BRANCH_STYLE.fullThicknessAt) * (BRANCH_STYLE.maxStrokeWidth - 2.5);
+        strokeWidth = 2.5 + (Math.min(geometryCount, 10) / 10) * 3.0;
       }
+      // Da Vinci constraint: branch never thicker than its allotment
+      strokeWidth = Math.min(strokeWidth, branchWidthCap);
     }
+
+    // ── MERGE RECENT + ARCHIVED LEAVES ───────────────────────────
+    // recentPlants provide the detail (mood, date, growthStage).
+    // If lifetimeCount > recentPlants.length, the difference are archived.
+    const visibleRecent = branchVisible ? recentPlants.slice(0, MAX_LEAVES_PER_BRANCH) : [];
+    const archivedCount = Math.max(0, geometryCount - visibleRecent.length);
 
     const leaves = this.positionLeaves(
       prayer,
-      visiblePlants,
+      visibleRecent,
+      archivedCount,
+      geometryCount,
       def,
-      lengthScale,
       stage,
+      g,
       currentTrunkTopY,
-      globalLeafStartIndex,  // ← passed through
+      globalLeafStartIndex,
     );
 
     const subBranches = branchVisible
@@ -215,150 +222,170 @@ class TubaTreeService {
 
   private positionLeaves(
     prayer: PrayerName,
-    plants: GardenPlant[],
+    recentPlants: GardenPlant[],
+    archivedCount: number,
+    totalCount: number,
     def: typeof BRANCH_DEFINITIONS[number],
-    lengthScale: number,
     stage: TreeStage,
+    g: number,
     currentTrunkTopY: number,
-    globalLeafStartIndex: number,  // ← NEW PARAM
+    globalLeafStartIndex: number,
   ): TreeLeafData[] {
-    if (plants.length === 0) return [];
+    if (totalCount === 0) return [];
 
-    const n = plants.length;
+    const n = totalCount;
 
     // ═══════════════════════════════════════════════════════════════
-    // SEEDLING MODE (total plants 1–4)
-    //
-    // Each leaf grows on a tiny stub that exits in its branch's own
-    // geometric direction: normalize(control − start).
-    //
-    //   Fajr    dir=(-0.800,-0.600)  → upper-left
-    //   Dhuhr   dir=(+0.800,-0.600)  → upper-right
-    //   Asr     dir=(+0.958,-0.287)  → right-low
-    //   Maghrib dir=(-0.958,-0.287)  → left-low
-    //   Isha    dir=(+0.025,-1.000)  → straight-up
-    //
-    // Five distinct directions = zero overlaps for n=1..5 guaranteed.
-    //
-    // Stub length shrinks per global pair:
-    //   pair 0 (global 0–1): 14px  widest spread (cotyledons)
-    //   pair 1 (global 2–3): 11px  narrower      (first true leaves)
-    //   pair 2 (global 4+):   8px  narrowest     (subsequent whorls)
-    //
-    // CRITICAL FIX: position driven by BRANCH DIRECTION VECTOR, not
-    // by (index%2===0)?-1:1 which stacked all first-leaves at same xy.
+    // SEEDLING MODE — preserved from v5, with isArchived + ageFraction
     // ═══════════════════════════════════════════════════════════════
     if (stage === 'seedling') {
-      // Branch exit direction = normalize(control − start)
       const ddx = def.curve.control.x - def.curve.start.x;
       const ddy = def.curve.control.y - def.curve.start.y;
       const dlen = Math.sqrt(ddx * ddx + ddy * ddy) || 1;
       const dirX = ddx / dlen;
       const dirY = ddy / dlen;
 
-      return plants.slice(0, 4).map((plant, localIndex) => {
+      const seedlingLeaves: TreeLeafData[] = [];
+      const seedlingN = Math.min(n, 4);
+
+      for (let localIndex = 0; localIndex < seedlingN; localIndex++) {
         const globalIdx = globalLeafStartIndex + localIndex;
-        const hash = leafHash(prayer, plant.date, localIndex);
+        const plant = recentPlants[localIndex];
+        const isArchived = !plant;
+        const hash = leafHash(prayer, plant?.date ?? `archived-${localIndex}`, localIndex);
 
-        // Stub length by global pair index
         const pairIndex = Math.floor(globalIdx / 2);
-        const stubLen = Math.max(8, 14 - pairIndex * 3); // 14 → 11 → 8
-
-        // ±1px organic jitter
+        const stubLen = Math.max(8, 14 - pairIndex * 3);
         const jitter = (hash % 3) - 1;
 
         const x = TRUNK.start.x + dirX * stubLen + jitter;
         const y = currentTrunkTopY + dirY * stubLen + jitter;
 
-        // Rotation: align with stub direction.
-        // atan2(dy,dx) gives angle from right axis.
-        // +90° because SVG ellipse ry>rx is vertical at rotation=0.
         const angleDeg = (Math.atan2(dirY, dirX) * 180) / Math.PI;
         const rotation = angleDeg + 90 + ((hash % 20) - 10);
 
-        const opacityConfig = LEAF_OPACITY[plant.growthStage];
-        return {
-          id: `${prayer}-${plant.date}-${localIndex}`,
+        const growthStage: GrowthStage = plant?.growthStage ?? 'sprout';
+        const opacityConfig = LEAF_OPACITY[growthStage];
+        const baseOpacity = isArchived ? opacityConfig.base * 0.85 : opacityConfig.base;
+        const ageFraction = seedlingN > 1 ? 1 - (localIndex / (seedlingN - 1)) : 0;
+
+        seedlingLeaves.push({
+          id: `${prayer}-${plant?.date ?? `arch-${localIndex}`}-${localIndex}`,
           t: 0,
           x,
           y,
           rotation,
-          growthStage: plant.growthStage,
+          growthStage,
           isBloom: false,
-          hasText: plant.hasText,
-          opacity: opacityConfig.base,
+          hasText: plant?.hasText ?? false,
+          opacity: ageAdjustedOpacity(baseOpacity, ageFraction),
+          isArchived,
+          ageFraction,
           prayer,
-          date: plant.date,
-          mood: plant.mood,
-        };
-      });
+          date: plant?.date ?? '',
+          mood: plant?.mood ?? 3,
+        });
+      }
+      return seedlingLeaves;
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // NORMAL BRANCH MODE (sapling, growing, flourishing, ancient)
+    // NORMAL BRANCH MODE — phyllotaxis + canopy + age coloring
     // ═══════════════════════════════════════════════════════════════
+
+    // Compute branch lengthScale from geometry count (same logic as buildBranch)
+    let lengthScale: number;
+    if (n === 1) {
+      lengthScale = 0.50;
+    } else if (n === 2) {
+      lengthScale = 0.58;
+    } else {
+      const ratio = (n - 3) / (MAX_LEAVES_PER_BRANCH - 3);
+      lengthScale = Math.min(0.35 + ratio * 0.65, 1.0);
+    }
+
     if (lengthScale <= 0) return [];
 
     const { curve } = def;
     const scaled = scaledBezier(curve.start, curve.control, curve.end, lengthScale);
+    const leaves: TreeLeafData[] = [];
 
-    return plants.map((plant, index) => {
-      // Base-first: oldest leaf at junction (t≈floorT), newest at tip.
-      // n=1 → linearT=0 → t=floorT (junction)
-      // n=12, last leaf → linearT=1 → t=0.93 (near tip)
-      // (v6 tip-first T):
+    // Build merged leaf list: archived at base, recent at tip
+    // Index 0 = oldest (base), index n-1 = newest (tip)
+    for (let index = 0; index < n; index++) {
+      const isArchived = index < archivedCount;
+      const recentIdx = index - archivedCount;
+      const plant = isArchived ? null : (recentPlants[recentIdx] ?? null);
+
+      // ── T-POSITION ──────────────────────────────────────────
       let t: number;
       if (n === 1) {
-        t = 0.82;  // single bud: always at tip
+        t = 0.82;
       } else if (n === 2) {
-        t = index === 0 ? 0.35 : 0.82;  // base + tip, 47px apart on Fajr
+        t = index === 0 ? 0.35 : 0.82;
       } else {
-        t = 0.05 + 0.88 * (index / (n - 1));  // linear base→tip
+        t = LEAF_DISTRIBUTION.floorT + LEAF_DISTRIBUTION.range * (index / (n - 1));
       }
 
       const pos = quadBezierPoint(curve.start, scaled.control, scaled.end, t);
       const perp = quadBezierPerpendicular(curve.start, scaled.control, scaled.end, t);
 
-      const hash = leafHash(prayer, plant.date, index);
-      const jitterSign = (hash % 2 === 0) ? 1 : -1;
-      const jitterScale = t > LEAF_DISTRIBUTION.tipClusterT
-        ? LEAF_DISTRIBUTION.tipJitterScale
-        : 1.0;
-      const jitterMagnitude =
-        ((hash % 100) / 100) * LEAF_JITTER.maxOffset * jitterSign * jitterScale;
+      // ── PHYLLOTAXIS: alternating sides + tightening offset ──
+      const hash = leafHash(prayer, plant?.date ?? `arch-${index}`, index);
+      const phyllSign = (index % 2 === 0) ? 1 : -1;
+      const offsetMag = PHYLLOTAXIS.alternateOffset * (1 - t * PHYLLOTAXIS.spiralTightening);
+      const jitterFrac = ((hash % 100) / 100) * 0.3;
+      const perpMagnitude = (offsetMag + jitterFrac) * LEAF_JITTER.maxOffset * phyllSign;
 
-      const x = pos.x + perp.x * jitterMagnitude;
-      const y = pos.y + perp.y * jitterMagnitude;
+      let x = pos.x + perp.x * perpMagnitude;
+      let y = pos.y + perp.y * perpMagnitude;
 
-      // ── SKY-BIASED ROTATION ────────────────────────────────────
-      // baseAngle: Fajr=-45, Dhuhr=+45, Asr=+55, Maghrib=-55, Isha=0
-      // Leaves always tilt outward and skyward — never point down.
+      // ── CANOPY CLAMP ────────────────────────────────────────
+      const clamped = clampToCanopy(x, y, currentTrunkTopY);
+      x = clamped.x;
+      y = clamped.y;
+
+      // ── ROTATION (sky-biased + phyllotaxis influence) ───────
       const outwardLean = def.baseAngle * 0.55;
       const tipTilt = (t - 0.3) * 12;
-      const rotJitter = ((hash % 140 - 70) / 70) * 28;
-      const rotation = outwardLean + tipTilt + rotJitter;
+      const phyllRot = phyllSign * PHYLLOTAXIS.baseRotationSpread * (1 - t * 0.5);
+      const rotJitter = ((hash % 60 - 30) / 30) * 14;
+      const rotation = outwardLean + tipTilt + phyllRot + rotJitter;
 
-      const opacityConfig = LEAF_OPACITY[plant.growthStage];
+      // ── GROWTH STAGE + OPACITY ──────────────────────────────
+      const growthStage: GrowthStage = plant?.growthStage ?? 'sprout';
+      const opacityConfig = LEAF_OPACITY[growthStage];
       const opacityVariance = ((hash % 50 - 25) / 25) * opacityConfig.variance;
-      const opacity = Math.max(0.4, Math.min(1, opacityConfig.base + opacityVariance));
+      const rawOpacity = isArchived
+        ? opacityConfig.base * 0.85
+        : Math.max(0.4, Math.min(1, opacityConfig.base + opacityVariance));
 
-      const isBloom = plant.mood >= 4 && plant.growthStage === 'bloom';
+      // ── AGE FRACTION ────────────────────────────────────────
+      // 0 = newest (tip), 1 = oldest (base)
+      const ageFraction = n > 1 ? 1 - (index / (n - 1)) : 0;
+      const opacity = ageAdjustedOpacity(rawOpacity, ageFraction);
 
-      return {
-        id: `${prayer}-${plant.date}-${index}`,
+      const isBloom = !isArchived && (plant?.mood ?? 0) >= 4 && growthStage === 'bloom';
+
+      leaves.push({
+        id: `${prayer}-${plant?.date ?? `arch-${index}`}-${index}`,
         t,
         x,
         y,
         rotation,
-        growthStage: plant.growthStage,
+        growthStage,
         isBloom,
-        hasText: plant.hasText,
+        hasText: plant?.hasText ?? false,
         opacity,
+        isArchived,
+        ageFraction,
         prayer,
-        date: plant.date,
-        mood: plant.mood,
-      };
-    });
+        date: plant?.date ?? '',
+        mood: plant?.mood ?? 3,
+      });
+    }
+
+    return leaves;
   }
 
   private computeSubBranches(

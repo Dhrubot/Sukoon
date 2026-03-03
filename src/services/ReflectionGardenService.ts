@@ -2,6 +2,7 @@
 import { format, subDays, startOfWeek, addDays, isToday } from 'date-fns';
 import StorageService from './StorageService';
 import TubaTreeService from './TubaTreeService';
+import TreeGrowthStateService from './TreeGrowthStateService';
 import { PrayerName } from '../types';
 import {
   GardenPlant,
@@ -52,8 +53,16 @@ class ReflectionGardenService {
    * (Phase 3 addition)
    */
   getTreeData(days: number = 28): TreeData {
-    const plants = this.getPlants(days);
-    return TubaTreeService.buildTreeData(plants);
+    const growthState = TreeGrowthStateService.getState();
+    const recentPlants = this.getPlants(days);
+    return TubaTreeService.buildTreeData(growthState, recentPlants);
+  }
+
+  /**
+   * Public accessor for plant data (used by TreeGrowthState bootstrap).
+   */
+  getAllPlants(days: number): GardenPlant[] {
+    return this.getPlants(days);
   }
 
   /**
