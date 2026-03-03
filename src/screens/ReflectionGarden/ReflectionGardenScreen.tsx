@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   TouchableOpacity,
 } from 'react-native';
+import DevTreeTester from '../../components/garden/DevTreeTester';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
@@ -36,6 +37,9 @@ const ReflectionGardenScreen: React.FC = () => {
     isEmpty,
     isLoading,
   } = useReflectionGarden(28);
+
+  // DEV-ONLY: Tree stage tester
+  const [devMode, setDevMode] = useState(false);
 
   // ── Leaf detail state ───────────────────────────────────────────
   const [selectedLeaf, setSelectedLeaf] = useState<LeafDetailData | null>(null);
@@ -96,6 +100,11 @@ const ReflectionGardenScreen: React.FC = () => {
     );
   }
 
+  // DEV-ONLY: Show tree tester when devMode is active
+  if (__DEV__ && devMode) {
+    return <DevTreeTester onClose={() => setDevMode(false)} />;
+  }
+
   if (isEmpty) {
     return (
       <SafeAreaView style={styles.container}>
@@ -124,6 +133,15 @@ const ReflectionGardenScreen: React.FC = () => {
               Learn about the Tuba Tree →
             </Text>
           </TouchableOpacity>
+          {__DEV__ && (
+            <TouchableOpacity
+              style={styles.devButton}
+              onPress={() => setDevMode(true)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.devButtonText}>🧪 Test Tree Stages</Text>
+            </TouchableOpacity>
+          )}
         </ScrollView>
       </SafeAreaView>
     );
@@ -225,6 +243,17 @@ const ReflectionGardenScreen: React.FC = () => {
             Learn about your Tuba Tree →
           </Text>
         </TouchableOpacity>
+
+        {/* DEV-ONLY: Tree stage tester button */}
+        {__DEV__ && (
+          <TouchableOpacity
+            style={[styles.devButton, { alignSelf: 'center', marginBottom: 8 }]}
+            onPress={() => setDevMode(true)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.devButtonText}>🧪 Test Tree Stages</Text>
+          </TouchableOpacity>
+        )}
 
         {/* Bottom spacing */}
         <View style={{ height: 40 }} />
@@ -392,6 +421,20 @@ const createStyles = (theme: AppTheme) =>
     emptyInfoLinkText: {
       fontSize: theme.typography.fontSize.sm,
       fontFamily: theme.typography.fontFamily.bodyMedium,
+    },
+    devButton: {
+      marginTop: theme.spacing['3xl'],
+      paddingVertical: 10,
+      paddingHorizontal: 20,
+      borderRadius: 10,
+      backgroundColor: theme.colors.card.background,
+      borderWidth: 1,
+      borderColor: theme.colors.border.secondary,
+    },
+    devButtonText: {
+      fontSize: theme.typography.fontSize.sm,
+      fontFamily: theme.typography.fontFamily.bodyMedium,
+      color: theme.colors.text.muted,
     },
   });
 

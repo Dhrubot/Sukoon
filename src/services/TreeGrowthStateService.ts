@@ -143,6 +143,21 @@ class TreeGrowthStateService {
   hasState(): boolean {
     return !!this.storage.getString(MMKV_KEY);
   }
+
+  // ── DEV ONLY: Direct state override for testing ─────────────────
+  /** @internal Only available in __DEV__ builds */
+  devSetState(state: TreeGrowthState): void {
+    if (!__DEV__) return;
+    this.persist(state);
+    console.log(`[TreeGrowthState] DEV override: total=${state.totalLifetimeReflections}, g=${state.g.toFixed(3)}, stage=${state.stage}`);
+  }
+
+  /** @internal Clears MMKV state — DEV only */
+  devReset(): void {
+    if (!__DEV__) return;
+    this.storage.remove(MMKV_KEY);
+    console.log('[TreeGrowthState] DEV reset — state cleared');
+  }
 }
 
 export default new TreeGrowthStateService();

@@ -48,6 +48,7 @@ import { useRoute } from "@react-navigation/native";
 import ReminderStateService from "../../services/ReminderStateService";
 import NotificationService from "../../services/NotificationService";
 import WidgetService from "../../services/WidgetService";
+import TreeGrowthStateService from "../../services/TreeGrowthStateService";
 import { getLocalDateKey } from "../../utils/dateHelpers";
 import MoonSightingPrompt from "../../components/MoonSightingPrompt";
 import MoonSightingCard from "../../components/MoonSightingCard";
@@ -143,6 +144,9 @@ const HomeScreen = ({ navigation }: any) => {
       addPrayerRecord(record);
       WidgetService.reloadWidgets();
       loadTodayRecords();
+
+      // Update permanent tree growth state (quick-log defaults to mood 3 = sprout leaf)
+      TreeGrowthStateService.recordReflection(quickLogPrayer.name, 3, dateKey);
     }
 
     // Close reminder flow + cancel pending notifications

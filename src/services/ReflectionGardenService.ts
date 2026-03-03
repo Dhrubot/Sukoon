@@ -78,8 +78,8 @@ class ReflectionGardenService {
       const records = StorageService.getDayPrayerRecords(dateStr);
 
       for (const record of records) {
-        // Only include prayers that had mindfulness/reflection
-        if (!record.mindfulnessCompleted && !record.reflectionAdded) continue;
+        // Include ALL prayers marked as prayed — not just those with mindfulness
+        if (record.status !== 'prayed') continue;
 
         const mood = record.mindfulnessScore
           ? Math.round(record.mindfulnessScore / 20)

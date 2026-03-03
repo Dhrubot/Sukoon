@@ -42,6 +42,7 @@ import {
   BLOOM_PULSE,
   LEAF_DETAIL,
   leafSizeMultiplier,
+  ageSizeMultiplier,
   ageAdjustedColor,
 } from '../../constants/tubaTree';
 
@@ -69,7 +70,8 @@ const TreeLeaf: React.FC<TreeLeafProps> = ({
 }) => {
   const baseSize = LEAF_SIZES[leaf.growthStage];
   const sizeScale = leafSizeMultiplier(growthG);
-  const size = { rx: baseSize.rx * sizeScale, ry: baseSize.ry * sizeScale };
+  const ageScale = ageSizeMultiplier(leaf.ageFraction);
+  const size = { rx: baseSize.rx * sizeScale * ageScale, ry: baseSize.ry * sizeScale * ageScale };
 
   // Age-adjusted leaf color: youngest (tip) lighter, oldest (base) deeper
   const leafColor = useMemo(

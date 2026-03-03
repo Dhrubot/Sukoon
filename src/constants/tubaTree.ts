@@ -511,12 +511,31 @@ export function clampToCanopy(x: number, y: number, trunkTopY: number): { x: num
   };
 }
 
+// ── LEAF AGE SIZING ───────────────────────────────────────────────
+// ageFraction: 0 = newest (tip), 1 = oldest (base).
+// Old leaves at branch base grow big and dominant; new buds at tip are small.
+export const LEAF_AGE_SIZE = {
+  oldestScale: 1.35,     // base leaves 35% larger
+  newestScale: 0.75,     // tip leaves 25% smaller
+  midpoint: 0.5,         // crossover at ageFraction 0.5
+} as const;
+
+export function ageSizeMultiplier(ageFraction: number): number {
+  const { oldestScale, newestScale, midpoint } = LEAF_AGE_SIZE;
+  if (ageFraction >= midpoint) {
+    const t = (ageFraction - midpoint) / (1 - midpoint);
+    return 1.0 + (oldestScale - 1.0) * t;
+  }
+  const t = ageFraction / midpoint;
+  return newestScale + (1.0 - newestScale) * t;
+}
+
 // ── LEAF AGE COLORING ─────────────────────────────────────────────
 // ageFraction: 0 = newest (tip), 1 = oldest (base).
 // Newest leaves are lighter/brighter, oldest are deeper.
 export const LEAF_AGE_COLOR = {
-  youngestLighten: 0.25,
-  oldestDarken: 0.10,
+  youngestLighten: 0.35,
+  oldestDarken: 0.20,
   youngestOpacityBoost: 0.05,
 } as const;
 
