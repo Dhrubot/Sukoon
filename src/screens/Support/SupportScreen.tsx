@@ -267,12 +267,11 @@ const SupportScreen: React.FC = () => {
             </TouchableOpacity>
           ) : (
             <View style={styles.adUnavailable}>
+              {/* TODO: [PREMIUM] Re-add hoursUntilNextAd cooldown messaging when premium features are implemented */}
               <Text style={styles.adUnavailableText}>
-                {hoursUntilNextAd > 0
-                  ? `You can watch another ad in ${hoursUntilNextAd} hours`
-                  : AdService.isAdReady()
-                    ? 'You\'ve already supported today — JazakAllah Khair!'
-                    : 'Ad is loading... please wait a moment'}
+                {AdService.isAdReady()
+                  ? 'JazakAllah Khair for your support!'
+                  : 'Ad is loading... please wait a moment'}
               </Text>
             </View>
           )}

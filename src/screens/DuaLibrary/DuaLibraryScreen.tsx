@@ -125,9 +125,8 @@ const DuaLibraryScreen: React.FC = () => {
 
   const keyExtractor = useCallback((item: Dua) => String(item.id), []);
 
-  return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      {/* Search bar */}
+  const listHeader = (
+    <>
       <View style={styles.searchRow}>
         <TextInput
           style={styles.searchInput}
@@ -140,11 +139,9 @@ const DuaLibraryScreen: React.FC = () => {
         />
       </View>
 
-      {/* Category chips */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        style={{ flexShrink: 0 }}
         contentContainerStyle={styles.chipRow}
       >
         <TouchableOpacity
@@ -185,14 +182,19 @@ const DuaLibraryScreen: React.FC = () => {
           </TouchableOpacity>
         ))}
       </ScrollView>
+    </>
+  );
 
-      {/* Dua list */}
+  return (
+    <SafeAreaView style={styles.container} edges={['bottom']}>
       <FlatList
         data={filteredDuas}
         keyExtractor={keyExtractor}
         renderItem={renderDuaCard}
+        ListHeaderComponent={listHeader}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         ListEmptyComponent={
           <View style={styles.emptyState}>
             <Text style={styles.emptyText}>No duas found</Text>
@@ -211,8 +213,8 @@ const createStyles = (theme: AppTheme) =>
     },
     searchRow: {
       paddingHorizontal: theme.spacing['2xl'],
-      paddingTop: theme.spacing.md,
-      paddingBottom: theme.spacing.sm,
+      paddingTop: theme.spacing.sm,
+      paddingBottom: theme.spacing.xs,
     },
     searchInput: {
       backgroundColor: theme.colors.card.background,
@@ -229,8 +231,8 @@ const createStyles = (theme: AppTheme) =>
       flexDirection: 'row',
       alignItems: 'center',
       paddingHorizontal: theme.spacing['2xl'],
-      paddingTop: theme.spacing.sm,
-      paddingBottom: theme.spacing.md,
+      paddingTop: theme.spacing.xs,
+      paddingBottom: theme.spacing.sm,
       gap: theme.spacing.sm,
     },
     chip: {

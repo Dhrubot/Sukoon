@@ -204,7 +204,7 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
   // 🎯 NEW: Handle invalid location state
   if (!hasValidLocation) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.emptyStateContainer}>
           <Text style={styles.emptyStateIcon}>📍</Text>
           <Text style={styles.emptyStateTitle}>Location Required</Text>
@@ -222,7 +222,7 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
   // 🎯 NEW: Handle prayer times loading state
   if (prayerTimesLoading || (todayPrayerTimes.length === 0 && !prayerTimesError)) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary.DEFAULT} />
           <Text style={styles.loadingText}>Loading prayer times...</Text>
@@ -234,7 +234,7 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
   // 🎯 NEW: Handle prayer times error state
   if (prayerTimesError) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.emptyStateContainer}>
           <Text style={styles.emptyStateIcon}>⚠️</Text>
           <Text style={styles.emptyStateTitle}>Unable to Load Prayer Times</Text>
@@ -250,7 +250,7 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
   // 🎯 ENHANCED: Show loading state for statistics calculation
   if (isLoading) {
     return (
-      <SafeAreaView style={styles.container}>
+      <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color={theme.colors.primary.DEFAULT} />
           <Text style={styles.loadingText}>Calculating your statistics...</Text>
@@ -260,7 +260,7 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView showsVerticalScrollIndicator={false}>
         <View style={styles.header}>
           <Text style={styles.title}>Prayer Statistics</Text>
@@ -292,15 +292,15 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
         {/* Key Statistics */}
         <View style={styles.statsGrid}>
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{stats.completedPrayers}</Text>
+            <Text style={styles.statValue}>{stats.completedPrayers > 0 ? stats.completedPrayers : '—'}</Text>
             <Text style={styles.statLabel}>Prayers Completed</Text>
-            <Text style={styles.statSubtext}>out of {stats.totalPrayers}</Text>
+            <Text style={styles.statSubtext}>{stats.completedPrayers > 0 ? `out of ${stats.totalPrayers}` : 'your first prayer starts the count'}</Text>
           </View>
           
           <View style={styles.statCard}>
-            <Text style={styles.statValue}>{stats.averageDailyCompletion.toFixed(1)}%</Text>
+            <Text style={styles.statValue}>{stats.completedPrayers > 0 ? `${stats.averageDailyCompletion.toFixed(1)}%` : '—'}</Text>
             <Text style={styles.statLabel}>Completion Rate</Text>
-            <Text style={styles.statSubtext}>daily average</Text>
+            <Text style={styles.statSubtext}>{stats.completedPrayers > 0 ? 'daily average' : 'begins with one prayer'}</Text>
           </View>
           
           <View style={styles.statCard}>
@@ -382,15 +382,15 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
           <Text style={styles.sectionTitle}>Insights</Text>
           
           <View style={styles.insightCard}>
-            <Text style={styles.insightTitle}>🎯 Presence Rate</Text>
-            <Text style={styles.insightValue}>{stats.mindfulnessRate.toFixed(1)}%</Text>
+            <Text style={styles.insightTitle}>Presence Rate</Text>
+            <Text style={styles.insightValue}>{stats.completedPrayers > 0 ? `${stats.mindfulnessRate.toFixed(1)}%` : '—'}</Text>
             <Text style={styles.insightDescription}>
-              of your prayers include presence practice
+              {stats.completedPrayers > 0 ? 'of your prayers include presence practice' : 'prepare mindfully to build presence'}
             </Text>
           </View>
           
           <View style={styles.insightCard}>
-            <Text style={styles.insightTitle}>💪 Longest Dawam</Text>
+            <Text style={styles.insightTitle}>Longest Dawam</Text>
             <Text style={styles.insightValue}>{stats.longestDawam > 0 ? `${stats.longestDawam} days` : '—'}</Text>
             <Text style={styles.insightDescription}>
               {stats.longestDawam > 0 ? 'your longest unbroken path of prayer' : 'every journey begins with a single step'}

@@ -35,12 +35,13 @@ const GardenTeaser: React.FC = () => {
     (navigation as any).navigate('Menu', { screen: 'ReflectionGarden' });
   };
 
-  // Don't show teaser if no reflections at all
-  if (summary.total === 0) return null;
 
-  const message = summary.newBlooms > 0
-    ? `${summary.newBlooms} new bloom${summary.newBlooms > 1 ? 's' : ''} this week`
-    : 'Your garden is growing';
+  const isEmpty = summary.total === 0;
+  const message = isEmpty
+    ? 'Tap to plant your first reflection'
+    : summary.newBlooms > 0
+      ? `${summary.newBlooms} new bloom${summary.newBlooms > 1 ? 's' : ''} this week`
+      : 'Your garden is growing';
 
   // Simple progress: cap at 7 reflections per week
   const progressPercent = Math.min(summary.total / 7, 1);
@@ -59,9 +60,11 @@ const GardenTeaser: React.FC = () => {
         </View>
         <Text style={[styles.chevron, { color: theme.colors.text.muted }]}>›</Text>
       </View>
-      <View style={styles.progressTrack}>
-        <View style={[styles.progressFill, { width: `${progressPercent * 100}%`, backgroundColor: theme.colors.interactive.active }]} />
-      </View>
+      {!isEmpty && (
+        <View style={styles.progressTrack}>
+          <View style={[styles.progressFill, { width: `${progressPercent * 100}%`, backgroundColor: theme.colors.interactive.active }]} />
+        </View>
+      )}
     </TouchableOpacity>
   );
 };

@@ -115,6 +115,15 @@ const ReflectionGardenScreen: React.FC = () => {
               Return to prayers
             </Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.emptyInfoLink}
+            onPress={() => (navigation as any).navigate('TubaTreeInfo')}
+            activeOpacity={0.7}
+          >
+            <Text style={[styles.emptyInfoLinkText, { color: theme.colors.interactive.active }]}>
+              Learn about the Tuba Tree →
+            </Text>
+          </TouchableOpacity>
         </ScrollView>
       </SafeAreaView>
     );
@@ -176,7 +185,7 @@ const ReflectionGardenScreen: React.FC = () => {
         <View style={styles.statsRow}>
           <View style={styles.statBlock}>
             <Text style={[styles.statVal, { color: theme.colors.garden.dawamPillText }]}>
-              {plants.length}
+              {plants.length > 0 ? plants.length : '—'}
             </Text>
             <Text style={[styles.statLabel, { color: theme.colors.text.muted }]}>
               leaves
@@ -375,6 +384,13 @@ const createStyles = (theme: AppTheme) =>
     },
     emptyCtaText: {
       fontSize: theme.typography.fontSize.lg,
+      fontFamily: theme.typography.fontFamily.bodyMedium,
+    },
+    emptyInfoLink: {
+      marginTop: theme.spacing.xl,
+    },
+    emptyInfoLinkText: {
+      fontSize: theme.typography.fontSize.sm,
       fontFamily: theme.typography.fontFamily.bodyMedium,
     },
   });

@@ -316,13 +316,13 @@ const MenuScreen: React.FC = () => {
 
   // More features list
   const moreFeatures: MoreFeatureItem[] = [
-    {
-      icon: CompassIcon,
-      title: 'Qibla Compass',
-      subtitle: 'Find direction of prayer',
-      screen: 'QiblaFinder',
-      iconBg: theme.colors.interactive.active + '14',
-    },
+    // {
+    //   icon: CompassIcon,
+    //   title: 'Qibla Compass',
+    //   subtitle: 'Find direction of prayer',
+    //   screen: 'QiblaFinder',
+    //   iconBg: theme.colors.interactive.active + '14',
+    // },
     {
       icon: JourneyIcon,
       title: 'My Journey',
@@ -362,7 +362,7 @@ const MenuScreen: React.FC = () => {
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Explore</Text>
         <Text style={styles.headerSubtitle}>Features & tools for your practice</Text>
@@ -403,7 +403,7 @@ const MenuScreen: React.FC = () => {
             <View style={styles.progLabel}>
               <Text style={styles.progLabelText}>Today's progress</Text>
               <Text style={[styles.progLabelValue, { color: theme.colors.interactive.active }]}>
-                {prayedCount} of {totalPrayers} prayers
+                {prayedCount > 0 ? `${prayedCount} of ${totalPrayers} prayers` : 'ready when you are'}
               </Text>
             </View>
             <View style={styles.progBar}>
@@ -429,13 +429,13 @@ const MenuScreen: React.FC = () => {
             </View>
             <View style={[styles.gardenStat, styles.gardenStatMiddle]}>
               <Text style={[styles.gsVal, { color: theme.colors.interactive.active }]}>
-                {gardenSummary.totalPlants}
+                {gardenSummary.totalPlants > 0 ? gardenSummary.totalPlants : '—'}
               </Text>
               <Text style={styles.gsLabel}>Prayers</Text>
             </View>
             <View style={styles.gardenStat}>
               <Text style={[styles.gsVal, { color: theme.colors.interactive.active }]}>
-                {gardenSummary.newBlooms}
+                {gardenSummary.newBlooms > 0 ? gardenSummary.newBlooms : '—'}
               </Text>
               <Text style={styles.gsLabel}>Blooms</Text>
             </View>

@@ -545,7 +545,7 @@ const QiblaFinderScreen: React.FC = () => {
 
   if (isLoading) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]} edges={['top']}>
         <View style={styles.centeredContent}>
           <Animated.Text style={styles.loadingIcon}>🧭</Animated.Text>
           <Text style={[styles.loadingText, { color: theme.colors.text.primary }]}>
@@ -558,7 +558,7 @@ const QiblaFinderScreen: React.FC = () => {
 
   if (error) {
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]}>
+      <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]} edges={['top']}>
         <View style={styles.centeredContent}>
           <Text style={styles.errorIcon}>⚠️</Text>
           <Text style={[styles.errorTitle, { color: theme.colors.text.primary }]}>
