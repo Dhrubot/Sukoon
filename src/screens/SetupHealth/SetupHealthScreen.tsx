@@ -53,7 +53,7 @@ const SetupHealthScreen: React.FC<SetupHealthScreenProps> = ({ onDone, navigatio
     setLocationStatus(loc);
 
     const debug = await NotificationService.getDebugInfo();
-    setScheduledCount(debug.scheduledCount);
+    setScheduledCount(debug.totalScheduledCount);
 
     setLastReschedule(StorageService.getValue('last_batch_schedule_date'));
 

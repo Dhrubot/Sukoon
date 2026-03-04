@@ -4,7 +4,7 @@
 
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-import { CHANNELS } from '../constants/NotificationConstants';
+import { CHANNELS, IOS_NOTIFICATION_CAP, NOTIFICATION_LOWER_TIER_DAYS } from '../constants/NotificationConstants';
 import { getCachedHijriDate, isRamadan, getRamadanDay } from '../utils/ramadan';
 import StorageService from './StorageService';
 import logger from '../utils/logger';
@@ -139,7 +139,7 @@ class RamadanCountdownServiceClass {
    * Schedule countdown notifications (before Ramadan).
    */
   private async scheduleCountdown(daysUntil: number): Promise<void> {
-    const maxToSchedule = Math.min(daysUntil, 30); // Schedule up to 30 notifications
+    const maxToSchedule = Math.min(daysUntil, NOTIFICATION_LOWER_TIER_DAYS);
     logger.log(`🌙 Scheduling ${maxToSchedule} Ramadan countdown notifications (${daysUntil} days away)`);
 
     for (let i = 0; i < maxToSchedule; i++) {
@@ -151,6 +151,15 @@ class RamadanCountdownServiceClass {
       // Skip if the scheduled time is in the past (today but past 9am)
       if (scheduledDate <= new Date()) {
         if (i === 0) continue; // Skip today's if past notification hour
+      }
+
+      // iOS budget check
+      if (Platform.OS === 'ios') {
+        const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+        if (scheduled.length >= IOS_NOTIFICATION_CAP) {
+          logger.log(`🌙🚫 iOS cap reached, stopping Ramadan countdown at ${i}/${maxToSchedule}`);
+          break;
+        }
       }
 
       // Pick message: milestone or rotating
@@ -187,7 +196,7 @@ class RamadanCountdownServiceClass {
    */
   private async scheduleDuringRamadan(currentDay: number): Promise<void> {
     const daysRemaining = 30 - currentDay;
-    const toSchedule = Math.min(daysRemaining + 1, 14); // Schedule up to 14 days ahead
+    const toSchedule = Math.min(daysRemaining + 1, NOTIFICATION_LOWER_TIER_DAYS);
     logger.log(`🌙 Scheduling ${toSchedule} Ramadan daily encouragement notifications (Day ${currentDay})`);
 
     for (let i = 0; i < toSchedule; i++) {
@@ -200,6 +209,15 @@ class RamadanCountdownServiceClass {
 
       if (scheduledDate <= new Date()) {
         if (i === 0) continue;
+      }
+
+      // iOS budget check
+      if (Platform.OS === 'ios') {
+        const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+        if (scheduled.length >= IOS_NOTIFICATION_CAP) {
+          logger.log(`🌙🚫 iOS cap reached, stopping Ramadan daily at ${i}/${toSchedule}`);
+          break;
+        }
       }
 
       const messageIndex = (ramadanDay - 1) % RAMADAN_MESSAGES.length;

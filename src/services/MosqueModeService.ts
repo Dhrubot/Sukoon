@@ -1,6 +1,7 @@
 // src/services/MosqueModeService.ts
 import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import { IOS_NOTIFICATION_CAP } from '../constants/NotificationConstants';
 import { format, addMinutes } from 'date-fns';
 import StorageService from './StorageService';
 import RingerControlService from './RingerControlService';
@@ -14,6 +15,12 @@ const STORAGE_KEYS = {
 };
 
 class MosqueModeService {
+  private async isIosBudgetExhausted(): Promise<boolean> {
+    if (Platform.OS !== 'ios') return false;
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+    return scheduled.length >= IOS_NOTIFICATION_CAP;
+  }
+
   private getRequestCodeBase(prayer: PrayerName, iqamahTime: Date): number {
     const dateStr = format(iqamahTime, 'yyyy-MM-dd');
     const input = `${prayer}-${dateStr}`;
@@ -209,6 +216,11 @@ class MosqueModeService {
       // ignore
     }
 
+    if (await this.isIosBudgetExhausted()) {
+      console.log('🕌🚫 iOS cap reached, skipping mosque mode enable notification');
+      return;
+    }
+
     await Notifications.scheduleNotificationAsync({
       content: {
         title: `${prayer.name} Iqamah`,
@@ -276,6 +288,11 @@ class MosqueModeService {
     // Schedule a reminder 2 minutes before iqamah
     const reminderTime = addMinutes(iqamahTime, -2);
     if (reminderTime > now) {
+      if (await this.isIosBudgetExhausted()) {
+        console.log('🕌🚫 iOS cap reached, skipping mosque mode reminder');
+        return;
+      }
+
       const reminderId = `mosque-reminder-${prayer.name}-${format(iqamahTime, 'yyyy-MM-dd')}`;
       try { await Notifications.cancelScheduledNotificationAsync(reminderId); } catch { /* ignore */ }
 
@@ -419,6 +436,11 @@ class MosqueModeService {
 
       // Don't schedule if prompt time is in the past
       if (promptTime <= now) continue;
+
+      if (await this.isIosBudgetExhausted()) {
+        console.log('🕌🚫 iOS cap reached, skipping mosque mode prompts');
+        return;
+      }
 
       const promptId = `mosque-prompt-${prayer.name}-${dateStr}`;
       try { await Notifications.cancelScheduledNotificationAsync(promptId); } catch { /* ignore */ }

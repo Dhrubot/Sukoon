@@ -47,7 +47,7 @@ export const NotificationDebugScreen = () => {
   const loadDebugInfo = async () => {
     const info = await NotificationService.getDebugInfo();
     setDebugInfo(info);
-    setScheduledCount(info.scheduledCount);
+    setScheduledCount(info.totalScheduledCount);
   };
 
   // 🧪 Test 1: Immediate Test Notification

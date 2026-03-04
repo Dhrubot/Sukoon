@@ -4,7 +4,8 @@
 // This forces Android to create a new channel with the fresh config.
 export const NOTIFICATION_CHANNEL_VERSION = 8;
 
-export const NOTIFICATION_SCHEDULING_DAYS = 7;
+export const NOTIFICATION_SCHEDULING_DAYS = 3;   // Tier 1 (Adhan) horizon
+export const NOTIFICATION_LOWER_TIER_DAYS = 2;    // Pre-prayer / Tier 3 / Tier 2 horizon
 export const NOTIFICATION_MAX_FUTURE_DAYS = NOTIFICATION_SCHEDULING_DAYS + 1;
 
 // iOS imposes a hard limit of 64 local scheduled notifications per app.

@@ -802,6 +802,11 @@ class StorageService {
     this.storage.set(key, value);
   }
 
+  // Delete generic value
+  deleteValue(key: string): void {
+    this.storage.remove(key);
+  }
+
   getPremiumFeatures(): PremiumFeatures {
     const data = this.storage.getString("premium_features");
     if (data) {

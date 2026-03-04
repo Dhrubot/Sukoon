@@ -4,7 +4,7 @@
 
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-import { CHANNELS } from '../constants/NotificationConstants';
+import { CHANNELS, IOS_NOTIFICATION_CAP } from '../constants/NotificationConstants';
 import {
   getCachedHijriDate,
   isRamadan,
@@ -189,6 +189,15 @@ class EidNotificationServiceClass {
     content: { title: string; body: string },
     date: Date,
   ): Promise<void> {
+    // iOS budget check
+    if (Platform.OS === 'ios') {
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+      if (scheduled.length >= IOS_NOTIFICATION_CAP) {
+        logger.log(`🎉🚫 iOS cap reached, skipping Eid notification ${identifier}`);
+        return;
+      }
+    }
+
     await Notifications.scheduleNotificationAsync({
       content: {
         title: content.title,
