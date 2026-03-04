@@ -10,6 +10,8 @@ import { usePrayerTimeRefresh } from "./usePrayerTimeRefresh";
 import { initializeEncryptionKey } from "../utils/secureKeyManager";
 import { isValidCoordinates } from "../utils/locationValidation";
 import logger from "../utils/logger";
+import TreeGrowthStateService from "../services/TreeGrowthStateService";
+import ReflectionGardenService from "../services/ReflectionGardenService";
 
 interface AppInitializationState {
   isLoading: boolean;
@@ -56,6 +58,13 @@ export const useAppInitialization = () => {
       StorageService.updateDawam();
       setCurrentDawam(StorageService.getCurrentDawam());
       setEngagementDawam(StorageService.getEngagementDawam());
+
+      // Bootstrap TreeGrowthState if it doesn't exist yet (one-time migration)
+      if (!TreeGrowthStateService.hasState()) {
+        logger.log("🌳 Bootstrapping TreeGrowthState from existing reflections...");
+        const existingPlants = ReflectionGardenService.getAllPlants(365);
+        TreeGrowthStateService.bootstrapFromExistingData(existingPlants);
+      }
 
       // ONLY SET LOCATION IF IT'S ACTUALLY VALID
       const isValidLocation = isValidCoordinates(settings.location);

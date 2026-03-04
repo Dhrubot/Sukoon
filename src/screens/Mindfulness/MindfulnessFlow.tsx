@@ -45,6 +45,7 @@ import AnalyticsService from "../../services/AnalyticsService";
 import WidgetService from "../../services/WidgetService";
 import NotificationService from "../../services/NotificationService";
 import ReminderStateService from "../../services/ReminderStateService";
+import TreeGrowthStateService from "../../services/TreeGrowthStateService";
 import { getLocalDateKey } from "../../utils/dateHelpers";
 
 const { width, height } = Dimensions.get("window");
@@ -451,6 +452,9 @@ const MindfulnessFlow: React.FC = () => {
     StorageService.saveMindfulnessSession(session);
     setCurrentMindfulnessSession(session);
 
+    // Update persistent tree growth state (skipped reflection defaults to mood 3)
+    TreeGrowthStateService.recordReflection(prayer.name, 3, getLocalDateKey());
+
     AnalyticsService.logEvent('mindfulness_completed', {
       prayer: prayer.name,
       duration: session.duration,
@@ -534,6 +538,9 @@ const MindfulnessFlow: React.FC = () => {
     // saveMindfulnessSession automatically updates the linked PrayerRecord
     StorageService.saveMindfulnessSession(session);
     setCurrentMindfulnessSession(session);
+
+    // Update persistent tree growth state (additive-only, never regresses)
+    TreeGrowthStateService.recordReflection(prayer.name, selectedMood, getLocalDateKey());
 
     // Save reflection text cross-reference for Reflection Garden journal
     if (reflectionText.trim().length > 0) {

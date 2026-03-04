@@ -60,11 +60,11 @@ export const BRANCH_DEFINITIONS: BranchDefinition[] = [
 ];
 
 export const STAGE_THRESHOLDS: { stage: TreeStage; min: number; max: number }[] = [
-  { stage: 'seedling', min: 0, max: 4 },
-  { stage: 'sapling', min: 5, max: 19 },
-  { stage: 'growing', min: 20, max: 49 },
-  { stage: 'flourishing', min: 50, max: 99 },
-  { stage: 'ancient', min: 100, max: Infinity },
+  { stage: 'seedling', min: 0, max: 14 },        // ~3 days at 5/day
+  { stage: 'sapling', min: 15, max: 74 },         // ~3 days to ~2 weeks
+  { stage: 'growing', min: 75, max: 249 },        // ~2 weeks to ~7 weeks
+  { stage: 'flourishing', min: 250, max: 749 },   // ~7 weeks to ~5 months
+  { stage: 'ancient', min: 750, max: Infinity },   // ~5+ months
 ];
 
 export const STAGE_INFO: Record<TreeStage, { name: string; arabic: string }> = {
@@ -90,7 +90,8 @@ export const LEAF_OPACITY: Record<GrowthStage, { base: number; variance: number 
 export const BLOOM_SPARKLE = { radius: 2, offsetRatio: 0.7 } as const;
 export const BRANCH_STYLE = { minStrokeWidth: 2.5, maxStrokeWidth: 5.5, fullThicknessAt: 10 } as const;
 export const MAX_LEAVES_PER_BRANCH = 12;
-export const MAX_TOTAL_LEAVES = 60;
+export const MAX_LEAVES_PER_SUB_BRANCH = 6;
+export const MAX_TOTAL_LEAVES = 150;
 export const LEAF_JITTER = { maxOffset: 8, maxRotation: 25 } as const;
 
 // ── TIP-WEIGHTED LEAF DISTRIBUTION (v3) ────────────────────────────
@@ -273,19 +274,21 @@ export function trunkScaleForY(targetY: number): number {
 // ═══════════════════════════════════════════════════════════════════
 
 export const SUB_BRANCH = {
-  forkT: { first: 0.70, second: 0.50 },
+  forkT: [0.70, 0.50, 0.35] as readonly number[],
   lengthRatio: 0.45,
   spread: 35,
   strokeRatio: 0.5,
   opacity: 0.65,
-  directions: [1, -1] as readonly number[],
+  directions: [1, -1, 1] as readonly number[],
   /** v3: softer departure — was 0.5 */
   controlFactor: 0.3,
   /** v3: tighter initial curve — was 0.6 */
   controlSpreadFactor: 0.4,
 } as const;
 
-export const SUB_BRANCH_STAGES: Record<string, number> = { flourishing: 1, ancient: 2 };
+export const SUB_BRANCH_STAGES: Record<string, number> = { flourishing: 1, ancient: 2, ancientFull: 3 };
+// ancientFull threshold: 1000+ lifetime reflections triggers 3rd sub-branch
+export const ANCIENT_FULL_THRESHOLD = 1000;
 
 export const RAMADAN_STARS = [
   { x: 70, y: 18, size: 2.5, animDelay: 0.3 }, { x: 190, y: 28, size: 2, animDelay: 1.1 },
@@ -300,3 +303,285 @@ export const MINI_TREE = {
   branches: ['M 24 36 Q 18 30 10 26', 'M 24 36 Q 30 30 38 26', 'M 24 30 Q 16 22 8 16', 'M 24 30 Q 32 22 40 16', 'M 24 24 Q 24 14 24 6'],
   roots: ['M 24 52 Q 18 54 12 53', 'M 24 52 Q 30 54 36 53'],
 } as const;
+
+// ═══════════════════════════════════════════════════════════════════
+// CONTINUOUS GROWTH SYSTEM (v5)
+//
+// All geometry is driven by a single parameter g ∈ [0, 1].
+// g is derived from totalLifetimeReflections via a logistic S-curve.
+// Every formula below is a pure function of g — easy to test,
+// easy to tweak, easy to port to Skia.
+// ═══════════════════════════════════════════════════════════════════
+
+// ── GROWTH CURVE ──────────────────────────────────────────────────
+// Dual S-curve: fast initial growth (first weeks) + slow long-tail
+// maturation (evolves over months, approaches 1.0 around a year).
+//
+// At 5 prayers/day:
+//   n=25  (~5 days):   g ≈ 0.10  — visible seedling
+//   n=75  (~2 weeks):  g ≈ 0.30  — sapling with branches
+//   n=250 (~7 weeks):  g ≈ 0.60  — lush growing tree
+//   n=500 (~3 months): g ≈ 0.80  — flourishing canopy
+//   n=750 (~5 months): g ≈ 0.88  — ancient tree
+//   n=1825 (~1 year):  g ≈ 0.99  — fully mature
+//
+export const GROWTH_CURVE = {
+  // Fast curve: drives visible growth in first ~2 months
+  fast: { midpoint: 80, steepness: 0.04 },
+  // Slow curve: drives maturation over months
+  slow: { midpoint: 600, steepness: 0.006 },
+  // Blend: 55% fast + 45% slow — ensures both early reward and long tail
+  fastWeight: 0.55,
+  slowWeight: 0.45,
+} as const;
+
+export function computeG(n: number): number {
+  if (n <= 0) return 0;
+  const { fast, slow, fastWeight, slowWeight } = GROWTH_CURVE;
+
+  const sigmoid = (x: number, mid: number, k: number) => {
+    const raw = 1 / (1 + Math.exp(-k * (x - mid)));
+    const floor = 1 / (1 + Math.exp(k * mid));
+    return (raw - floor) / (1 - floor);
+  };
+
+  const gFast = sigmoid(n, fast.midpoint, fast.steepness);
+  const gSlow = sigmoid(n, slow.midpoint, slow.steepness);
+  return Math.min(1, gFast * fastWeight + gSlow * slowWeight);
+}
+
+// ── STAGE FROM N (kept for discrete decisions: root count, sub-branches) ──
+export const STAGE_ORDER: TreeStage[] = ['seedling', 'sapling', 'growing', 'flourishing', 'ancient'];
+
+export function computeStage(n: number): TreeStage {
+  for (const { stage, min, max } of STAGE_THRESHOLDS) {
+    if (n >= min && n <= max) return stage;
+  }
+  return 'ancient';
+}
+
+export function stageIndex(stage: TreeStage): number {
+  return STAGE_ORDER.indexOf(stage);
+}
+
+// ── TRUNK HEIGHT ──────────────────────────────────────────────────
+// Sub-linear: height grows faster early, slower late (H ∝ D^0.7)
+export const TRUNK_HEIGHT = {
+  floor: 0.12,
+  range: 0.88,
+  exp: 0.7,
+} as const;
+
+export function trunkScaleFromG(g: number): number {
+  return TRUNK_HEIGHT.floor + TRUNK_HEIGHT.range * Math.pow(Math.max(0, g), TRUNK_HEIGHT.exp);
+}
+
+// ── TRUNK WIDTH ───────────────────────────────────────────────────
+// Exponent 0.65 < height's 0.7 → width grows slightly faster relative
+// to height at low g. Range: 2.0 (seedling) → 14.0 (ancient).
+export const TRUNK_WIDTH_PARAMS = {
+  min: 2.0,
+  range: 12.0,
+  exp: 0.65,
+} as const;
+
+export function trunkBaseWidthFromG(g: number): number {
+  return TRUNK_WIDTH_PARAMS.min + TRUNK_WIDTH_PARAMS.range * Math.pow(Math.max(0, g), TRUNK_WIDTH_PARAMS.exp);
+}
+
+// ── TRUNK COLOR (multi-stop lerp) ────────────────────────────────
+export const TRUNK_COLOR_STOPS = [
+  { g: 0.00, color: '#9CAF88' },  // seedling — green stem
+  { g: 0.16, color: '#7A8C5E' },  // sapling  — olive
+  { g: 0.50, color: '#6B5A3E' },  // growing  — light bark
+  { g: 0.85, color: '#4E3A25' },  // flourishing — dark bark
+  { g: 0.97, color: '#3A2A15' },  // ancient  — deep bark
+] as const;
+
+export function lerpColor(a: string, b: string, t: number): string {
+  const parse = (hex: string) => ({
+    r: parseInt(hex.slice(1, 3), 16),
+    g: parseInt(hex.slice(3, 5), 16),
+    b: parseInt(hex.slice(5, 7), 16),
+  });
+  const ca = parse(a), cb = parse(b);
+  const cl = Math.max(0, Math.min(1, t));
+  const r = Math.round(ca.r + (cb.r - ca.r) * cl);
+  const g = Math.round(ca.g + (cb.g - ca.g) * cl);
+  const bv = Math.round(ca.b + (cb.b - ca.b) * cl);
+  return `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${bv.toString(16).padStart(2, '0')}`;
+}
+
+export function trunkColor(g: number): string {
+  const stops = TRUNK_COLOR_STOPS;
+  if (g <= stops[0].g) return stops[0].color;
+  if (g >= stops[stops.length - 1].g) return stops[stops.length - 1].color;
+  for (let i = 0; i < stops.length - 1; i++) {
+    if (g >= stops[i].g && g <= stops[i + 1].g) {
+      const t = (g - stops[i].g) / (stops[i + 1].g - stops[i].g);
+      return lerpColor(stops[i].color, stops[i + 1].color, t);
+    }
+  }
+  return stops[stops.length - 1].color;
+}
+
+// ── SWAY SCALING ──────────────────────────────────────────────────
+// Seedlings are whippy (1.3×), ancient trees are stately (0.8×).
+export const SWAY_SCALING = {
+  base: 1.3,
+  range: 0.5,
+  min: 0.7,
+  max: 1.3,
+} as const;
+
+export function swayMultiplier(g: number): number {
+  return Math.max(SWAY_SCALING.min, Math.min(SWAY_SCALING.max, SWAY_SCALING.base - SWAY_SCALING.range * g));
+}
+
+// ── LEAF SIZE SCALING ─────────────────────────────────────────────
+// Seedling leaves at 60% of defined size, ancient at 100%.
+export const LEAF_SIZE_SCALING = {
+  floor: 0.6,
+  range: 0.4,
+} as const;
+
+export function leafSizeMultiplier(g: number): number {
+  return LEAF_SIZE_SCALING.floor + LEAF_SIZE_SCALING.range * Math.max(0, Math.min(1, g));
+}
+
+// ── ROOT WIDTH SCALING ────────────────────────────────────────────
+export const ROOT_SCALING = {
+  floor: 0.5,
+  range: 0.5,
+} as const;
+
+export function rootWidthScale(g: number): number {
+  return ROOT_SCALING.floor + ROOT_SCALING.range * Math.max(0, Math.min(1, g));
+}
+
+// ── DA VINCI BRANCH WIDTH CONSTRAINT ──────────────────────────────
+// D² = Σdᵢ² → each branch max width = sqrt(trunkWidth² / activeBranches)
+export const DA_VINCI_EXPONENT = 2.0;
+
+export function maxBranchWidth(trunkWidth: number, activeBranches: number): number {
+  if (activeBranches <= 0) return 0;
+  return Math.sqrt(Math.pow(trunkWidth, DA_VINCI_EXPONENT) / activeBranches);
+}
+
+// ── TRUNK TAPER ───────────────────────────────────────────────────
+// 12 short segments along trunk Bézier, each with interpolated width.
+export const TRUNK_TAPER = {
+  segments: 12,
+  tipRatio: 0.30,
+} as const;
+
+export function trunkTaperSegments(
+  start: Point, control: Point, end: Point,
+  scale: number, baseWidth: number,
+): Array<{ x1: number; y1: number; x2: number; y2: number; width: number }> {
+  const { segments, tipRatio } = TRUNK_TAPER;
+  const result: Array<{ x1: number; y1: number; x2: number; y2: number; width: number }> = [];
+  for (let i = 0; i < segments; i++) {
+    const t0 = (i / segments) * scale;
+    const t1 = ((i + 1) / segments) * scale;
+    const p0 = quadBezierPoint(start, control, end, t0);
+    const p1 = quadBezierPoint(start, control, end, t1);
+    const frac = (i + 0.5) / segments;
+    const w = baseWidth * (1 - frac * (1 - tipRatio));
+    result.push({ x1: p0.x, y1: p0.y, x2: p1.x, y2: p1.y, width: w });
+  }
+  return result;
+}
+
+// ── BRANCH TAPER ──────────────────────────────────────────────────
+// 2-layer: thick base (60%) + thin full-length overlay.
+export const BRANCH_TAPER = {
+  baseFraction: 0.60,
+  tipWidthRatio: 0.30,
+} as const;
+
+// ── PHYLLOTAXIS (Leaf Arrangement) ────────────────────────────────
+// Alternating-side placement with golden-angle-derived offsets.
+// Deterministic hash still used for residual jitter.
+export const PHYLLOTAXIS = {
+  goldenAngle: 137.508,
+  alternateOffset: 0.65,
+  spiralTightening: 0.85,
+  baseRotationSpread: 22,
+} as const;
+
+// ── CANOPY ENVELOPE ───────────────────────────────────────────────
+// Soft elliptical clamp — leaves that extend past get gently pulled in.
+export const CANOPY = {
+  radiusX: 145,
+  radiusY: 130,
+  centerX: 160,
+  centerYOffset: 30,
+  softness: 0.85,
+} as const;
+
+export function clampToCanopy(x: number, y: number, trunkTopY: number): { x: number; y: number } {
+  const cx = CANOPY.centerX;
+  const cy = trunkTopY + CANOPY.centerYOffset;
+  const dx = (x - cx) / CANOPY.radiusX;
+  const dy = (y - cy) / CANOPY.radiusY;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  if (dist <= 1) return { x, y };
+  const clampedDist = 1 + (dist - 1) * CANOPY.softness;
+  const scale = clampedDist / dist;
+  return {
+    x: cx + (x - cx) * scale,
+    y: cy + (y - cy) * scale,
+  };
+}
+
+// ── LEAF AGE SIZING ───────────────────────────────────────────────
+// ageFraction: 0 = newest (tip), 1 = oldest (base).
+// Old leaves at branch base grow big and dominant; new buds at tip are small.
+export const LEAF_AGE_SIZE = {
+  oldestScale: 1.35,     // base leaves 35% larger
+  newestScale: 0.75,     // tip leaves 25% smaller
+  midpoint: 0.5,         // crossover at ageFraction 0.5
+} as const;
+
+export function ageSizeMultiplier(ageFraction: number): number {
+  const { oldestScale, newestScale, midpoint } = LEAF_AGE_SIZE;
+  if (ageFraction >= midpoint) {
+    const t = (ageFraction - midpoint) / (1 - midpoint);
+    return 1.0 + (oldestScale - 1.0) * t;
+  }
+  const t = ageFraction / midpoint;
+  return newestScale + (1.0 - newestScale) * t;
+}
+
+// ── LEAF AGE COLORING ─────────────────────────────────────────────
+// ageFraction: 0 = newest (tip), 1 = oldest (base).
+// Newest leaves are lighter/brighter, oldest are deeper.
+export const LEAF_AGE_COLOR = {
+  youngestLighten: 0.35,
+  oldestDarken: 0.20,
+  youngestOpacityBoost: 0.05,
+} as const;
+
+export function ageAdjustedColor(baseColor: string, ageFraction: number): string {
+  const parse = (hex: string) => ({
+    r: parseInt(hex.slice(1, 3), 16),
+    g: parseInt(hex.slice(3, 5), 16),
+    b: parseInt(hex.slice(5, 7), 16),
+  });
+  const c = parse(baseColor);
+  const { youngestLighten, oldestDarken } = LEAF_AGE_COLOR;
+  if (ageFraction < 0.5) {
+    const t = 1 - ageFraction * 2;
+    return `#${Math.round(Math.min(255, c.r + (255 - c.r) * youngestLighten * t)).toString(16).padStart(2, '0')}${Math.round(Math.min(255, c.g + (255 - c.g) * youngestLighten * t)).toString(16).padStart(2, '0')}${Math.round(Math.min(255, c.b + (255 - c.b) * youngestLighten * t)).toString(16).padStart(2, '0')}`;
+  }
+  const t = (ageFraction - 0.5) * 2;
+  return `#${Math.round(Math.max(0, c.r * (1 - oldestDarken * t))).toString(16).padStart(2, '0')}${Math.round(Math.max(0, c.g * (1 - oldestDarken * t))).toString(16).padStart(2, '0')}${Math.round(Math.max(0, c.b * (1 - oldestDarken * t))).toString(16).padStart(2, '0')}`;
+}
+
+export function ageAdjustedOpacity(baseOpacity: number, ageFraction: number): number {
+  const boost = ageFraction < 0.5
+    ? LEAF_AGE_COLOR.youngestOpacityBoost * (1 - ageFraction * 2)
+    : 0;
+  return Math.min(1, baseOpacity + boost);
+}
