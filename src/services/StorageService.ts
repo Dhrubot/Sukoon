@@ -16,13 +16,20 @@ import {
   HabitBuilderSettings,
   MosqueModeSettings,
 } from "../types";
-import { createStorage } from "./StorageAdapter";
+import { createStorage, createUnencryptedStorage } from "./StorageAdapter";
 import { PRAYER_NAMES as PrayerName } from "../constants";
 import AnalyticsService from './AnalyticsService';
 import { getLocalDateKey } from '../utils/dateHelpers';
 
 class StorageService {
+  // Encrypted storage for PII: user_settings, user_id, subscription,
+  // premium, donations, family, onboarding, reflections, mindfulness
   private storage;
+  // Unencrypted storage for non-PII high-frequency data: prayer records,
+  // daily stats, counters, dawam, achievements, reminder states, cached data
+  private publicStorage;
+  private _cachedUserSettings: UserSettings | null = null;
+  private _splitMigrationDone = false;
 
   constructor() {
     // 🔐 Encryption key is now managed by secureKeyManager
@@ -30,15 +37,91 @@ class StorageService {
     this.storage = createStorage({
       id: "prayer-buddy-storage",
     });
+    this.publicStorage = createUnencryptedStorage({
+      id: "prayer-buddy-public",
+    });
   }
 
-  // User Settings
+  // One-time migration: move non-PII keys from encrypted → unencrypted storage
+  migrateSplitStorage(): void {
+    if (this._splitMigrationDone) return;
+    this._splitMigrationDone = true;
+
+    // Check if already migrated
+    if (this.publicStorage.getBoolean('storage_split_migrated')) return;
+
+    try {
+      const allKeys = this.storage.getAllKeys();
+      let migrated = 0;
+
+      for (const key of allKeys) {
+        // Determine if this key belongs in publicStorage
+        const isPublic =
+          key.startsWith('prayer_') ||
+          key.startsWith('daily_stats_') ||
+          key.startsWith('reminder_state_') ||
+          key.startsWith('achievement_') ||
+          key.startsWith('moon_sighting_') ||
+          key === 'current_dawam' ||
+          key === 'engagement_dawam' ||
+          key === 'longest_dawam' ||
+          key === 'longest_engagement_dawam' ||
+          key === 'last_dawam_update_date' ||
+          key === 'last_engagement_dawam_date' ||
+          key === 'total_prayers_count' ||
+          key === 'total_mindfulness_count' ||
+          key === 'total_reflections_count' ||
+          key === 'high_focus_count' ||
+          key === 'consecutive_fajr_count' ||
+          key === 'consecutive_isha_count' ||
+          key === 'has_launched' ||
+          key === 'data_migrated' ||
+          key === 'last_prune_date' ||
+          key === 'cached_prayer_times' ||
+          key === 'cached_hijri_date' ||
+          key === 'lastPrayerRefresh' ||
+          key === 'achievements'; // old blob key (will be migrated by achievement split)
+
+        if (isPublic) {
+          // Copy string value (MMKV stores everything as strings internally)
+          const strVal = this.storage.getString(key);
+          const numVal = this.storage.getNumber(key);
+          const boolVal = this.storage.getBoolean(key);
+
+          if (strVal !== undefined) {
+            this.publicStorage.set(key, strVal);
+          } else if (numVal !== undefined) {
+            this.publicStorage.set(key, numVal);
+          } else if (boolVal !== undefined) {
+            this.publicStorage.set(key, boolVal);
+          }
+
+          this.storage.remove(key);
+          migrated++;
+        }
+      }
+
+      this.publicStorage.set('storage_split_migrated', true);
+
+      if (migrated > 0) {
+        console.log(`🔀 Migrated ${migrated} keys to unencrypted storage`);
+      }
+    } catch (error) {
+      console.error('⚠️ Split storage migration failed:', error);
+    }
+  }
+
+  // User Settings (with in-memory write-through cache)
   getUserSettings(): UserSettings | null {
+    if (this._cachedUserSettings) return this._cachedUserSettings;
     const data = this.storage.getString("user_settings");
-    return data ? JSON.parse(data) : null;
+    const parsed = data ? JSON.parse(data) : null;
+    if (parsed) this._cachedUserSettings = parsed;
+    return parsed;
   }
 
   setUserSettings(settings: UserSettings): void {
+    this._cachedUserSettings = settings;
     this.storage.set("user_settings", JSON.stringify(settings));
   }
 
@@ -161,7 +244,7 @@ class StorageService {
   // Prayer Records
   savePrayerRecord(record: PrayerRecord): void {
     const key = `prayer_${record.date}_${record.prayer}`;
-    this.storage.set(key, JSON.stringify(record));
+    this.publicStorage.set(key, JSON.stringify(record));
 
     // Update daily stats
     this.updateDailyStats(record.date);
@@ -169,7 +252,7 @@ class StorageService {
 
   getPrayerRecord(date: string, prayer: string): PrayerRecord | null {
     const key = `prayer_${date}_${prayer}`;
-    const data = this.storage.getString(key);
+    const data = this.publicStorage.getString(key);
     return data ? JSON.parse(data) : null;
   }
 
@@ -217,7 +300,7 @@ class StorageService {
 
   // Daily Stats
   getDailyStats(date: string): DailyStats | null {
-    const data = this.storage.getString(`daily_stats_${date}`);
+    const data = this.publicStorage.getString(`daily_stats_${date}`);
     return data ? JSON.parse(data) : null;
   }
 
@@ -242,24 +325,24 @@ class StorageService {
           : 0,
     };
 
-    this.storage.set(`daily_stats_${date}`, JSON.stringify(stats));
+    this.publicStorage.set(`daily_stats_${date}`, JSON.stringify(stats));
   }
 
   // Dawam — dual system: engagement (≥1 prayer) + perfect (5/5)
   getCurrentDawam(): number {
-    return this.storage.getNumber("current_dawam") || 0;
+    return this.publicStorage.getNumber("current_dawam") || 0;
   }
 
   setDawam(value: number): void {
-    this.storage.set("current_dawam", value);
+    this.publicStorage.set("current_dawam", value);
   }
 
   getEngagementDawam(): number {
-    return this.storage.getNumber("engagement_dawam") || 0;
+    return this.publicStorage.getNumber("engagement_dawam") || 0;
   }
 
   setEngagementDawam(value: number): void {
-    this.storage.set("engagement_dawam", value);
+    this.publicStorage.set("engagement_dawam", value);
   }
 
   // Dual dawam update: engagement dawam rewards any effort (≥1 prayer),
@@ -277,52 +360,52 @@ class StorageService {
 
     // ── Engagement Dawam (≥1 prayer today) ──
     if (todayCompleted >= 1) {
-      const lastEngagementDate = this.storage.getString("last_engagement_dawam_date");
+      const lastEngagementDate = this.publicStorage.getString("last_engagement_dawam_date");
       if (lastEngagementDate !== today) {
         if (yesterdayCompleted >= 1) {
-          this.storage.set("engagement_dawam", this.getEngagementDawam() + 1);
+          this.publicStorage.set("engagement_dawam", this.getEngagementDawam() + 1);
         } else {
-          this.storage.set("engagement_dawam", 1);
+          this.publicStorage.set("engagement_dawam", 1);
         }
-        this.storage.set("last_engagement_dawam_date", today);
+        this.publicStorage.set("last_engagement_dawam_date", today);
       }
     } else {
       if (yesterdayCompleted < 1) {
-        this.storage.set("engagement_dawam", 0);
+        this.publicStorage.set("engagement_dawam", 0);
       }
     }
 
     // ── Perfect Dawam (5/5 prayers) ──
-    const lastDawamDate = this.storage.getString("last_dawam_update_date");
+    const lastDawamDate = this.publicStorage.getString("last_dawam_update_date");
 
     if (todayCompleted === 5) {
       if (lastDawamDate === today) {
         // Already calculated perfect dawam for today — skip
       } else {
         if (yesterdayCompleted === 5) {
-          this.storage.set("current_dawam", this.getCurrentDawam() + 1);
+          this.publicStorage.set("current_dawam", this.getCurrentDawam() + 1);
         } else {
-          this.storage.set("current_dawam", 1);
+          this.publicStorage.set("current_dawam", 1);
         }
-        this.storage.set("last_dawam_update_date", today);
+        this.publicStorage.set("last_dawam_update_date", today);
       }
     } else {
       if (yesterdayCompleted < 5) {
-        this.storage.set("current_dawam", 0);
+        this.publicStorage.set("current_dawam", 0);
       }
     }
 
     // Update longest dawam (both types)
     const currentPerfect = this.getCurrentDawam();
-    const longestPerfect = this.storage.getNumber("longest_dawam") || 0;
+    const longestPerfect = this.publicStorage.getNumber("longest_dawam") || 0;
     if (currentPerfect > longestPerfect) {
-      this.storage.set("longest_dawam", currentPerfect);
+      this.publicStorage.set("longest_dawam", currentPerfect);
     }
 
     const currentEngagement = this.getEngagementDawam();
-    const longestEngagement = this.storage.getNumber("longest_engagement_dawam") || 0;
+    const longestEngagement = this.publicStorage.getNumber("longest_engagement_dawam") || 0;
     if (currentEngagement > longestEngagement) {
-      this.storage.set("longest_engagement_dawam", currentEngagement);
+      this.publicStorage.set("longest_engagement_dawam", currentEngagement);
     }
 
     // Log dawam milestones for both types
@@ -337,11 +420,11 @@ class StorageService {
 
   // Get longest dawam ever recorded
   getLongestDawam(): number {
-    return this.storage.getNumber("longest_dawam") || 0;
+    return this.publicStorage.getNumber("longest_dawam") || 0;
   }
 
   getLongestEngagementDawam(): number {
-    return this.storage.getNumber("longest_engagement_dawam") || 0;
+    return this.publicStorage.getNumber("longest_engagement_dawam") || 0;
   }
 
   // Get prayer records for a date range
@@ -514,95 +597,128 @@ class StorageService {
     return percentages;
   }
 
-  // Achievements
+  // Achievements (individual keys: achievement_{id})
+  private _achievementsMigrated = false;
+
+  private migrateAchievementsIfNeeded(): void {
+    if (this._achievementsMigrated) return;
+    this._achievementsMigrated = true;
+
+    // One-time migration from old blob to individual keys
+    const oldBlob = this.publicStorage.getString('achievements');
+    if (!oldBlob) return;
+
+    try {
+      const oldList: Achievement[] = JSON.parse(oldBlob);
+      for (const a of oldList) {
+        const key = `achievement_${a.id}`;
+        if (!this.publicStorage.getString(key)) {
+          this.publicStorage.set(key, JSON.stringify(a));
+        }
+      }
+      this.publicStorage.remove('achievements');
+    } catch { /* skip malformed blob */ }
+  }
+
   getAchievements(): Achievement[] {
-    const data = this.storage.getString("achievements");
-    return data ? JSON.parse(data) : this.getDefaultAchievements();
+    this.migrateAchievementsIfNeeded();
+    const defaults = this.getDefaultAchievements();
+    return defaults.map(def => {
+      const data = this.publicStorage.getString(`achievement_${def.id}`);
+      return data ? JSON.parse(data) : def;
+    });
+  }
+
+  getAchievement(achievementId: string): Achievement | null {
+    this.migrateAchievementsIfNeeded();
+    const data = this.publicStorage.getString(`achievement_${achievementId}`);
+    if (data) return JSON.parse(data);
+    // Fall back to default
+    const def = this.getDefaultAchievements().find(a => a.id === achievementId);
+    return def || null;
   }
 
   unlockAchievement(achievementId: string): void {
-    const achievements = this.getAchievements();
-    const achievement = achievements.find((a) => a.id === achievementId);
-
+    this.migrateAchievementsIfNeeded();
+    const achievement = this.getAchievement(achievementId);
     if (achievement && !achievement.unlockedAt) {
       achievement.unlockedAt = new Date();
-      this.storage.set("achievements", JSON.stringify(achievements));
+      this.publicStorage.set(`achievement_${achievementId}`, JSON.stringify(achievement));
     }
   }
 
   // Update achievement progress
   updateAchievementProgress(achievementId: string, progress: number): void {
-    const achievements = this.getAchievements();
-    const achievement = achievements.find((a) => a.id === achievementId);
-
+    this.migrateAchievementsIfNeeded();
+    const achievement = this.getAchievement(achievementId);
     if (achievement) {
       achievement.progress = progress;
-      this.storage.set("achievements", JSON.stringify(achievements));
+      this.publicStorage.set(`achievement_${achievementId}`, JSON.stringify(achievement));
     }
   }
 
   // Get total prayers count
   getTotalPrayersCount(): number {
-    return this.storage.getNumber("total_prayers_count") || 0;
+    return this.publicStorage.getNumber("total_prayers_count") || 0;
   }
 
   // Increment total prayers count
   incrementTotalPrayersCount(): void {
     const current = this.getTotalPrayersCount();
-    this.storage.set("total_prayers_count", current + 1);
+    this.publicStorage.set("total_prayers_count", current + 1);
   }
 
   // Get total mindfulness sessions
   getTotalMindfulnessCount(): number {
-    return this.storage.getNumber("total_mindfulness_count") || 0;
+    return this.publicStorage.getNumber("total_mindfulness_count") || 0;
   }
 
   // Increment mindfulness count
   incrementMindfulnessCount(): void {
     const current = this.getTotalMindfulnessCount();
-    this.storage.set("total_mindfulness_count", current + 1);
+    this.publicStorage.set("total_mindfulness_count", current + 1);
   }
 
   // Get total reflections count
   getTotalReflectionsCount(): number {
-    return this.storage.getNumber("total_reflections_count") || 0;
+    return this.publicStorage.getNumber("total_reflections_count") || 0;
   }
 
   // Increment reflections count
   incrementReflectionsCount(): void {
     const current = this.getTotalReflectionsCount();
-    this.storage.set("total_reflections_count", current + 1);
+    this.publicStorage.set("total_reflections_count", current + 1);
   }
 
   // Get high focus count (90%+)
   getHighFocusCount(): number {
-    return this.storage.getNumber("high_focus_count") || 0;
+    return this.publicStorage.getNumber("high_focus_count") || 0;
   }
 
   // Increment high focus count
   incrementHighFocusCount(): void {
     const current = this.getHighFocusCount();
-    this.storage.set("high_focus_count", current + 1);
+    this.publicStorage.set("high_focus_count", current + 1);
   }
 
   // Get consecutive Fajr count
   getConsecutiveFajrCount(): number {
-    return this.storage.getNumber("consecutive_fajr_count") || 0;
+    return this.publicStorage.getNumber("consecutive_fajr_count") || 0;
   }
 
   // Update consecutive Fajr count
   updateConsecutiveFajrCount(count: number): void {
-    this.storage.set("consecutive_fajr_count", count);
+    this.publicStorage.set("consecutive_fajr_count", count);
   }
 
   // Get consecutive Isha count
   getConsecutiveIshaCount(): number {
-    return this.storage.getNumber("consecutive_isha_count") || 0;
+    return this.publicStorage.getNumber("consecutive_isha_count") || 0;
   }
 
   // Update consecutive Isha count
   updateConsecutiveIshaCount(count: number): void {
-    this.storage.set("consecutive_isha_count", count);
+    this.publicStorage.set("consecutive_isha_count", count);
   }
 
   // Save prayer record with achievement tracking
@@ -783,9 +899,9 @@ class StorageService {
 
   // First Launch
   isFirstLaunch(): boolean {
-    const launched = this.storage.getBoolean("has_launched");
+    const launched = this.publicStorage.getBoolean("has_launched");
     if (!launched) {
-      this.storage.set("has_launched", true);
+      this.publicStorage.set("has_launched", true);
       return true;
     }
     return false;
@@ -851,11 +967,13 @@ class StorageService {
     this.storage.remove("subscription");
   }
 
-  // Donation tracking
+  // Donation tracking (capped at 100 entries)
   saveDonation(donation: Donation): void {
     const history = this.getDonationHistory();
     history.push(donation);
-    this.storage.set("donation_history", JSON.stringify(history));
+    // Cap at 100 entries to prevent unbounded growth
+    const capped = history.length > 100 ? history.slice(-100) : history;
+    this.storage.set("donation_history", JSON.stringify(capped));
   }
 
   getDonationHistory(): Donation[] {
@@ -900,32 +1018,17 @@ class StorageService {
 
   // Data migration status
   isDataMigrated(): boolean {
-    return this.storage.getBoolean('data_migrated') || false;
+    return this.publicStorage.getBoolean('data_migrated') || false;
   }
 
   setDataMigrated(migrated: boolean = true): void {
-    this.storage.set('data_migrated', migrated);
+    this.publicStorage.set('data_migrated', migrated);
   }
 
-  // Get all prayer records (with optional limit to avoid full key scan)
+  // @deprecated Use getPrayerRecordsSince(days) instead — this scans ALL keys.
   getAllPrayerRecords(limit?: number): PrayerRecord[] {
-    const allRecords: PrayerRecord[] = [];
-    const keys = this.storage.getAllKeys();
-    
-    // Filter keys that match prayer record pattern
-    const recordKeys = keys.filter(key => key.startsWith('prayer_'));
-    
-    // Apply limit to avoid scanning thousands of keys
-    const keysToScan = limit ? recordKeys.slice(-limit) : recordKeys;
-    
-    keysToScan.forEach(key => {
-      const data = this.storage.getString(key);
-      if (data) {
-        allRecords.push(JSON.parse(data));
-      }
-    });
-    
-    return allRecords;
+    // Delegate to bounded query (default 365 days)
+    return this.getPrayerRecordsSince(limit ? Math.ceil(limit / 5) : 365);
   }
 
   // Get prayer records for a recent number of days (bounded query)
@@ -947,25 +1050,25 @@ class StorageService {
   // Prayer Reminder State Management
   getReminderState(prayerId: string): PrayerReminderState | null {
     const key = `reminder_state_${prayerId}`;
-    const data = this.storage.getString(key);
+    const data = this.publicStorage.getString(key);
     return data ? JSON.parse(data) : null;
   }
 
   setReminderState(prayerId: string, state: PrayerReminderState): void {
     const key = `reminder_state_${prayerId}`;
-    this.storage.set(key, JSON.stringify(state));
+    this.publicStorage.set(key, JSON.stringify(state));
   }
 
   getAllReminderStates(): PrayerReminderState[] {
     const allStates: PrayerReminderState[] = [];
-    const keys = this.storage.getAllKeys();
+    const keys = this.publicStorage.getAllKeys();
     
     // Filter keys that match reminder state pattern
     const stateKeys = keys.filter(key => key.startsWith('reminder_state_'));
     
     // Get all reminder states
     stateKeys.forEach(key => {
-      const data = this.storage.getString(key);
+      const data = this.publicStorage.getString(key);
       if (data) {
         allStates.push(JSON.parse(data));
       }
@@ -976,7 +1079,7 @@ class StorageService {
 
   deleteReminderState(prayerId: string): void {
     const key = `reminder_state_${prayerId}`;
-    this.storage.remove(key);
+    this.publicStorage.remove(key);
   }
 
   // Reflection Garden — cross-reference for reflection text
@@ -1016,9 +1119,149 @@ class StorageService {
     return results;
   }
 
+  // Get reminder states for a bounded number of days (deterministic, no getAllKeys)
+  getReminderStatesForDays(days: number): PrayerReminderState[] {
+    const states: PrayerReminderState[] = [];
+    const prayers = [
+      PrayerName.fajr,
+      PrayerName.dhuhr,
+      PrayerName.asr,
+      PrayerName.maghrib,
+      PrayerName.isha,
+    ];
+    const now = new Date();
+
+    for (let i = 0; i < days; i++) {
+      const date = new Date(now);
+      date.setDate(date.getDate() - i);
+      const dateStr = getLocalDateKey(date);
+
+      for (const prayer of prayers) {
+        const prayerId = `${prayer}-${dateStr}`;
+        const state = this.getReminderState(prayerId);
+        if (state) states.push(state);
+      }
+    }
+
+    return states;
+  }
+
+  // Prune old data beyond retention window (deterministic key iteration)
+  pruneOldData(retentionDays: number = 365): { prunedKeys: number } {
+    const lastPrune = this.publicStorage.getString('last_prune_date');
+    const today = getLocalDateKey();
+    if (lastPrune === today) return { prunedKeys: 0 };
+
+    let prunedKeys = 0;
+    const prayers = [
+      PrayerName.fajr,
+      PrayerName.dhuhr,
+      PrayerName.asr,
+      PrayerName.maghrib,
+      PrayerName.isha,
+    ];
+
+    // Scan 90 days beyond retention window to catch stragglers
+    const scanDays = 90;
+    const startOffset = retentionDays + 1;
+    const endOffset = retentionDays + scanDays;
+
+    for (let i = startOffset; i <= endOffset; i++) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateStr = getLocalDateKey(date);
+
+      // Delete prayer records: prayer_{date}_{prayer} (publicStorage)
+      for (const prayer of prayers) {
+        const prayerKey = `prayer_${dateStr}_${prayer}`;
+        if (this.publicStorage.getString(prayerKey) !== undefined) {
+          this.publicStorage.remove(prayerKey);
+          prunedKeys++;
+        }
+      }
+
+      // Delete daily stats: daily_stats_{date} (publicStorage)
+      const statsKey = `daily_stats_${dateStr}`;
+      if (this.publicStorage.getString(statsKey) !== undefined) {
+        this.publicStorage.remove(statsKey);
+        prunedKeys++;
+      }
+
+      // Delete reflection texts: reflection_{date}_{prayer} (encrypted — PII)
+      for (const prayer of prayers) {
+        const reflKey = `reflection_${dateStr}_${prayer}`;
+        if (this.storage.getString(reflKey) !== undefined) {
+          this.storage.remove(reflKey);
+          prunedKeys++;
+        }
+      }
+
+      // Delete reminder states: reminder_state_{prayer}-{date} (publicStorage)
+      for (const prayer of prayers) {
+        const reminderKey = `reminder_state_${prayer}-${dateStr}`;
+        if (this.publicStorage.getString(reminderKey) !== undefined) {
+          this.publicStorage.remove(reminderKey);
+          prunedKeys++;
+        }
+      }
+    }
+
+    // Prune mindfulness sessions (these use UUIDs, so we need one getAllKeys scan)
+    // Only run this scan during pruning (not on hot path)
+    try {
+      const allKeys = this.storage.getAllKeys();
+      const mindfulnessKeys = allKeys.filter(k => k.startsWith('mindfulness_'));
+      for (const key of mindfulnessKeys) {
+        const data = this.storage.getString(key);
+        if (data) {
+          try {
+            const session = JSON.parse(data);
+            if (session.startedAt) {
+              const sessionDate = new Date(session.startedAt);
+              const daysDiff = Math.floor(
+                (Date.now() - sessionDate.getTime()) / (1000 * 60 * 60 * 24)
+              );
+              if (daysDiff > retentionDays) {
+                this.storage.remove(key);
+                prunedKeys++;
+              }
+            }
+          } catch { /* skip malformed entries */ }
+        }
+      }
+
+      // Prune stale lastPrayerRefresh_* keys (orphans from old code)
+      const refreshKeys = allKeys.filter(k => k.startsWith('lastPrayerRefresh_'));
+      for (const key of refreshKeys) {
+        this.storage.remove(key);
+        prunedKeys++;
+      }
+    } catch { /* getAllKeys scan failed, skip mindfulness/refresh pruning */ }
+
+    // Also check publicStorage for stale refresh keys from migration
+    try {
+      const pubKeys = this.publicStorage.getAllKeys();
+      const pubRefreshKeys = pubKeys.filter(k => k.startsWith('lastPrayerRefresh_'));
+      for (const key of pubRefreshKeys) {
+        this.publicStorage.remove(key);
+        prunedKeys++;
+      }
+    } catch { /* skip */ }
+
+    this.publicStorage.set('last_prune_date', today);
+
+    if (prunedKeys > 0) {
+      console.log(`🧹 Pruned ${prunedKeys} old storage keys (retention: ${retentionDays} days)`);
+    }
+
+    return { prunedKeys };
+  }
+
   // Clear all data
   clearAllData(): void {
+    this._cachedUserSettings = null;
     this.storage.clearAll();
+    this.publicStorage.clearAll();
   }
 }
 

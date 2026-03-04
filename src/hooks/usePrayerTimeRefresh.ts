@@ -4,42 +4,53 @@ import StorageService from '../services/StorageService';
 import { Location as LocationType } from '../types';
 import { getLocalDateKey } from '../utils/dateHelpers';
 
+// Single self-overwriting key instead of per-date keys (fixes key leak)
+const REFRESH_KEY = 'lastPrayerRefresh';
+
+interface RefreshStamp {
+  lat: number;
+  lon: number;
+  date: string;
+  method: string;
+  timestamp: number;
+}
+
 export const usePrayerTimeRefresh = () => {
   const shouldRefreshPrayerTimes = useCallback(async (
     location: LocationType,
     method: string
   ): Promise<boolean> => {
     try {
-      // Get today's date in YYYY-MM-DD format for the cache key
-      const today = new Date();
-      const dateStr = getLocalDateKey(today);
+      const dateStr = getLocalDateKey(new Date());
+      const lat = parseFloat(location.latitude.toFixed(4));
+      const lon = parseFloat(location.longitude.toFixed(4));
 
-      // Create a storage key for the prayer times refresh timestamp
-      const refreshKey = `lastPrayerRefresh_${location.latitude.toFixed(
-        4
-      )}_${location.longitude.toFixed(4)}_${dateStr}_${method}`;
+      const raw = StorageService.getValue(REFRESH_KEY);
+      if (raw) {
+        try {
+          const stamp: RefreshStamp = JSON.parse(raw);
 
-      // Check when we last refreshed prayer times
-      const lastRefresh = StorageService.getValue(refreshKey);
+          // Refresh if date, location, or method changed
+          const sameContext =
+            stamp.date === dateStr &&
+            stamp.method === method &&
+            Math.abs(stamp.lat - lat) < 0.01 &&
+            Math.abs(stamp.lon - lon) < 0.01;
 
-      if (!lastRefresh) {
-        // No refresh timestamp, so we should refresh
-        // Save current time as last refresh
-        StorageService.setValue(refreshKey, Date.now().toString());
-        return true;
+          if (sameContext) {
+            // Check if it's been more than 12 hours since last refresh
+            const twelveHoursMs = 12 * 60 * 60 * 1000;
+            if (Date.now() - stamp.timestamp <= twelveHoursMs) {
+              return false;
+            }
+          }
+        } catch { /* malformed stamp, refresh */ }
       }
 
-      // Check if it's been more than 12 hours since last refresh
-      const lastRefreshTime = parseInt(lastRefresh, 10);
-      const twelveHoursMs = 12 * 60 * 60 * 1000;
-
-      if (Date.now() - lastRefreshTime > twelveHoursMs) {
-        // More than 12 hours, refresh
-        StorageService.setValue(refreshKey, Date.now().toString());
-        return true;
-      }
-
-      return false;
+      // Save new stamp and signal refresh needed
+      const newStamp: RefreshStamp = { lat, lon, date: dateStr, method, timestamp: Date.now() };
+      StorageService.setValue(REFRESH_KEY, JSON.stringify(newStamp));
+      return true;
     } catch (error) {
       console.error("Error checking if prayer times should refresh:", error);
       return true; // Refresh to be safe

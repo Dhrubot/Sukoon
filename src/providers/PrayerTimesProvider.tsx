@@ -4,7 +4,7 @@ import React, { createContext, useContext, useEffect, useMemo, useRef, useState 
 import { AppState } from 'react-native';
 import { useStore } from '../store/useStore';
 import PrayerTimeService from '../services/PrayerTimeService';
-import { PrayerTime, Location } from '../types';
+import { PrayerTime, PrayerName, PrayerTimes, Location } from '../types';
 import { isValidCoordinates } from '../utils/locationValidation';
 import logger from '../utils/logger';
 import WidgetService from '../services/WidgetService';
@@ -131,11 +131,51 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
     }
 
     logger.log('🔄 Loading prayer times...');
-    setIsLoading(true);
+
+    // Stale-while-revalidate: try disk cache for instant render before API call
+    const today = new Date();
+    const cached = PrayerTimeService.getCachedPrayerTimesFromDisk(
+      location,
+      today,
+      userSettings.calculationMethod,
+      userSettings.asrJuristic
+    );
+
+    if (cached) {
+      logger.log('⚡ Instant render from disk cache');
+      const fardNames: PrayerName[] = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+      const cachedPrayerTimes: PrayerTime[] = fardNames.map(name => {
+        const timeStr = cached.times[name as keyof PrayerTimes];
+        const prayerDate = PrayerTimeService.parseTimeToDate(timeStr, today);
+        const adj = userSettings.adjustments?.[name as keyof typeof userSettings.adjustments] || 0;
+        const adjusted = adj ? new Date(prayerDate.getTime() + adj * 60000) : prayerDate;
+        return { name, time: adjusted, timestamp: adjusted.getTime(), isNext: false };
+      });
+
+      const cachedSunrise = PrayerTimeService.parseTimeToDate(cached.sunrise, today);
+      const cachedSunset = PrayerTimeService.parseTimeToDate(cached.sunset, today);
+      const cachedMidnight = cached.midnight ? PrayerTimeService.parseTimeToDate(cached.midnight, today) : null;
+
+      setTodayPrayerTimes(cachedPrayerTimes);
+      setTodaySunrise(cachedSunrise);
+      setTodaySunset(cachedSunset);
+      setTodayMidnight(cachedMidnight);
+
+      // Calculate next prayer from cached data
+      const cachedNext = calculateNextPrayer(cachedPrayerTimes, null, cachedSunrise, cachedMidnight);
+      setNextPrayer(cachedNext);
+      if (cachedNext) {
+        setTodayPrayerTimes(cachedPrayerTimes.map(p => ({ ...p, isNext: p.name === cachedNext.name })));
+      }
+
+      // Don't show loading state — we have data to display
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
+    }
     setError(null);
 
     try {
-      const today = new Date();
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 

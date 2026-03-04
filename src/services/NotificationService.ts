@@ -128,9 +128,12 @@ class NotificationService {
     return d;
   }
 
-  private async cleanupPastPrayerNotifications(cutoff: Date): Promise<number> {
-    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-    let cancelled = 0;
+  private async cleanupPastPrayerNotifications(
+    cutoff: Date,
+    cachedScheduled?: Notifications.NotificationRequest[]
+  ): Promise<number> {
+    const scheduled = cachedScheduled || await Notifications.getAllScheduledNotificationsAsync();
+    const toCancel: string[] = [];
 
     for (const notif of scheduled) {
       const data = (notif.content?.data || {}) as Record<string, unknown>;
@@ -140,12 +143,15 @@ class NotificationService {
       const triggerDate = this.getTriggerDate(notif.trigger);
       if (!triggerDate) continue;
       if (triggerDate.getTime() < cutoff.getTime()) {
-        await Notifications.cancelScheduledNotificationAsync(notif.identifier);
-        cancelled++;
+        toCancel.push(notif.identifier);
       }
     }
 
-    return cancelled;
+    if (toCancel.length > 0) {
+      await Promise.all(toCancel.map(id => Notifications.cancelScheduledNotificationAsync(id)));
+    }
+
+    return toCancel.length;
   }
 
   async maybeRescheduleExtendedNotifications(hoursThreshold: number = 12): Promise<boolean> {
@@ -748,8 +754,8 @@ class NotificationService {
       return data?.prayer === prayerName;
     });
 
-    for (const notif of toCancel) {
-      await Notifications.cancelScheduledNotificationAsync(notif.identifier);
+    if (toCancel.length > 0) {
+      await Promise.all(toCancel.map(n => Notifications.cancelScheduledNotificationAsync(n.identifier)));
     }
   }
 
@@ -773,8 +779,10 @@ class NotificationService {
       return false;
     });
 
-    for (const notif of prayerNotifications) {
-      await Notifications.cancelScheduledNotificationAsync(notif.identifier);
+    if (prayerNotifications.length > 0) {
+      await Promise.all(
+        prayerNotifications.map(n => Notifications.cancelScheduledNotificationAsync(n.identifier))
+      );
     }
 
     logger.log(`🗑️ Cancelled ${prayerNotifications.length} prayer notifications`);
@@ -789,9 +797,10 @@ class NotificationService {
     const toCancel = scheduled.filter(
       (notif) => notif.content.data?.prayerId === prayerId
     );
-    for (const notif of toCancel) {
-      await Notifications.cancelScheduledNotificationAsync(notif.identifier);
-      logger.log(`❌ Cancelled notification: ${notif.identifier}`);
+    if (toCancel.length > 0) {
+      await Promise.all(
+        toCancel.map(n => Notifications.cancelScheduledNotificationAsync(n.identifier))
+      );
     }
     logger.log(`🗑️ Cancelled ${toCancel.length} notifications for ${prayerId}`);
   }
@@ -853,13 +862,14 @@ class NotificationService {
         StorageService.setValue('notification_schedule_fingerprint', fingerprint);
       }
 
-      await this.cleanupPastPrayerNotifications(new Date());
+      // Get ALL scheduled notifications once for the entire scheduling cycle
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+
+      // Reuse cached list to avoid a second native bridge call
+      await this.cleanupPastPrayerNotifications(new Date(), scheduled);
 
       // Clean up stale reminder states on every reschedule (not just cold start)
       ReminderStateService.cleanupOldStates();
-
-      // Get ALL scheduled notifications for global iOS budget awareness
-      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
       const existingIdentifiers = new Set<string>();
       for (const notif of scheduled) {
         const data = (notif.content?.data || {}) as Record<string, unknown>;
@@ -1268,10 +1278,10 @@ class NotificationService {
     const tahajjudNotifs = scheduled.filter(
       (notif) => (notif.content.data as any)?.type === 'tahajjud-reminder'
     );
-    for (const notif of tahajjudNotifs) {
-      await Notifications.cancelScheduledNotificationAsync(notif.identifier);
-    }
     if (tahajjudNotifs.length > 0) {
+      await Promise.all(
+        tahajjudNotifs.map(n => Notifications.cancelScheduledNotificationAsync(n.identifier))
+      );
       logger.log(`🗑️ Cancelled ${tahajjudNotifs.length} Tahajjud notifications`);
     }
   }

@@ -88,7 +88,7 @@ class WebStorage {
   }
 }
 
-// 2. Factory function for creating storage instances
+// 2. Factory function for creating encrypted storage instances (PII data)
 export function createStorage(options: { id: string; encryptionKey?: string }): MMKV | MemoryStorage | WebStorage {
   if (Platform.OS === 'web') {
     console.log('🌐 Using WebStorage for web platform');
@@ -111,6 +111,23 @@ export function createStorage(options: { id: string; encryptionKey?: string }): 
   } catch (error) {
     // 3. Safe Fallback
     console.error('⚠️ MMKV failed to load. Using in-memory storage fallback.', error);
+    return new MemoryStorage();
+  }
+}
+
+// 3. Factory function for creating unencrypted storage instances (non-PII data)
+// Skips AES encryption overhead for high-frequency reads like prayer records, stats, counters.
+export function createUnencryptedStorage(options: { id: string }): MMKV | MemoryStorage | WebStorage {
+  if (Platform.OS === 'web') {
+    return new WebStorage(options);
+  }
+
+  try {
+    const storage = createMMKV({ id: options.id });
+    console.log('✅ Unencrypted MMKV initialized:', options.id);
+    return storage;
+  } catch (error) {
+    console.error('⚠️ Unencrypted MMKV failed. Using in-memory fallback.', error);
     return new MemoryStorage();
   }
 }

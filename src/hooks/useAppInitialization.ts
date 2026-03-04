@@ -54,6 +54,12 @@ export const useAppInitialization = () => {
 
       setUserSettings(settings);
 
+      // One-time migration: split encrypted/unencrypted storage
+      StorageService.migrateSplitStorage();
+
+      // Prune old data (once per day, 365-day retention)
+      StorageService.pruneOldData(365);
+
       // Check and update dawam on every boot (breaks dawam if yesterday was missed)
       StorageService.updateDawam();
       setCurrentDawam(StorageService.getCurrentDawam());
