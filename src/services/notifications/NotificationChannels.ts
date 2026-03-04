@@ -30,6 +30,7 @@ export async function cleanupOldChannels(): Promise<void> {
     const deletableIds = new Set<string>();
     for (let v = 1; v < currentVersion; v++) {
       deletableIds.add(`prayer-times-adhan-v${v}`);
+      deletableIds.add(`prayer-times-adhan-silent-v${v}`);
       deletableIds.add(`prayer-times-default-v${v}`);
       deletableIds.add(`pre-prayer-v${v}`);
       deletableIds.add(`mindfulness-v${v}`);
@@ -69,6 +70,18 @@ export async function setupNotificationChannels(): Promise<void> {
     vibrationPattern: [0, 1000, 500, 1000],
     lightColor: '#1B5E3F',
     sound: SOUNDS.ANDROID_SHORT,
+    bypassDnd: false,
+    showBadge: true,
+  });
+
+  // Silent adhan channel — used when Full Adhan foreground service handles audio
+  await Notifications.setNotificationChannelAsync(CHANNELS.ADHAN_SILENT, {
+    name: 'Prayer Times (Full Adhan)',
+    description: 'Visual notification while full Adhan plays via foreground service',
+    importance: Notifications.AndroidImportance.HIGH,
+    vibrationPattern: [0, 250, 250, 250],
+    lightColor: '#1B5E3F',
+    sound: null, // No sound — audio comes from AdhanService
     bypassDnd: false,
     showBadge: true,
   });

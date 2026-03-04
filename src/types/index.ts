@@ -100,6 +100,7 @@ export interface UserSettings {
   notifications: {
     enabled: boolean;
     adhanEnabled: boolean;
+    fullAdhanEnabled?: boolean; // Android only: play full Adhan via foreground service even when locked
     soundEnabled: boolean; // This can control the standard "beep" if Adhan is off
     vibrationEnabled: boolean;
     beforePrayer: number; // minutes

@@ -67,6 +67,7 @@ export default {
       "./plugins/withAndroidIapFlavor.js",
       "./plugins/withNodePath.js",
       "./plugins/withRingerMode.js",
+      "./plugins/withFullAdhan.js",
       "./plugins/withWidget.js",
       "./plugins/withAndroidWidget.js",
       "expo-font",

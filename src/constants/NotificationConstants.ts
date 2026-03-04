@@ -2,7 +2,7 @@
 
 // 🛠 BUMP THIS VERSION whenever change sound files or channel settings
 // This forces Android to create a new channel with the fresh config.
-export const NOTIFICATION_CHANNEL_VERSION = 8;
+export const NOTIFICATION_CHANNEL_VERSION = 9;
 
 export const NOTIFICATION_SCHEDULING_DAYS = 3;   // Tier 1 (Adhan) horizon
 export const NOTIFICATION_LOWER_TIER_DAYS = 2;    // Pre-prayer / Tier 3 / Tier 2 horizon
@@ -15,6 +15,7 @@ export const IOS_NOTIFICATION_CAP = 58;
 export const CHANNELS = {
   // Appends version: "prayer-times-adhan-v2"
   ADHAN: `prayer-times-adhan-v${NOTIFICATION_CHANNEL_VERSION}`,
+  ADHAN_SILENT: `prayer-times-adhan-silent-v${NOTIFICATION_CHANNEL_VERSION}`,
   DEFAULT: `prayer-times-default-v${NOTIFICATION_CHANNEL_VERSION}`,
   PRE_PRAYER: `pre-prayer-v${NOTIFICATION_CHANNEL_VERSION}`,
   MINDFULNESS: `mindfulness-v${NOTIFICATION_CHANNEL_VERSION}`,
