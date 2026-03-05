@@ -1,5 +1,5 @@
 // src/screens/Menu/MenuScreen.tsx
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import { AppTheme } from '../../theme';
 import { useStore } from '../../store/useStore';
 import ReflectionGardenService from '../../services/ReflectionGardenService';
 import Svg, { Path, Circle, Line, Polyline, Rect } from 'react-native-svg';
+import DailyVerse, { DailyVerseRef } from '../../components/common/DailyVerse';
 
 // ═══════════════════════════════════════════════════════════════
 // Outline SVG Icon Components
@@ -199,6 +200,7 @@ interface QuickAccessItem {
   subtitle: string;
   screen: string;
   colorKey: 'teal' | 'gold' | 'purple' | 'amber';
+  onPress?: () => void;
 }
 
 const quickAccessItems: QuickAccessItem[] = [
@@ -213,7 +215,7 @@ const quickAccessItems: QuickAccessItem[] = [
     icon: VerseIcon,
     title: 'Daily Verse',
     subtitle: 'Quran reflection',
-    screen: 'DuaLibrary',
+    screen: '',
     colorKey: 'gold',
   },
   {
@@ -266,6 +268,7 @@ const MenuScreen: React.FC = () => {
   const styles = useThemedStyles(createStyles);
   const navigation = useNavigation();
   const { currentDawam, todayPrayerRecords } = useStore();
+  const dailyVerseRef = useRef<DailyVerseRef>(null);
 
   // Garden data
   const [gardenSummary, setGardenSummary] = useState({
@@ -451,7 +454,16 @@ const MenuScreen: React.FC = () => {
               <TouchableOpacity
                 key={item.title}
                 style={styles.quickTile}
-                onPress={() => handleNavigate(item.screen)}
+                onPress={() => {
+                  if (item.title === 'Daily Verse') {
+                    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                    dailyVerseRef.current?.openSheet();
+                  } else if (item.onPress) {
+                    item.onPress();
+                  } else {
+                    handleNavigate(item.screen);
+                  }
+                }}
                 activeOpacity={0.7}
               >
                 <View style={[styles.tileIcon, { backgroundColor: accent.bg }]}>
@@ -497,6 +509,7 @@ const MenuScreen: React.FC = () => {
           <Text style={styles.blessing}>May Allah accept our efforts</Text>
         </View>
       </ScrollView>
+    <DailyVerse ref={dailyVerseRef} modalOnly />
     </SafeAreaView>
   );
 };

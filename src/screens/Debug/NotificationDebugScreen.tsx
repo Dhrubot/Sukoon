@@ -17,6 +17,7 @@ import { usePrayerTimes } from '../../providers/PrayerTimesProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import { CHANNELS, SOUNDS } from '../../constants/NotificationConstants';
+import { scheduleFullAdhan, stopFullAdhan } from '../../services/notifications/FullAdhanScheduler';
 
 export const NotificationDebugScreen = () => {
   const styles = useThemedStyles(createStyles);
@@ -47,7 +48,7 @@ export const NotificationDebugScreen = () => {
   const loadDebugInfo = async () => {
     const info = await NotificationService.getDebugInfo();
     setDebugInfo(info);
-    setScheduledCount(info.scheduledCount);
+    setScheduledCount(info.totalScheduledCount);
   };
 
   // 🧪 Test 1: Immediate Test Notification
@@ -106,6 +107,24 @@ export const NotificationDebugScreen = () => {
       Alert.alert('Error', `Failed: ${error}`);
     }
   }
+
+  // 🧪 Test 2.75: Full Adhan Foreground Service (10-second lock screen test)
+  const test10SecondFullAdhan = async () => {
+    if (Platform.OS !== 'android') {
+      Alert.alert('Android Only', 'Full Adhan foreground service is Android-only');
+      return;
+    }
+    try {
+      const triggerTime = new Date(Date.now() + 10_000); // 10 seconds from now
+      await scheduleFullAdhan(triggerTime, 'Fajr', 'Test Adhan');
+      Alert.alert(
+        'Full Adhan Scheduled',
+        'Foreground service will play in 10 seconds — LOCK YOUR PHONE NOW to test lock-screen playback'
+      );
+    } catch (error) {
+      Alert.alert('Error', `Failed: ${error}`);
+    }
+  };
 
   // 🧪 Test 3: Play/Stop full Adhan in-app
   const toggleAdhanPlayback = () => {
@@ -228,6 +247,7 @@ export const NotificationDebugScreen = () => {
         <InfoRow label="Next Prayer" value={nextPrayer?.name || 'None'} />
         <InfoRow label="Notifications Enabled" value={userSettings?.notifications?.enabled ? 'Yes' : 'No'} />
         <InfoRow label="Adhan Enabled" value={userSettings?.notifications?.adhanEnabled ? 'Yes' : 'No'} />
+        <InfoRow label="Full Adhan (Service)" value={userSettings?.notifications?.fullAdhanEnabled ? 'Yes' : 'No'} />
       </View>
 
       {/* Debug Info */}
@@ -271,8 +291,16 @@ export const NotificationDebugScreen = () => {
         <TestButton
           title="2.5 Test 10-Second Adhan"
           onPress={test10SecondAdhanNotification}
-          description="Notification in 10 seconds"
+          description="Short adhan via notification channel"
         />
+
+        {Platform.OS === 'android' && (
+          <TestButton
+            title="2.75 Test Full Adhan (Lock Screen)"
+            onPress={test10SecondFullAdhan}
+            description="Foreground service plays full adhan in 10s — lock your phone!"
+          />
+        )}
 
         <TestButton
           title={isAdhanPlaying ? '3. ⏹ Stop Adhan' : '3. Test Adhan Sound'}

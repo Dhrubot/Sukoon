@@ -79,14 +79,31 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
     updateUserSettings({
       notifications: {
         ...userSettings.notifications,
-        adhanEnabled: value
+        adhanEnabled: value,
+        // Disable full adhan if adhan is turned off
+        ...(value === false && { fullAdhanEnabled: false }),
       }
     });
 
     // Update the native notification service
     // This forces a reschedule so the next notification uses the correct sound
     await NotificationService.updateNotificationSettings({
-      adhanEnabled: value
+      adhanEnabled: value,
+      ...(value === false && { fullAdhanEnabled: false }),
+    });
+  };
+
+  // Logic for the Full Adhan toggle (Android only)
+  const toggleFullAdhan = async (value: boolean) => {
+    updateUserSettings({
+      notifications: {
+        ...userSettings.notifications,
+        fullAdhanEnabled: value,
+      }
+    });
+
+    await NotificationService.updateNotificationSettings({
+      fullAdhanEnabled: value,
     });
   };
 
@@ -111,6 +128,22 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
           thumbColor={theme.colors.switch.thumb}
         />
       </View>
+      {/* Full Adhan — Android only, visible when adhan is enabled */}
+      {Platform.OS === 'android' && userSettings.notifications.adhanEnabled && (
+        <View style={styles.row}>
+          <View style={styles.textContainer}>
+            <Text style={styles.label}>Full Adhan (Locked Screen)</Text>
+            <Text style={styles.subtitle}>Plays the complete call to prayer even when your phone is locked</Text>
+          </View>
+          <Switch
+            value={!!userSettings.notifications.fullAdhanEnabled}
+            onValueChange={toggleFullAdhan}
+            disabled={!userSettings.notifications.enabled || permissionStatus !== 'granted'}
+            trackColor={{ false: theme.colors.switch.trackFalse, true: theme.colors.switch.trackTrue }}
+            thumbColor={theme.colors.switch.thumb}
+          />
+        </View>
+      )}
       {/* Tahajjud Reminders */}
       {onToggleTahajjud && (
         <SettingRow

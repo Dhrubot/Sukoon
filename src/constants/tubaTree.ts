@@ -133,7 +133,7 @@ export const GROUND_COLORS = {
       'rgba(205,178,138,0.72)',
       '#faf7f2',
     ],
-    locations: [0, 0.14, 0.38, 0.65, 1],
+    locations: [0, 0.14, 0.38, 0.45, 0.55],
   },
   midnight: {
     // transparent → near-black earth → screen bg

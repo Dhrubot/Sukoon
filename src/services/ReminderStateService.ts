@@ -207,9 +207,10 @@ class ReminderStateService {
    */
   getTodayPendingReminders(): PrayerReminderState[] {
     const today = format(new Date(), 'yyyy-MM-dd');
-    const allStates = StorageService.getAllReminderStates();
+    // Deterministic: check today's 5 prayers only (no getAllKeys scan)
+    const todayStates = StorageService.getReminderStatesForDays(1);
     
-    return allStates.filter(state => {
+    return todayStates.filter(state => {
       const stateDate = format(new Date(state.prayerTime), 'yyyy-MM-dd');
       return stateDate === today && 
              (state.status === 'pending' || state.status === 'snoozed');
@@ -218,21 +219,28 @@ class ReminderStateService {
   
   /**
    * Clean up old reminder states (older than 7 days)
+   * Uses deterministic lookups: days 8-14 × 5 prayers = 35 key checks (no getAllKeys scan)
    */
   cleanupOldStates(): void {
-    const cutoffDate = new Date();
-    cutoffDate.setDate(cutoffDate.getDate() - 7);
-    
-    const allStates = StorageService.getAllReminderStates();
     let cleaned = 0;
-    
-    allStates.forEach(state => {
-      if (new Date(state.prayerTime) < cutoffDate) {
-        StorageService.deleteReminderState(state.prayerId);
-        this.stateCache.delete(state.prayerId);
-        cleaned++;
+    const prayers: PrayerName[] = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
+
+    // Check days 8 through 14 (one week beyond the 7-day window)
+    for (let i = 8; i <= 14; i++) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      const dateStr = format(date, 'yyyy-MM-dd');
+
+      for (const prayer of prayers) {
+        const prayerId = `${prayer}-${dateStr}`;
+        const state = StorageService.getReminderState(prayerId);
+        if (state) {
+          StorageService.deleteReminderState(prayerId);
+          this.stateCache.delete(prayerId);
+          cleaned++;
+        }
       }
-    });
+    }
     
     if (cleaned > 0) {
       console.log(`🧹 Cleaned up ${cleaned} old reminder states`);
@@ -249,13 +257,8 @@ class ReminderStateService {
     pending: number;
     snoozed: number;
   } {
-    const today = format(new Date(), 'yyyy-MM-dd');
-    const allStates = StorageService.getAllReminderStates();
-    
-    const todayStates = allStates.filter(state => {
-      const stateDate = format(new Date(state.prayerTime), 'yyyy-MM-dd');
-      return stateDate === today;
-    });
+    // Deterministic: check today's 5 prayers only
+    const todayStates = StorageService.getReminderStatesForDays(1);
     
     return {
       totalToday: todayStates.length,
@@ -267,10 +270,10 @@ class ReminderStateService {
   }
   
   /**
-   * Debug: Get all states
+   * Debug: Get all states (bounded to last 7 days)
    */
   getAllStates(): PrayerReminderState[] {
-    return StorageService.getAllReminderStates();
+    return StorageService.getReminderStatesForDays(7);
   }
 }
 

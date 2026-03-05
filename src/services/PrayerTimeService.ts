@@ -20,6 +20,21 @@ import { isValidCoordinates } from "../utils/locationValidation";
 import { FARD_PRAYER_NAMES_LIST } from "../constants/prayerRegistry";
 import { cacheHijriDate } from "../utils/ramadan";
 import logger from "../utils/logger";
+import StorageService from "./StorageService";
+import { getLocalDateKey } from "../utils/dateHelpers";
+
+interface CachedPrayerTimesData {
+  date: string;           // YYYY-MM-DD
+  lat: number;
+  lon: number;
+  method: string;
+  asrJuristic: string;
+  times: PrayerTimes;
+  sunrise: string;
+  sunset: string;
+  midnight: string | null;
+  cachedAt: string;       // ISO timestamp
+}
 
 const ALADHAN_API_BASE = "https://api.aladhan.com/v1";
 
@@ -157,6 +172,9 @@ export class PrayerTimeService {
           cacheHijriDate(data.data.date.hijri, date);
         }
 
+        // Persist to disk for instant boot (stale-while-revalidate)
+        this.cachePrayerTimesToDisk(coordinates, date, method, asrJuristic, times);
+
         // Cache for tomorrow as well if it's after Asr
         const now = new Date();
         const asrTime = this.parseTimeToDate(times.Asr, date);
@@ -279,7 +297,7 @@ export class PrayerTimeService {
   /**
    * Parse time string to Date object
    */
-  private parseTimeToDate(timeStr: string | undefined, date: Date): Date {
+  parseTimeToDate(timeStr: string | undefined, date: Date): Date {
     // Handle undefined or invalid time strings
     if (!timeStr) {
       logger.warn("Received undefined time string in parseTimeToDate");
@@ -705,6 +723,72 @@ export class PrayerTimeService {
   getCachedLocationCoordinates(cityCountry: string): Coordinates | null {
     const coords = this.cachedLocations.get(cityCountry.toLowerCase());
     return coords || null;
+  }
+
+  /**
+   * Persist prayer times to MMKV for instant display on next cold boot.
+   * Single self-overwriting key — no stale data pileup.
+   */
+  private cachePrayerTimesToDisk(
+    coordinates: Coordinates,
+    date: Date,
+    method: CalculationMethod,
+    asrJuristic: string,
+    times: PrayerTimes
+  ): void {
+    try {
+      const cached: CachedPrayerTimesData = {
+        date: getLocalDateKey(date),
+        lat: parseFloat(coordinates.latitude.toFixed(4)),
+        lon: parseFloat(coordinates.longitude.toFixed(4)),
+        method,
+        asrJuristic,
+        times,
+        sunrise: times.Sunrise,
+        sunset: times.Sunset,
+        midnight: times.Midnight || null,
+        cachedAt: new Date().toISOString(),
+      };
+      StorageService.setValue('cached_prayer_times', JSON.stringify(cached));
+    } catch (err) {
+      logger.warn('Failed to cache prayer times to disk:', err);
+    }
+  }
+
+  /**
+   * Synchronous read of cached prayer times from MMKV.
+   * Returns parsed data if date + location + method match, null otherwise.
+   */
+  getCachedPrayerTimesFromDisk(
+    coordinates: Coordinates,
+    date: Date,
+    method: CalculationMethod,
+    asrJuristic: string = 'Standard'
+  ): CachedPrayerTimesData | null {
+    try {
+      const raw = StorageService.getValue('cached_prayer_times');
+      if (!raw) return null;
+
+      const cached: CachedPrayerTimesData = JSON.parse(raw);
+      const dateStr = getLocalDateKey(date);
+      const lat = parseFloat(coordinates.latitude.toFixed(4));
+      const lon = parseFloat(coordinates.longitude.toFixed(4));
+
+      // Must match date, method, asr juristic, and be within ~1km
+      if (
+        cached.date === dateStr &&
+        cached.method === method &&
+        cached.asrJuristic === asrJuristic &&
+        Math.abs(cached.lat - lat) < 0.01 &&
+        Math.abs(cached.lon - lon) < 0.01
+      ) {
+        return cached;
+      }
+
+      return null;
+    } catch {
+      return null;
+    }
   }
 
   // Validation delegated to shared utils/locationValidation.ts
