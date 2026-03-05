@@ -61,7 +61,8 @@ export default {
       googleServicesFile: "./google-services.json",
     },
     plugins: [
-      "@react-native-firebase/app" ,
+      "@react-native-firebase/app",
+      "@react-native-firebase/crashlytics",
       "./plugins/withUsageStats.js",
       "./plugins/withModularHeaders.js",
       "./plugins/withAndroidIapFlavor.js",

@@ -45,9 +45,14 @@ public class AdhanService extends Service {
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
         if (intent != null && ACTION_STOP.equals(intent.getAction())) {
+            // Must call startForeground() before stopping if started via startForegroundService()
+            try {
+                Notification notification = buildNotification("Prayer");
+                startForeground(NOTIFICATION_ID, notification);
+            } catch (Exception e) {
+                Log.w(TAG, "startForeground before stop: " + e.getMessage());
+            }
             stopAdhan();
-            // Launch app when stop is tapped
-            launchApp();
             return START_NOT_STICKY;
         }
 
@@ -425,21 +430,9 @@ public class AdhanModule extends ReactContextBaseJavaModule {
     public void stopAdhan(Promise promise) {
         try {
             Context context = getReactApplicationContext();
-            Intent stopIntent = new Intent(context, AdhanService.class);
-            stopIntent.setAction(AdhanService.ACTION_STOP);
-
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                // Starting the service with STOP action will trigger stopAdhan() inside the service
-                try {
-                    context.startForegroundService(stopIntent);
-                } catch (Exception e) {
-                    // Service might not be running, that's fine
-                    context.stopService(new Intent(context, AdhanService.class));
-                }
-            } else {
-                context.startService(stopIntent);
-            }
-
+            // Simply stop the service — if running, onDestroy() cleans up media/wakelock.
+            // Avoids startForegroundService() crash when service is not already running.
+            context.stopService(new Intent(context, AdhanService.class));
             promise.resolve(true);
         } catch (Exception e) {
             // Service not running is not an error

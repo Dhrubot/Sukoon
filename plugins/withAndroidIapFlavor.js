@@ -7,7 +7,7 @@ const withAndroidIapFlavor = (config) => {
     // Check if the strategy is already added
     if (!buildGradleContent.includes("missingDimensionStrategy 'store'")) {
       // Look for the versionName line and add the strategy after it
-      const versionNamePattern = /(versionName\s+["'][^"']*["']\s*)/;
+      const versionNamePattern = /(versionName\s+["'][^"']*["'])/;
       
       if (versionNamePattern.test(buildGradleContent)) {
         buildGradleContent = buildGradleContent.replace(

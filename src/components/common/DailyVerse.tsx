@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import {
   View,
   Text,
@@ -59,7 +59,15 @@ interface DailyContent {
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-const DailyVerse: React.FC = () => {
+export interface DailyVerseRef {
+  openSheet: () => void;
+}
+
+interface DailyVerseProps {
+  modalOnly?: boolean;
+}
+
+const DailyVerse = forwardRef<DailyVerseRef, DailyVerseProps>(({ modalOnly }, ref) => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const [content, setContent] = useState<DailyContent>({
@@ -72,6 +80,10 @@ const DailyVerse: React.FC = () => {
   const [sheetVisible, setSheetVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
+
+  useImperativeHandle(ref, () => ({
+    openSheet,
+  }));
 
   const openSheet = () => {
     setSheetVisible(true);
@@ -146,6 +158,62 @@ const DailyVerse: React.FC = () => {
       console.error('Error sharing:', error);
     }
   };
+
+  if (modalOnly) {
+    return (
+      <Modal
+        visible={sheetVisible}
+        transparent
+        animationType="none"
+        statusBarTranslucent
+        onRequestClose={closeSheet}
+      >
+        <View style={styles.modalContainer}>
+          <TouchableWithoutFeedback onPress={closeSheet}>
+            <Animated.View
+              style={[
+                styles.backdrop,
+                { opacity: backdropAnim },
+              ]}
+            />
+          </TouchableWithoutFeedback>
+
+          <Animated.View
+            style={[
+              styles.sheet,
+              { transform: [{ translateY: slideAnim }] },
+            ]}
+          >
+            <View style={styles.handle} />
+
+            <ScrollView showsVerticalScrollIndicator={false} bounces={false}>
+              <Text style={styles.sheetLabel}>
+                {content.isHadith ? 'Daily Hadith' : 'Daily Verse'}
+              </Text>
+
+              <Text style={[styles.sheetQuoteMark, { color: theme.colors.gold }]}>"</Text>
+
+              <Text style={styles.sheetArabic}>{content.arabic}</Text>
+
+              <View style={[styles.sheetDivider, { backgroundColor: theme.colors.gold }]} />
+
+              <Text style={styles.sheetTranslation}>"{content.translation}"</Text>
+
+              {content.narrator && (
+                <Text style={styles.sheetNarrator}>Narrated by {content.narrator}</Text>
+              )}
+
+              <Text style={styles.sheetReference}>{content.reference}</Text>
+
+              <TouchableOpacity style={styles.sheetShareButton} onPress={handleShare} activeOpacity={0.7}>
+                <Text style={styles.sheetShareText}>Share</Text>
+              </TouchableOpacity>
+            </ScrollView>
+          </Animated.View>
+        </View>
+      </Modal>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -234,7 +302,7 @@ const DailyVerse: React.FC = () => {
       </Modal>
     </View>
   );
-};
+});
 
 const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {

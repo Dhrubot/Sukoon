@@ -261,7 +261,7 @@ const SupportScreen: React.FC = () => {
                 style={styles.watchAdGradient}
               >
                 <Text style={styles.watchAdButtonText}>
-                  {isProcessing ? 'Loading...' : 'Watch Ad — JazakAllah Khair'}
+                  {isProcessing ? 'Loading...' : 'Watch Ad'}
                 </Text>
               </LinearGradient>
             </TouchableOpacity>
