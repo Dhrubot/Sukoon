@@ -722,12 +722,12 @@ class NotificationService {
   private getPrayerTimeContent(displayName: string, prayerKey: string): NotificationContent {
     const contextualMessages: Record<string, string[]> = {
       Fajr: [
-        'Rise and shine! Start your day with prayer 🌅',
+        'Rise and shine! Start your day with prayer',
         'A blessed morning begins with Fajr 🌙',
         'The dawn prayer awaits you ☀️',
       ],
       Dhuhr: [
-        'Take a break from the world, connect with Allah 🕌',
+        'Take a break from the world, connect with Allah',
         'Pause your day for Dhuhr prayer 🌞',
         'Time for the midday prayer ☀️',
       ],
@@ -737,9 +737,9 @@ class NotificationService {
         'Refresh your soul with the afternoon prayer 🌿',
       ],
       Maghrib: [
-        'As the sun sets, turn to prayer 🌇',
-        'End your day with gratitude in Maghrib 🌅',
-        'The sunset prayer is here 🌆',
+        'As the sun sets, turn to prayer',
+        'End your day with gratitude in Maghrib',
+        'The sunset prayer is here',
       ],
       Isha: [
         'End your day in peace with Isha 🌙',
