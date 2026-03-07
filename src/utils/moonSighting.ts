@@ -8,7 +8,7 @@
 // "not yet" and can re-trigger via the HomeScreen card.
 
 import StorageService from '../services/StorageService';
-import { getRawCachedHijriDate, HijriDate } from './ramadan';
+import { getCachedHijriDate, getRawCachedHijriDate, HijriDate } from './ramadan';
 
 // Hijri month numbers
 const SHABAN = 8;
@@ -19,6 +19,15 @@ const DHUL_HIJJAH = 12;
 
 export type MoonSightingEventType = 'ramadan' | 'eid_fitr' | 'eid_adha';
 type DismissState = 'confirmed' | 'deferred';
+
+export interface AutoDeduceEvent {
+  /** The event that was auto-deduced */
+  type: MoonSightingEventType;
+  /** Celebratory message to show (informational, not a question) */
+  title: string;
+  body: string;
+  emoji: string;
+}
 
 export interface MoonSightingEvent {
   type: MoonSightingEventType;
@@ -110,6 +119,54 @@ const WINDOWS: WindowCheck[] = [
   { type: 'eid_adha', month: DHUL_HIJJAH, day: 1, eveMonth: DHUL_QIDAH, title: 'The Crescent of Dhul Hijjah', yesLabel: 'Yes — Dhul Hijjah has begun!', noLabel: 'Not yet in my area' },
 ];
 
+/**
+ * Detect if today is the 30th of a month that precedes a critical month,
+ * meaning tomorrow MUST be the 1st of the next month (Hijri months can't
+ * exceed 30 days). Returns celebratory event info for display.
+ *
+ * Covers:
+ *  - Ramadan 30 → tomorrow is Eid al-Fitr (1 Shawwal)
+ *  - Dhul Qi'dah 30 → tomorrow is Dhul Hijjah 1
+ */
+export function getAutoDeduceEndOfMonthEvent(): AutoDeduceEvent | null {
+  // Use the ADJUSTED date so we respect the user's hijriAdjustment setting.
+  // If user has adjustment=-1, raw day 30 means their actual day is 29 → not safe to auto-deduce.
+  const adjusted = getCachedHijriDate();
+  if (!adjusted) return null;
+
+  const { month, day, year } = adjusted;
+  if (day !== 30) return null;
+
+  // Ramadan 30 → tomorrow MUST be 1 Shawwal (Eid al-Fitr)
+  if (month === RAMADAN) {
+    const state = getState('eid_fitr', year);
+    if (state === 'confirmed') return null;
+    // Auto-confirm since it's certain
+    confirmMoonSighting('eid_fitr', year);
+    return {
+      type: 'eid_fitr',
+      title: 'Tomorrow is Eid al-Fitr!',
+      body: 'Ramadan has been 30 days this year. May Allah accept your fasting and worship.',
+      emoji: '🌙',
+    };
+  }
+
+  // Dhul Qi'dah 30 → tomorrow MUST be Dhul Hijjah 1
+  if (month === DHUL_QIDAH) {
+    const state = getState('eid_adha', year);
+    if (state === 'confirmed') return null;
+    confirmMoonSighting('eid_adha', year);
+    return {
+      type: 'eid_adha',
+      title: 'Dhul Hijjah Begins Tomorrow!',
+      body: 'The blessed days of Dhul Hijjah are upon us. May Allah accept your worship.',
+      emoji: '🕋',
+    };
+  }
+
+  return null;
+}
+
 // ─── Public API ──────────────────────────────────────────────────
 
 /**
@@ -161,21 +218,25 @@ export interface HijriNudgeEvent {
 }
 
 /**
- * Check if we should show a persistent "Is today X?" nudge card.
- * Returns an event during days 1–3 of Ramadan, Shawwal, Dhul Hijjah
- * ONLY if the user has NOT confirmed the moon sighting for this transition.
+ * Check if we should show a "Is today X?" nudge sheet.
  *
- * This is different from getMoonSightingEvent() which shows a modal popup.
- * The nudge is a non-intrusive card that persists for 3 days.
+ * For **fresh installs** (no prior moon sighting state): triggers on ANY day
+ * of a critical month, because the Aladhan API returns a calculated Hijri date
+ * that can be ±1 day off from the user's regional moon sighting. Mid-month
+ * installers need the same chance to correct.
+ *
+ * For **returning users** who previously deferred: triggers on days 1–3 only.
+ *
+ * Never triggers if the user already confirmed for this transition.
+ *
+ * This is different from getMoonSightingEvent() which shows a prompt sheet.
+ * The nudge is a non-intrusive bottom sheet shown once per session.
  */
 export function getHijriNudgeEvent(): HijriNudgeEvent | null {
   const raw = getRawCachedHijriDate();
   if (!raw) return null;
 
   const { month, day, year } = raw;
-
-  // Only nudge during the first 3 days of critical months
-  if (day < 1 || day > 3) return null;
 
   const NUDGE_MAP: Array<{ month: number; type: MoonSightingEventType }> = [
     { month: RAMADAN,    type: 'ramadan' },
@@ -186,9 +247,14 @@ export function getHijriNudgeEvent(): HijriNudgeEvent | null {
   for (const nm of NUDGE_MAP) {
     if (month !== nm.month) continue;
 
-    // If user already confirmed for this transition, no nudge needed
     const state = getState(nm.type, year);
+
+    // Already confirmed → no nudge
     if (state === 'confirmed') return null;
+
+    // Deferred users: only re-nudge on days 1–3
+    // Fresh installs (state === null): nudge on ANY day of the month
+    if (state === 'deferred' && day > 3) return null;
 
     return {
       type: nm.type,

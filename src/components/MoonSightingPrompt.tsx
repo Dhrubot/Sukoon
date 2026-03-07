@@ -10,8 +10,12 @@ import {
   TouchableOpacity,
   StyleSheet,
   Animated,
+  Dimensions,
+  TouchableWithoutFeedback,
   Modal,
 } from 'react-native';
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 import { useTheme } from '../providers/ThemeProvider';
 import { useThemedStyles } from '../hooks/useThemedStyles';
 import { AppTheme } from '../theme';
@@ -35,18 +39,18 @@ const MoonSightingPrompt: React.FC<MoonSightingPromptProps> = ({
   const styles = useThemedStyles(createStyles);
   const { updateUserSettings } = useStore();
 
-  const scaleAnim = useRef(new Animated.Value(0.85)).current;
-  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+  const backdropAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     Animated.parallel([
-      Animated.spring(scaleAnim, {
-        toValue: 1,
-        friction: 6,
+      Animated.spring(slideAnim, {
+        toValue: 0,
+        friction: 8,
         tension: 40,
         useNativeDriver: true,
       }),
-      Animated.timing(opacityAnim, {
+      Animated.timing(backdropAnim, {
         toValue: 1,
         duration: 300,
         useNativeDriver: true,
@@ -74,14 +78,14 @@ const MoonSightingPrompt: React.FC<MoonSightingPromptProps> = ({
 
   const animateOut = () => {
     Animated.parallel([
-      Animated.timing(scaleAnim, {
-        toValue: 0.85,
-        duration: 200,
+      Animated.timing(slideAnim, {
+        toValue: SCREEN_HEIGHT,
+        duration: 250,
         useNativeDriver: true,
       }),
-      Animated.timing(opacityAnim, {
+      Animated.timing(backdropAnim, {
         toValue: 0,
-        duration: 200,
+        duration: 250,
         useNativeDriver: true,
       }),
     ]).start(() => {
@@ -97,16 +101,18 @@ const MoonSightingPrompt: React.FC<MoonSightingPromptProps> = ({
       statusBarTranslucent
       onRequestClose={handleFollowCalculations}
     >
-      <View style={styles.backdrop}>
+      <View style={styles.modalContainer}>
+        <TouchableWithoutFeedback onPress={handleFollowCalculations}>
+          <Animated.View
+            style={[styles.backdrop, { opacity: backdropAnim }]}
+          />
+        </TouchableWithoutFeedback>
+
         <Animated.View
-          style={[
-            styles.card,
-            {
-              opacity: opacityAnim,
-              transform: [{ scale: scaleAnim }],
-            },
-          ]}
+          style={[styles.sheet, { transform: [{ translateY: slideAnim }] }]}
         >
+          <View style={styles.handle} />
+
           {/* Crescent */}
           <Text style={styles.emoji}>{event.emoji}</Text>
 
@@ -155,28 +161,30 @@ const MoonSightingPrompt: React.FC<MoonSightingPromptProps> = ({
 
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
-    backdrop: {
+    modalContainer: {
       flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      backgroundColor: theme.colors.background.overlay,
-      padding: 28,
+      justifyContent: 'flex-end',
     },
-    card: {
-      width: '100%',
-      maxWidth: 360,
+    backdrop: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: theme.colors.background.overlay,
+    },
+    sheet: {
       backgroundColor: theme.colors.card.background,
-      borderRadius: 20,
+      borderTopLeftRadius: theme.borderRadius.xl,
+      borderTopRightRadius: theme.borderRadius.xl,
       paddingHorizontal: 24,
-      paddingTop: 32,
-      paddingBottom: 24,
+      paddingBottom: 40,
+      paddingTop: 12,
       alignItems: 'center',
-      // Subtle shadow
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.15,
-      shadowRadius: 24,
-      elevation: 12,
+    },
+    handle: {
+      width: 40,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: theme.colors.border.primary,
+      alignSelf: 'center',
+      marginBottom: 20,
     },
     emoji: {
       fontSize: 48,
