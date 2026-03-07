@@ -18,6 +18,7 @@ import AnalyticsService from '../services/AnalyticsService';
 import RamadanCountdownService from '../services/RamadanCountdownService';
 import JummahNotificationService from '../services/JummahNotificationService';
 import EidNotificationService from '../services/EidNotificationService';
+import PerformanceService from '../services/PerformanceService';
 
 export const useServiceInitialization = () => {
   const { todayPrayerTimes, nextPrayer, isLoading, hasValidLocation } =
@@ -29,6 +30,7 @@ export const useServiceInitialization = () => {
   useEffect(() => {
     const initializeServices = async () => {
       console.log("🚀 Initializing services...");
+      const stopTrace = await PerformanceService.startTrace('service_initialization');
 
       try {
         await Promise.all([
@@ -50,8 +52,10 @@ export const useServiceInitialization = () => {
         }
 
         AnalyticsService.logEvent('app_open');
+        await stopTrace();
         console.log("✅ All core services initialized");
       } catch (error) {
+        await stopTrace();
         console.error("❌ Error initializing services:", error);
       }
     };

@@ -1,5 +1,5 @@
 // src/providers/NavigationProvider.tsx
-import React, { createRef, useEffect, useMemo } from 'react';
+import React, { createRef, useCallback, useEffect, useMemo, useRef } from 'react';
 import { NavigationContainer, NavigationContainerRef, DefaultTheme } from '@react-navigation/native';
 import { useTheme } from './ThemeProvider';
 import NotificationService from '../services/NotificationService';
@@ -9,6 +9,8 @@ import { PrayerName, PrayerRecord } from '../types';
 import { useStore } from '../store/useStore';
 import { getLocalDateKey } from '../utils/dateHelpers';
 import WidgetService from '../services/WidgetService';
+import AnalyticsService from '../services/AnalyticsService';
+import PerformanceService from '../services/PerformanceService';
 
 // Create navigation reference
 export const navigationRef = createRef<NavigationContainerRef<any>>();
@@ -19,6 +21,8 @@ interface NavigationProviderProps {
 
 export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children }) => {
   const { theme, themeMode } = useTheme();
+  const routeNameRef = useRef<string | undefined>(undefined);
+  const screenTraceStopRef = useRef<(() => void) | null>(null as (() => void) | null);
 
   const navTheme = useMemo(() => ({
     ...DefaultTheme,
@@ -115,8 +119,40 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
     console.log("Navigation handler registered");
   }, []);
 
+  const onNavigationReady = useCallback(() => {
+    const currentRoute = navigationRef.current?.getCurrentRoute();
+    routeNameRef.current = currentRoute?.name;
+    if (currentRoute?.name) {
+      AnalyticsService.logScreenView(currentRoute.name);
+    }
+  }, []);
+
+  const onNavigationStateChange = useCallback(async () => {
+    const previousRouteName = routeNameRef.current;
+    const currentRoute = navigationRef.current?.getCurrentRoute();
+    const currentRouteName = currentRoute?.name;
+
+    if (currentRouteName && previousRouteName !== currentRouteName) {
+      // Stop previous screen trace
+      if (screenTraceStopRef.current) {
+        screenTraceStopRef.current();
+        screenTraceStopRef.current = null;
+      }
+      // Log screen view + start new trace
+      AnalyticsService.logScreenView(currentRouteName);
+      const stop = await PerformanceService.traceScreenLoad(currentRouteName);
+      screenTraceStopRef.current = stop;
+    }
+    routeNameRef.current = currentRouteName;
+  }, []);
+
   return (
-    <NavigationContainer ref={navigationRef} theme={navTheme}>
+    <NavigationContainer
+      ref={navigationRef}
+      theme={navTheme}
+      onReady={onNavigationReady}
+      onStateChange={onNavigationStateChange}
+    >
       {children}
     </NavigationContainer>
   );

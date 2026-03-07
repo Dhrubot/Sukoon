@@ -10,6 +10,7 @@ import { usePrayerTimeRefresh } from "./usePrayerTimeRefresh";
 import { initializeEncryptionKey } from "../utils/secureKeyManager";
 import { isValidCoordinates } from "../utils/locationValidation";
 import logger from "../utils/logger";
+import PerformanceService from "../services/PerformanceService";
 import TreeGrowthStateService from "../services/TreeGrowthStateService";
 import ReflectionGardenService from "../services/ReflectionGardenService";
 
@@ -36,6 +37,7 @@ export const useAppInitialization = () => {
   }, []);
 
   const initializeApp = async () => {
+    const stopStartupTrace = await PerformanceService.startTrace('app_startup');
     try {
       logger.log("Initializing app...");
 
@@ -121,6 +123,7 @@ export const useAppInitialization = () => {
 
       // Hide splash screen
       await SplashScreen.hideAsync();
+      await stopStartupTrace();
       logger.log("App initialization complete");
     } catch (error) {
       logger.error("App initialization failed:", error);
@@ -132,6 +135,7 @@ export const useAppInitialization = () => {
 
       // Hide splash screen even on error
       await SplashScreen.hideAsync();
+      await stopStartupTrace();
     }
   };
 
