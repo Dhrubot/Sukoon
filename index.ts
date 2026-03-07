@@ -1,3 +1,9 @@
+import { override as overrideRNFlags } from 'react-native/src/private/featureflags/ReactNativeFeatureFlags';
+
+overrideRNFlags({
+  scheduleAnimatedCleanupInMicrotask: () => true,
+});
+
 import { registerRootComponent } from 'expo';
 import crashlytics from '@react-native-firebase/crashlytics';
 
