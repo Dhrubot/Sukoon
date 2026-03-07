@@ -27,8 +27,11 @@ Notifications.setNotificationHandler({
     const isAdhan = data?.type === 'prayer-time' || isTest;
 
     // On Android foreground, suppress channel sound for adhan notifications
-    // because AdhanPlayer.play() handles full playback (avoids double-audio)
-    const suppressSound = Platform.OS === 'android' && isAdhan;
+    // ONLY when adhan is actually enabled (AdhanPlayer handles playback).
+    // If adhan is off, let the notification play its own channel sound normally.
+    const currentSettings = StorageService.getUserSettings();
+    const adhanEnabled = currentSettings?.notifications?.enabled && currentSettings?.notifications?.adhanEnabled;
+    const suppressSound = Platform.OS === 'android' && isAdhan && !!adhanEnabled;
 
     return {
       shouldShowAlert: !isTest || Platform.OS === 'ios',
@@ -268,12 +271,15 @@ class NotificationService {
       // This is necessary because Android doesn't play channel-specific sounds in foreground
       const data = notification.request.content.data;
       if ((data?.type === 'test' || data?.type === 'prayer-time') && Platform.OS === 'android') {
-        // When Full Adhan foreground service is active, it handles audio — skip AdhanPlayer
         const currentSettings = StorageService.getUserSettings();
-        if (currentSettings?.notifications?.fullAdhanEnabled) {
+        const adhanOn = currentSettings?.notifications?.enabled && currentSettings?.notifications?.adhanEnabled;
+        if (!adhanOn) {
+          logger.log('🔇 Adhan disabled in settings — skipping playback');
+        } else if (currentSettings?.notifications?.fullAdhanEnabled) {
+          // When Full Adhan foreground service is active, it handles audio — skip AdhanPlayer
           logger.log('🎵 Full Adhan service handling audio — skipping AdhanPlayer');
         } else {
-          logger.log('🎵 Playing adhan for test notification in foreground');
+          logger.log('🎵 Playing adhan for prayer notification in foreground');
           this.playFullAdhan();
         }
       }
@@ -302,13 +308,14 @@ class NotificationService {
           }
           logger.log('🕌 Mosque mode prompt tapped for:', data.prayer);
         }
-        // Play adhan for both prayer-time and test notifications
+        // Play adhan for both prayer-time and test notifications (only if adhan is enabled)
         else if ((data?.type === 'prayer-time' || data?.type === 'test') && (data?.prayer || data?.type === 'test')) {
-          // If Full Adhan service is running, stop it (user is now in-app)
           const tapSettings = StorageService.getUserSettings();
+          const tapAdhanOn = tapSettings?.notifications?.enabled && tapSettings?.notifications?.adhanEnabled;
           if (Platform.OS === 'android' && tapSettings?.notifications?.fullAdhanEnabled) {
+            // If Full Adhan service is running, stop it (user is now in-app)
             stopFullAdhan();
-          } else {
+          } else if (tapAdhanOn) {
             // Play full adhan inside app (for immersive experience)
             this.playFullAdhan();
           }
@@ -715,12 +722,12 @@ class NotificationService {
   private getPrayerTimeContent(displayName: string, prayerKey: string): NotificationContent {
     const contextualMessages: Record<string, string[]> = {
       Fajr: [
-        'Rise and shine! Start your day with prayer 🌅',
+        'Rise and shine! Start your day with prayer',
         'A blessed morning begins with Fajr 🌙',
         'The dawn prayer awaits you ☀️',
       ],
       Dhuhr: [
-        'Take a break from the world, connect with Allah 🕌',
+        'Take a break from the world, connect with Allah',
         'Pause your day for Dhuhr prayer 🌞',
         'Time for the midday prayer ☀️',
       ],
@@ -730,9 +737,9 @@ class NotificationService {
         'Refresh your soul with the afternoon prayer 🌿',
       ],
       Maghrib: [
-        'As the sun sets, turn to prayer 🌇',
-        'End your day with gratitude in Maghrib 🌅',
-        'The sunset prayer is here 🌆',
+        'As the sun sets, turn to prayer',
+        'End your day with gratitude in Maghrib',
+        'The sunset prayer is here',
       ],
       Isha: [
         'End your day in peace with Isha 🌙',
@@ -856,6 +863,11 @@ class NotificationService {
     };
 
     StorageService.setUserSettings(updatedSettings);
+
+    // Stop any currently-playing adhan if adhan or notifications were just disabled
+    if (!updatedSettings.notifications.enabled || !updatedSettings.notifications.adhanEnabled) {
+      this.stopAdhan();
+    }
 
     if (updatedSettings.notifications.enabled) {
       await this.scheduleAllPrayerNotifications();

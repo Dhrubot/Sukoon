@@ -35,14 +35,16 @@ import { MosqueModeOverlay, MosqueModePrompt } from "../../components/mosque";
 import RamadanTimesCard from "../../components/prayer/RamadanTimesCard";
 import OptionalPrayersSection from "../../components/prayer/OptionalPrayersSection";
 import GardenTeaser from "../../components/garden/GardenTeaser";
-import CatchUpCard from "../../components/prayer/CatchUpCard";
 import QuickLogSheet from "../../components/prayer/QuickLogSheet";
+import CatchUpSheet from "../../components/prayer/CatchUpSheet";
+import HijriNudgeSheet from "../../components/HijriNudgeSheet";
+import AutoDeduceSheet from "../../components/AutoDeduceSheet";
 
 // Types
 import { PrayerTime, PrayerRecord, OptionalPrayerTime, PrayerName } from "../../types";
 
 import { isRamadan, getRamadanDay, isEidDay, getEidName, isTashreeqDays, getTashreeqDayLabel } from "../../utils/ramadan";
-import { getMoonSightingEvent, getDeferredMoonSightingEvent, getHijriNudgeEvent, MoonSightingEvent, HijriNudgeEvent } from "../../utils/moonSighting";
+import { getMoonSightingEvent, getDeferredMoonSightingEvent, getHijriNudgeEvent, getAutoDeduceEndOfMonthEvent, MoonSightingEvent, HijriNudgeEvent, AutoDeduceEvent } from "../../utils/moonSighting";
 import * as Haptics from "expo-haptics";
 import { useRoute } from "@react-navigation/native";
 import ReminderStateService from "../../services/ReminderStateService";
@@ -51,8 +53,6 @@ import WidgetService from "../../services/WidgetService";
 import TreeGrowthStateService from "../../services/TreeGrowthStateService";
 import { getLocalDateKey } from "../../utils/dateHelpers";
 import MoonSightingPrompt from "../../components/MoonSightingPrompt";
-import MoonSightingCard from "../../components/MoonSightingCard";
-import HijriNudgeCard from "../../components/HijriNudgeCard";
 
 const { width } = Dimensions.get("window");
 
@@ -95,8 +95,13 @@ const HomeScreen = ({ navigation }: any) => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [focusExpanded, setFocusExpanded] = useState(false);
   const [moonSightingEvent, setMoonSightingEvent] = useState<MoonSightingEvent | null>(null);
-  const [deferredMoonEvent, setDeferredMoonEvent] = useState<MoonSightingEvent | null>(null);
   const [hijriNudge, setHijriNudge] = useState<HijriNudgeEvent | null>(null);
+  const [autoDeduceEvent, setAutoDeduceEvent] = useState<AutoDeduceEvent | null>(null);
+
+  // Session flags — sheets shown at most once per app foreground
+  const catchUpSheetShownRef = useRef(false);
+  const [showCatchUpSheet, setShowCatchUpSheet] = useState(false);
+  const [showHijriNudgeSheet, setShowHijriNudgeSheet] = useState(false);
 
   // Quick-log state
   const [quickLogPrayer, setQuickLogPrayer] = useState<PrayerTime | null>(null);
@@ -222,6 +227,15 @@ const HomeScreen = ({ navigation }: any) => {
   useEffect(() => {
     if (todayPrayerTimes.length === 0) return;
 
+    // Auto-deduce end-of-month (Ramadan 30 → Eid, etc.)
+    if (!autoDeduceEvent) {
+      const deduce = getAutoDeduceEndOfMonthEvent();
+      if (deduce) {
+        setAutoDeduceEvent(deduce);
+        return;
+      }
+    }
+
     // Find today's Maghrib time
     const maghrib = todayPrayerTimes.find(p => p.name === 'Maghrib');
     const maghribTime = maghrib?.time;
@@ -231,18 +245,26 @@ const HomeScreen = ({ navigation }: any) => {
       const event = getMoonSightingEvent(maghribTime);
       if (event) {
         setMoonSightingEvent(event);
-        setDeferredMoonEvent(null);
         return;
       }
     }
 
-    // Check for deferred card (user said "Not yet" previously)
-    const deferred = getDeferredMoonSightingEvent();
-    setDeferredMoonEvent(deferred);
+    // Check for deferred state — re-show the prompt sheet on next app open
+    if (!moonSightingEvent) {
+      const deferred = getDeferredMoonSightingEvent();
+      if (deferred) {
+        setMoonSightingEvent(deferred);
+        return;
+      }
+    }
 
-    // Check for expanded hijri nudge (days 1-3 of critical months)
-    if (!moonSightingEvent && !deferred) {
-      setHijriNudge(getHijriNudgeEvent());
+    // Check for hijri nudge sheet (days 1-3 of critical months)
+    if (!moonSightingEvent) {
+      const nudge = getHijriNudgeEvent();
+      setHijriNudge(nudge);
+      if (nudge && !showHijriNudgeSheet) {
+        setShowHijriNudgeSheet(true);
+      }
     } else {
       setHijriNudge(null);
     }
@@ -435,6 +457,15 @@ const HomeScreen = ({ navigation }: any) => {
     });
   }, [todayPrayerTimes, todayPrayerRecords, currentTime, todaySunrise]);
 
+  // Show catch-up sheet once per session when ≥3 prayers missed
+  useEffect(() => {
+    if (catchUpSheetShownRef.current) return;
+    if (missedPrayersToday.length >= 3) {
+      catchUpSheetShownRef.current = true;
+      setShowCatchUpSheet(true);
+    }
+  }, [missedPrayersToday]);
+
   // Mosque mode prompt: in-app auto-show when iqamah is ≤5 min away
   useEffect(() => {
     if (!isMosqueModeEnabled || !mosqueModeSettings?.promptBeforeEnable) return;
@@ -620,37 +651,11 @@ const HomeScreen = ({ navigation }: any) => {
             return <RamadanTimesCard fajrTime={fajr.time} maghribTime={maghrib.time} />;
           })()}
 
-          {/* 🌙 Deferred moon sighting card — re-trigger prompt */}
-          {deferredMoonEvent && !moonSightingEvent && (
-            <MoonSightingCard
-              title={deferredMoonEvent.title.replace('The Crescent of ', '')}
-              onPress={() => {
-                setMoonSightingEvent(deferredMoonEvent);
-                setDeferredMoonEvent(null);
-              }}
-            />
-          )}
-
-          {/* 🌙 Hijri date nudge — persistent card during first 3 days of critical months */}
-          {hijriNudge && !moonSightingEvent && !deferredMoonEvent && (
-            <HijriNudgeCard
-              nudge={hijriNudge}
-              onDismissed={() => setHijriNudge(null)}
-            />
-          )}
-
           {/* Sunrise & Sunset */}
           <SunTimesDisplay sunrise={todaySunrise} sunset={todaySunset} />
 
           {/* Garden Teaser — subtle entry point to Reflection Garden */}
           <GardenTeaser />
-
-
-          {/* Catch-up card — warm prompt when ≥3 prayers missed */}
-          <CatchUpCard
-            missedPrayers={missedPrayersToday}
-            onCatchUp={(prayer) => handlePrayerComplete(prayer)}
-          />
 
           {/* Today's Prayer Times */}
           <View style={styles.section}>
@@ -714,14 +719,34 @@ const HomeScreen = ({ navigation }: any) => {
       {moonSightingEvent && (
         <MoonSightingPrompt
           event={moonSightingEvent}
-          onDismiss={() => {
-            setMoonSightingEvent(null);
-            // Refresh deferred state after modal closes
-            const deferred = getDeferredMoonSightingEvent();
-            setDeferredMoonEvent(deferred);
-          }}
+          onDismiss={() => setMoonSightingEvent(null)}
         />
       )}
+
+      {/* Hijri date nudge — "Is today X?" sheet during days 1–3 of critical months */}
+      <HijriNudgeSheet
+        visible={showHijriNudgeSheet && !!hijriNudge && !moonSightingEvent}
+        nudge={hijriNudge}
+        onDismissed={() => {
+          setShowHijriNudgeSheet(false);
+          setHijriNudge(null);
+        }}
+      />
+
+      {/* Auto-deduce celebration — Ramadan 30 → Eid, Dhul Qi'dah 30 → Dhul Hijjah */}
+      <AutoDeduceSheet
+        visible={!!autoDeduceEvent}
+        event={autoDeduceEvent}
+        onDismiss={() => setAutoDeduceEvent(null)}
+      />
+
+      {/* Catch-up sheet — once per session when ≥3 prayers missed */}
+      <CatchUpSheet
+        visible={showCatchUpSheet}
+        missedPrayers={missedPrayersToday}
+        onCatchUp={(prayer: PrayerTime) => handlePrayerComplete(prayer)}
+        onDismiss={() => setShowCatchUpSheet(false)}
+      />
 
       {/* Quick-log sheet — long-press or notification tap */}
       <QuickLogSheet
