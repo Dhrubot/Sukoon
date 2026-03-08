@@ -8,6 +8,7 @@ import { PrayerTime, PrayerName, PrayerTimes, Location } from '../types';
 import { isValidCoordinates } from '../utils/locationValidation';
 import logger from '../utils/logger';
 import WidgetService from '../services/WidgetService';
+import LiveActivityService from '../services/LiveActivityService';
 import StorageService from '../services/StorageService';
 import { getLocalDateKey } from '../utils/dateHelpers';
 
@@ -243,6 +244,9 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
         nextPrayer,
         dawam
       );
+
+      // Update Live Activity (iOS lock screen / Android ongoing notification)
+      LiveActivityService.update(todayResult.prayerTimes, todayRecords, nextPrayer);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load prayer times';
       logger.error('❌ Error loading prayer times:', err);
@@ -298,6 +302,11 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
         setTodayPrayerTimes(syncedTimes);
       }
     }
+
+    // Update Live Activity on every tick (progress bar + phase transitions)
+    const todayStr = getLocalDateKey();
+    const todayRecords = StorageService.getDayPrayerRecords(todayStr);
+    LiveActivityService.update(todayPrayerTimes, todayRecords, updated ?? nextPrayer);
   };
 
   useEffect(() => {

@@ -1,3 +1,4 @@
+import './src/setupFeatureFlags';
 import { registerRootComponent } from 'expo';
 import crashlytics from '@react-native-firebase/crashlytics';
 

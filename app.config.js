@@ -3,6 +3,7 @@ export default {
   expo: {
     name: "Sukoon",
     slug: "sukoon",
+    scheme: "sukoon",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/icon.png",
@@ -63,6 +64,7 @@ export default {
     plugins: [
       "@react-native-firebase/app",
       "@react-native-firebase/crashlytics",
+      "@react-native-firebase/perf",
       "./plugins/withUsageStats.js",
       "./plugins/withModularHeaders.js",
       "./plugins/withAndroidIapFlavor.js",
@@ -71,6 +73,7 @@ export default {
       "./plugins/withFullAdhan.js",
       "./plugins/withWidget.js",
       "./plugins/withAndroidWidget.js",
+      "./plugins/withLiveActivity.js",
       "expo-font",
       "expo-location",
       ["expo-audio", { microphonePermission: false }],
@@ -88,6 +91,7 @@ export default {
           ]
         }
       ],
+      "./plugins/withPlatformSounds.js",
       [
         "react-native-google-mobile-ads",
         {
@@ -116,6 +120,11 @@ export default {
       eas: {
         projectId: "1df4a37a-5211-4ef7-9a89-37d7ef2f8b52",
       },
+      notificationSounds: [
+        "./assets/sounds/adhan_short.ogg",
+        "./assets/sounds/adhan_ios.caf",
+        "./assets/sounds/adhan_full.mp3"
+      ],
       "react-native-google-mobile-ads": {
         androidAppId: "ca-app-pub-5474984690525462~6816196886",
         iosAppId: "ca-app-pub-5474984690525462~1671116769"

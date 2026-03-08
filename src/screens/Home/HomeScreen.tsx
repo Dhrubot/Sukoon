@@ -56,6 +56,9 @@ import MoonSightingPrompt from "../../components/MoonSightingPrompt";
 
 const { width } = Dimensions.get("window");
 
+// Hero ring advances to the next prayer this many minutes before its adhan
+const HERO_ADVANCE_MINUTES = 15;
+
 const HomeScreen = ({ navigation }: any) => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
@@ -341,21 +344,48 @@ const HomeScreen = ({ navigation }: any) => {
     const isCurrentPrayed = todayPrayerRecords.some(
       r => r.prayer === nextPrayer.name && r.status === 'prayed'
     );
-    if (!isCurrentPrayed) return nextPrayer;
 
-    // Walk forward to find the next unprayed prayer
-    const currentIdx = todayPrayerTimes.findIndex(p => p.name === nextPrayer.name);
-    for (let i = currentIdx + 1; i < todayPrayerTimes.length; i++) {
-      const p = todayPrayerTimes[i];
-      const prayed = todayPrayerRecords.some(
-        r => r.prayer === p.name && r.status === 'prayed'
-      );
-      if (!prayed) return { ...p, isNext: true };
+    // Determine base hero prayer from fiqh-window logic
+    let base: PrayerTime | null = null;
+
+    if (!isCurrentPrayed) {
+      base = nextPrayer;
+    } else {
+      // Walk forward to find the next unprayed prayer
+      const currentIdx = todayPrayerTimes.findIndex(p => p.name === nextPrayer.name);
+      for (let i = currentIdx + 1; i < todayPrayerTimes.length; i++) {
+        const p = todayPrayerTimes[i];
+        const prayed = todayPrayerRecords.some(
+          r => r.prayer === p.name && r.status === 'prayed'
+        );
+        if (!prayed) {
+          base = { ...p, isNext: true };
+          break;
+        }
+      }
     }
 
     // All remaining prayers prayed → show tomorrow's Fajr
-    return tomorrowFajr ? { ...tomorrowFajr, isNext: true } : null;
-  }, [nextPrayer, todayPrayerTimes, todayPrayerRecords, tomorrowFajr, todayMidnight]);
+    if (!base) return tomorrowFajr ? { ...tomorrowFajr, isNext: true } : null;
+
+    // Early advance: if the next chronological prayer is ≤15 min away, show it instead.
+    // This makes the hero ring transition before the fiqh window officially ends,
+    // aligning with focus mode activation timing.
+    const baseIdx = todayPrayerTimes.findIndex(p => p.name === base!.name);
+    const nextChronoPrayer = baseIdx >= 0 && baseIdx < todayPrayerTimes.length - 1
+      ? todayPrayerTimes[baseIdx + 1]
+      : tomorrowFajr;
+
+    if (nextChronoPrayer) {
+      const msUntilNext = nextChronoPrayer.time.getTime() - now.getTime();
+      const minutesUntilNext = msUntilNext / (1000 * 60);
+      if (minutesUntilNext <= HERO_ADVANCE_MINUTES && minutesUntilNext > 0) {
+        return { ...nextChronoPrayer, isNext: true };
+      }
+    }
+
+    return base;
+  }, [nextPrayer, todayPrayerTimes, todayPrayerRecords, tomorrowFajr, todayMidnight, currentTime]);
 
   // Previous prayer time for inter-prayer ring progress
   const previousPrayerTime = useMemo(() => {

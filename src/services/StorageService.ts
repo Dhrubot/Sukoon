@@ -177,6 +177,7 @@ class StorageService {
         beforePrayer: 10,
         reminderText: "Time for {prayer} prayer 🕌",
         postPrayerCheck: false, // DEPRECATED
+        liveActivityEnabled: false,
       },
       prayerNotifications: {
         Fajr: true,

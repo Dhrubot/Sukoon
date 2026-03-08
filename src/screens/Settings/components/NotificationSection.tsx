@@ -6,6 +6,7 @@ import { SettingRow } from '../../../components/settings/SettingRow';
 import { UserSettings } from '../../../types';
 import { useStore } from '../../../store/useStore';
 import NotificationService from '../../../services/NotificationService';
+import LiveActivityService from '../../../services/LiveActivityService';
 import { useTheme } from '../../../providers/ThemeProvider';
 import { useThemedStyles } from '../../../hooks/useThemedStyles';
 import { AppTheme } from '../../../theme';
@@ -144,6 +145,32 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
           />
         </View>
       )}
+      {/* Live Activity — lock screen prayer countdown */}
+      <View style={styles.row}>
+        <View style={styles.textContainer}>
+          <Text style={styles.label}>Live Activity</Text>
+          <Text style={styles.subtitle}>Show prayer countdown on your lock screen</Text>
+        </View>
+        <Switch
+          value={!!userSettings.notifications.liveActivityEnabled}
+          onValueChange={async (value) => {
+            updateUserSettings({
+              notifications: {
+                ...userSettings.notifications,
+                liveActivityEnabled: value,
+              }
+            });
+            if (value) {
+              await LiveActivityService.startWithCurrentData();
+            } else {
+              await LiveActivityService.end();
+            }
+          }}
+          disabled={!userSettings.notifications.enabled || permissionStatus !== 'granted'}
+          trackColor={{ false: theme.colors.switch.trackFalse, true: theme.colors.switch.trackTrue }}
+          thumbColor={theme.colors.switch.thumb}
+        />
+      </View>
       {/* Tahajjud Reminders */}
       {onToggleTahajjud && (
         <SettingRow
