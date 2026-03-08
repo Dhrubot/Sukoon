@@ -160,7 +160,9 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
                 liveActivityEnabled: value,
               }
             });
-            if (!value) {
+            if (value) {
+              await LiveActivityService.startWithCurrentData();
+            } else {
               await LiveActivityService.end();
             }
           }}

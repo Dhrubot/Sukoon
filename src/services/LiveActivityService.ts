@@ -6,6 +6,7 @@ import { NativeModules, Platform } from 'react-native';
 import { PrayerTime, PrayerRecord } from '../types';
 import logger from '../utils/logger';
 import StorageService from './StorageService';
+import { useStore } from '../store/useStore';
 
 const { SukoonLiveActivityBridge, LiveActivityModule } = NativeModules;
 
@@ -147,9 +148,45 @@ class LiveActivityService {
       } else {
         await bridge.startLiveActivity(dataJson);
         this.isActive = true;
+        logger.log('[LiveActivity] Started:', payload.prayerName, payload.phase);
       }
     } catch (error) {
       logger.error('[LiveActivity] Failed to update:', error);
+    }
+  }
+
+  /**
+   * Start the Live Activity immediately using current prayer data from the store.
+   * Called when the user toggles the setting ON.
+   */
+  async startWithCurrentData(): Promise<void> {
+    const bridge = this.getBridge();
+    if (!bridge) {
+      logger.warn('[LiveActivity] Native bridge not available');
+      return;
+    }
+
+    const { todayPrayerTimes, nextPrayer, todayPrayerRecords } = useStore.getState();
+    if (!nextPrayer || todayPrayerTimes.length === 0) {
+      logger.warn('[LiveActivity] No prayer data available to start');
+      return;
+    }
+
+    const payload = this.buildPayload(todayPrayerTimes, todayPrayerRecords, nextPrayer);
+    if (!payload) {
+      logger.warn('[LiveActivity] Could not build payload');
+      return;
+    }
+
+    const dataJson = JSON.stringify(payload);
+    logger.log('[LiveActivity] Starting with current data:', payload.prayerName, payload.phase);
+
+    try {
+      await bridge.startLiveActivity(dataJson);
+      this.isActive = true;
+      logger.log('[LiveActivity] Started successfully');
+    } catch (error) {
+      logger.error('[LiveActivity] Failed to start:', error);
     }
   }
 

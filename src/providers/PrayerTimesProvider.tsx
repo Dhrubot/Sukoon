@@ -301,12 +301,12 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
         }));
         setTodayPrayerTimes(syncedTimes);
       }
-
-      // Update Live Activity on prayer transition
-      const todayStr = getLocalDateKey();
-      const todayRecords = StorageService.getDayPrayerRecords(todayStr);
-      LiveActivityService.update(todayPrayerTimes, todayRecords, updated);
     }
+
+    // Update Live Activity on every tick (progress bar + phase transitions)
+    const todayStr = getLocalDateKey();
+    const todayRecords = StorageService.getDayPrayerRecords(todayStr);
+    LiveActivityService.update(todayPrayerTimes, todayRecords, updated ?? nextPrayer);
   };
 
   useEffect(() => {
