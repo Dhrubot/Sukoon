@@ -3,6 +3,7 @@ export default {
   expo: {
     name: "Sukoon",
     slug: "sukoon",
+    scheme: "sukoon",
     version: "1.0.0",
     orientation: "portrait",
     icon: "./assets/icon.png",
@@ -72,6 +73,7 @@ export default {
       "./plugins/withFullAdhan.js",
       "./plugins/withWidget.js",
       "./plugins/withAndroidWidget.js",
+      "./plugins/withLiveActivity.js",
       "expo-font",
       "expo-location",
       ["expo-audio", { microphonePermission: false }],

@@ -1,5 +1,6 @@
 // src/providers/NavigationProvider.tsx
 import React, { createRef, useCallback, useEffect, useMemo, useRef } from 'react';
+import { Linking } from 'react-native';
 import { NavigationContainer, NavigationContainerRef, DefaultTheme } from '@react-navigation/native';
 import { useTheme } from './ThemeProvider';
 import NotificationService from '../services/NotificationService';
@@ -117,6 +118,36 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
     // Register the handler with NotificationService
     NotificationService.registerNavigationHandler(handleNotificationNavigation);
     console.log("Navigation handler registered");
+
+    // Deep-link handler for Live Activity actions (sukoon://prepare?prayer=X, sukoon://prayed?prayer=X)
+    const handleDeepLink = (event: { url: string }) => {
+      try {
+        const url = new URL(event.url);
+        if (url.protocol !== 'sukoon:') return;
+        const prayer = url.searchParams.get('prayer') as PrayerName | null;
+        if (!prayer) return;
+
+        const action = url.hostname; // 'prepare' or 'prayed'
+        if (action === 'prepare') {
+          handleNotificationNavigation(prayer, 'prepare');
+        } else if (action === 'prayed') {
+          handleNotificationNavigation(prayer, 'complete');
+        }
+      } catch (e) {
+        console.warn('Failed to parse deep link URL:', event.url, e);
+      }
+    };
+
+    const linkingSub = Linking.addEventListener('url', handleDeepLink);
+
+    // Handle cold-start deep link
+    Linking.getInitialURL().then((url) => {
+      if (url) handleDeepLink({ url });
+    });
+
+    return () => {
+      linkingSub.remove();
+    };
   }, []);
 
   const onNavigationReady = useCallback(() => {
