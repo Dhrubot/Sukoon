@@ -279,6 +279,7 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
   // hero auto-transitions when prayer time boundaries are crossed.
   // AppState-aware: pauses on background, immediate recalc on foreground.
   const recalcRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const runRecalcRef = useRef<() => void>(() => {});
 
   const runRecalc = () => {
     if (todayPrayerTimes.length === 0) return;
@@ -309,10 +310,19 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
     LiveActivityService.update(todayPrayerTimes, todayRecords, updated ?? nextPrayer);
   };
 
+  // Keep the ref pointing to the latest runRecalc closure
+  runRecalcRef.current = runRecalc;
+
   useEffect(() => {
+    const tick = () => {
+      // Update shared clock so HomeScreen / useMosqueMode don't need their own intervals
+      useStore.getState().setCurrentTime(new Date());
+      runRecalcRef.current();
+    };
+
     const startInterval = () => {
       if (recalcRef.current) clearInterval(recalcRef.current);
-      recalcRef.current = setInterval(runRecalc, 60_000);
+      recalcRef.current = setInterval(tick, 60_000);
     };
 
     startInterval();
@@ -320,7 +330,7 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
     const subscription = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active') {
         // Immediately recalculate stale nextPrayer and restart interval
-        runRecalc();
+        tick();
         startInterval();
       } else {
         // Pause interval when backgrounded/inactive
@@ -335,7 +345,7 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
       if (recalcRef.current) clearInterval(recalcRef.current);
       subscription.remove();
     };
-  }, [todayPrayerTimes, tomorrowFajr, nextPrayer?.name]);
+  }, []);
 
   const refreshPrayerTimes = async () => {
     await loadPrayerTimes();

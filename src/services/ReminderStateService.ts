@@ -2,6 +2,7 @@
 import { format } from 'date-fns';
 import { PrayerName, PrayerTime, PrayerReminderState } from '../types';
 import StorageService from './StorageService';
+import logger from '../utils/logger';
 
 class ReminderStateService {
   private stateCache: Map<string, PrayerReminderState> = new Map();
@@ -93,7 +94,7 @@ class ReminderStateService {
     state.completedAt = new Date();
     this.saveReminderState(state);
     
-    console.log(`✅ Prayer ${prayerId} marked as completed`);
+    logger.log(`✅ Prayer ${prayerId} marked as completed`);
   }
   
   /**
@@ -107,7 +108,7 @@ class ReminderStateService {
     state.skippedAt = new Date();
     this.saveReminderState(state);
     
-    console.log(`⏭️ Prayer ${prayerId} marked as skipped`);
+    logger.log(`⏭️ Prayer ${prayerId} marked as skipped`);
   }
   
   /**
@@ -122,7 +123,7 @@ class ReminderStateService {
     state.status = 'snoozed';
     this.saveReminderState(state);
     
-    console.log(`⏰ Prayer ${prayerId} snoozed (count: ${state.snoozeCount})`);
+    logger.log(`⏰ Prayer ${prayerId} snoozed (count: ${state.snoozeCount})`);
     return true;
   }
   
@@ -147,7 +148,7 @@ class ReminderStateService {
     state.tier2SentCount++;
     this.saveReminderState(state);
     
-    console.log(`🔔 Tier 2 reminder #${state.tier2SentCount} sent for ${prayerId}`);
+    logger.log(`🔔 Tier 2 reminder #${state.tier2SentCount} sent for ${prayerId}`);
   }
   
   /**
@@ -243,7 +244,7 @@ class ReminderStateService {
     }
     
     if (cleaned > 0) {
-      console.log(`🧹 Cleaned up ${cleaned} old reminder states`);
+      logger.log(`🧹 Cleaned up ${cleaned} old reminder states`);
     }
   }
   

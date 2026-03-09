@@ -21,6 +21,7 @@ import { useStore } from '../../store/useStore';
 import { getPrayerIcon } from '../../assets/icons';
 import StorageService from '../../services/StorageService';
 import { PrayerRecord, DailyStats } from '../../types';
+import logger from '../../utils/logger';
 
 // NEW: Use our centralized prayer times hook
 import { usePrayerTimes } from '../../providers/PrayerTimesProvider';
@@ -189,7 +190,7 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
       setPrayerBreakdown(breakdown);
       setFocusTrend(focusTrendData);
     } catch (error) {
-      console.error('Error loading statistics:', error);
+      logger.error('Error loading statistics:', error);
     } finally {
       setIsLoading(false);
     }

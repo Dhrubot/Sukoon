@@ -12,6 +12,7 @@
 //   • Cotyledon pattern: first 2 leaves wide at base, next 2 higher & narrower
 
 import { PrayerName } from '../types';
+import logger from '../utils/logger';
 import { GardenPlant, GrowthStage } from '../types/garden';
 import { TreeData, TreeBranch, TreeLeafData, TreeStage, SubBranch } from '../types/tubaTree';
 import { TreeGrowthState } from '../types/treeGrowthState';
@@ -78,10 +79,10 @@ class TubaTreeService {
     const branchWidthCap = maxBranchWidth(trunkWidth, Math.max(1, activeBranches));
 
     if (__DEV__) {
-      console.log('[TubaTree] ═══ buildTreeData (v6 continuous) ═══');
-      console.log(`  g: ${g.toFixed(3)}, stage: ${stage}, lifetime: ${growthState.totalLifetimeReflections}`);
-      console.log(`  trunkWidth: ${trunkWidth.toFixed(1)}, gScale: ${gScale.toFixed(3)}, effectiveScale: ${effectiveScale.toFixed(3)}`);
-      console.log(`  branchWidthCap: ${branchWidthCap.toFixed(1)}, activeBranches: ${activeBranches}`);
+      logger.log('[TubaTree] ═══ buildTreeData (v6 continuous) ═══');
+      logger.log(`  g: ${g.toFixed(3)}, stage: ${stage}, lifetime: ${growthState.totalLifetimeReflections}`);
+      logger.log(`  trunkWidth: ${trunkWidth.toFixed(1)}, gScale: ${gScale.toFixed(3)}, effectiveScale: ${effectiveScale.toFixed(3)}`);
+      logger.log(`  branchWidthCap: ${branchWidthCap.toFixed(1)}, activeBranches: ${activeBranches}`);
     }
 
     // ── BUILD BRANCHES ───────────────────────────────────────────
@@ -121,14 +122,14 @@ class TubaTreeService {
         const subLeaves = b.subBranches.reduce((s, sb) => s + sb.leaves.length, 0);
         return sum + b.leaves.length + subLeaves;
       }, 0);
-      console.log(`  totalRenderedLeaves: ${totalRenderedLeaves}, bloomCount: ${bloomCount}`);
+      logger.log(`  totalRenderedLeaves: ${totalRenderedLeaves}, bloomCount: ${bloomCount}`);
       branches.forEach((b) => {
         const subLeaves = b.subBranches.reduce((s, sb) => s + sb.leaves.length, 0);
         if (b.leaves.length > 0 || subLeaves > 0) {
-          console.log(`  [${b.prayer}] lengthScale=${b.lengthScale.toFixed(3)}, leaves=${b.leaves.length}, subLeaves=${subLeaves}`);
+          logger.log(`  [${b.prayer}] lengthScale=${b.lengthScale.toFixed(3)}, leaves=${b.leaves.length}, subLeaves=${subLeaves}`);
         }
       });
-      console.log('[TubaTree] ═══════════════════');
+      logger.log('[TubaTree] ═══════════════════');
     }
 
     return {

@@ -4,6 +4,7 @@ import * as Notifications from 'expo-notifications';
 import * as Haptics from 'expo-haptics';
 import { PRAYER_NAMES as PrayerName } from '../constants';
 import { getLocalDateKey } from '../utils/dateHelpers';
+import logger from '../utils/logger';
 
 export interface AchievementDefinition extends Achievement {
   category: 'prayer' | 'devotion' | 'mindfulness' | 'focus' | 'special';
@@ -383,7 +384,7 @@ class AchievementService {
             StorageService.updateAchievementProgress(achievement.id, progress);
           }
         } catch (error) {
-          console.error(`Error checking achievement ${achievement.id}:`, error);
+          logger.error(`Error checking achievement ${achievement.id}:`, error);
         }
       }
     }

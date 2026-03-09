@@ -3,6 +3,7 @@ import { useCallback } from 'react';
 import StorageService from '../services/StorageService';
 import { Location as LocationType } from '../types';
 import { getLocalDateKey } from '../utils/dateHelpers';
+import logger from '../utils/logger';
 
 // Single self-overwriting key instead of per-date keys (fixes key leak)
 const REFRESH_KEY = 'lastPrayerRefresh';
@@ -52,7 +53,7 @@ export const usePrayerTimeRefresh = () => {
       StorageService.setValue(REFRESH_KEY, JSON.stringify(newStamp));
       return true;
     } catch (error) {
-      console.error("Error checking if prayer times should refresh:", error);
+      logger.error("Error checking if prayer times should refresh:", error);
       return true; // Refresh to be safe
     }
   }, []);

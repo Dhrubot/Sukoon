@@ -24,6 +24,7 @@ import {
   Dua,
   DuaCategory,
 } from '../../constants/duaLibrary';
+import logger from '../../utils/logger';
 
 const DuaLibraryScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -78,7 +79,7 @@ const DuaLibraryScreen: React.FC = () => {
         message: `${dua.translation}\n\n${dua.arabic}\n\n${dua.transliteration}\n\n- ${dua.reference}\n\nShared via Sukoon`,
       });
     } catch (error) {
-      console.error('Error sharing dua:', error);
+      logger.error('Error sharing dua:', error);
     }
   }, []);
 

@@ -4,6 +4,7 @@ import { Platform } from 'react-native';
 import { Location } from '../types';
 import GeocodingService from './GeocodingService';
 import StorageService from './StorageService';
+import logger from '../utils/logger';
 
 interface LocationUpdateCallback {
   onLocationUpdate: (location: Location) => Promise<void>;
@@ -26,28 +27,28 @@ class LocationService {
   registerLocationUpdateCallback(callback: LocationUpdateCallback) {
     if (!this.updateCallbacks.includes(callback)) {
       this.updateCallbacks.push(callback);
-      console.log('✅ Location update callback registered');
+      logger.log('✅ Location update callback registered');
     } else {
-      console.log('⚠️ Location update callback already registered');
+      logger.log('⚠️ Location update callback already registered');
     }
   }
 
   unregisterLocationUpdateCallback(callback: LocationUpdateCallback) {
     if (this.updateCallbacks.includes(callback)) {
       this.updateCallbacks = this.updateCallbacks.filter(cb => cb !== callback);
-      console.log('🧹 Location update callback unregistered');
+      logger.log('🧹 Location update callback unregistered');
     } else {
-      console.log('⚠️ Location update callback not registered');
+      logger.log('⚠️ Location update callback not registered');
     }
   }
 
   // 🎯 Trigger all registered callbacks (automatic prayer time refresh)
   private async notifyLocationUpdate(location: Location) {
-    console.log('📡 Notifying location update to', this.updateCallbacks.length, 'callbacks');
+    logger.log('📡 Notifying location update to', this.updateCallbacks.length, 'callbacks');
     
     const promises = this.updateCallbacks.map(callback => 
       callback.onLocationUpdate(location).catch(error => {
-        console.error('❌ Location update callback failed:', error);
+        logger.error('❌ Location update callback failed:', error);
         return null;
       })
     );
@@ -63,14 +64,14 @@ class LocationService {
       const { status } = await ExpoLocation.getForegroundPermissionsAsync();
       
       if (status === 'granted') {
-        console.log('✅ Location permission already granted');
+        logger.log('✅ Location permission already granted');
         return true;
       }
       
-      console.log('📍 Location service initialized');
+      logger.log('📍 Location service initialized');
       return true;
     } catch (error) {
-      console.error('❌ Failed to initialize location service:', error);
+      logger.error('❌ Failed to initialize location service:', error);
       return false;
     }
   }
@@ -80,15 +81,15 @@ class LocationService {
    */
   async getCurrentLocation(): Promise<Location | null> {
     try {
-      console.log('📍 Requesting location permission...');
+      logger.log('📍 Requesting location permission...');
       
       const { status } = await ExpoLocation.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        console.log('❌ Location permission denied');
+        logger.log('❌ Location permission denied');
         return null;
       }
 
-      console.log('✅ Location permission granted, getting position...');
+      logger.log('✅ Location permission granted, getting position...');
       
       // 🎯 ENHANCED: Better location options
       const location = await ExpoLocation.getCurrentPositionAsync({
@@ -97,7 +98,7 @@ class LocationService {
         distanceInterval: 100, // 100 meters
       });
 
-      console.log('📍 Got coordinates:', {
+      logger.log('📍 Got coordinates:', {
         lat: location.coords.latitude,
         lng: location.coords.longitude,
         accuracy: location.coords.accuracy
@@ -110,7 +111,7 @@ class LocationService {
       });
 
       if (enrichedLocation) {
-        console.log('✅ Location enriched with city/country:', {
+        logger.log('✅ Location enriched with city/country:', {
           city: enrichedLocation.city,
           country: enrichedLocation.country
         });
@@ -118,7 +119,7 @@ class LocationService {
 
       return enrichedLocation;
     } catch (error: any) {
-      console.error('❌ Error getting current location:', error);
+      logger.error('❌ Error getting current location:', error);
       
       // 🎯 ENHANCED: Specific error messages
       if (error.code === 'E_LOCATION_SERVICES_DISABLED') {
@@ -139,17 +140,17 @@ class LocationService {
   async setLocationByAddress(city: string, country: string): Promise<Location | null> {
     try {
       if (!city || !country) {
-        console.warn('❌ City and country are required');
+        logger.warn('❌ City and country are required');
         return null;
       }
 
-      console.log('🔍 Geocoding address:', { city, country });
+      logger.log('🔍 Geocoding address:', { city, country });
       
       const locationQuery = `${city}, ${country}`;
       const location = await GeocodingService.geocodeAddress(locationQuery, country);
       
       if (location) {
-        console.log('✅ Address geocoded successfully:', {
+        logger.log('✅ Address geocoded successfully:', {
           query: locationQuery,
           result: { lat: location.latitude, lng: location.longitude }
         });
@@ -159,10 +160,10 @@ class LocationService {
         return location;
       }
       
-      console.warn('❌ Could not find location for:', locationQuery);
+      logger.warn('❌ Could not find location for:', locationQuery);
       return null;
     } catch (error) {
-      console.error('❌ Error setting location by address:', error);
+      logger.error('❌ Error setting location by address:', error);
       throw new Error(`Failed to find location for "${city}, ${country}". Please check your spelling or try a different format.`);
     }
   }
@@ -173,16 +174,16 @@ class LocationService {
   async setLocationByPostalCode(postalCode: string, countryCode: string): Promise<Location | null> {
     try {
       if (!postalCode || !countryCode) {
-        console.warn('❌ Postal code and country code are required');
+        logger.warn('❌ Postal code and country code are required');
         return null;
       }
 
-      console.log('🔍 Geocoding postal code:', { postalCode, countryCode });
+      logger.log('🔍 Geocoding postal code:', { postalCode, countryCode });
 
       const location = await GeocodingService.geocodePostalCode(postalCode, countryCode);
       
       if (location) {
-        console.log('✅ Postal code geocoded successfully:', {
+        logger.log('✅ Postal code geocoded successfully:', {
           postalCode,
           result: { lat: location.latitude, lng: location.longitude }
         });
@@ -192,10 +193,10 @@ class LocationService {
         return location;
       }
       
-      console.warn('❌ Could not find location for postal code:', postalCode);
+      logger.warn('❌ Could not find location for postal code:', postalCode);
       return null;
     } catch (error) {
-      console.error('❌ Error setting location by postal code:', error);
+      logger.error('❌ Error setting location by postal code:', error);
       throw new Error(`Failed to find location for postal code "${postalCode}". Please check the code and country.`);
     }
   }
@@ -204,21 +205,21 @@ class LocationService {
    * 🎯 ENHANCED: Reverse geocoding with fallbacks
    */
   async reverseGeocodeCoordinates(coordinates: { latitude: number, longitude: number }): Promise<Location | null> {
-    console.log('🔄 Reverse geocoding coordinates:', coordinates);
+    logger.log('🔄 Reverse geocoding coordinates:', coordinates);
     
     // First try using GeocodingService (Nominatim)
     try {
       const location = await GeocodingService.reverseGeocode(coordinates);
       
       if (location) {
-        console.log('✅ Nominatim reverse geocoding successful:', {
+        logger.log('✅ Nominatim reverse geocoding successful:', {
           city: location.city,
           country: location.country
         });
         return location;
       }
     } catch (error) {
-      console.warn('⚠️ Nominatim reverse geocoding failed, falling back to Expo:', error);
+      logger.warn('⚠️ Nominatim reverse geocoding failed, falling back to Expo:', error);
     }
     
     // 🎯 SMART FALLBACK: Expo's reverse geocoding
@@ -239,7 +240,7 @@ class LocationService {
           timezone: place.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
         };
         
-        console.log('✅ Expo reverse geocoding successful:', {
+        logger.log('✅ Expo reverse geocoding successful:', {
           city: location.city,
           country: location.country
         });
@@ -247,11 +248,11 @@ class LocationService {
         return location;
       }
     } catch (error) {
-      console.error('❌ Error with Expo reverse geocoding:', error);
+      logger.error('❌ Error with Expo reverse geocoding:', error);
     }
     
     // 🎯 GRACEFUL DEGRADATION: Unknown location
-    console.warn('⚠️ All reverse geocoding methods failed, using unknown city/country');
+    logger.warn('⚠️ All reverse geocoding methods failed, using unknown city/country');
     
     return {
       latitude: coordinates.latitude,
@@ -265,21 +266,21 @@ class LocationService {
   // 🎯 CLEAN ARCHITECTURE: Save and notify through callback system
   private async saveLocationAndNotify(location: Location): Promise<void> {
     try {
-      console.log('💾 Saving location and notifying callbacks...');
+      logger.log('💾 Saving location and notifying callbacks...');
       
       // Update settings with the new location
       const settings = StorageService.getUserSettings() || StorageService.getDefaultSettings();
       settings.location = location;
       StorageService.setUserSettings(settings);
       
-      console.log('✅ Location saved to storage');
+      logger.log('✅ Location saved to storage');
       
       // 🎯 AUTOMATIC UPDATES: Notify callbacks (triggers prayer time refresh)
       await this.notifyLocationUpdate(location);
       
-      console.log('✅ Location update notifications sent');
+      logger.log('✅ Location update notifications sent');
     } catch (error) {
-      console.error('❌ Error saving location:', error);
+      logger.error('❌ Error saving location:', error);
       throw error;
     }
   }
@@ -351,7 +352,7 @@ class LocationService {
         servicesEnabled,
       };
     } catch (error) {
-      console.error('❌ Error checking location accuracy:', error);
+      logger.error('❌ Error checking location accuracy:', error);
       return { hasPermission: false, servicesEnabled: false };
     }
   }
@@ -359,7 +360,7 @@ class LocationService {
   // 🎯 NEW: Force refresh current location
   async refreshCurrentLocation(): Promise<Location | null> {
     try {
-      console.log('🔄 Force refreshing current location...');
+      logger.log('🔄 Force refreshing current location...');
       
       const location = await this.getCurrentLocation();
       
@@ -370,7 +371,7 @@ class LocationService {
       
       return null;
     } catch (error) {
-      console.error('❌ Error refreshing current location:', error);
+      logger.error('❌ Error refreshing current location:', error);
       throw error;
     }
   }
@@ -378,7 +379,7 @@ class LocationService {
   // 🎯 CLEANUP
   cleanup() {
     this.updateCallbacks = [];
-    console.log('🧹 LocationService cleaned up');
+    logger.log('🧹 LocationService cleaned up');
   }
 }
 

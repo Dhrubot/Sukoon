@@ -130,7 +130,7 @@ class DonationService {
   private showThankYou(donation: Donation) {
     // This will be handled by the UI layer
     // Could show a modal, notification, or special animation
-    console.log('Thank you for your donation!', donation);
+    logger.log('Thank you for your donation!', donation);
   }
 
   // Note: External payment links (PayPal, Crypto) removed for App Store / Google Play compliance.

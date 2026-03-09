@@ -18,6 +18,7 @@ import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import ThemedTimePicker from '../common/ThemedTimePicker';
+import logger from '../../utils/logger';
 
 interface PrayerHabitBuilderSettingsProps {
   userSettings: UserSettings;
@@ -87,7 +88,7 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
-      console.error('Failed to update habit builder settings:', error);
+      logger.error('Failed to update habit builder settings:', error);
       Alert.alert('Error', 'Failed to update settings');
     } finally {
       setIsUpdating(false);

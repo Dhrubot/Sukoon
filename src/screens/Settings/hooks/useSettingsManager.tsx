@@ -5,6 +5,7 @@ import StorageService from '../../../services/StorageService';
 import LocationService from '../../../services/LocationService';
 import { CalculationMethodType, CALCULATION_METHODS } from '../../../types';
 import { usePrayerTimes } from '../../../providers/PrayerTimesProvider';
+import logger from '../../../utils/logger';
 
 export const useSettingsManager = () => {
   const { userSettings, setUserSettings, setLocation } = useStore();
@@ -53,7 +54,7 @@ export const useSettingsManager = () => {
         );
       }
     } catch (error) {
-      console.error('Failed to update location:', error);
+      logger.error('Failed to update location:', error);
       
       const errorMessage = error instanceof Error ? error.message : 'Failed to get location';
       
@@ -112,7 +113,7 @@ export const useSettingsManager = () => {
         throw new Error('Location not found');
       }
     } catch (error) {
-      console.error('Manual location failed:', error);
+      logger.error('Manual location failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Could not find location';
       
       Alert.alert(
@@ -164,7 +165,7 @@ export const useSettingsManager = () => {
         throw new Error('Postal code not found');
       }
     } catch (error) {
-      console.error('Postal code location failed:', error);
+      logger.error('Postal code location failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Could not find postal code';
       
       Alert.alert('Postal Code Not Found', errorMessage, [{ text: 'OK' }]);
@@ -217,7 +218,7 @@ export const useSettingsManager = () => {
         throw new Error('Could not reverse geocode coordinates');
       }
     } catch (error) {
-      console.error('Coordinate location failed:', error);
+      logger.error('Coordinate location failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Could not set coordinates';
       
       Alert.alert('Error', errorMessage, [{ text: 'OK' }]);
@@ -251,7 +252,7 @@ export const useSettingsManager = () => {
         [{ text: 'OK' }]
       );
     } catch (error) {
-      console.error('Failed to update calculation method:', error);
+      logger.error('Failed to update calculation method:', error);
       Alert.alert(
         'Update Failed',
         'Failed to update calculation method. Please try again.',
@@ -286,7 +287,7 @@ export const useSettingsManager = () => {
         times: prayerTimes,
       });
     } catch (error) {
-      console.error('Failed to preview prayer times:', error);
+      logger.error('Failed to preview prayer times:', error);
       Alert.alert('Preview Failed', 'Unable to preview prayer times for this method.');
     }
   };

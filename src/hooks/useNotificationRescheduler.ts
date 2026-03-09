@@ -26,6 +26,18 @@ export const useNotificationRescheduler = () => {
 
   const checkAndReschedule = async () => {
     try {
+      // ── DST offset detection ──────────────────────────────────
+      // If the UTC offset changed since last schedule (DST transition),
+      // all scheduled times are wrong → force a full reschedule.
+      const currentOffset = new Date().getTimezoneOffset();
+      const savedOffset = StorageService.getValue('notification_utc_offset');
+
+      if (savedOffset !== null && parseInt(savedOffset, 10) !== currentOffset) {
+        logger.warn(`⏰ UTC offset changed (${savedOffset} → ${currentOffset}), forcing reschedule`);
+        // Clear last run so maybeReschedule always fires
+        StorageService.deleteValue('last_batch_schedule_date');
+      }
+
       // Detect stale notification state (>48h without refresh)
       const lastRunStr = StorageService.getValue('last_batch_schedule_date');
       if (lastRunStr) {
@@ -36,7 +48,12 @@ export const useNotificationRescheduler = () => {
         }
       }
 
-      await NotificationService.maybeRescheduleExtendedNotifications();
+      const rescheduled = await NotificationService.maybeRescheduleExtendedNotifications();
+
+      // Persist current offset after successful schedule
+      if (rescheduled || savedOffset === null) {
+        StorageService.setValue('notification_utc_offset', currentOffset.toString());
+      }
     } catch (error) {
       logger.error('❌ Reschedule failed:', error);
     }

@@ -16,6 +16,7 @@ import { scheduleTier2PersistentReminders, scheduleTier3GracePeriodWarning } fro
 import { isValidCoordinates } from '../utils/locationValidation';
 import logger from '../utils/logger';
 import AnalyticsService from './AnalyticsService';
+import { useStore } from '../store/useStore';
 
 // NOTIFICATION_CATEGORIES now imported from ./notifications/NotificationChannels
 
@@ -49,14 +50,6 @@ interface NotificationContent {
   subtitle?: string;
 }
 
-// Lightweight interface for prayer times
-interface PrayerTimesSource {
-  getTodayPrayerTimes: () => PrayerTime[];
-  getNextPrayer: () => PrayerTime | null;
-  isLoading: () => boolean;
-  hasValidLocation: () => boolean;
-}
-
 type PrayerTimesFetcher = (params: {
   location: UserSettings['location'];
   date: Date;
@@ -86,7 +79,6 @@ class NotificationService {
     StorageService.deleteValue('notification_scheduling_lock');
   }
 
-  private prayerTimesSource: PrayerTimesSource | null = null;
   private prayerTimesFetcher: PrayerTimesFetcher | null = null;
 
   private getScheduleFingerprint(settings: UserSettings): string {
@@ -177,12 +169,6 @@ class NotificationService {
       logger.error('❌ Reschedule failed:', error);
       return false;
     }
-  }
-
-  // Set the prayer times source
-  setPrayerTimesSource(source: PrayerTimesSource) {
-    this.prayerTimesSource = source;
-    logger.log('✅ Prayer times source connected to NotificationService');
   }
 
   setPrayerTimesFetcher(fetcher: PrayerTimesFetcher) {
@@ -659,8 +645,8 @@ class NotificationService {
       }
       await Notifications.scheduleNotificationAsync({
         content: {
-          title: 'Keep Your Prayer Reminders Active',
-          body: 'Tap here to ensure your Adhan and prayer notifications continue.',
+          title: 'Assalamu Alaikum',
+          body: 'Tap to keep your prayer reminders flowing. May your prayers be accepted.',
           data: { type: 'keepalive' },
           ...(Platform.OS === 'android' && { channelId: CHANNELS.DEFAULT }),
         },
@@ -704,6 +690,14 @@ class NotificationService {
     });
   }
 
+  private deterministicIndex(seed: string, length: number): number {
+    let hash = 0;
+    for (let i = 0; i < seed.length; i++) {
+      hash = ((hash << 5) - hash + seed.charCodeAt(i)) | 0;
+    }
+    return Math.abs(hash) % length;
+  }
+
   private getPrePrayerContent(prayerName: string, minutes: number): NotificationContent {
     const messages = [
       `${prayerName} prayer in ${minutes} minutes — time to prepare your heart`,
@@ -712,9 +706,12 @@ class NotificationService {
       `${prayerName} in ${minutes} minutes — a moment of stillness awaits`,
     ];
 
+    const dateKey = format(new Date(), 'yyyy-MM-dd');
+    const idx = this.deterministicIndex(`${prayerName}-pre-${dateKey}`, messages.length);
+
     return {
       title: `${prayerName} Prayer Soon`,
-      body: messages[Math.floor(Math.random() * messages.length)],
+      body: messages[idx],
       subtitle: 'Tap to begin mindfulness exercise',
     };
   }
@@ -750,9 +747,12 @@ class NotificationService {
 
     const messages = contextualMessages[prayerKey] || [`Time for ${displayName} prayer 🕌`];
 
+    const dateKey = format(new Date(), 'yyyy-MM-dd');
+    const idx = this.deterministicIndex(`${prayerKey}-main-${dateKey}`, messages.length);
+
     return {
       title: `${displayName} Prayer Time`,
-      body: messages[Math.floor(Math.random() * messages.length)],
+      body: messages[idx],
     };
   }
 
@@ -1115,7 +1115,9 @@ class NotificationService {
   async getDebugInfo() {
     const allScheduled = await Notifications.getAllScheduledNotificationsAsync();
     const scheduled = await this.getScheduledNotifications();
-    const source = this.prayerTimesSource;
+    const storeState = useStore.getState();
+    const hasSource = storeState.todayPrayerTimes.length > 0;
+    const sourceHasLocation = isValidCoordinates(storeState.location);
 
     // Tier distribution
     const tierCounts = { tier1: 0, prePrayer: 0, tier3: 0, tier2: 0, keepalive: 0, supplementary: 0, other: 0 };
@@ -1135,9 +1137,9 @@ class NotificationService {
       prayerScheduledCount: scheduled.length,
       iosCap: IOS_NOTIFICATION_CAP,
       tierDistribution: tierCounts,
-      hasSource: !!source,
-      sourceHasLocation: source?.hasValidLocation() || false,
-      sourceLoading: source?.isLoading() || false,
+      hasSource,
+      sourceHasLocation,
+      sourceLoading: false,
       upcomingNotifications: scheduled.slice(0, 5).map((n) => {
         let triggerDisplay = 'Unknown';
         const t = n.trigger as any;
@@ -1157,11 +1159,11 @@ class NotificationService {
           scheduledAt: n.content.data?.scheduledAt,
         }
       }),
-      prayerTimesInfo: source
+      prayerTimesInfo: hasSource
         ? {
-          todayPrayersCount: source.getTodayPrayerTimes().length,
-          hasNextPrayer: !!source.getNextPrayer(),
-          nextPrayerName: source.getNextPrayer()?.name || 'None',
+          todayPrayersCount: storeState.todayPrayerTimes.length,
+          hasNextPrayer: !!storeState.nextPrayer,
+          nextPrayerName: storeState.nextPrayer?.name || 'None',
         }
         : null,
     };
@@ -1352,8 +1354,6 @@ class NotificationService {
     // Stop any playing audio
     this.stopAdhan();
 
-    // Clear the source reference
-    this.prayerTimesSource = null;
     logger.log('🧹 NotificationService cleaned up');
   }
 }

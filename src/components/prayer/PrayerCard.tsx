@@ -7,13 +7,12 @@ import {
   Dimensions,
 } from 'react-native';
 import { format, isPast, isFuture } from 'date-fns';
-import { PrayerTime, PrayerRecord, PrayerName } from '../../types';
+import { PrayerTime, PrayerRecord, PrayerName, UserSettings } from '../../types';
 import PrayerTimeService from '../../services/PrayerTimeService';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
-import { useStore } from '../../store/useStore';
-import StorageService from '../../services/StorageService';
+import { useStore, useUserSettings, useSunTimes } from '../../store/useStore';
 import NotificationService from '../../services/NotificationService';
 import { Icon } from '../common/Icon';
 import { NotificationToggleButton } from '../common/NotificationToggleButton';
@@ -41,24 +40,17 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
 }) => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
-  const { userSettings, setUserSettings, todaySunrise } = useStore();
+  const userSettings = useUserSettings();
+  const { todaySunrise } = useSunTimes();
+  const updateUserSettings = useStore((s) => s.updateUserSettings);
 
   // Handle notification toggle
   const handleNotificationToggle = async (prayerName: PrayerName, newState: boolean) => {
     if (!userSettings) return;
 
-    const updatedSettings = {
-      ...userSettings,
-      prayerNotifications: {
-        ...userSettings.prayerNotifications,
-        [prayerName]: newState,
-      },
-    };
+    updateUserSettings({ prayerNotifications: { [prayerName]: newState } as UserSettings['prayerNotifications'] });
 
-    setUserSettings(updatedSettings);
-    StorageService.setUserSettings(updatedSettings);
-
-    if (!updatedSettings.notifications.enabled) {
+    if (!userSettings.notifications.enabled) {
       logger.log(`${prayerName} notifications ${newState ? 'enabled' : 'disabled'}`);
       return;
     }

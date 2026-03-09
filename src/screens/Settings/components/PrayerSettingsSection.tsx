@@ -3,9 +3,9 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert, ActivityIndicator } fr
 import { format } from 'date-fns';
 import { SettingSection } from '../../../components/settings/SettingSection';
 import { SettingRow } from '../../../components/settings/SettingRow';
-import StorageService from '../../../services/StorageService';
 import NotificationService from '../../../services/NotificationService';
 import { useStore } from '../../../store/useStore';
+import logger from '../../../utils/logger';
 import { UserSettings, CalculationMethodType, PrayerTime, PrayerName } from '../../../types';
 import { isFriday } from '../../../utils/ramadan';
 import { useTheme } from '../../../providers/ThemeProvider';
@@ -65,20 +65,13 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
 
   // 🔧 FIXED: Immediate refresh when Asr method changes
   // Handle notification toggle for individual prayers
+  const updateUserSettings = useStore((s) => s.updateUserSettings);
+
   const handleNotificationToggle = async (prayerName: PrayerName, newState: boolean) => {
-    const updatedSettings = {
-      ...userSettings,
-      prayerNotifications: {
-        ...userSettings.prayerNotifications,
-        [prayerName]: newState,
-      },
-    };
+    updateUserSettings({ prayerNotifications: { [prayerName]: newState } as UserSettings['prayerNotifications'] });
 
-    StorageService.setUserSettings(updatedSettings);
-    setUserSettings(updatedSettings);
-
-    if (!updatedSettings.notifications.enabled) {
-      console.log(`${prayerName} notifications ${newState ? 'enabled' : 'disabled'}`);
+    if (!userSettings.notifications.enabled) {
+      logger.log(`${prayerName} notifications ${newState ? 'enabled' : 'disabled'}`);
       return;
     }
 
@@ -88,18 +81,11 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
       await NotificationService.cancelPrayerNotifications(prayerName);
     }
 
-    console.log(`${prayerName} notifications ${newState ? 'enabled' : 'disabled'}`);
+    logger.log(`${prayerName} notifications ${newState ? 'enabled' : 'disabled'}`);
   };
 
   const handleJuristicChange = async (value: string) => {
-    const updated = { 
-      ...userSettings, 
-      asrJuristic: value as 'Standard' | 'Hanafi' 
-    };
-    
-    // Save to storage
-    StorageService.setUserSettings(updated);
-    setUserSettings(updated);
+    updateUserSettings({ asrJuristic: value as 'Standard' | 'Hanafi' });
     
     // 🔧 FIX: Immediately refresh prayer times
     if (onRefreshPrayerTimes && hasValidLocation) {
@@ -119,7 +105,7 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
           [{ text: 'OK' }]
         );
       } catch (error) {
-        console.error('Failed to refresh prayer times:', error);
+        logger.error('Failed to refresh prayer times:', error);
         Alert.alert(
           'Update Complete',
           'Asr method changed. Prayer times will update on next refresh.',

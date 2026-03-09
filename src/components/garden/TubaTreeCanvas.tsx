@@ -16,6 +16,7 @@
 
 import React, { useMemo, useEffect, useCallback } from 'react';
 import { View, Text, StyleSheet, Platform } from 'react-native';
+import logger from '../../utils/logger';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, {
   Path,
@@ -114,10 +115,10 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
   useEffect(() => {
     if (__DEV__) {
       const totalRendered = treeData.branches.reduce((s, b) => s + b.leaves.length, 0);
-      console.log(`[TubaTreeCanvas] plants=${plants.length}, rendered=${totalRendered}, stage=${treeData.stage}`);
+      logger.log(`[TubaTreeCanvas] plants=${plants.length}, rendered=${totalRendered}, stage=${treeData.stage}`);
       treeData.branches.forEach((b) => {
         if (b.lengthScale > 0) {
-          console.log(`  [${b.prayer}] scale=${b.lengthScale.toFixed(2)}, leaves=${b.leaves.length}`);
+          logger.log(`  [${b.prayer}] scale=${b.lengthScale.toFixed(2)}, leaves=${b.leaves.length}`);
         }
       });
     }

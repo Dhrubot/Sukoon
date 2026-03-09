@@ -1,6 +1,6 @@
 // src/components/prayer/StarField.tsx
-// Animated stars + crescent moon overlay for all prayers.
-// Hero is always dark, so stars work visually for every prayer.
+// Animated stars + crescent moon overlay for nighttime prayers.
+// Hidden during Dhuhr and Asr (daytime).
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Dimensions } from 'react-native';
 import { PrayerName } from '../../types';
@@ -141,6 +141,9 @@ const CrescentMoon: React.FC = () => {
 };
 
 const StarField: React.FC<StarFieldProps> = ({ prayerName }) => {
+  const isDaytime = prayerName === 'Dhuhr' || prayerName === 'Asr';
+  if (isDaytime) return null;
+
   return (
     <View style={styles.container} pointerEvents="none">
       <CrescentMoon />

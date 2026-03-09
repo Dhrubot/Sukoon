@@ -12,6 +12,7 @@ import { getLocalDateKey } from '../utils/dateHelpers';
 import WidgetService from '../services/WidgetService';
 import AnalyticsService from '../services/AnalyticsService';
 import PerformanceService from '../services/PerformanceService';
+import logger from '../utils/logger';
 
 // Create navigation reference
 export const navigationRef = createRef<NavigationContainerRef<any>>();
@@ -42,7 +43,7 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
   useEffect(() => {
     // Register navigation handler for notifications
     const handleNotificationNavigation = (prayer: PrayerName, action: string) => {
-      console.log(`Handling notification action: ${action} for prayer: ${prayer}`);
+      logger.log(`Handling notification action: ${action} for prayer: ${prayer}`);
 
       if (navigationRef.current?.isReady()) {
         switch (action) {
@@ -95,7 +96,7 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
               });
             } else {
               // Fallback: prayer times not loaded yet, go to Home
-              console.warn(`⚠️ Could not resolve prayer time for ${prayer}, navigating to Home`);
+              logger.warn(`⚠️ Could not resolve prayer time for ${prayer}, navigating to Home`);
               navigationRef.current.navigate("MainTabs");
             }
             break;
@@ -117,7 +118,7 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
 
     // Register the handler with NotificationService
     NotificationService.registerNavigationHandler(handleNotificationNavigation);
-    console.log("Navigation handler registered");
+    logger.log("Navigation handler registered");
 
     // Deep-link handler for Live Activity actions (sukoon://prepare?prayer=X, sukoon://prayed?prayer=X)
     const handleDeepLink = (event: { url: string }) => {
@@ -134,7 +135,7 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
           handleNotificationNavigation(prayer, 'complete');
         }
       } catch (e) {
-        console.warn('Failed to parse deep link URL:', event.url, e);
+        logger.warn('Failed to parse deep link URL:', event.url, e);
       }
     };
 
