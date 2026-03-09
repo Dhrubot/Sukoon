@@ -57,9 +57,19 @@ export class PrayerTimeService {
   private cachedTimes: Map<string, PrayerTimes> = new Map();
   private cachedLocations: Map<string, Coordinates> = new Map();
   private _lastFetchWasFallback: boolean = false;
+  private _usingHardcodedDefaults: boolean = false;
+  private _highLatitudeWarning: boolean = false;
 
   get lastFetchWasFallback(): boolean {
     return this._lastFetchWasFallback;
+  }
+
+  get usingHardcodedDefaults(): boolean {
+    return this._usingHardcodedDefaults;
+  }
+
+  get highLatitudeWarning(): boolean {
+    return this._highLatitudeWarning;
   }
 
   static getInstance(): PrayerTimeService {
@@ -165,6 +175,8 @@ export class PrayerTimeService {
         }
 
         this._lastFetchWasFallback = false;
+        this._usingHardcodedDefaults = false;
+        this._highLatitudeWarning = false;
         this.cachedTimes.set(cacheKey, times);
         this.evictCacheIfNeeded();
 
@@ -327,6 +339,9 @@ export class PrayerTimeService {
       logger.log("Using fallback prayer time calculation");
       const { latitude, longitude } = coordinates;
 
+      // Flag high-latitude locations where astronomical calculations may be inaccurate
+      this._highLatitudeWarning = Math.abs(latitude) > 48;
+
       // Convert date to Julian date
       const julian = this.getJulianDate(date);
 
@@ -451,7 +466,25 @@ export class PrayerTimeService {
     } catch (error) {
       logger.error("Error in fallback prayer time calculation:", error);
 
-      // Return default times if calculation fails
+      // Try last-known-good cached times from MMKV before using hardcoded defaults
+      try {
+        const raw = StorageService.getValue('cached_prayer_times');
+        if (raw) {
+          const cached: CachedPrayerTimesData = JSON.parse(raw);
+          if (cached.times) {
+            logger.warn("Using last-known-good cached prayer times as fallback");
+            this._lastFetchWasFallback = true;
+            this._usingHardcodedDefaults = false;
+            return cached.times;
+          }
+        }
+      } catch (cacheError) {
+        logger.warn("Failed to read cached prayer times:", cacheError);
+      }
+
+      // Absolute last resort: hardcoded defaults
+      logger.error("No cached times available — using hardcoded defaults");
+      this._usingHardcodedDefaults = true;
       return {
         Fajr: "05:00",
         Sunrise: "06:30",

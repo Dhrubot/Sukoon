@@ -86,7 +86,7 @@ export const WatchAdCard: React.FC<WatchAdCardProps> = ({ onRewardEarned }) => {
       </View>
 
       <Text style={[styles.description, { color: theme.colors.text.secondary }]}>
-        Can't donate? No problem! All ads are halal-filtered.
+        Can't donate? No problem! We use family-safe ad settings to keep content appropriate.
       </Text>
 
       <TouchableOpacity

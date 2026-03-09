@@ -22,6 +22,8 @@ interface PrayerTimesContextType {
   error: string | null;
   hasValidLocation: boolean;
   isOffline: boolean;
+  usingHardcodedDefaults: boolean;
+  highLatitudeWarning: boolean;
   refreshPrayerTimes: () => Promise<void>;
 }
 
@@ -33,6 +35,8 @@ const PrayerTimesContext = createContext<PrayerTimesContextType>({
   error: null,
   hasValidLocation: false,
   isOffline: false,
+  usingHardcodedDefaults: false,
+  highLatitudeWarning: false,
   refreshPrayerTimes: async () => {},
 });
 
@@ -68,6 +72,8 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
   const [error, setError] = useState<string | null>(null);
   const [tomorrowFajr, setTomorrowFajr] = useState<PrayerTime | null>(null);
   const [isOffline, setIsOffline] = useState(false);
+  const [usingHardcodedDefaults, setUsingHardcodedDefaults] = useState(false);
+  const [highLatitudeWarning, setHighLatitudeWarning] = useState(false);
 
   const adjustmentsKey = useMemo(() => {
     return JSON.stringify(userSettings?.adjustments ?? {});
@@ -252,6 +258,8 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
       }
 
       setIsOffline(PrayerTimeService.lastFetchWasFallback);
+      setUsingHardcodedDefaults(PrayerTimeService.usingHardcodedDefaults);
+      setHighLatitudeWarning(PrayerTimeService.highLatitudeWarning);
       lastLoadedDateRef.current = getLocalDateKey();
       logger.log('✅ Prayer times loaded successfully');
 
@@ -388,6 +396,8 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
     error,
     hasValidLocation,
     isOffline,
+    usingHardcodedDefaults,
+    highLatitudeWarning,
     refreshPrayerTimes,
   };
 

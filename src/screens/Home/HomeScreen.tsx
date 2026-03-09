@@ -81,6 +81,8 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
     isLoading: prayerTimesLoading, 
     hasValidLocation, 
     isOffline,
+    usingHardcodedDefaults,
+    highLatitudeWarning,
     error: prayerTimesError,
     refreshPrayerTimes 
   } = usePrayerTimes();
@@ -656,10 +658,10 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
             record={heroPrayerRecord}
             isTimeEntered={isHeroPrayerTimeEntered}
             missedPrayer={missedPreviousPrayer}
-            onPrepare={() => handlePrayerComplete(heroPrayer)}
+            onPrepare={() => handleQuickLogTrigger(heroPrayer)}
             onPrepareQada={missedPreviousPrayer ? () => handlePrayerComplete(missedPreviousPrayer) : undefined}
             onPraySunnah={handleSunnahPrayer}
-            onQuickLog={() => handleQuickLogTrigger(heroPrayer)}
+            onQuickLog={() => handlePrayerComplete(heroPrayer)}
             isFocusMode={isFocusMode}
             mosqueModeInfo={mosqueModeHeroInfo ?? undefined}
             onMosqueModeTap={() => navigation.navigate('MosqueMode' as never)}
@@ -681,11 +683,25 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
           { backgroundColor: theme.colors.background.primary },
           (isFocusMode && !focusExpanded) && { display: 'none' },
         ]}>
-          {/* Offline Banner */}
-          {isOffline && (
+          {/* Offline / Hardcoded Defaults Banner */}
+          {usingHardcodedDefaults && (
+            <View style={[styles.offlineBanner, { backgroundColor: 'rgba(239, 68, 68, 0.15)', borderColor: 'rgba(239, 68, 68, 0.3)' }]}>
+              <Text style={[styles.offlineBannerText, { color: theme.colors.status.error }]}>
+                Unable to calculate prayer times — please check your connection
+              </Text>
+            </View>
+          )}
+          {isOffline && !usingHardcodedDefaults && (
             <View style={styles.offlineBanner}>
               <Text style={styles.offlineBannerText}>
                 Offline — times are estimated
+              </Text>
+            </View>
+          )}
+          {highLatitudeWarning && !usingHardcodedDefaults && (
+            <View style={[styles.offlineBanner, { backgroundColor: 'rgba(59, 130, 246, 0.12)', borderColor: 'rgba(59, 130, 246, 0.25)' }]}>
+              <Text style={[styles.offlineBannerText, { color: theme.colors.status.info || '#3b82f6' }]}>
+                High-latitude location — Fajr/Isha times may be approximate
               </Text>
             </View>
           )}
@@ -735,8 +751,8 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
                     key={prayer.name}
                     prayer={prayer}
                     record={record} 
-                    onComplete={() => handlePrayerComplete(prayer)}
-                    onLongPress={() => handleQuickLogTrigger(prayer)}
+                    onComplete={() => handleQuickLogTrigger(prayer)}
+                    onLongPress={() => handlePrayerComplete(prayer)}
                     nextPrayer={nextPrayerInList}
                   />
                 );

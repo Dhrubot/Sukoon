@@ -65,7 +65,7 @@ export default {
       "@react-native-firebase/app",
       "@react-native-firebase/crashlytics",
       "@react-native-firebase/perf",
-      "./plugins/withUsageStats.js",
+
       "./plugins/withModularHeaders.js",
       "./plugins/withAndroidIapFlavor.js",
       "./plugins/withNodePath.js",

@@ -66,6 +66,7 @@ const SettingsScreen = ({ navigation }: any) => {
     updateLocation,
     handleResetApp,
     handleExportData,
+    handleImportData,
     handlePrivacyPolicy,
 
     // 🎯 NEW: Enhanced actions
@@ -183,6 +184,7 @@ const SettingsScreen = ({ navigation }: any) => {
         {/* 5. App Data */}
         <AppDataSection
           onExportData={handleExportData}
+          onImportData={handleImportData}
           onResetApp={handleResetApp}
         />
 

@@ -1,5 +1,7 @@
 import { useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, Share, Platform } from 'react-native';
+import * as FileSystem from 'expo-file-system';
+import * as DocumentPicker from 'expo-document-picker';
 import { useStore } from '../../../store/useStore';
 import StorageService from '../../../services/StorageService';
 import LocationService from '../../../services/LocationService';
@@ -310,7 +312,46 @@ export const useSettingsManager = () => {
   };
 
   const handleExportData = async () => {
-    Alert.alert('Export Data', 'Data export feature coming soon!', [{ text: 'OK' }]);
+    try {
+      const jsonData = StorageService.exportPrayerData();
+      const fileName = `sukoon-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      const filePath = `${FileSystem.documentDirectory}${fileName}`;
+      await FileSystem.writeAsStringAsync(filePath, jsonData, { encoding: FileSystem.EncodingType.UTF8 });
+
+      if (Platform.OS === 'ios') {
+        await Share.share({ url: filePath });
+      } else {
+        await Share.share({ message: jsonData, title: fileName });
+      }
+    } catch (error) {
+      logger.error('Export failed:', error);
+      Alert.alert('Export Failed', 'Could not export your data. Please try again.');
+    }
+  };
+
+  const handleImportData = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/json',
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled || !result.assets?.[0]) return;
+
+      const fileUri = result.assets[0].uri;
+      const jsonString = await FileSystem.readAsStringAsync(fileUri, { encoding: FileSystem.EncodingType.UTF8 });
+      const { imported, skipped } = StorageService.importPrayerData(jsonString);
+
+      Alert.alert(
+        'Import Complete',
+        `Imported ${imported} prayer record${imported !== 1 ? 's' : ''}.${skipped > 0 ? ` ${skipped} existing record${skipped !== 1 ? 's' : ''} kept.` : ''}`,
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Invalid file format';
+      logger.error('Import failed:', error);
+      Alert.alert('Import Failed', msg);
+    }
   };
 
   const handleResetApp = () => {
@@ -374,6 +415,7 @@ export const useSettingsManager = () => {
     
     // Data functions
     handleExportData,
+    handleImportData,
     handleResetApp,
     handlePrivacyPolicy,
     showDebugInfo,

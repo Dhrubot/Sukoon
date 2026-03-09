@@ -36,7 +36,7 @@ interface OnboardingScreenProps {
 }
 
 type NotificationIntensity = 'gentle' | 'balanced' | 'persistent';
-type OnboardingStep = 'welcome' | 'name' | 'location' | 'notifications' | 'mosque' | 'method';
+type OnboardingStep = 'welcome' | 'location' | 'name' | 'notifications' | 'mosque' | 'method';
 
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   const { theme } = useTheme();
@@ -57,7 +57,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   const [isSubmittingManual, setIsSubmittingManual] = useState(false);
 
   // Phase 2: Notification intensity
-  const [notificationIntensity, setNotificationIntensity] = useState<NotificationIntensity>('balanced');
+  const [notificationIntensity, setNotificationIntensity] = useState<NotificationIntensity>('gentle');
 
   // Phase 3: Mosque mode
   const [enableMosqueModeOnboarding, setEnableMosqueModeOnboarding] = useState(false);
@@ -130,12 +130,12 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   const handleNext = () => {
     switch (currentStep) {
       case 'welcome':
-        setCurrentStep('name');
-        break;
-      case 'name':
         setCurrentStep('location');
         break;
       case 'location':
+        setCurrentStep('name');
+        break;
+      case 'name':
         setCurrentStep('notifications');
         break;
       case 'notifications':
@@ -524,7 +524,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   };
 
   const getProgress = () => {
-    const steps = ['welcome', 'name', 'location', 'notifications', 'mosque', 'method'];
+    const steps = ['welcome', 'location', 'name', 'notifications', 'mosque', 'method'];
     return (steps.indexOf(currentStep) + 1) / steps.length;
   };
 

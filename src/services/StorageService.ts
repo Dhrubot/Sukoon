@@ -589,6 +589,57 @@ class StorageService {
     return JSON.stringify(exportData, null, 2);
   }
 
+  // Import prayer data from a JSON string (produced by exportPrayerData)
+  importPrayerData(jsonString: string): { imported: number; skipped: number } {
+    const data = JSON.parse(jsonString);
+
+    // Validate basic structure
+    if (!data.exportDate || !data.prayers) {
+      throw new Error('Invalid export file — missing required fields');
+    }
+
+    let imported = 0;
+    let skipped = 0;
+
+    // Import prayer records (merge — don't overwrite existing 'prayed' records)
+    if (Array.isArray(data.prayers)) {
+      for (const day of data.prayers) {
+        if (!day.date || !Array.isArray(day.records)) continue;
+        for (const record of day.records) {
+          if (!record.prayer || !record.date) continue;
+          const existing = this.getPrayerRecord(record.date, record.prayer);
+          if (existing?.status === 'prayed') {
+            skipped++;
+            continue;
+          }
+          this.savePrayerRecord(record);
+          imported++;
+        }
+      }
+    }
+
+    // Recalculate daily stats for all imported dates
+    const importedDates = new Set<string>();
+    if (Array.isArray(data.prayers)) {
+      for (const day of data.prayers) {
+        if (day.date) importedDates.add(day.date);
+      }
+    }
+    for (const date of importedDates) {
+      this.updateDailyStats(date);
+    }
+
+    // Import dawam if higher than current
+    if (typeof data.currentDawam === 'number' && data.currentDawam > this.getCurrentDawam()) {
+      this.setDawam(data.currentDawam);
+    }
+    if (typeof data.longestDawam === 'number' && data.longestDawam > this.getLongestDawam()) {
+      this.publicStorage.set('longest_dawam', data.longestDawam);
+    }
+
+    return { imported, skipped };
+  }
+
   // Calculate prayer consistency percentage for a period
   getConsistencyPercentage(days: number): number {
     const endDate = new Date();

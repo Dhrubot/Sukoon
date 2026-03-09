@@ -40,7 +40,8 @@ const PrivacyPolicyScreen = () => {
           <Text style={styles.bulletPoint}>• App settings and preferences</Text>
           <Text style={styles.bulletPoint}>• Location data (city, country, coordinates)</Text>
           <Text style={styles.paragraph}>
-            Your data never leaves your device unless you explicitly choose to export it.
+            Your prayer data, reflections, and spiritual practice data never leave your device 
+            unless you explicitly choose to export it.
           </Text>
         </View>
 
@@ -95,19 +96,33 @@ const PrivacyPolicyScreen = () => {
             platform geocoding services (Apple/Google) to convert coordinates to city names. This is handled 
             by your device's operating system.
           </Text>
+          <Text style={styles.bulletPoint}>
+            • <Text style={styles.bold}>Firebase Analytics:</Text> We collect anonymous, non-religious 
+            interaction events (e.g., app opened, feature tapped) to improve the experience. No prayer 
+            times, streaks, reflections, or spiritual practice data are ever transmitted.
+          </Text>
+          <Text style={styles.bulletPoint}>
+            • <Text style={styles.bold}>Firebase Crashlytics:</Text> Automatic crash reports are sent to 
+            help us fix bugs. These contain device model, OS version, and stack traces — never your 
+            personal or spiritual data.
+          </Text>
+          <Text style={styles.bulletPoint}>
+            • <Text style={styles.bold}>Firebase Performance:</Text> Anonymous app performance metrics 
+            (startup time, network latency) help us keep Sukoon fast and responsive.
+          </Text>
         </View>
 
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Analytics & Tracking</Text>
           <Text style={styles.paragraph}>
-            <Text style={styles.bold}>We do not track you.</Text> Sukoon never sends your prayer history, 
-            reflections, or spiritual practice data to any server. Your worship patterns remain 
-            completely private on your device.
+            <Text style={styles.bold}>We do not track your worship.</Text> Sukoon never sends your prayer 
+            history, reflections, streaks, or spiritual practice data to any server. Your worship 
+            patterns remain completely private on your device.
           </Text>
           <Text style={styles.paragraph}>
-            Sukoon collects only anonymous, non-religious interaction events (e.g., app opened, 
-            feature tapped) to improve the experience. No prayer times, streaks, or personal data 
-            are ever transmitted.
+            Sukoon uses Firebase Analytics, Crashlytics, and Performance Monitoring to collect anonymous, 
+            non-religious interaction events (e.g., app opened, feature tapped), crash reports, and 
+            performance metrics. These services never receive your prayer data or personal information.
           </Text>
         </View>
 

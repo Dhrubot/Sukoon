@@ -112,9 +112,9 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
 
   const getButtonText = (): string => {
     if (isAlreadyPrayed) return 'Already Prayed';
-    if (isJummah) return "Prepare for Jumu'ah";
-    if (!isTimeEntered) return 'Prepare For Prayer';
-    return 'Prepare for Prayer';
+    if (isJummah) return "I Prayed Jumu'ah";
+    if (!isTimeEntered) return 'I Prayed';
+    return 'I Prayed';
   };
 
   const getPrayerGradient = (): readonly [string, string, string] => {
