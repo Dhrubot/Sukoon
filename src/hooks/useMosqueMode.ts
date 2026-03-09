@@ -6,7 +6,8 @@ import AnalyticsService from '../services/AnalyticsService';
 import { PrayerTime, PrayerName, MosqueModeSettings } from '../types';
 
 export const useMosqueMode = () => {
-  const { userSettings, setUserSettings } = useStore();
+  const userSettings = useStore((s) => s.userSettings);
+  const updateUserSettings = useStore((s) => s.updateUserSettings);
   const [isActive, setIsActive] = useState(false);
   const [activeState, setActiveState] = useState<{
     prayer: PrayerName;
@@ -14,79 +15,51 @@ export const useMosqueMode = () => {
     restoreTime: Date;
   } | null>(null);
 
-  // Check if mosque mode is currently active
-  useEffect(() => {
-    const checkActive = () => {
-      const active = MosqueModeService.getActiveMosqueMode();
-      setActiveState(active);
-      setIsActive(MosqueModeService.isCurrentlyActive());
-    };
+  // Shared clock from PrayerTimesProvider's single 60s tick
+  const currentTime = useStore((s) => s.currentTime);
 
-    checkActive();
-    
-    // Check every minute
-    const interval = setInterval(checkActive, 60000);
-    return () => clearInterval(interval);
-  }, []);
+  // Re-evaluate mosque mode state whenever the shared clock ticks
+  useEffect(() => {
+    const active = MosqueModeService.getActiveMosqueMode();
+    setActiveState(active);
+    setIsActive(MosqueModeService.isCurrentlyActive());
+  }, [currentTime]);
 
   // Enable mosque mode
   const enableMosqueMode = useCallback(async (enabled: boolean) => {
-    if (!userSettings) return;
-
-    const updated = {
-      ...userSettings,
-      mosqueMode: {
-        ...userSettings.mosqueMode,
-        enabled,
-      },
-    };
-
-    setUserSettings(updated);
+    updateUserSettings({ mosqueMode: { enabled } as any });
 
     if (enabled) {
       AnalyticsService.logEvent('mosque_mode_activated');
     } else {
       AnalyticsService.logEvent('mosque_mode_deactivated');
     }
-  }, [userSettings, setUserSettings]);
+  }, [updateUserSettings]);
 
   // Update iqamah offset for a prayer
   const setIqamahOffset = useCallback(
     async (prayer: PrayerName, minutes: number) => {
-      if (!userSettings) return;
+      const current = useStore.getState().userSettings;
+      if (!current) return;
 
-      const updated = {
-        ...userSettings,
+      updateUserSettings({
         mosqueMode: {
-          ...userSettings.mosqueMode,
           iqamahOffsets: {
-            ...userSettings.mosqueMode.iqamahOffsets,
+            ...current.mosqueMode.iqamahOffsets,
             [prayer]: minutes,
           },
-        },
-      };
-
-      setUserSettings(updated);
+        } as any,
+      });
     },
-    [userSettings, setUserSettings]
+    [updateUserSettings]
   );
 
   // Update mosque mode settings
   const updateMosqueModeSettings = useCallback(
     async (updates: Partial<MosqueModeSettings>) => {
-      if (!userSettings) return;
-
-      const updated = {
-        ...userSettings,
-        mosqueMode: {
-          ...userSettings.mosqueMode,
-          ...updates,
-        },
-      };
-
-      setUserSettings(updated);
+      updateUserSettings({ mosqueMode: updates as any });
     },
-    [userSettings, setUserSettings]
+    [updateUserSettings]
   );
 
   // Schedule silent mode for a prayer

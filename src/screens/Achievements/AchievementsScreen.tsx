@@ -13,6 +13,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useStore } from '../../store/useStore';
 import StorageService from '../../services/StorageService';
 import AchievementService from '../../services/AchievementService';
+import logger from '../../utils/logger';
 import { Achievement } from '../../types';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
@@ -73,7 +74,7 @@ const AchievementsScreen: React.FC = () => {
         setAllAchievements(refreshedMerged);
       }
     } catch (error) {
-      console.error('Error loading achievements:', error);
+      logger.error('Error loading achievements:', error);
     } finally {
       setIsLoading(false);
     }

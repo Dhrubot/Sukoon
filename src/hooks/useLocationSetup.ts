@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Alert } from 'react-native';
 import LocationService from '../services/LocationService';
 import { useStore } from '../store/useStore';
+import logger from '../utils/logger';
 
 export const useLocationSetup = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -25,12 +26,12 @@ export const useLocationSetup = () => {
     setError('');
 
     try {
-      console.log('📍 Getting GPS location...');
+      logger.log('📍 Getting GPS location...');
       
       const location = await LocationService.getCurrentLocation();
       
       if (location) {
-        console.log('✅ GPS location obtained:', {
+        logger.log('✅ GPS location obtained:', {
           city: location.city,
           country: location.country
         });
@@ -51,7 +52,7 @@ export const useLocationSetup = () => {
         throw new Error('Could not get your location');
       }
     } catch (error) {
-      console.error('❌ GPS location failed:', error);
+      logger.error('❌ GPS location failed:', error);
       
       const errorMessage = error instanceof Error ? error.message : 'Failed to get location';
       setError(errorMessage);
@@ -90,12 +91,12 @@ export const useLocationSetup = () => {
     setError('');
 
     try {
-      console.log('🔍 Setting manual location:', { city: city.trim(), country: country.trim() });
+      logger.log('🔍 Setting manual location:', { city: city.trim(), country: country.trim() });
       
       const location = await LocationService.setLocationByAddress(city.trim(), country.trim());
 
       if (location) {
-        console.log('✅ Manual location set successfully');
+        logger.log('✅ Manual location set successfully');
         
         // 🎯 AUTOMATIC: Prayer times refresh through your architecture
         Alert.alert(
@@ -111,7 +112,7 @@ export const useLocationSetup = () => {
         throw new Error('Location not found');
       }
     } catch (error) {
-      console.error('❌ Manual location failed:', error);
+      logger.error('❌ Manual location failed:', error);
       
       const errorMessage = error instanceof Error ? error.message : 'Could not find this location';
       setError(errorMessage);
@@ -147,12 +148,12 @@ export const useLocationSetup = () => {
     setError('');
 
     try {
-      console.log('🔍 Setting location by postal code:', { postalCode: postalCode.trim(), country: country.trim() });
+      logger.log('🔍 Setting location by postal code:', { postalCode: postalCode.trim(), country: country.trim() });
       
       const location = await LocationService.setLocationByPostalCode(postalCode.trim(), country.trim());
 
       if (location) {
-        console.log('✅ Postal code location set successfully');
+        logger.log('✅ Postal code location set successfully');
         
         // 🎯 AUTOMATIC: Prayer times refresh through your architecture
         Alert.alert(
@@ -168,7 +169,7 @@ export const useLocationSetup = () => {
         throw new Error('Postal code not found');
       }
     } catch (error) {
-      console.error('❌ Postal code location failed:', error);
+      logger.error('❌ Postal code location failed:', error);
       
       const errorMessage = error instanceof Error ? error.message : 'Could not find this postal code';
       setError(errorMessage);
@@ -192,7 +193,7 @@ export const useLocationSetup = () => {
       setIsGpsAvailable(hasPermission && servicesEnabled);
       return hasPermission && servicesEnabled;
     } catch (error) {
-      console.error('❌ Error checking GPS availability:', error);
+      logger.error('❌ Error checking GPS availability:', error);
       setIsGpsAvailable(false);
       return false;
     }

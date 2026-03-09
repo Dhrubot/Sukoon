@@ -59,6 +59,10 @@ interface AppState {
   celebratingAchievement: Achievement | null;
   setCelebratingAchievement: (achievement: Achievement | null) => void;
   
+  // Shared clock — single 60s tick updated by PrayerTimesProvider
+  currentTime: Date;
+  setCurrentTime: (time: Date) => void;
+
   // UI State
   isRefreshing: boolean;
   setIsRefreshing: (refreshing: boolean) => void;
@@ -162,6 +166,10 @@ export const useStore = create<AppState>((set) => ({
   celebratingAchievement: null,
   setCelebratingAchievement: (achievement) => set({ celebratingAchievement: achievement }),
   
+  // Shared clock
+  currentTime: new Date(),
+  setCurrentTime: (time) => set({ currentTime: time }),
+
   // UI State
   isRefreshing: false,
   setIsRefreshing: (refreshing) => set({ isRefreshing: refreshing }),

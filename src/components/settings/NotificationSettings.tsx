@@ -20,6 +20,7 @@ import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import { applyIntensityPreset, NotificationIntensity } from '../../utils/notificationPresets';
+import logger from '../../utils/logger';
 
 interface NotificationSettingsProps {
   userSettings: UserSettings;
@@ -100,7 +101,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
-      console.error('Failed to update notification settings:', error);
+      logger.error('Failed to update notification settings:', error);
       Alert.alert('Error', 'Failed to update notification settings');
     } finally {
       setIsUpdating(false);
@@ -129,7 +130,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
       await NotificationService.scheduleAllPrayerNotifications();
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
-      console.error('Failed to update intensity settings:', error);
+      logger.error('Failed to update intensity settings:', error);
       Alert.alert('Error', 'Failed to update reminder intensity');
     } finally {
       setIsUpdating(false);

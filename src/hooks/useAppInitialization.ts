@@ -44,6 +44,9 @@ export const useAppInitialization = () => {
       // 🔐 Initialize secure encryption key first (before any storage access)
       await initializeEncryptionKey();
 
+      // Create encrypted MMKV now that the key is ready
+      await StorageService.initialize();
+
       // Check if first launch
       const firstLaunch = StorageService.isFirstLaunch();
 

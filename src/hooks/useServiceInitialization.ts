@@ -19,6 +19,7 @@ import RamadanCountdownService from '../services/RamadanCountdownService';
 import JummahNotificationService from '../services/JummahNotificationService';
 import EidNotificationService from '../services/EidNotificationService';
 import PerformanceService from '../services/PerformanceService';
+import logger from '../utils/logger';
 
 export const useServiceInitialization = () => {
   const { todayPrayerTimes, nextPrayer, isLoading, hasValidLocation } =
@@ -29,7 +30,7 @@ export const useServiceInitialization = () => {
   // 🔄 Initialize all services once on mount
   useEffect(() => {
     const initializeServices = async () => {
-      console.log("🚀 Initializing services...");
+      logger.log("🚀 Initializing services...");
       const stopTrace = await PerformanceService.startTrace('service_initialization');
 
       try {
@@ -48,22 +49,22 @@ export const useServiceInitialization = () => {
             });
           }
         } catch (error) {
-          console.warn('⚠️ Failed to register background notification rescheduler:', error);
+          logger.warn('⚠️ Failed to register background notification rescheduler:', error);
         }
 
         AnalyticsService.logEvent('app_open');
         await stopTrace();
-        console.log("✅ All core services initialized");
+        logger.log("✅ All core services initialized");
       } catch (error) {
         await stopTrace();
-        console.error("❌ Error initializing services:", error);
+        logger.error("❌ Error initializing services:", error);
       }
     };
 
     initializeServices();
 
     return () => {
-      console.log("🧹 Cleaning up services...");
+      logger.log("🧹 Cleaning up services...");
       SubscriptionService.cleanup();
       AdService.cleanup();
       DonationService.cleanup();
@@ -71,16 +72,8 @@ export const useServiceInitialization = () => {
     };
   }, []);
 
-  // 📡 Connect NotificationService to prayer times
+  // 📡 Connect NotificationService prayer times fetcher (pure function, no closure over React state)
   useEffect(() => {
-    const prayerTimesSource = {
-      getTodayPrayerTimes: () => todayPrayerTimes,
-      getNextPrayer: () => nextPrayer,
-      isLoading: () => isLoading,
-      hasValidLocation: () => hasValidLocation,
-    };
-
-    NotificationService.setPrayerTimesSource(prayerTimesSource);
     NotificationService.setPrayerTimesFetcher(async ({ location, date, calculationMethod, adjustments, asrJuristic }) => {
       return PrayerTimeService.getPrayerTimesList(
         location as any,
@@ -90,8 +83,8 @@ export const useServiceInitialization = () => {
         (asrJuristic as any) || 'Standard'
       );
     });
-    console.log("🔗 NotificationService connected to centralized prayer times");
-  }, [todayPrayerTimes, nextPrayer, isLoading, hasValidLocation]);
+    logger.log("🔗 NotificationService fetcher connected");
+  }, []);
 
   // ⏰ Schedule prayer notifications if conditions are met
   useEffect(() => {
@@ -102,7 +95,7 @@ export const useServiceInitialization = () => {
       todayPrayerTimes.length > 0;
 
     if (shouldSchedule) {
-      console.log("📅 Scheduling prayer notifications...");
+      logger.log("📅 Scheduling prayer notifications...");
       NotificationService.scheduleAllPrayerNotifications();
     }
   }, [
@@ -121,24 +114,24 @@ export const useServiceInitialization = () => {
     const locationCallback = {
       onLocationUpdate: async (location: Location) => {
         try {
-          console.log(
+          logger.log(
             "📍 Location updated, updating store states and triggering prayer time refresh..."
           );
           setLocation(location);
           updateUserSettings({ location });
           // PrayerTimesProvider will react to location change automatically
         } catch (error) {
-          console.error("❌ Error handling location update:", error);
+          logger.error("❌ Error handling location update:", error);
         }
       },
     };
 
     LocationService.registerLocationUpdateCallback(locationCallback);
-    console.log("🧭 LocationService callback registered");
+    logger.log("🧭 LocationService callback registered");
 
     return () => {
       LocationService.unregisterLocationUpdateCallback(locationCallback);
-      console.log("🧹 LocationService callback unregistered");
+      logger.log("🧹 LocationService callback unregistered");
     };
   }, [setLocation, updateUserSettings]);
 

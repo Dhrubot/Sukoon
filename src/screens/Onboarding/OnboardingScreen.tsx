@@ -23,6 +23,7 @@ import * as Notifications from 'expo-notifications';
 
 import StorageService from '../../services/StorageService';
 import { useStore } from '../../store/useStore';
+import logger from '../../utils/logger';
 import { CalculationMethod, CALCULATION_METHODS } from '../../types';
 import LocationService from '../../services/LocationService';
 import RingerControlService from '../../services/RingerControlService';
@@ -165,7 +166,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
         setLocationFailed(true);
       }
     } catch (error) {
-      console.log('Onboarding location error:', error);
+      logger.log('Onboarding location error:', error);
       setIsLocating(false);
       setLocationFailed(true);
     }
@@ -212,7 +213,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
         setIsNotificationEnabled(false);
       }
     } catch (error) {
-      console.log('Error requesting notification permissions:', error);
+      logger.log('Error requesting notification permissions:', error);
       setIsNotificationEnabled(false);
     } finally {
       // Move to next step regardless of outcome

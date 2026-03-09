@@ -16,30 +16,48 @@ import {
   HabitBuilderSettings,
   MosqueModeSettings,
 } from "../types";
-import { createStorage, createUnencryptedStorage } from "./StorageAdapter";
+import { createStorage, createUnencryptedStorage, MemoryStorage } from "./StorageAdapter";
 import { PRAYER_NAMES as PrayerName } from "../constants";
 import AnalyticsService from './AnalyticsService';
 import { getLocalDateKey } from '../utils/dateHelpers';
+import logger from '../utils/logger';
 
 class StorageService {
   // Encrypted storage for PII: user_settings, user_id, subscription,
   // premium, donations, family, onboarding, reflections, mindfulness
-  private storage;
+  private storage: ReturnType<typeof createStorage>;
   // Unencrypted storage for non-PII high-frequency data: prayer records,
   // daily stats, counters, dawam, achievements, reminder states, cached data
-  private publicStorage;
+  private publicStorage: ReturnType<typeof createUnencryptedStorage>;
   private _cachedUserSettings: UserSettings | null = null;
   private _splitMigrationDone = false;
+  private _initialized = false;
 
   constructor() {
-    // 🔐 Encryption key is now managed by secureKeyManager
-    // The key is stored in device Keychain (iOS) / Keystore (Android)
-    this.storage = createStorage({
-      id: "prayer-buddy-storage",
-    });
+    // Unencrypted public storage is safe to create immediately (no key needed)
     this.publicStorage = createUnencryptedStorage({
       id: "prayer-buddy-public",
     });
+    // 🔐 Encrypted storage deferred to initialize() — use MemoryStorage placeholder
+    // until the real encryption key is loaded from SecureStore.
+    this.storage = new MemoryStorage() as any;
+  }
+
+  /**
+   * Create the real encrypted MMKV instance.
+   * Must be called after initializeEncryptionKey() has populated the cached key.
+   */
+  async initialize(): Promise<void> {
+    if (this._initialized) return;
+    this.storage = createStorage({ id: "prayer-buddy-storage" });
+    this._initialized = true;
+    logger.log('✅ StorageService initialized with secure encryption');
+  }
+
+  private _ensureInitialized(): void {
+    if (__DEV__ && !this._initialized) {
+      logger.warn('⚠️ StorageService.storage accessed before initialize()');
+    }
   }
 
   // One-time migration: move non-PII keys from encrypted → unencrypted storage
@@ -104,15 +122,16 @@ class StorageService {
       this.publicStorage.set('storage_split_migrated', true);
 
       if (migrated > 0) {
-        console.log(`🔀 Migrated ${migrated} keys to unencrypted storage`);
+        logger.log(`🔀 Migrated ${migrated} keys to unencrypted storage`);
       }
     } catch (error) {
-      console.error('⚠️ Split storage migration failed:', error);
+      logger.error('⚠️ Split storage migration failed:', error);
     }
   }
 
   // User Settings (with in-memory write-through cache)
   getUserSettings(): UserSettings | null {
+    this._ensureInitialized();
     if (this._cachedUserSettings) return this._cachedUserSettings;
     const data = this.storage.getString("user_settings");
     const parsed = data ? JSON.parse(data) : null;
@@ -121,6 +140,7 @@ class StorageService {
   }
 
   setUserSettings(settings: UserSettings): void {
+    this._ensureInitialized();
     this._cachedUserSettings = settings;
     this.storage.set("user_settings", JSON.stringify(settings));
   }
@@ -1252,7 +1272,7 @@ class StorageService {
     this.publicStorage.set('last_prune_date', today);
 
     if (prunedKeys > 0) {
-      console.log(`🧹 Pruned ${prunedKeys} old storage keys (retention: ${retentionDays} days)`);
+      logger.log(`🧹 Pruned ${prunedKeys} old storage keys (retention: ${retentionDays} days)`);
     }
 
     return { prunedKeys };
@@ -1260,6 +1280,7 @@ class StorageService {
 
   // Clear all data
   clearAllData(): void {
+    this._ensureInitialized();
     this._cachedUserSettings = null;
     this.storage.clearAll();
     this.publicStorage.clearAll();

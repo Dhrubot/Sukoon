@@ -16,6 +16,7 @@ import {
   stageIndex,
 } from '../constants/tubaTree';
 import { createStorage } from './StorageAdapter';
+import logger from '../utils/logger';
 
 const MMKV_KEY = 'treeGrowthState';
 
@@ -80,7 +81,7 @@ class TreeGrowthStateService {
     this.persist(state);
 
     if (__DEV__) {
-      console.log(`[TreeGrowthState] recordReflection: ${prayer}, mood=${mood}, total=${state.totalLifetimeReflections}, g=${state.g.toFixed(3)}, stage=${state.stage}`);
+      logger.log(`[TreeGrowthState] recordReflection: ${prayer}, mood=${mood}, total=${state.totalLifetimeReflections}, g=${state.g.toFixed(3)}, stage=${state.stage}`);
     }
 
     return state;
@@ -121,8 +122,8 @@ class TreeGrowthStateService {
     this.persist(state);
 
     if (__DEV__) {
-      console.log(`[TreeGrowthState] bootstrapped from ${plants.length} plants: g=${state.g.toFixed(3)}, stage=${state.stage}`);
-      console.log(`  branches:`, state.branchLifetimeLeaves);
+      logger.log(`[TreeGrowthState] bootstrapped from ${plants.length} plants: g=${state.g.toFixed(3)}, stage=${state.stage}`);
+      logger.log(`  branches:`, state.branchLifetimeLeaves);
     }
 
     return state;
@@ -134,7 +135,7 @@ class TreeGrowthStateService {
   private migrate(old: any): TreeGrowthState {
     // v1 is the only version for now — just return defaults if schema is unknown
     if (__DEV__) {
-      console.warn(`[TreeGrowthState] Unknown version ${old.version}, resetting to defaults`);
+      logger.warn(`[TreeGrowthState] Unknown version ${old.version}, resetting to defaults`);
     }
     return { ...DEFAULT_TREE_GROWTH_STATE, lastUpdated: new Date().toISOString() };
   }
@@ -150,14 +151,14 @@ class TreeGrowthStateService {
   devSetState(state: TreeGrowthState): void {
     if (!__DEV__) return;
     this.persist(state);
-    console.log(`[TreeGrowthState] DEV override: total=${state.totalLifetimeReflections}, g=${state.g.toFixed(3)}, stage=${state.stage}`);
+    logger.log(`[TreeGrowthState] DEV override: total=${state.totalLifetimeReflections}, g=${state.g.toFixed(3)}, stage=${state.stage}`);
   }
 
   /** @internal Clears MMKV state — DEV only */
   devReset(): void {
     if (!__DEV__) return;
     this.storage.remove(MMKV_KEY);
-    console.log('[TreeGrowthState] DEV reset — state cleared');
+    logger.log('[TreeGrowthState] DEV reset — state cleared');
   }
 }
 

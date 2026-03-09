@@ -3,6 +3,7 @@ import { useState, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 import ReflectionGardenService from '../services/ReflectionGardenService';
 import { GardenData } from '../types/garden';
+import logger from '../utils/logger';
 
 const EMPTY_GARDEN: GardenData = {
   plants: [],
@@ -24,7 +25,7 @@ export const useReflectionGarden = (days: number = 28) => {
         const data = ReflectionGardenService.getGardenData(days);
         setGardenData(data);
       } catch (error) {
-        console.error('Error loading garden data:', error);
+        logger.error('Error loading garden data:', error);
       } finally {
         setIsLoading(false);
       }

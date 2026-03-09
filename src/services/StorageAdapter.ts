@@ -2,9 +2,10 @@
 import { Platform } from 'react-native';
 import { createMMKV, MMKV } from 'react-native-mmkv';
 import { getCachedEncryptionKey } from '../utils/secureKeyManager';
+import logger from '../utils/logger';
 
 // 1. Simple In-Memory Storage for fallback (Data is lost on app restart, but app won't crash)
-class MemoryStorage {
+export class MemoryStorage {
   private storage = new Map<string, string>();
 
   getString(key: string) { 
@@ -91,7 +92,7 @@ class WebStorage {
 // 2. Factory function for creating encrypted storage instances (PII data)
 export function createStorage(options: { id: string; encryptionKey?: string }): MMKV | MemoryStorage | WebStorage {
   if (Platform.OS === 'web') {
-    console.log('🌐 Using WebStorage for web platform');
+    logger.log('🌐 Using WebStorage for web platform');
     return new WebStorage(options);
   }
 
@@ -106,11 +107,11 @@ export function createStorage(options: { id: string; encryptionKey?: string }): 
       encryptionKey: secureKey,
     });
     
-    console.log('✅ MMKV initialized with secure encryption key');
+    logger.log('✅ MMKV initialized with secure encryption key');
     return storage;
   } catch (error) {
     // 3. Safe Fallback
-    console.error('⚠️ MMKV failed to load. Using in-memory storage fallback.', error);
+    logger.error('⚠️ MMKV failed to load. Using in-memory storage fallback.', error);
     return new MemoryStorage();
   }
 }
@@ -124,10 +125,10 @@ export function createUnencryptedStorage(options: { id: string }): MMKV | Memory
 
   try {
     const storage = createMMKV({ id: options.id });
-    console.log('✅ Unencrypted MMKV initialized:', options.id);
+    logger.log('✅ Unencrypted MMKV initialized:', options.id);
     return storage;
   } catch (error) {
-    console.error('⚠️ Unencrypted MMKV failed. Using in-memory fallback.', error);
+    logger.error('⚠️ Unencrypted MMKV failed. Using in-memory fallback.', error);
     return new MemoryStorage();
   }
 }

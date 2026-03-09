@@ -28,9 +28,9 @@ export const AboutSection: React.FC<AboutSectionProps> = ({
         onPress={onShowDebugInfo}
       />
     )}
-    <Text style={styles.aboutText}>
+    {/* <Text style={styles.aboutText}>
       Sukoon is an app built for the Muslim community
-    </Text>
+    </Text> */}
   </SettingSection>
   );
 };

@@ -10,6 +10,8 @@ import {
   ColorValue,
   ActivityIndicator,
   AppState,
+  NativeScrollEvent,
+  NativeSyntheticEvent,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -94,8 +96,10 @@ const HomeScreen = ({ navigation }: any) => {
   const [mosquePromptPrayer, setMosquePromptPrayer] = useState<PrayerTime | null>(null);
   const [dismissedMosquePrompts, setDismissedMosquePrompts] = useState<Set<string>>(new Set());
 
+  // Shared clock from PrayerTimesProvider's single 60s tick
+  const currentTime = useStore((s) => s.currentTime);
+
   // Local state for UI features
-  const [currentTime, setCurrentTime] = useState(new Date());
   const [focusExpanded, setFocusExpanded] = useState(false);
   const [moonSightingEvent, setMoonSightingEvent] = useState<MoonSightingEvent | null>(null);
   const [hijriNudge, setHijriNudge] = useState<HijriNudgeEvent | null>(null);
@@ -188,41 +192,17 @@ const HomeScreen = ({ navigation }: any) => {
   // 🎯 REMOVED: location checks - now handled by provider!
   // 🎯 REMOVED: prayer time error handling - now handled by provider!
 
-  // AppState-aware timer: pause on background, immediate sync on foreground
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
+  // Load records on mount + reload on foreground
   useEffect(() => {
-    // Only load non-prayer-time related data
     loadTodayRecords();
-
-    const startTimer = () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      timerRef.current = setInterval(() => {
-        setCurrentTime(new Date());
-      }, 60000);
-    };
-
-    startTimer();
 
     const subscription = AppState.addEventListener('change', (nextState) => {
       if (nextState === 'active') {
-        // Immediately sync stale time and restart interval
-        setCurrentTime(new Date());
         loadTodayRecords();
-        startTimer();
-      } else {
-        // Pause interval when backgrounded/inactive
-        if (timerRef.current) {
-          clearInterval(timerRef.current);
-          timerRef.current = null;
-        }
       }
     });
 
-    return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
-      subscription.remove();
-    };
+    return () => subscription.remove();
   }, []);
 
   // Check for moon sighting prompt — gates on Maghrib time for eve dates
@@ -568,6 +548,13 @@ const HomeScreen = ({ navigation }: any) => {
     return `Peace be upon you, ${name}`;
   };
 
+  // Re-lock focus mode when user scrolls back to top
+  const handleScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+    if (focusExpanded && isFocusMode && e.nativeEvent.contentOffset.y <= 20) {
+      setFocusExpanded(false);
+    }
+  };
+
   // 🎯 NEW: Handle invalid location state
   if (!hasValidLocation) {
     return (
@@ -627,6 +614,8 @@ const HomeScreen = ({ navigation }: any) => {
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         bounces={false}
+        onMomentumScrollEnd={handleScrollEnd}
+        onScrollEndDrag={handleScrollEnd}
       >
         {/* 1a: SanctuaryView — full-screen next prayer hero (always rendered) */}
         {heroPrayer && (
@@ -658,10 +647,10 @@ const HomeScreen = ({ navigation }: any) => {
             <Text style={styles.focusRevealText}>See today's prayers ↓</Text>
           </TouchableOpacity>
         )}
+        {(!isFocusMode || focusExpanded) && (
         <View style={[
           styles.secondaryContent,
           { backgroundColor: theme.colors.background.primary },
-          isFocusMode && !focusExpanded && styles.secondaryContentHidden,
         ]}>
           {/* Offline Banner */}
           {isOffline && (
@@ -723,6 +712,7 @@ const HomeScreen = ({ navigation }: any) => {
           {/* Bottom spacing */}
           <View style={{ height: 40 }} />
         </View>
+        )}
       </ScrollView>
 
       {/* 4c: Mosque mode activation overlay */}
@@ -806,9 +796,6 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.text.muted,
     fontFamily: theme.typography.fontFamily.bodyMedium,
-  },
-  secondaryContentHidden: {
-    display: 'none',
   },
   header: {
     paddingHorizontal: theme.spacing.xl,

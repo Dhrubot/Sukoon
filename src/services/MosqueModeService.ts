@@ -6,6 +6,7 @@ import { format, addMinutes } from 'date-fns';
 import StorageService from './StorageService';
 import RingerControlService from './RingerControlService';
 import { PrayerName, PrayerTime } from '../types';
+import logger from '../utils/logger';
 
 // Storage keys for mosque mode state
 const STORAGE_KEYS = {
@@ -79,19 +80,19 @@ class MosqueModeService {
     try {
       const settings = StorageService.getUserSettings();
       if (!settings?.mosqueMode?.enabled) {
-        console.log('📵 Mosque mode is disabled');
+        logger.log('📵 Mosque mode is disabled');
         return false;
       }
 
       const iqamahTime = this.getIqamahTime(prayer);
       if (!iqamahTime) {
-        console.log('⚠️ No iqamah time configured for', prayer.name);
+        logger.log('⚠️ No iqamah time configured for', prayer.name);
         return false;
       }
 
       const now = new Date();
       if (iqamahTime <= now) {
-        console.log('⏰ Iqamah time has already passed');
+        logger.log('⏰ Iqamah time has already passed');
         return false;
       }
 
@@ -116,13 +117,13 @@ class MosqueModeService {
         })
       );
 
-      console.log(
+      logger.log(
         `🕌 Mosque mode scheduled for ${prayer.name} at ${format(iqamahTime, 'h:mm a')}`
       );
 
       return true;
     } catch (error) {
-      console.error('❌ Failed to schedule mosque mode:', error);
+      logger.error('❌ Failed to schedule mosque mode:', error);
       return false;
     }
   }
@@ -169,7 +170,7 @@ class MosqueModeService {
 
       return scheduled;
     } catch (error) {
-      console.error('❌ Failed to schedule mosque mode test:', error);
+      logger.error('❌ Failed to schedule mosque mode test:', error);
       return false;
     }
   }
@@ -205,7 +206,7 @@ class MosqueModeService {
     );
 
     if (!scheduled) {
-      console.warn('⚠️ Mosque mode could not be scheduled (missing DND access?)');
+      logger.warn('⚠️ Mosque mode could not be scheduled (missing DND access?)');
     }
 
     const enableId = `mosque-enable-${prayer.name}-${format(iqamahTime, 'yyyy-MM-dd')}`;
@@ -217,7 +218,7 @@ class MosqueModeService {
     }
 
     if (await this.isIosBudgetExhausted()) {
-      console.log('🕌🚫 iOS cap reached, skipping mosque mode enable notification');
+      logger.log('🕌🚫 iOS cap reached, skipping mosque mode enable notification');
       return;
     }
 
@@ -270,7 +271,7 @@ class MosqueModeService {
       });
     }
 
-    console.log(
+    logger.log(
       `📱 Android: Mosque mode scheduled from ${format(iqamahTime, 'h:mm a')} to ${format(
         restoreTime,
         'h:mm a'
@@ -289,7 +290,7 @@ class MosqueModeService {
     const reminderTime = addMinutes(iqamahTime, -2);
     if (reminderTime > now) {
       if (await this.isIosBudgetExhausted()) {
-        console.log('🕌🚫 iOS cap reached, skipping mosque mode reminder');
+        logger.log('🕌🚫 iOS cap reached, skipping mosque mode reminder');
         return;
       }
 
@@ -314,7 +315,7 @@ class MosqueModeService {
         identifier: reminderId,
       });
 
-      console.log(`📱 iOS: Reminder scheduled for ${format(reminderTime, 'h:mm a')}`);
+      logger.log(`📱 iOS: Reminder scheduled for ${format(reminderTime, 'h:mm a')}`);
     }
 
     // Also schedule a notification at iqamah time as a last-chance reminder
@@ -353,14 +354,14 @@ class MosqueModeService {
         // Android: Best-effort fallback if alarms didn't run
         if (Platform.OS === 'android') {
           await RingerControlService.setRingerMode(mode || 'SILENT');
-          console.log(`🔇 ${mode} mode enabled for ${prayer} iqamah`);
+          logger.log(`🔇 ${mode} mode enabled for ${prayer} iqamah`);
         }
       } else if (type === 'mosque_mode_restore') {
         // Android: Restore previous ringer mode
         if (Platform.OS === 'android') {
           const modeToRestore = previousMode || 'NORMAL';
           await RingerControlService.setRingerMode(modeToRestore);
-          console.log(`🔊 Ringer restored to ${modeToRestore}`);
+          logger.log(`🔊 Ringer restored to ${modeToRestore}`);
         }
 
         // Clear active mosque mode
@@ -369,7 +370,7 @@ class MosqueModeService {
       // iOS mosque_mode_reminder / mosque_mode_iqamah — no programmatic action,
       // the notification itself is the reminder for the user to silence their phone.
     } catch (error) {
-      console.error('❌ Failed to handle mosque mode notification:', error);
+      logger.error('❌ Failed to handle mosque mode notification:', error);
     }
   }
 
@@ -404,9 +405,9 @@ class MosqueModeService {
         }
       }
 
-      console.log(`🚫 Mosque mode cancelled for ${prayer}`);
+      logger.log(`🚫 Mosque mode cancelled for ${prayer}`);
     } catch (error) {
-      console.error('❌ Failed to cancel mosque mode:', error);
+      logger.error('❌ Failed to cancel mosque mode:', error);
     }
   }
 
@@ -438,7 +439,7 @@ class MosqueModeService {
       if (promptTime <= now) continue;
 
       if (await this.isIosBudgetExhausted()) {
-        console.log('🕌🚫 iOS cap reached, skipping mosque mode prompts');
+        logger.log('🕌🚫 iOS cap reached, skipping mosque mode prompts');
         return;
       }
 
@@ -465,7 +466,7 @@ class MosqueModeService {
         identifier: promptId,
       });
 
-      console.log(`🕌 Mosque prompt scheduled for ${prayer.name} at ${format(promptTime, 'h:mm a')}`);
+      logger.log(`🕌 Mosque prompt scheduled for ${prayer.name} at ${format(promptTime, 'h:mm a')}`);
     }
   }
 
@@ -532,7 +533,7 @@ class MosqueModeService {
   async manuallyRestoreRinger(): Promise<boolean> {
     try {
       if (Platform.OS !== 'android') {
-        console.log('📱 Manual restore only available on Android');
+        logger.log('📱 Manual restore only available on Android');
         return false;
       }
 
@@ -542,10 +543,10 @@ class MosqueModeService {
       // Clear active state
       StorageService.setValue(STORAGE_KEYS.ACTIVE_MOSQUE_MODE, '');
 
-      console.log(`🔊 Ringer manually restored to ${previousMode}`);
+      logger.log(`🔊 Ringer manually restored to ${previousMode}`);
       return true;
     } catch (error) {
-      console.error('❌ Failed to manually restore ringer:', error);
+      logger.error('❌ Failed to manually restore ringer:', error);
       return false;
     }
   }

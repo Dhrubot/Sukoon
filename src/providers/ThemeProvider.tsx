@@ -3,6 +3,7 @@ import React, { createContext, useState, useContext, useEffect, ReactNode } from
 import { StatusBar, Appearance } from 'react-native';
 import { AppTheme, ThemeMode, createTheme } from '../theme';
 import StorageService from '../services/StorageService';
+import logger from '../utils/logger';
 
 interface ThemeContextType {
   theme: AppTheme;
@@ -55,7 +56,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         setThemeModeState(savedTheme);
       }
     } catch (error) {
-      console.error('Error loading theme preference:', error);
+      logger.error('Error loading theme preference:', error);
     }
   };
 
@@ -69,7 +70,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         });
       }
     } catch (error) {
-      console.error('Error saving theme preference:', error);
+      logger.error('Error saving theme preference:', error);
     }
   };
 

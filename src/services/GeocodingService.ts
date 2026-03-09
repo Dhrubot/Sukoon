@@ -1,4 +1,5 @@
 import { Coordinates, Location } from '../types';
+import logger from '../utils/logger';
 
 const NOMINATIM_API_BASE = 'https://nominatim.openstreetmap.org';
 const USER_AGENT = 'Sukoon'; // Nominatim requires a user agent
@@ -41,7 +42,7 @@ class GeocodingService {
       // Check cache first
       const cacheKey = `${query}-${countryCode || ''}`.toLowerCase();
       if (this.cachedLocations.has(cacheKey)) {
-        console.log('Returning cached location for:', query);
+        logger.log('Returning cached location for:', query);
         return this.cachedLocations.get(cacheKey)!;
       }
 
@@ -59,7 +60,7 @@ class GeocodingService {
       }
 
       // Call Nominatim API
-      console.log(`Geocoding "${query}" using Nominatim...`);
+      logger.log(`Geocoding "${query}" using Nominatim...`);
       const url = `${NOMINATIM_API_BASE}/search?${params.toString()}`;
       
       const response = await fetch(url, {
@@ -75,7 +76,7 @@ class GeocodingService {
       const data = await response.json() as NominatimResponse[];
       
       if (!data || data.length === 0) {
-        console.warn(`No location found for query: ${query}`);
+        logger.warn(`No location found for query: ${query}`);
         return null;
       }
 
@@ -102,10 +103,10 @@ class GeocodingService {
       // Cache the result
       this.cachedLocations.set(cacheKey, location);
       
-      console.log(`Geocoded "${query}" to:`, location);
+      logger.log(`Geocoded "${query}" to:`, location);
       return location;
     } catch (error) {
-      console.error('Error geocoding address:', error);
+      logger.error('Error geocoding address:', error);
       return null;
     }
   }
@@ -135,7 +136,7 @@ class GeocodingService {
       }
 
       // Call Nominatim API for reverse geocoding
-      console.log(`Reverse geocoding coordinates: ${latitude}, ${longitude}`);
+      logger.log(`Reverse geocoding coordinates: ${latitude}, ${longitude}`);
       const url = `${NOMINATIM_API_BASE}/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`;
       
       const response = await fetch(url, {
@@ -151,7 +152,7 @@ class GeocodingService {
       const result = await response.json() as NominatimResponse;
       
       if (!result) {
-        console.warn(`No address found for coordinates: ${latitude}, ${longitude}`);
+        logger.warn(`No address found for coordinates: ${latitude}, ${longitude}`);
         return null;
       }
 
@@ -178,7 +179,7 @@ class GeocodingService {
       
       return location;
     } catch (error) {
-      console.error('Error reverse geocoding:', error);
+      logger.error('Error reverse geocoding:', error);
       return null;
     }
   }

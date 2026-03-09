@@ -1,6 +1,7 @@
 // src/utils/secureKeyManager.ts
 import * as SecureStore from 'expo-secure-store';
 import { Platform } from 'react-native';
+import logger from './logger';
 
 const ENCRYPTION_KEY_STORAGE_KEY = 'sukoon_encryption_key';
 
@@ -36,7 +37,7 @@ function generateRandomKey(length: number = 32): string {
 export async function getOrCreateEncryptionKey(): Promise<string> {
   // Web platform doesn't support SecureStore - use a fixed key (less secure but functional)
   if (Platform.OS === 'web') {
-    console.log('🌐 Web platform: Using fallback encryption key');
+    logger.log('🌐 Web platform: Using fallback encryption key');
     return 'sukoon-web-encryption-key-v1';
   }
 
@@ -45,7 +46,7 @@ export async function getOrCreateEncryptionKey(): Promise<string> {
     const existingKey = await SecureStore.getItemAsync(ENCRYPTION_KEY_STORAGE_KEY);
     
     if (existingKey) {
-      console.log('🔐 Retrieved existing encryption key from secure storage');
+      logger.log('🔐 Retrieved existing encryption key from secure storage');
       return existingKey;
     }
 
@@ -56,10 +57,10 @@ export async function getOrCreateEncryptionKey(): Promise<string> {
       keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
     });
     
-    console.log('🔐 Generated and stored new encryption key in secure storage');
+    logger.log('🔐 Generated and stored new encryption key in secure storage');
     return newKey;
   } catch (error) {
-    console.error('⚠️ SecureStore error, using fallback key:', error);
+    logger.error('⚠️ SecureStore error, using fallback key:', error);
     // Fallback to a deterministic key based on app identifier
     // This is less secure but ensures the app doesn't crash
     return 'sukoon-fallback-encryption-key-v1';

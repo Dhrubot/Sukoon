@@ -18,6 +18,7 @@ import { AppTheme } from '../../theme';
 import { VERSES } from '../../constants';
 import { HADITH_COLLECTION, Hadith } from '../../constants/hadithCollection';
 import { isRamadan } from '../../utils/ramadan';
+import logger from '../../utils/logger';
 
 // Quran/Book Icon Component
 const QuranIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
@@ -155,7 +156,7 @@ const DailyVerse = forwardRef<DailyVerseRef, DailyVerseProps>(({ modalOnly }, re
         message: `${content.translation}\n\n${content.arabic}${narratorLine}\n\n- ${content.reference}\n\nShared via Sukoon`,
       });
     } catch (error) {
-      console.error('Error sharing:', error);
+      logger.error('Error sharing:', error);
     }
   };
 
