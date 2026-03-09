@@ -21,6 +21,7 @@ import JummahNotificationService from '../services/JummahNotificationService';
 import EidNotificationService from '../services/EidNotificationService';
 import PerformanceService from '../services/PerformanceService';
 import logger from '../utils/logger';
+import { SCHEDULING_DEBOUNCE_MS } from '../constants/time';
 
 export const useServiceInitialization = () => {
   const { todayPrayerTimes, nextPrayer, isLoading, hasValidLocation } =
@@ -87,11 +88,19 @@ export const useServiceInitialization = () => {
     logger.log("🔗 NotificationService fetcher connected");
   }, []);
 
-  // ⏰ Schedule prayer notifications if conditions are met
-  // Debounced: todayPrayerTimes.length changes twice on cold start
-  // (disk cache → API), so we wait 3s for it to stabilize.
+  // ⏰ Reschedule prayer notifications when SETTINGS change.
+  // Initial cold-start scheduling is handled by useNotificationRescheduler
+  // (in AppInitializer). This effect only fires on subsequent settings changes
+  // to avoid a double-schedule race on mount.
   const scheduleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isInitialMountRef = useRef(true);
   useEffect(() => {
+    // Skip the very first invocation (cold start) — useNotificationRescheduler owns that.
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      return;
+    }
+
     const shouldSchedule =
       hasValidLocation &&
       !isLoading &&
@@ -102,11 +111,11 @@ export const useServiceInitialization = () => {
       if (scheduleTimerRef.current) clearTimeout(scheduleTimerRef.current);
       scheduleTimerRef.current = setTimeout(() => {
         InteractionManager.runAfterInteractions(() => {
-          logger.log("📅 Scheduling prayer notifications...");
+          logger.log("📅 Settings changed — rescheduling prayer notifications...");
           NotificationService.scheduleAllPrayerNotifications();
         });
         scheduleTimerRef.current = null;
-      }, 3_000);
+      }, SCHEDULING_DEBOUNCE_MS);
     }
 
     return () => {

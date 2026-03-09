@@ -15,6 +15,7 @@ import { scheduleFullAdhan, cancelAllFullAdhans, stopFullAdhan } from './notific
 import { scheduleTier2PersistentReminders, scheduleTier3GracePeriodWarning } from './notifications/HabitBuilderNotifications';
 import { isValidCoordinates } from '../utils/locationValidation';
 import logger from '../utils/logger';
+import { captureNow } from '../constants/time';
 import AnalyticsService from './AnalyticsService';
 import { useStore } from '../store/useStore';
 
@@ -803,7 +804,7 @@ class NotificationService {
     });
 
     if (toCancel.length > 0) {
-      await Promise.all(toCancel.map(n => Notifications.cancelScheduledNotificationAsync(n.identifier)));
+      await Promise.allSettled(toCancel.map(n => Notifications.cancelScheduledNotificationAsync(n.identifier)));
     }
   }
 
@@ -828,7 +829,7 @@ class NotificationService {
     });
 
     if (prayerNotifications.length > 0) {
-      await Promise.all(
+      await Promise.allSettled(
         prayerNotifications.map(n => Notifications.cancelScheduledNotificationAsync(n.identifier))
       );
     }
@@ -849,9 +850,13 @@ class NotificationService {
       (notif) => notif.content.data?.prayerId === prayerId
     );
     if (toCancel.length > 0) {
-      await Promise.all(
+      const results = await Promise.allSettled(
         toCancel.map(n => Notifications.cancelScheduledNotificationAsync(n.identifier))
       );
+      const failed = results.filter(r => r.status === 'rejected').length;
+      if (failed > 0) {
+        logger.warn(`⚠️ ${failed}/${toCancel.length} notification cancellations failed for ${prayerId}`);
+      }
     }
     logger.log(`🗑️ Cancelled ${toCancel.length} notifications for ${prayerId}`);
   }
@@ -949,8 +954,9 @@ class NotificationService {
         ? { count: scheduled.length }
         : undefined;
 
-      const today = new Date();
-      const now = new Date();
+      // Single timestamp capture — prevents drift across async scheduling passes
+      const now = captureNow();
+      const today = now;
 
       const fetcher: PrayerTimesFetcher =
         this.prayerTimesFetcher ||
@@ -1016,6 +1022,8 @@ class NotificationService {
         }
       }
       await Promise.all(pass1Promises);
+      // Yield to JS thread between passes to avoid blocking UI
+      await new Promise(resolve => setTimeout(resolve, 0));
 
       // PASS 2: Pre-prayer — NOTIFICATION_LOWER_TIER_DAYS (2 days)
       const lowerDays = Math.min(NOTIFICATION_LOWER_TIER_DAYS, allDays.length);
@@ -1030,6 +1038,7 @@ class NotificationService {
         }
       }
       await Promise.all(pass2Promises);
+      await new Promise(resolve => setTimeout(resolve, 0));
 
       // PASS 3: Tier 3 (Grace period warnings) — 2 days
       if (settings.habitBuilder?.enabled) {
@@ -1050,6 +1059,7 @@ class NotificationService {
           }
         }
         await Promise.all(pass3Promises);
+        await new Promise(resolve => setTimeout(resolve, 0));
       }
 
       // PASS 4: Tier 2 (Persistent reminders) — 2 days, fills remaining budget
@@ -1071,6 +1081,7 @@ class NotificationService {
           }
         }
         await Promise.all(pass4Promises);
+        await new Promise(resolve => setTimeout(resolve, 0));
       }
 
       // PASS 5: Legacy post-prayer check — 2 days (for users without Habit Builder)
@@ -1086,6 +1097,7 @@ class NotificationService {
           }
         }
         await Promise.all(pass5Promises);
+        await new Promise(resolve => setTimeout(resolve, 0));
       }
 
       // PASS 6: Keep-alive notification at T+48h (self-renewing safety net)

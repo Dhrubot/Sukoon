@@ -21,6 +21,7 @@ import { PRAYER_NAMES as PrayerName } from "../constants";
 import AnalyticsService from './AnalyticsService';
 import { getLocalDateKey } from '../utils/dateHelpers';
 import logger from '../utils/logger';
+import { ONE_DAY_MS } from '../constants/time';
 
 class StorageService {
   // Encrypted storage for PII: user_settings, user_id, subscription,
@@ -54,9 +55,11 @@ class StorageService {
     logger.log('✅ StorageService initialized with secure encryption');
   }
 
+  private _preInitAccessLogged = false;
   private _ensureInitialized(): void {
-    if (__DEV__ && !this._initialized) {
-      logger.warn('⚠️ StorageService.storage accessed before initialize()');
+    if (!this._initialized && !this._preInitAccessLogged) {
+      this._preInitAccessLogged = true;
+      logger.warn('⚠️ StorageService.storage accessed before initialize() — reads will return empty data');
     }
   }
 
@@ -145,7 +148,9 @@ class StorageService {
     this.storage.set("user_settings", JSON.stringify(settings));
   }
 
-  updateUserSettings(updates: Partial<UserSettings>): void {
+  // Private: All external callers must go through useStore's updateUserSettings
+  // to ensure Zustand and StorageService stay in sync via write-through.
+  private updateUserSettings(updates: Partial<UserSettings>): void {
     const current = this.getUserSettings();
     if (!current) {
       this.setUserSettings(updates as UserSettings);
@@ -372,7 +377,7 @@ class StorageService {
   // "abstinence violation effect" where partial progress feels like failure.
   updateDawam(): void {
     const today = getLocalDateKey();
-    const yesterday = getLocalDateKey(new Date(Date.now() - 86400000));
+    const yesterday = getLocalDateKey(new Date(Date.now() - ONE_DAY_MS));
 
     const todayStats = this.getDailyStats(today);
     const yesterdayStats = this.getDailyStats(yesterday);

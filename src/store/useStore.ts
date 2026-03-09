@@ -90,7 +90,7 @@ export const useStore = create<AppState>((set) => ({
       if (!state.userSettings) return { userSettings: null };
 
       // Recursive deep merge capped at maxDepth to avoid infinite loops
-      const deepMerge = (target: any, source: any, depth: number = 0): any => {
+      const deepMerge = (target: Record<string, unknown>, source: Record<string, unknown>, depth: number = 0): Record<string, unknown> => {
         if (depth > 3) return source; // safety cap
         const result = { ...target };
         for (const key of Object.keys(source)) {
@@ -105,7 +105,7 @@ export const useStore = create<AppState>((set) => ({
             tgtVal !== null &&
             !Array.isArray(tgtVal)
           ) {
-            result[key] = deepMerge(tgtVal, srcVal, depth + 1);
+            result[key] = deepMerge(tgtVal as Record<string, unknown>, srcVal as Record<string, unknown>, depth + 1);
           } else {
             result[key] = srcVal;
           }
@@ -113,7 +113,10 @@ export const useStore = create<AppState>((set) => ({
         return result;
       };
 
-      const updated = deepMerge(state.userSettings, updates);
+      const updated = deepMerge(
+        state.userSettings as unknown as Record<string, unknown>,
+        updates as unknown as Record<string, unknown>
+      ) as unknown as UserSettings;
       StorageService.setUserSettings(updated);
       return { userSettings: updated };
     }),

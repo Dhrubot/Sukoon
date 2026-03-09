@@ -24,7 +24,6 @@ interface PrayerCardProps {
   record?: PrayerRecord;
   onComplete: () => void;
   onLongPress?: () => void;
-  currentTime: Date;
   nextPrayer?: PrayerTime | null; // Used to determine grace period
 }
 
@@ -35,9 +34,11 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
   record,
   onComplete,
   onLongPress,
-  currentTime,
   nextPrayer,
 }) => {
+  // Subscribe to shared clock to trigger re-renders on 60s tick
+  // (isPast/isFuture from date-fns use new Date() internally)
+  useStore((s) => s.currentTime);
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const userSettings = useUserSettings();
@@ -271,7 +272,6 @@ export default React.memo(PrayerCard, (prev, next) => {
     prev.record?.status === next.record?.status &&
     prev.record?.mindfulnessCompleted === next.record?.mindfulnessCompleted &&
     prev.record?.reflectionAdded === next.record?.reflectionAdded &&
-    prev.currentTime.getMinutes() === next.currentTime.getMinutes() &&
     prev.nextPrayer?.time?.getTime() === next.nextPrayer?.time?.getTime()
   );
 });

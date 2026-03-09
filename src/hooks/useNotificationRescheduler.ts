@@ -4,6 +4,8 @@ import { InteractionManager, NativeModules, Platform } from 'react-native';
 import { useAppStateChange } from './useAppStateChange';
 import NotificationService from '../services/NotificationService';
 import StorageService from '../services/StorageService';
+import LocationService from '../services/LocationService';
+import { useStore } from '../store/useStore';
 import logger from '../utils/logger';
 
 export const useNotificationRescheduler = () => {
@@ -48,6 +50,21 @@ export const useNotificationRescheduler = () => {
         logger.warn(`⏰ UTC offset changed (${savedOffset} → ${currentOffset}), forcing reschedule`);
         // Clear last run so maybeReschedule always fires
         StorageService.deleteValue('last_batch_schedule_date');
+
+        // Timezone changed — likely international travel. Refresh device location
+        // so prayer times are recalculated for the new region.
+        try {
+          const freshLocation = await LocationService.getCurrentLocation();
+          if (freshLocation) {
+            const { setLocation, updateUserSettings } = useStore.getState();
+            setLocation(freshLocation);
+            updateUserSettings({ location: freshLocation });
+            logger.log('📍 Location refreshed after timezone change');
+          }
+        } catch (locErr) {
+          logger.warn('⚠️ Failed to refresh location after timezone change:', locErr);
+          // Continue with reschedule using existing location
+        }
       }
 
       // Detect stale notification state (>48h without refresh)

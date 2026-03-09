@@ -49,7 +49,10 @@ import { PrayerTime, PrayerRecord, OptionalPrayerTime, PrayerName } from "../../
 import { isRamadan, getRamadanDay, isEidDay, getEidName, isTashreeqDays, getTashreeqDayLabel } from "../../utils/ramadan";
 import { getMoonSightingEvent, getDeferredMoonSightingEvent, getHijriNudgeEvent, getAutoDeduceEndOfMonthEvent, MoonSightingEvent, HijriNudgeEvent, AutoDeduceEvent } from "../../utils/moonSighting";
 import * as Haptics from "expo-haptics";
-import { useRoute } from "@react-navigation/native";
+import { useRoute, CompositeNavigationProp } from "@react-navigation/native";
+import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
+import { StackNavigationProp } from "@react-navigation/stack";
+import { TabParamList, RootStackParamList } from "../../types/navigation";
 import ReminderStateService from "../../services/ReminderStateService";
 import NotificationService from "../../services/NotificationService";
 import WidgetService from "../../services/WidgetService";
@@ -61,7 +64,12 @@ import { HERO_ADVANCE_MINUTES } from "../../constants/NotificationConstants";
 
 const { width } = Dimensions.get("window");
 
-const HomeScreen = ({ navigation }: any) => {
+type HomeScreenNavigationProp = CompositeNavigationProp<
+  BottomTabNavigationProp<TabParamList, 'Home'>,
+  StackNavigationProp<RootStackParamList>
+>;
+
+const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   
@@ -116,9 +124,11 @@ const HomeScreen = ({ navigation }: any) => {
   const { addPrayerRecord } = useStore();
 
   // Handle notification tap → auto-show QuickLogSheet
+  const VALID_PRAYER_NAMES_SET = useMemo(() => new Set(['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']), []);
   useEffect(() => {
-    const prayerName = route.params?.quickLogPrayer as PrayerName | undefined;
-    if (!prayerName || todayPrayerTimes.length === 0) return;
+    const rawParam = route.params?.quickLogPrayer;
+    if (!rawParam || !VALID_PRAYER_NAMES_SET.has(rawParam) || todayPrayerTimes.length === 0) return;
+    const prayerName = rawParam as PrayerName;
 
     const prayer = todayPrayerTimes.find(p => p.name === prayerName);
     const existing = todayPrayerRecords.find(r => r.prayer === prayerName);
@@ -659,10 +669,10 @@ const HomeScreen = ({ navigation }: any) => {
             <Text style={styles.focusRevealText}>See today's prayers ↓</Text>
           </TouchableOpacity>
         )}
-        {(!isFocusMode || focusExpanded) && (
         <View style={[
           styles.secondaryContent,
           { backgroundColor: theme.colors.background.primary },
+          (isFocusMode && !focusExpanded) && { display: 'none' },
         ]}>
           {/* Offline Banner */}
           {isOffline && (
@@ -720,7 +730,6 @@ const HomeScreen = ({ navigation }: any) => {
                     record={record} 
                     onComplete={() => handlePrayerComplete(prayer)}
                     onLongPress={() => handleQuickLogTrigger(prayer)}
-                    currentTime={currentTime}
                     nextPrayer={nextPrayerInList}
                   />
                 );
@@ -737,7 +746,6 @@ const HomeScreen = ({ navigation }: any) => {
           {/* Bottom spacing */}
           <View style={{ height: 40 }} />
         </View>
-        )}
       </ScrollView>
 
       {/* 4c: Mosque mode activation overlay */}

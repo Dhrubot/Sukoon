@@ -11,6 +11,7 @@ import WidgetService from '../services/WidgetService';
 import LiveActivityService from '../services/LiveActivityService';
 import StorageService from '../services/StorageService';
 import { getLocalDateKey } from '../utils/dateHelpers';
+import { ISHA_FALLBACK_DEADLINE_MS } from '../constants/time';
 
 interface PrayerTimesContextType {
   todayPrayerTimes: PrayerTime[];
@@ -110,7 +111,7 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
       ? tmrwFajr.time
       : midnight
         ? midnight
-        : new Date(lastPrayer.time.getTime() + 4 * 60 * 60 * 1000); // 4h fallback
+        : new Date(lastPrayer.time.getTime() + ISHA_FALLBACK_DEADLINE_MS);
     if (now < ishaAbsoluteDeadline) {
       logger.log('✅ Active prayer window (last):', lastPrayer.name);
       return { ...lastPrayer, isNext: true };
@@ -125,19 +126,16 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
     return null;
   };
 
-  // ⚠️ CLOSURE FRAGILITY: This function closes over `location`, `userSettings`,
-  // and `hasValidLocation` from the current render. When called from the
-  // useAppStateChange callback (day-boundary reload), these values reflect the
-  // render that last registered the callback — NOT necessarily the latest store
-  // state. This is safe today because:
-  //   1. The useEffect that calls loadPrayerTimes lists the relevant deps, so
-  //      React re-creates the closure whenever they change.
-  //   2. The AppState callback only calls loadPrayerTimes on day-boundary
-  //      crossings, and location/settings rarely change between renders.
-  // If you ever need truly fresh values inside a deferred or async call path,
-  // read directly from `useStore.getState()` instead of relying on the closure.
+  // 🔒 STALE-CLOSURE FIX: This function reads location/userSettings from
+  // useStore.getState() at call time — NOT from the render closure. This
+  // guarantees fresh values when called from the useAppStateChange callback
+  // (day-boundary reload after international travel, timezone change, etc.).
   const loadPrayerTimes = async () => {
-    if (!hasValidLocation || !userSettings) {
+    // Read fresh values from store at call time (not from closure)
+    const { location: freshLocation, userSettings: freshSettings } = useStore.getState();
+    const freshHasValidLocation = isValidCoordinates(freshLocation);
+
+    if (!freshHasValidLocation || !freshSettings) {
       logger.log('⏳ PrayerTimesProvider: Waiting for prerequisites');
       return;
     }
@@ -147,10 +145,10 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
     // Stale-while-revalidate: try disk cache for instant render before API call
     const today = new Date();
     const cached = PrayerTimeService.getCachedPrayerTimesFromDisk(
-      location,
+      freshLocation,
       today,
-      userSettings.calculationMethod,
-      userSettings.asrJuristic
+      freshSettings.calculationMethod,
+      freshSettings.asrJuristic
     );
 
     if (cached) {
@@ -159,7 +157,7 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
       const cachedPrayerTimes: PrayerTime[] = fardNames.map(name => {
         const timeStr = cached.times[name as keyof PrayerTimes];
         const prayerDate = PrayerTimeService.parseTimeToDate(timeStr, today);
-        const adj = userSettings.adjustments?.[name as keyof typeof userSettings.adjustments] || 0;
+        const adj = freshSettings.adjustments?.[name as keyof typeof freshSettings.adjustments] || 0;
         const adjusted = adj ? new Date(prayerDate.getTime() + adj * 60000) : prayerDate;
         return { name, time: adjusted, timestamp: adjusted.getTime(), isNext: false };
       });
@@ -193,11 +191,11 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
 
       // Load today's prayer times with sunrise/sunset
       const todayResult = await PrayerTimeService.getPrayerTimesList(
-        location,
+        freshLocation,
         today,
-        userSettings.calculationMethod,
-        userSettings.adjustments,
-        userSettings.asrJuristic
+        freshSettings.calculationMethod,
+        freshSettings.adjustments,
+        freshSettings.asrJuristic
       );
 
       // Always fetch tomorrow's Fajr — needed for Isha's fiqh deadline calculation
@@ -205,11 +203,11 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
       let tomorrowFajrPrayer: PrayerTime | null = null;
       try {
         const tomorrowResult = await PrayerTimeService.getPrayerTimesList(
-          location,
+          freshLocation,
           tomorrow,
-          userSettings.calculationMethod,
-          userSettings.adjustments,
-          userSettings.asrJuristic
+          freshSettings.calculationMethod,
+          freshSettings.adjustments,
+          freshSettings.asrJuristic
         );
         tomorrowFajrPrayer = tomorrowResult.prayerTimes.find(p => p.name === 'Fajr') || null;
       } catch (err) {
