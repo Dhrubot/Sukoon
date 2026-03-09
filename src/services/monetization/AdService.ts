@@ -81,6 +81,7 @@ class AdService {
 
     this.rewardedAd.addAdEventListener(RewardedAdEventType.LOADED, () => {
       this.isRewardedAdLoaded = true;
+      this._retryCount = 0;
       logger.log('Rewarded ad loaded');
     });
 
@@ -149,6 +150,8 @@ class AdService {
 
   /**
    * Check if user is eligible to watch an ad.
+   * Only blocks for real subscribers — temporary premium from ad rewards
+   * should NOT prevent watching more ads.
    * TODO: [PREMIUM] Re-add 24h cooldown when premium features are implemented:
    *   const lastWatch = StorageService.getLastAdWatchTime();
    *   if (lastWatch) {
@@ -157,8 +160,13 @@ class AdService {
    *   }
    */
   async canShowAd(): Promise<boolean> {
-    const isPremium = await StorageService.isPremiumActive();
-    if (isPremium) return false;
+    const subscription = StorageService.getSubscription();
+    if (subscription?.isActive) {
+      if (subscription.type === 'lifetime') return false;
+      if (subscription.expiryDate && new Date(subscription.expiryDate) > new Date()) {
+        return false;
+      }
+    }
 
     return this.isRewardedAdLoaded;
   }
