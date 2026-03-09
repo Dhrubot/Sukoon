@@ -176,7 +176,7 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={skyGradient as readonly string[] as any}
+        colors={[...skyGradient] as [string, string, ...string[]]}
         style={styles.gradient}
       >
         <TreeSky
@@ -247,8 +247,8 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
 
         {/* Soil gradient */}
         <LinearGradient
-          colors={groundConfig.colors as any}
-          locations={groundConfig.locations as any}
+          colors={[...groundConfig.colors] as [string, string, ...string[]]}
+          locations={[...groundConfig.locations] as [number, number, ...number[]]}
           style={[styles.groundGradient, { height: groundHeight }]}
         />
 

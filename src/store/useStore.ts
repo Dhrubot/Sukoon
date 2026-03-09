@@ -12,11 +12,15 @@ import {
 } from '../types';
 import StorageService from '../services/StorageService';
 
+type DeepPartial<T> = {
+  [P in keyof T]?: T[P] extends object ? DeepPartial<T[P]> : T[P];
+};
+
 interface AppState {
   // User settings
   userSettings: UserSettings | null;
   setUserSettings: (settings: UserSettings) => void;
-  updateUserSettings: (updates: Partial<UserSettings>) => void;
+  updateUserSettings: (updates: DeepPartial<UserSettings>) => void;
   
   // Location
   location: Location | null;
@@ -84,23 +88,32 @@ export const useStore = create<AppState>((set) => ({
   updateUserSettings: (updates) => 
     set((state) => {
       if (!state.userSettings) return { userSettings: null };
-      const current = state.userSettings;
-      const updated = { ...current } as any;
-      for (const key of Object.keys(updates) as Array<keyof typeof updates>) {
-        const val = updates[key];
-        if (
-          val !== null &&
-          val !== undefined &&
-          typeof val === 'object' &&
-          !Array.isArray(val) &&
-          typeof (current as any)[key] === 'object' &&
-          (current as any)[key] !== null
-        ) {
-          updated[key] = { ...(current as any)[key], ...val };
-        } else {
-          updated[key] = val;
+
+      // Recursive deep merge capped at maxDepth to avoid infinite loops
+      const deepMerge = (target: any, source: any, depth: number = 0): any => {
+        if (depth > 3) return source; // safety cap
+        const result = { ...target };
+        for (const key of Object.keys(source)) {
+          const srcVal = source[key];
+          const tgtVal = target[key];
+          if (
+            srcVal !== null &&
+            srcVal !== undefined &&
+            typeof srcVal === 'object' &&
+            !Array.isArray(srcVal) &&
+            typeof tgtVal === 'object' &&
+            tgtVal !== null &&
+            !Array.isArray(tgtVal)
+          ) {
+            result[key] = deepMerge(tgtVal, srcVal, depth + 1);
+          } else {
+            result[key] = srcVal;
+          }
         }
-      }
+        return result;
+      };
+
+      const updated = deepMerge(state.userSettings, updates);
       StorageService.setUserSettings(updated);
       return { userSettings: updated };
     }),

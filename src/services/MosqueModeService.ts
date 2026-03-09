@@ -5,6 +5,7 @@ import { IOS_NOTIFICATION_CAP } from '../constants/NotificationConstants';
 import { format, addMinutes } from 'date-fns';
 import StorageService from './StorageService';
 import RingerControlService from './RingerControlService';
+import type { RingerMode } from './RingerControlService';
 import { PrayerName, PrayerTime } from '../types';
 import logger from '../utils/logger';
 
@@ -142,15 +143,15 @@ class MosqueModeService {
       const now = new Date();
       const enableAt = addMinutes(now, 1);
       const restoreAt = addMinutes(enableAt, 1);
-      const targetMode = settings.mosqueMode.useVibrateInsteadOfSilent ? 'VIBRATE' : 'SILENT';
-      const restoreMode = (await RingerControlService.getRingerMode()) || 'NORMAL';
+      const targetMode: RingerMode = settings.mosqueMode.useVibrateInsteadOfSilent ? 'VIBRATE' : 'SILENT';
+      const restoreMode: RingerMode = (await RingerControlService.getRingerMode()) || 'NORMAL';
       const requestCodeBase = this.getRequestCodeBase('Dhuhr', enableAt);
 
       const scheduled = await RingerControlService.scheduleMosqueMode(
         enableAt.getTime(),
         settings.mosqueMode.autoRestore ? restoreAt.getTime() : 0,
-        targetMode as any,
-        restoreMode as any,
+        targetMode,
+        restoreMode,
         requestCodeBase
       );
 
@@ -190,8 +191,8 @@ class MosqueModeService {
       StorageService.setValue(STORAGE_KEYS.PREVIOUS_RINGER_MODE, currentMode);
     }
 
-    const targetMode = settings.mosqueMode.useVibrateInsteadOfSilent ? 'VIBRATE' : 'SILENT';
-    const restoreMode = (currentMode || 'NORMAL') as any;
+    const targetMode: RingerMode = settings.mosqueMode.useVibrateInsteadOfSilent ? 'VIBRATE' : 'SILENT';
+    const restoreMode: RingerMode = (currentMode || 'NORMAL') as RingerMode;
     const requestCodeBase = this.getRequestCodeBase(prayer.name, iqamahTime);
 
     const enableAtMs = iqamahTime.getTime();
@@ -200,7 +201,7 @@ class MosqueModeService {
     const scheduled = await RingerControlService.scheduleMosqueMode(
       enableAtMs,
       restoreAtMs,
-      targetMode as any,
+      targetMode,
       restoreMode,
       requestCodeBase
     );
@@ -537,8 +538,8 @@ class MosqueModeService {
         return false;
       }
 
-      const previousMode = StorageService.getValue(STORAGE_KEYS.PREVIOUS_RINGER_MODE) || 'NORMAL';
-      await RingerControlService.setRingerMode(previousMode as any);
+      const previousMode = (StorageService.getValue(STORAGE_KEYS.PREVIOUS_RINGER_MODE) || 'NORMAL') as RingerMode;
+      await RingerControlService.setRingerMode(previousMode);
 
       // Clear active state
       StorageService.setValue(STORAGE_KEYS.ACTIVE_MOSQUE_MODE, '');

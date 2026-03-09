@@ -25,6 +25,18 @@ export const CHANNELS = {
   JUMMAH: `jummah-v${NOTIFICATION_CHANNEL_VERSION}`, // Friday Jummah reminders & Sunnah
 };
 
+// Scheduling lock timeout (ms) — prevents concurrent scheduling runs
+export const SCHEDULING_LOCK_TIMEOUT_MS = 120_000; // 2 minutes
+
+// Keep-alive notification interval (ms) — self-renewing safety net
+export const KEEP_ALIVE_INTERVAL_MS = 48 * 60 * 60 * 1000; // 48 hours
+
+// Prayer time API request timeout (ms)
+export const PRAYER_API_TIMEOUT_MS = 8_000;
+
+// Hero ring early advance threshold (minutes before next prayer's adhan)
+export const HERO_ADVANCE_MINUTES = 15;
+
 export const SOUNDS = {
   // Both platforms use the short (<30s) clip for lock-screen notifications
   IOS_SHORT: 'adhan_ios.caf', 

@@ -2,19 +2,17 @@
 import { getAnalytics, logEvent as fbLogEvent, setUserProperty as fbSetUserProperty, logScreenView as fbLogScreenView } from '@react-native-firebase/analytics';
 import logger from '../utils/logger';
 
+// Religious practice events (prayer_completed, prayer_missed, mindfulness_started/completed,
+// dawam_milestone) are intentionally EXCLUDED. Sukoon's privacy promise is that spiritual
+// practice data never leaves the device. These events must never be sent to Firebase.
 type AnalyticsEvent =
   | 'app_open'
-  | 'prayer_completed'
-  | 'prayer_missed'
-  | 'mindfulness_started'
-  | 'mindfulness_completed'
   | 'notification_tapped'
   | 'premium_card_tapped'
   | 'premium_purchased'
   | 'ad_watched'
   | 'ad_failed'
   | 'donation_made'
-  | 'dawam_milestone'
   | 'qibla_opened'
   | 'mosque_mode_activated'
   | 'mosque_mode_deactivated'
@@ -63,14 +61,9 @@ class AnalyticsService {
     }
   }
 
-  // Convenience: prayer
-  async logPrayerCompleted(prayer: string, mindful: boolean): Promise<void> {
-    await this.logEvent('prayer_completed', { prayer, mindful });
-  }
-
-  async logPrayerMissed(prayer: string): Promise<void> {
-    await this.logEvent('prayer_missed', { prayer });
-  }
+  // No-ops: religious practice data never leaves the device
+  async logPrayerCompleted(_prayer: string, _mindful: boolean): Promise<void> { }
+  async logPrayerMissed(_prayer: string): Promise<void> { }
 
   // Convenience: monetization
   async logPremiumPurchased(plan: string): Promise<void> {
@@ -89,10 +82,8 @@ class AnalyticsService {
     await this.logEvent('donation_made', { tier, amount });
   }
 
-  // Convenience: engagement
-  async logDawamMilestone(days: number): Promise<void> {
-    await this.logEvent('dawam_milestone', { days });
-  }
+  // No-op: dawam streaks are spiritual practice data — stays on device
+  async logDawamMilestone(_days: number): Promise<void> { }
 
   async logMosqueModeActivated(): Promise<void> {
     await this.logEvent('mosque_mode_activated');

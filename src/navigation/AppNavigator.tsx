@@ -16,12 +16,14 @@ export const AppNavigator: React.FC = () => {
       {/* Main Tab Navigator (includes all tab screens, visible and hidden) */}
       <Stack.Screen name="MainTabs" component={TabNavigator} />
       
-      {/* Debug Screen */}
-      <Stack.Screen
-        name="NotificationDebug"
-        component={NotificationDebugScreen}
-        options={{ title: 'Notification Debugger' }}
-      />
+      {/* Debug Screen — dev only */}
+      {__DEV__ && (
+        <Stack.Screen
+          name="NotificationDebug"
+          component={NotificationDebugScreen}
+          options={{ title: 'Notification Debugger' }}
+        />
+      )}
       
       {/* Modal Screens */}
       <Stack.Screen

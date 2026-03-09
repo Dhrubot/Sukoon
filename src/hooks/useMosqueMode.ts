@@ -27,7 +27,7 @@ export const useMosqueMode = () => {
 
   // Enable mosque mode
   const enableMosqueMode = useCallback(async (enabled: boolean) => {
-    updateUserSettings({ mosqueMode: { enabled } as any });
+    updateUserSettings({ mosqueMode: { enabled } });
 
     if (enabled) {
       AnalyticsService.logEvent('mosque_mode_activated');
@@ -48,7 +48,7 @@ export const useMosqueMode = () => {
             ...current.mosqueMode.iqamahOffsets,
             [prayer]: minutes,
           },
-        } as any,
+        },
       });
     },
     [updateUserSettings]
@@ -57,7 +57,7 @@ export const useMosqueMode = () => {
   // Update mosque mode settings
   const updateMosqueModeSettings = useCallback(
     async (updates: Partial<MosqueModeSettings>) => {
-      updateUserSettings({ mosqueMode: updates as any });
+      updateUserSettings({ mosqueMode: updates });
     },
     [updateUserSettings]
   );

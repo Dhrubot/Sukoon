@@ -1,28 +1,40 @@
 // src/hooks/useNotificationRescheduler.ts
 import { useEffect } from 'react';
-import { AppState, InteractionManager } from 'react-native';
+import { InteractionManager, NativeModules, Platform } from 'react-native';
+import { useAppStateChange } from './useAppStateChange';
 import NotificationService from '../services/NotificationService';
 import StorageService from '../services/StorageService';
 import logger from '../utils/logger';
 
 export const useNotificationRescheduler = () => {
+  // Check on mount (deferred to avoid blocking UI)
   useEffect(() => {
-    // Check on mount (deferred to avoid blocking UI)
-    InteractionManager.runAfterInteractions(() => {
+    InteractionManager.runAfterInteractions(async () => {
+      // Android: check if device rebooted since last launch (boot receiver sets flag)
+      if (Platform.OS === 'android') {
+        try {
+          const needsReschedule = await NativeModules.BootPrefsModule?.getAndClearBootRescheduleFlag();
+          if (needsReschedule) {
+            logger.log('🔄 Boot reschedule flag detected — forcing full reschedule');
+            StorageService.deleteValue('last_batch_schedule_date');
+          }
+        } catch (e) {
+          // Module may not exist on older builds — fall through to normal check
+          logger.warn('⚠️ BootPrefsModule unavailable:', e);
+        }
+      }
       checkAndReschedule();
     });
-
-    // Check on resume
-    const subscription = AppState.addEventListener('change', (nextAppState) => {
-      if (nextAppState === 'active') {
-        InteractionManager.runAfterInteractions(() => {
-          checkAndReschedule();
-        });
-      }
-    });
-
-    return () => subscription.remove();
   }, []);
+
+  // Check on resume via shared AppState listener
+  useAppStateChange((nextState) => {
+    if (nextState === 'active') {
+      InteractionManager.runAfterInteractions(() => {
+        checkAndReschedule();
+      });
+    }
+  });
 
   const checkAndReschedule = async () => {
     try {

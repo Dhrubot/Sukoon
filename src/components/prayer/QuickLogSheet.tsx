@@ -191,4 +191,4 @@ const createStyles = (theme: AppTheme) =>
     },
   });
 
-export default QuickLogSheet;
+export default React.memo(QuickLogSheet);

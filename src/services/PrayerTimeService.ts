@@ -22,6 +22,7 @@ import { cacheHijriDate } from "../utils/ramadan";
 import logger from "../utils/logger";
 import StorageService from "./StorageService";
 import { getLocalDateKey } from "../utils/dateHelpers";
+import { PRAYER_API_TIMEOUT_MS } from "../constants/NotificationConstants";
 
 interface CachedPrayerTimesData {
   date: string;           // YYYY-MM-DD
@@ -29,6 +30,7 @@ interface CachedPrayerTimesData {
   lon: number;
   method: string;
   asrJuristic: string;
+  timezoneOffset?: number; // minutes, from Date.getTimezoneOffset()
   times: PrayerTimes;
   sunrise: string;
   sunset: string;
@@ -99,7 +101,8 @@ export class PrayerTimeService {
     }
 
     const dateStr = format(date, "dd-MM-yyyy");
-    const cacheKey = `${coordinates.latitude}-${coordinates.longitude}-${dateStr}-${method}-${asrJuristic}`;
+    const tzOffset = new Date().getTimezoneOffset();
+    const cacheKey = `${coordinates.latitude}-${coordinates.longitude}-${dateStr}-${method}-${asrJuristic}-${tzOffset}`;
 
     // Check cache first
     if (this.cachedTimes.has(cacheKey)) {
@@ -116,7 +119,7 @@ export class PrayerTimeService {
 
       // AbortController with 8s timeout to prevent indefinite hangs on poor network
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const timeoutId = setTimeout(() => controller.abort(), PRAYER_API_TIMEOUT_MS);
 
       let response: Response;
       try {
@@ -703,7 +706,8 @@ export class PrayerTimeService {
     method: CalculationMethod = "MWL"
   ): boolean {
     const dateStr = format(date, "dd-MM-yyyy");
-    const cacheKey = `${coordinates.latitude}-${coordinates.longitude}-${dateStr}-${method}`;
+    const tzOffset = new Date().getTimezoneOffset();
+    const cacheKey = `${coordinates.latitude}-${coordinates.longitude}-${dateStr}-${method}-${tzOffset}`;
     return this.cachedTimes.has(cacheKey);
   }
 
@@ -743,6 +747,7 @@ export class PrayerTimeService {
         lon: parseFloat(coordinates.longitude.toFixed(4)),
         method,
         asrJuristic,
+        timezoneOffset: new Date().getTimezoneOffset(),
         times,
         sunrise: times.Sunrise,
         sunset: times.Sunset,
@@ -774,11 +779,13 @@ export class PrayerTimeService {
       const lat = parseFloat(coordinates.latitude.toFixed(4));
       const lon = parseFloat(coordinates.longitude.toFixed(4));
 
-      // Must match date, method, asr juristic, and be within ~1km
+      // Must match date, method, asr juristic, timezone offset, and be within ~1km
+      const currentOffset = new Date().getTimezoneOffset();
       if (
         cached.date === dateStr &&
         cached.method === method &&
         cached.asrJuristic === asrJuristic &&
+        (cached.timezoneOffset === undefined || cached.timezoneOffset === currentOffset) &&
         Math.abs(cached.lat - lat) < 0.01 &&
         Math.abs(cached.lon - lon) < 0.01
       ) {

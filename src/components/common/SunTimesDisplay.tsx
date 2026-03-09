@@ -81,4 +81,4 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
 });
 
-export default SunTimesDisplay;
+export default React.memo(SunTimesDisplay);

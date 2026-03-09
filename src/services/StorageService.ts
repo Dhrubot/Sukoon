@@ -40,7 +40,7 @@ class StorageService {
     });
     // 🔐 Encrypted storage deferred to initialize() — use MemoryStorage placeholder
     // until the real encryption key is loaded from SecureStore.
-    this.storage = new MemoryStorage() as any;
+    this.storage = new MemoryStorage();
   }
 
   /**
@@ -152,23 +152,24 @@ class StorageService {
       return;
     }
     // Deep merge nested objects to avoid overwriting sibling keys
-    const updated: UserSettings = { ...current };
-    for (const key of Object.keys(updates) as Array<keyof UserSettings>) {
-      const val = updates[key];
+    const updated = { ...current } as unknown as Record<string, unknown>;
+    const source = current as unknown as Record<string, unknown>;
+    for (const key of Object.keys(updates)) {
+      const val = (updates as unknown as Record<string, unknown>)[key];
       if (
         val !== null &&
         val !== undefined &&
         typeof val === 'object' &&
         !Array.isArray(val) &&
-        typeof (current as any)[key] === 'object' &&
-        (current as any)[key] !== null
+        typeof source[key] === 'object' &&
+        source[key] !== null
       ) {
-        (updated as any)[key] = { ...(current as any)[key], ...val };
+        updated[key] = { ...(source[key] as Record<string, unknown>), ...(val as Record<string, unknown>) };
       } else {
-        (updated as any)[key] = val;
+        updated[key] = val;
       }
     }
-    this.setUserSettings(updated);
+    this.setUserSettings(updated as unknown as UserSettings);
   }
 
   // Default settings for new users
@@ -529,8 +530,8 @@ class StorageService {
       currentDawam: this.getCurrentDawam(),
       longestDawam: this.getLongestDawam(),
       achievements: this.getAchievements(),
-      prayers: [] as any[],
-      dailyStats: [] as any[],
+      prayers: [] as { date: string; records: PrayerRecord[] }[],
+      dailyStats: [] as DailyStats[],
     };
 
     // Get all prayer records (last 90 days)

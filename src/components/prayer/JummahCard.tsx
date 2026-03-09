@@ -24,8 +24,8 @@ const JummahCard: React.FC<JummahCardProps> = ({ dhuhrTime, onPrepare }) => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
 
-  const gradients = theme.colors.prayerGradients;
-  const gradient = (gradients as any).Jumah || gradients.default;
+  const gradients = theme.colors.prayerGradients as unknown as Record<string, readonly [string, string, string]>;
+  const gradient = gradients.Jumah || gradients.default;
 
   return (
     <View style={styles.wrapper}>

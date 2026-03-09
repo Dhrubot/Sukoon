@@ -23,7 +23,7 @@ const QuickStats: React.FC<QuickStatsProps> = ({
 
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    (navigation as any).navigate('Menu', { screen: 'MyJourney' });
+    navigation.navigate('MainTabs', { screen: 'Menu', params: { screen: 'MyJourney' } });
   };
 
   const getMessage = () => {

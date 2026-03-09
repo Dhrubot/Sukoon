@@ -490,4 +490,4 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
 });
 
-export default DailyVerse;
+export default React.memo(DailyVerse);

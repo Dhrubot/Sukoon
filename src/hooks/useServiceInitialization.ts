@@ -1,5 +1,6 @@
 // src/hooks/useServiceInitialization.ts (FINAL MERGED VERSION)
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
+import { InteractionManager } from 'react-native';
 import * as BackgroundTask from 'expo-background-task';
 import * as TaskManager from 'expo-task-manager';
 import { usePrayerTimes } from "../providers/PrayerTimesProvider";
@@ -76,17 +77,20 @@ export const useServiceInitialization = () => {
   useEffect(() => {
     NotificationService.setPrayerTimesFetcher(async ({ location, date, calculationMethod, adjustments, asrJuristic }) => {
       return PrayerTimeService.getPrayerTimesList(
-        location as any,
+        location,
         date,
-        calculationMethod as any,
-        adjustments as any,
-        (asrJuristic as any) || 'Standard'
+        calculationMethod,
+        adjustments,
+        asrJuristic || 'Standard'
       );
     });
     logger.log("🔗 NotificationService fetcher connected");
   }, []);
 
   // ⏰ Schedule prayer notifications if conditions are met
+  // Debounced: todayPrayerTimes.length changes twice on cold start
+  // (disk cache → API), so we wait 3s for it to stabilize.
+  const scheduleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
     const shouldSchedule =
       hasValidLocation &&
@@ -95,9 +99,19 @@ export const useServiceInitialization = () => {
       todayPrayerTimes.length > 0;
 
     if (shouldSchedule) {
-      logger.log("📅 Scheduling prayer notifications...");
-      NotificationService.scheduleAllPrayerNotifications();
+      if (scheduleTimerRef.current) clearTimeout(scheduleTimerRef.current);
+      scheduleTimerRef.current = setTimeout(() => {
+        InteractionManager.runAfterInteractions(() => {
+          logger.log("📅 Scheduling prayer notifications...");
+          NotificationService.scheduleAllPrayerNotifications();
+        });
+        scheduleTimerRef.current = null;
+      }, 3_000);
     }
+
+    return () => {
+      if (scheduleTimerRef.current) clearTimeout(scheduleTimerRef.current);
+    };
   }, [
     hasValidLocation,
     isLoading,

@@ -118,9 +118,9 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
   };
 
   const getPrayerGradient = (): readonly [string, string, string] => {
-    const gradients = theme.colors.prayerGradients;
-    if (isJummah) return (gradients as any).Jumah || gradients.default;
-    return (gradients as any)[prayer.name] || gradients.default;
+    const gradients = theme.colors.prayerGradients as unknown as Record<string, readonly [string, string, string]>;
+    if (isJummah) return gradients.Jumah || gradients.default;
+    return gradients[prayer.name] || gradients.default;
   };
 
   const ramadanDay = isRamadan() ? getRamadanDay() : null;
@@ -347,4 +347,4 @@ const createStyles = (theme: AppTheme) =>
     },
   });
 
-export default SanctuaryView;
+export default React.memo(SanctuaryView);

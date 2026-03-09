@@ -76,7 +76,7 @@ const GardenCanvas: React.FC<GardenCanvasProps> = ({ plants }) => {
   return (
     <View style={styles.container}>
       <LinearGradient
-        colors={skyGradient as readonly string[] as any}
+        colors={[...skyGradient] as [string, string, ...string[]]}
         style={styles.gradient}
       >
         {/* Soil ground at the bottom */}

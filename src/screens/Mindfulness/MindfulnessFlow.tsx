@@ -101,10 +101,6 @@ const MindfulnessFlow: React.FC = () => {
   const transitionFade = useRef(new Animated.Value(0)).current;
   const stillnessPulse = useRef(new Animated.Value(0.3)).current;
 
-  // Analytics: log mindfulness started
-  useEffect(() => {
-    AnalyticsService.logEvent('mindfulness_started', { prayer: prayer.name });
-  }, []);
 
   // Start gentle pulse during "praying" step
   useEffect(() => {
@@ -259,8 +255,8 @@ const MindfulnessFlow: React.FC = () => {
   };
 
   const getPrayerGradient = (): readonly [string, string, string] => {
-    const gradients = theme.colors.prayerGradients;
-    return (gradients as any)[prayer.name] || gradients.default;
+    const gradients = theme.colors.prayerGradients as unknown as Record<string, readonly [string, string, string]>;
+    return gradients[prayer.name] || gradients.default;
   };
 
   const handleBreathComplete = () => {
@@ -455,14 +451,6 @@ const MindfulnessFlow: React.FC = () => {
     // Update persistent tree growth state (skipped reflection defaults to mood 3)
     TreeGrowthStateService.recordReflection(prayer.name, 3, getLocalDateKey());
 
-    AnalyticsService.logEvent('mindfulness_completed', {
-      prayer: prayer.name,
-      duration: session.duration,
-      mood: 0,
-      breathing_completed: session.breathingCompleted,
-      reflection_added: false,
-      skipped_reflection: true,
-    });
 
     // Animate to complete screen (same as completeReflection)
     Animated.parallel([
@@ -548,13 +536,6 @@ const MindfulnessFlow: React.FC = () => {
       StorageService.saveReflectionText(dateStr, prayer.name, reflectionText.trim());
     }
 
-    AnalyticsService.logEvent('mindfulness_completed', {
-      prayer: prayer.name,
-      duration: session.duration,
-      mood: selectedMood,
-      breathing_completed: session.breathingCompleted,
-      reflection_added: session.reflectionCompleted,
-    });
 
     await AchievementService.checkAchievements();
 

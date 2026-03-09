@@ -309,7 +309,8 @@ const MenuScreen: React.FC = () => {
       case 'gold':
         return { bg: theme.colors.gold + '18', icon: theme.colors.gold };
       case 'purple':
-        return { bg: (theme.colors as any).prayer?.taraweeh ? (theme.colors as any).prayer.taraweeh + '20' : '#a78bfa20', icon: (theme.colors as any).prayer?.taraweeh || '#a78bfa' };
+        const taraweeh = (theme.colors.prayer as Record<string, string>)?.taraweeh;
+        return { bg: taraweeh ? taraweeh + '20' : '#a78bfa20', icon: taraweeh || '#a78bfa' };
       case 'amber':
         return { bg: '#f59e0b18', icon: '#f59e0b' };
       default:

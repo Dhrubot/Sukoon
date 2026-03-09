@@ -32,7 +32,7 @@ const GardenTeaser: React.FC = () => {
 
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    (navigation as any).navigate('Menu', { screen: 'ReflectionGarden' });
+    navigation.navigate('MainTabs', { screen: 'Menu', params: { screen: 'ReflectionGarden' } });
   };
 
 
