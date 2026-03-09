@@ -41,8 +41,8 @@ export const useServiceInitialization = () => {
 
       try {
         await Promise.all([
-          SubscriptionService.initialize(),
-          AdService.initialize(),
+          // SubscriptionService.initialize(),
+          // AdService.initialize(),
           DonationService.initialize(),
           LocationService.initialize(),
         ]);
