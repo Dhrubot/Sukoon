@@ -65,10 +65,10 @@ export const WatchAdCard: React.FC<WatchAdCardProps> = ({ onRewardEarned }) => {
   };
 
   // TODO: [PREMIUM] Re-add hoursLeft/cooldown messaging when premium features are implemented
-  const statusText = hasActiveReward
-    ? 'JazakAllah Khair for your support!'
-    : canWatch
-      ? 'Watch a short halal ad to help keep Sukoon free'
+  const statusText = canWatch
+    ? 'Watch a short halal ad to help keep Sukoon free'
+    : hasActiveReward
+      ? 'JazakAllah Khair! Next ad loading...'
       : 'Loading ad...';
 
   return (

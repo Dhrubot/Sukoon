@@ -53,6 +53,12 @@ const SupportScreen: React.FC = () => {
 
   useEffect(() => {
     initializeServices();
+    // Poll ad readiness so button re-enables after next ad loads
+    const adPoll = setInterval(async () => {
+      const canShow = await AdService.canShowAd();
+      setCanWatchAd(canShow);
+    }, 10_000);
+    return () => clearInterval(adPoll);
   }, []);
 
   const initializeServices = async () => {
@@ -109,7 +115,12 @@ const SupportScreen: React.FC = () => {
           'Your support helps keep Sukoon free for the Ummah. May Allah reward your generosity.',
           [{ text: 'Alhamdulillah' }]
         );
-        await initializeServices();
+        // Next ad needs time to load after the previous one closes
+        setCanWatchAd(false);
+        setTimeout(async () => {
+          const canShow = await AdService.canShowAd();
+          setCanWatchAd(canShow);
+        }, 3000);
       } else {
         Alert.alert('Ad Not Ready', 'Please try again in a moment.');
       }
@@ -270,7 +281,7 @@ const SupportScreen: React.FC = () => {
               {/* TODO: [PREMIUM] Re-add hoursUntilNextAd cooldown messaging when premium features are implemented */}
               <Text style={styles.adUnavailableText}>
                 {AdService.isAdReady()
-                  ? 'JazakAllah Khair for your support!'
+                  ? 'Ready to watch another ad!'
                   : 'Ad is loading... please wait a moment'}
               </Text>
             </View>
