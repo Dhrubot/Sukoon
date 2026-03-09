@@ -22,6 +22,10 @@ import EidNotificationService from '../services/EidNotificationService';
 import PerformanceService from '../services/PerformanceService';
 import logger from '../utils/logger';
 import { SCHEDULING_DEBOUNCE_MS } from '../constants/time';
+import StorageService from '../services/StorageService';
+
+/** If the rescheduler ran within this window, skip the settings-change schedule. */
+const COLD_START_GUARD_MS = 30_000;
 
 export const useServiceInitialization = () => {
   const { todayPrayerTimes, nextPrayer, isLoading, hasValidLocation } =
@@ -90,12 +94,12 @@ export const useServiceInitialization = () => {
 
   // ⏰ Reschedule prayer notifications when SETTINGS change.
   // Initial cold-start scheduling is handled by useNotificationRescheduler
-  // (in AppInitializer). This effect only fires on subsequent settings changes
-  // to avoid a double-schedule race on mount.
+  // (in AppInitializer). This effect skips scheduling if the rescheduler
+  // ran recently (within COLD_START_GUARD_MS) to avoid double-scheduling.
   const scheduleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isInitialMountRef = useRef(true);
   useEffect(() => {
-    // Skip the very first invocation (cold start) — useNotificationRescheduler owns that.
+    // Always skip the very first invocation (component mount).
     if (isInitialMountRef.current) {
       isInitialMountRef.current = false;
       return;
@@ -110,6 +114,17 @@ export const useServiceInitialization = () => {
     if (shouldSchedule) {
       if (scheduleTimerRef.current) clearTimeout(scheduleTimerRef.current);
       scheduleTimerRef.current = setTimeout(() => {
+        // Guard: skip if useNotificationRescheduler ran recently (cold-start window)
+        const lastRun = StorageService.getValue('last_batch_schedule_date');
+        if (lastRun) {
+          const msSinceLastRun = Date.now() - new Date(lastRun).getTime();
+          if (msSinceLastRun < COLD_START_GUARD_MS) {
+            logger.log("📅 Skipping settings-change reschedule — rescheduler ran recently");
+            scheduleTimerRef.current = null;
+            return;
+          }
+        }
+
         InteractionManager.runAfterInteractions(() => {
           logger.log("📅 Settings changed — rescheduling prayer notifications...");
           NotificationService.scheduleAllPrayerNotifications();

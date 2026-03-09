@@ -146,7 +146,7 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
         </View>
       )}
       {/* Live Activity — lock screen prayer countdown */}
-      <View style={styles.row}>
+       { __DEV__ && (<View style={styles.row}>
         <View style={styles.textContainer}>
           <Text style={styles.label}>Live Activity</Text>
           <Text style={styles.subtitle}>Show prayer countdown on your lock screen</Text>
@@ -170,7 +170,7 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
           trackColor={{ false: theme.colors.switch.trackFalse, true: theme.colors.switch.trackTrue }}
           thumbColor={theme.colors.switch.thumb}
         />
-      </View>
+      </View>)}
       {/* Tahajjud Reminders */}
       {onToggleTahajjud && (
         <SettingRow

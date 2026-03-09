@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStateChange } from '../hooks/useAppStateChange';
 import { useStore } from '../store/useStore';
+import { useShallow } from 'zustand/react/shallow';
 import PrayerTimeService from '../services/PrayerTimeService';
 import { PrayerTime, PrayerName, PrayerTimes, Location } from '../types';
 import { isValidCoordinates } from '../utils/locationValidation';
@@ -52,7 +53,17 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
     setTodaySunrise,
     setTodaySunset,
     setTodayMidnight,
-  } = useStore();
+  } = useStore(useShallow((s) => ({
+    location: s.location,
+    userSettings: s.userSettings,
+    setTodayPrayerTimes: s.setTodayPrayerTimes,
+    setNextPrayer: s.setNextPrayer,
+    todayPrayerTimes: s.todayPrayerTimes,
+    nextPrayer: s.nextPrayer,
+    setTodaySunrise: s.setTodaySunrise,
+    setTodaySunset: s.setTodaySunset,
+    setTodayMidnight: s.setTodayMidnight,
+  })));
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tomorrowFajr, setTomorrowFajr] = useState<PrayerTime | null>(null);

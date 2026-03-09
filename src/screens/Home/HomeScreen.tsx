@@ -274,7 +274,14 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
   const loadTodayRecords = useCallback(() => {
     const today = format(new Date(), "yyyy-MM-dd");
     const records = StorageService.getDayPrayerRecords(today);
-    setTodayPrayerRecords(records);
+    // Shallow comparison: skip setState if records haven't changed (avoids PrayerCard re-renders)
+    const { todayPrayerRecords: current } = useStore.getState();
+    const changed =
+      records.length !== current.length ||
+      records.some((r, i) => r.prayer !== current[i]?.prayer || r.status !== current[i]?.status);
+    if (changed) {
+      setTodayPrayerRecords(records);
+    }
   }, [setTodayPrayerRecords]);
 
 

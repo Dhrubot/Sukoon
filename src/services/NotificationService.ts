@@ -17,6 +17,7 @@ import { isValidCoordinates } from '../utils/locationValidation';
 import logger from '../utils/logger';
 import { captureNow } from '../constants/time';
 import AnalyticsService from './AnalyticsService';
+import NotificationLedger from './NotificationLedger';
 import { useStore } from '../store/useStore';
 
 // NOTIFICATION_CATEGORIES now imported from ./notifications/NotificationChannels
@@ -263,6 +264,9 @@ class NotificationService {
     this.notificationListener = Notifications.addNotificationReceivedListener((notification) => {
       logger.log('🔔 Notification received:', notification.request.content.title);
 
+      // Ledger: record delivery
+      NotificationLedger.recordDelivered(notification.request.identifier);
+
       // Auto-play adhan for test notifications when app is in foreground
       // This is necessary because Android doesn't play channel-specific sounds in foreground
       const data = notification.request.content.data;
@@ -287,6 +291,7 @@ class NotificationService {
       const data = notification.request.content.data;
 
       // Log notification tap
+      NotificationLedger.recordTapped(notification.request.identifier);
       AnalyticsService.logEvent('notification_tapped', {
         action: actionIdentifier,
         prayer: (data?.prayer as string) || 'unknown',
@@ -526,6 +531,9 @@ class NotificationService {
       identifier: prayerIdentifier,
     });
 
+    // Ledger: record scheduled notification
+    NotificationLedger.recordScheduled(prayerIdentifier, `${prayer.name} (adhan)`, prayer.time);
+
     existingIdentifiers.add(prayerIdentifier);
     if (iosCounter) iosCounter.count++;
 
@@ -584,6 +592,9 @@ class NotificationService {
       } as Notifications.NotificationTriggerInput,
       identifier: preIdentifier,
     });
+
+    // Ledger: record scheduled pre-prayer notification
+    NotificationLedger.recordScheduled(preIdentifier, `${prayer.name} (pre-prayer)`, preNotificationTime);
 
     existingIdentifiers.add(preIdentifier);
     if (iosCounter) iosCounter.count++;

@@ -33,6 +33,7 @@ class StorageService {
   private _cachedUserSettings: UserSettings | null = null;
   private _splitMigrationDone = false;
   private _initialized = false;
+  private _pendingWrites: Array<{ key: string; value: string }> = [];
 
   constructor() {
     // Unencrypted public storage is safe to create immediately (no key needed)
@@ -52,15 +53,28 @@ class StorageService {
     if (this._initialized) return;
     this.storage = createStorage({ id: "prayer-buddy-storage" });
     this._initialized = true;
+
+    // Replay any writes that arrived before MMKV was ready
+    if (this._pendingWrites.length > 0) {
+      logger.log(`🔄 Replaying ${this._pendingWrites.length} queued write(s) to MMKV`);
+      for (const { key, value } of this._pendingWrites) {
+        this.storage.set(key, value);
+      }
+      this._pendingWrites = [];
+    }
+
     logger.log('✅ StorageService initialized with secure encryption');
   }
 
   private _preInitAccessLogged = false;
-  private _ensureInitialized(): void {
-    if (!this._initialized && !this._preInitAccessLogged) {
+  /** Returns true if storage is ready, false if still using MemoryStorage placeholder. */
+  private _ensureInitialized(): boolean {
+    if (this._initialized) return true;
+    if (!this._preInitAccessLogged) {
       this._preInitAccessLogged = true;
       logger.warn('⚠️ StorageService.storage accessed before initialize() — reads will return empty data');
     }
+    return false;
   }
 
   // One-time migration: move non-PII keys from encrypted → unencrypted storage
@@ -143,9 +157,15 @@ class StorageService {
   }
 
   setUserSettings(settings: UserSettings): void {
-    this._ensureInitialized();
+    const ready = this._ensureInitialized();
     this._cachedUserSettings = settings;
-    this.storage.set("user_settings", JSON.stringify(settings));
+    const serialized = JSON.stringify(settings);
+    if (ready) {
+      this.storage.set("user_settings", serialized);
+    } else {
+      // Queue the write for replay after initialize() completes
+      this._pendingWrites.push({ key: "user_settings", value: serialized });
+    }
   }
 
   // Private: All external callers must go through useStore's updateUserSettings

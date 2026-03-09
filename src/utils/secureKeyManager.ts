@@ -61,21 +61,38 @@ export async function getOrCreateEncryptionKey(): Promise<string> {
     logger.log('🔐 Generated and stored new encryption key in secure storage');
     return newKey;
   } catch (error) {
-    logger.error('⚠️ SecureStore error, deriving device-specific fallback key:', error);
-    // Derive a device-specific key instead of using a static string.
-    // Not as secure as SecureStore but far better than a publicly known constant.
-    const deviceSeed = [
-      Device.modelName || 'unknown',
-      Device.osVersion || '0',
-      Device.deviceName || 'device',
-      Platform.OS,
-    ].join('-');
-    // SHA-256 the seed to get a consistent, non-obvious key
-    const hash = await ExpoCrypto.digestStringAsync(
-      ExpoCrypto.CryptoDigestAlgorithm.SHA256,
-      `sukoon-device-key-${deviceSeed}`
-    );
-    return hash.slice(0, 32);
+    logger.error('⚠️ SecureStore error, using random fallback key:', error);
+    // SecureStore failed (rare, but real on some Android OEMs).
+    // Generate a random key and persist it to unencrypted MMKV.
+    // This is less secure than Keychain/Keystore but far better than a
+    // deterministic key derived from public device properties.
+    try {
+      const { createMMKV } = require('react-native-mmkv');
+      const fallbackStore = createMMKV({ id: 'sukoon-key-fallback' });
+      const existing = fallbackStore.getString('fallback_enc_key');
+      if (existing) {
+        logger.log('🔐 Retrieved existing fallback encryption key from MMKV');
+        return existing;
+      }
+      const randomKey = generateRandomKey(32);
+      fallbackStore.set('fallback_enc_key', randomKey);
+      logger.log('🔐 Generated and stored random fallback encryption key in MMKV');
+      return randomKey;
+    } catch (mmkvError) {
+      // Absolute last resort: derive from device properties (deterministic but non-obvious)
+      logger.error('⚠️ MMKV fallback also failed, using device-derived key:', mmkvError);
+      const deviceSeed = [
+        Device.modelName || 'unknown',
+        Device.osVersion || '0',
+        Device.deviceName || 'device',
+        Platform.OS,
+      ].join('-');
+      const hash = await ExpoCrypto.digestStringAsync(
+        ExpoCrypto.CryptoDigestAlgorithm.SHA256,
+        `sukoon-device-key-${deviceSeed}`
+      );
+      return hash.slice(0, 32);
+    }
   }
 }
 
