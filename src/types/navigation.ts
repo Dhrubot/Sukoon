@@ -1,5 +1,14 @@
 import { NavigatorScreenParams } from '@react-navigation/native';
-import { PrayerTime, PrayerName } from './index';
+import { PrayerTime, PrayerName, ExtendedPrayerName } from './index';
+
+// Serializable version of PrayerTime for React Navigation params
+// (React Navigation warns about non-serializable values like Date objects)
+export interface SerializablePrayerTime {
+  name: PrayerName | ExtendedPrayerName;
+  time: string;       // ISO 8601 string from Date.toISOString()
+  timestamp: number;
+  isNext?: boolean;
+}
 import { MenuStackParamList } from '../navigation/MenuStackNavigator';
 
 // Tab navigator parameter types (only visible tabs)
@@ -14,7 +23,7 @@ export type TabParamList = {
 export type RootStackParamList = {
   MainTabs: NavigatorScreenParams<TabParamList>;
   // Modal screens
-  MindfulnessFlow: { prayer: PrayerTime; isSunnah?: boolean };
+  MindfulnessFlow: { prayer: SerializablePrayerTime; isSunnah?: boolean };
   // Debug screens
   NotificationDebug: undefined;
 };

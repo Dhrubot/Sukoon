@@ -38,7 +38,7 @@ import PrayerTimeService from "../../services/PrayerTimeService";
 import { usePrayerTimes } from "../../providers/PrayerTimesProvider";
 
 // Types
-import { PrayerTime, MindfulnessSession, PrayerRecord } from "../../types";
+import { PrayerTime, PrayerName, MindfulnessSession, PrayerRecord } from "../../types";
 import { RootStackParamList } from "../../types/navigation";
 import AchievementService from "../../services/AchievementService";
 import AnalyticsService from "../../services/AnalyticsService";
@@ -71,9 +71,11 @@ const MindfulnessFlow: React.FC = () => {
   
   // Parse the serialized prayer object and convert the ISO string back to a Date
   const serializedPrayer = route.params.prayer;
-  const prayer = {
+  const prayer: PrayerTime = {
     ...serializedPrayer,
-    time: new Date(serializedPrayer.time) // Convert ISO string back to Date object
+    name: serializedPrayer.name as PrayerName, // Safe: sunnah paths guarded by isSunnah flag
+    time: new Date(serializedPrayer.time), // Convert ISO string back to Date object
+    timestamp: serializedPrayer.timestamp,
   };
   const isSunnah = route.params.isSunnah ?? false;
   const displayName = isSunnah ? 'Sunnah / Nafl' : PrayerTimeService.getPrayerDisplayName(prayer.name);
