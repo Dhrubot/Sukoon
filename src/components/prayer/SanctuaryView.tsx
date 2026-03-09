@@ -10,6 +10,7 @@ import {
   Dimensions,
 } from 'react-native';
 import PreAdhanSheet from './PreAdhanSheet';
+import PostPrayerSheet from './PostPrayerSheet';
 import CountdownRing from './CountdownRing';
 import StarField from './StarField';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -42,6 +43,7 @@ interface SanctuaryViewProps {
   onPrepare: () => void;
   onPrepareQada?: () => void;
   onPraySunnah?: () => void;
+  onRepeatPrayer?: () => void;
   onQuickLog?: () => void;
   isFocusMode?: boolean;
   mosqueModeInfo?: MosqueModeHeroInfo;
@@ -59,6 +61,7 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
   onPrepare,
   onPrepareQada,
   onPraySunnah,
+  onRepeatPrayer,
   onQuickLog,
   isFocusMode = false,
   mosqueModeInfo,
@@ -98,10 +101,12 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
   const isAlreadyPrayed = record?.status === 'prayed';
   const isJummah = prayer.name === 'Dhuhr' && isFriday();
   const [showPreAdhanSheet, setShowPreAdhanSheet] = useState(false);
+  const [showPostPrayerSheet, setShowPostPrayerSheet] = useState(false);
 
   const handlePress = () => {
     if (isAlreadyPrayed) {
-      onPrepare();
+      // Fard done — offer sunnah/nafl or repeat
+      setShowPostPrayerSheet(true);
     } else if (!isTimeEntered) {
       // Adhan hasn't happened — show PreAdhanSheet with alternatives
       setShowPreAdhanSheet(true);
@@ -110,11 +115,11 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
     }
   };
 
+  // Pulse only when time has entered and prayer is not yet prayed (State 2)
+  const isCTAActive = isTimeEntered && !isAlreadyPrayed;
+
   const getButtonText = (): string => {
-    if (isAlreadyPrayed) return 'Already Prayed';
-    if (isJummah) return "I Prayed Jumu'ah";
-    if (!isTimeEntered) return 'I Prayed';
-    return 'I Prayed';
+    return 'Prepare for Prayer';
   };
 
   const getPrayerGradient = (): readonly [string, string, string] => {
@@ -192,15 +197,13 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
         )}
 
         {/* CTA */}
-        <Animated.View style={{ opacity: isAlreadyPrayed ? 1 : pulseAnim }}>
+        <Animated.View style={{ opacity: isCTAActive ? pulseAnim : 1 }}>
           <TouchableOpacity
             style={[
               styles.prepareButton,
-              (isAlreadyPrayed || !isTimeEntered) && styles.alreadyPrayedButton,
+              !isCTAActive && styles.mutedButton,
             ]}
             onPress={handlePress}
-            onLongPress={!isAlreadyPrayed ? onQuickLog : undefined}
-            delayLongPress={400}
             activeOpacity={0.7}
           >
             <Text style={styles.prepareText}>
@@ -231,6 +234,21 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
           onPraySunnah?.();
         }}
         onDismiss={() => setShowPreAdhanSheet(false)}
+      />
+
+      {/* Post-Prayer Sheet — fard done, offer sunnah/nafl or repeat */}
+      <PostPrayerSheet
+        visible={showPostPrayerSheet}
+        prayerName={prayer.name}
+        onPraySunnah={() => {
+          setShowPostPrayerSheet(false);
+          onPraySunnah?.();
+        }}
+        onRepeatPrayer={() => {
+          setShowPostPrayerSheet(false);
+          onRepeatPrayer?.();
+        }}
+        onDismiss={() => setShowPostPrayerSheet(false)}
       />
     </>
   );
@@ -290,7 +308,7 @@ const createStyles = (theme: AppTheme) =>
       paddingHorizontal: theme.spacing['4xl'],
       backgroundColor: theme.colors.sanctuary.buttonBg,
     },
-    alreadyPrayedButton: {
+    mutedButton: {
       backgroundColor: theme.colors.sanctuary.buttonBgMuted,
       borderColor: theme.colors.sanctuary.buttonBorderMuted,
     },

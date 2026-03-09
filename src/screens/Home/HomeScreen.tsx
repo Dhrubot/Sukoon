@@ -661,6 +661,7 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
             onPrepare={() => handleQuickLogTrigger(heroPrayer)}
             onPrepareQada={missedPreviousPrayer ? () => handlePrayerComplete(missedPreviousPrayer) : undefined}
             onPraySunnah={handleSunnahPrayer}
+            onRepeatPrayer={() => handlePrayerComplete(heroPrayer)}
             onQuickLog={() => handlePrayerComplete(heroPrayer)}
             isFocusMode={isFocusMode}
             mosqueModeInfo={mosqueModeHeroInfo ?? undefined}
