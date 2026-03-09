@@ -1,5 +1,4 @@
 // src/services/StorageAdapter.ts
-import { Platform } from 'react-native';
 import { createMMKV, MMKV } from 'react-native-mmkv';
 import { getCachedEncryptionKey } from '../utils/secureKeyManager';
 import logger from '../utils/logger';
@@ -43,59 +42,9 @@ export class MemoryStorage {
   }
 }
 
-// Web storage implementation
-class WebStorage {
-  private storage = window.localStorage;
-  private prefix: string;
-
-  constructor(options: { id: string }) {
-    this.prefix = options.id ? `${options.id}_` : '';
-  }
-
-  getString(key: string) { 
-    return this.storage.getItem(this.prefix + key) || undefined; 
-  }
-  
-  getNumber(key: string) { 
-    const v = this.storage.getItem(this.prefix + key);
-    return v ? Number(v) : undefined;
-  }
-  
-  getBoolean(key: string) { 
-    return this.storage.getItem(this.prefix + key) === 'true'; 
-  }
-  
-  set(key: string, value: string | number | boolean) { 
-    this.storage.setItem(this.prefix + key, String(value)); 
-  }
-  
-  remove(key: string) { 
-    this.storage.removeItem(this.prefix + key); 
-  }
-  
-  delete(key: string) { 
-    this.storage.removeItem(this.prefix + key); 
-  }
-  
-  getAllKeys() { 
-    return Object.keys(this.storage)
-      .filter(k => k.startsWith(this.prefix))
-      .map(k => k.slice(this.prefix.length)); 
-  }
-  
-  clearAll() { 
-    const keys = this.getAllKeys();
-    keys.forEach(k => this.remove(k));
-  }
-}
 
 // 2. Factory function for creating encrypted storage instances (PII data)
-export function createStorage(options: { id: string; encryptionKey?: string }): MMKV | MemoryStorage | WebStorage {
-  if (Platform.OS === 'web') {
-    logger.log('🌐 Using WebStorage for web platform');
-    return new WebStorage(options);
-  }
-
+export function createStorage(options: { id: string; encryptionKey?: string }): MMKV | MemoryStorage {
   try {
     // 🔐 Use secure encryption key from device keychain/keystore
     // Falls back to cached key if SecureStore hasn't been initialized yet
@@ -118,11 +67,7 @@ export function createStorage(options: { id: string; encryptionKey?: string }): 
 
 // 3. Factory function for creating unencrypted storage instances (non-PII data)
 // Skips AES encryption overhead for high-frequency reads like prayer records, stats, counters.
-export function createUnencryptedStorage(options: { id: string }): MMKV | MemoryStorage | WebStorage {
-  if (Platform.OS === 'web') {
-    return new WebStorage(options);
-  }
-
+export function createUnencryptedStorage(options: { id: string }): MMKV | MemoryStorage {
   try {
     const storage = createMMKV({ id: options.id });
     logger.log('✅ Unencrypted MMKV initialized:', options.id);

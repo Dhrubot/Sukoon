@@ -126,7 +126,7 @@ const ReflectionGardenScreen: React.FC = () => {
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.emptyInfoLink}
-            onPress={() => (navigation as any).navigate('TubaTreeInfo')}
+            onPress={() => navigation.navigate('MainTabs', { screen: 'Menu', params: { screen: 'TubaTreeInfo' } })}
             activeOpacity={0.7}
           >
             <Text style={[styles.emptyInfoLinkText, { color: theme.colors.interactive.active }]}>
@@ -236,7 +236,7 @@ const ReflectionGardenScreen: React.FC = () => {
         {/* Learn more link */}
         <TouchableOpacity
           style={styles.infoLink}
-          onPress={() => (navigation as any).navigate('TubaTreeInfo')}
+          onPress={() => navigation.navigate('MainTabs', { screen: 'Menu', params: { screen: 'TubaTreeInfo' } })}
           activeOpacity={0.7}
         >
           <Text style={[styles.infoLinkText, { color: theme.colors.interactive.active }]}>

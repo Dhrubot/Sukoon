@@ -217,4 +217,4 @@ const createStyles = (theme: AppTheme) =>
     },
   });
 
-export default CatchUpSheet;
+export default React.memo(CatchUpSheet);

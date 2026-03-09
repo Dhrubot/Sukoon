@@ -74,6 +74,7 @@ export default {
       "./plugins/withWidget.js",
       "./plugins/withAndroidWidget.js",
       "./plugins/withLiveActivity.js",
+      "./plugins/withBootReceiver.js",
       "expo-font",
       "expo-location",
       ["expo-audio", { microphonePermission: false }],

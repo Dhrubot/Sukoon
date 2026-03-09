@@ -1,7 +1,7 @@
 // src/providers/PrayerTimesProvider.tsx
 
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { AppState } from 'react-native';
+import { useAppStateChange } from '../hooks/useAppStateChange';
 import { useStore } from '../store/useStore';
 import PrayerTimeService from '../services/PrayerTimeService';
 import { PrayerTime, PrayerName, PrayerTimes, Location } from '../types';
@@ -125,6 +125,17 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
     return null;
   };
 
+  // ⚠️ CLOSURE FRAGILITY: This function closes over `location`, `userSettings`,
+  // and `hasValidLocation` from the current render. When called from the
+  // useAppStateChange callback (day-boundary reload), these values reflect the
+  // render that last registered the callback — NOT necessarily the latest store
+  // state. This is safe today because:
+  //   1. The useEffect that calls loadPrayerTimes lists the relevant deps, so
+  //      React re-creates the closure whenever they change.
+  //   2. The AppState callback only calls loadPrayerTimes on day-boundary
+  //      crossings, and location/settings rarely change between renders.
+  // If you ever need truly fresh values inside a deferred or async call path,
+  // read directly from `useStore.getState()` instead of relying on the closure.
   const loadPrayerTimes = async () => {
     if (!hasValidLocation || !userSettings) {
       logger.log('⏳ PrayerTimesProvider: Waiting for prerequisites');
@@ -232,6 +243,7 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
       }
 
       setIsOffline(PrayerTimeService.lastFetchWasFallback);
+      lastLoadedDateRef.current = getLocalDateKey();
       logger.log('✅ Prayer times loaded successfully');
 
       // Push data to iOS widget
@@ -280,6 +292,7 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
   // AppState-aware: pauses on background, immediate recalc on foreground.
   const recalcRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const runRecalcRef = useRef<() => void>(() => {});
+  const lastLoadedDateRef = useRef<string>(getLocalDateKey());
 
   const runRecalc = () => {
     if (todayPrayerTimes.length === 0) return;
@@ -313,39 +326,46 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
   // Keep the ref pointing to the latest runRecalc closure
   runRecalcRef.current = runRecalc;
 
+  const tick = () => {
+    // Update shared clock so HomeScreen / useMosqueMode don't need their own intervals
+    useStore.getState().setCurrentTime(new Date());
+    runRecalcRef.current();
+  };
+
+  const startInterval = () => {
+    if (recalcRef.current) clearInterval(recalcRef.current);
+    recalcRef.current = setInterval(tick, 60_000);
+  };
+
+  // Start the 60s recalc interval on mount
   useEffect(() => {
-    const tick = () => {
-      // Update shared clock so HomeScreen / useMosqueMode don't need their own intervals
-      useStore.getState().setCurrentTime(new Date());
-      runRecalcRef.current();
-    };
-
-    const startInterval = () => {
-      if (recalcRef.current) clearInterval(recalcRef.current);
-      recalcRef.current = setInterval(tick, 60_000);
-    };
-
     startInterval();
-
-    const subscription = AppState.addEventListener('change', (nextState) => {
-      if (nextState === 'active') {
-        // Immediately recalculate stale nextPrayer and restart interval
-        tick();
-        startInterval();
-      } else {
-        // Pause interval when backgrounded/inactive
-        if (recalcRef.current) {
-          clearInterval(recalcRef.current);
-          recalcRef.current = null;
-        }
-      }
-    });
-
     return () => {
       if (recalcRef.current) clearInterval(recalcRef.current);
-      subscription.remove();
     };
   }, []);
+
+  // Resume/pause via shared AppState listener (single native bridge subscription)
+  useAppStateChange((nextState) => {
+    if (nextState === 'active') {
+      // Day-boundary check: if the date changed while backgrounded,
+      // reload prayer times entirely instead of just recalculating
+      const currentDateKey = getLocalDateKey();
+      if (currentDateKey !== lastLoadedDateRef.current) {
+        logger.log(`📅 Day boundary crossed (${lastLoadedDateRef.current} → ${currentDateKey}), reloading prayer times`);
+        loadPrayerTimes();
+      }
+      // Immediately recalculate stale nextPrayer and restart interval
+      tick();
+      startInterval();
+    } else {
+      // Pause interval when backgrounded/inactive
+      if (recalcRef.current) {
+        clearInterval(recalcRef.current);
+        recalcRef.current = null;
+      }
+    }
+  });
 
   const refreshPrayerTimes = async () => {
     await loadPrayerTimes();

@@ -100,16 +100,15 @@ const PrivacyPolicyScreen = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Analytics & Tracking</Text>
           <Text style={styles.paragraph}>
-            <Text style={styles.bold}>We do not track you.</Text> Sukoon does not use analytics, crash 
-            reporting, or any tracking services by default. Your usage patterns, prayer history, and 
-            reflections remain completely private.
+            <Text style={styles.bold}>We do not track you.</Text> Sukoon never sends your prayer history, 
+            reflections, or spiritual practice data to any server. Your worship patterns remain 
+            completely private on your device.
           </Text>
           <Text style={styles.paragraph}>
-            If analytics are added in future versions, they will be:
+            Sukoon collects only anonymous, non-religious interaction events (e.g., app opened, 
+            feature tapped) to improve the experience. No prayer times, streaks, or personal data 
+            are ever transmitted.
           </Text>
-          <Text style={styles.bulletPoint}>• Completely optional and opt-in</Text>
-          <Text style={styles.bulletPoint}>• Anonymous and aggregated</Text>
-          <Text style={styles.bulletPoint}>• Clearly disclosed in settings</Text>
         </View>
 
         <View style={styles.section}>

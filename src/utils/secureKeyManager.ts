@@ -1,6 +1,8 @@
 // src/utils/secureKeyManager.ts
 import * as SecureStore from 'expo-secure-store';
+import * as ExpoCrypto from 'expo-crypto';
 import { Platform } from 'react-native';
+import * as Device from 'expo-device';
 import logger from './logger';
 
 const ENCRYPTION_KEY_STORAGE_KEY = 'sukoon_encryption_key';
@@ -13,17 +15,16 @@ function generateRandomKey(length: number = 32): string {
   let result = '';
   const randomValues = new Uint8Array(length);
   
-  // Use crypto.getRandomValues if available, otherwise fallback
   if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
     crypto.getRandomValues(randomValues);
-    for (let i = 0; i < length; i++) {
-      result += chars[randomValues[i] % chars.length];
-    }
   } else {
-    // Fallback for environments without crypto
-    for (let i = 0; i < length; i++) {
-      result += chars[Math.floor(Math.random() * chars.length)];
-    }
+    // expo-crypto fallback (always available on native)
+    const bytes = ExpoCrypto.getRandomBytes(length);
+    randomValues.set(bytes);
+  }
+
+  for (let i = 0; i < length; i++) {
+    result += chars[randomValues[i] % chars.length];
   }
   
   return result;
@@ -60,10 +61,21 @@ export async function getOrCreateEncryptionKey(): Promise<string> {
     logger.log('🔐 Generated and stored new encryption key in secure storage');
     return newKey;
   } catch (error) {
-    logger.error('⚠️ SecureStore error, using fallback key:', error);
-    // Fallback to a deterministic key based on app identifier
-    // This is less secure but ensures the app doesn't crash
-    return 'sukoon-fallback-encryption-key-v1';
+    logger.error('⚠️ SecureStore error, deriving device-specific fallback key:', error);
+    // Derive a device-specific key instead of using a static string.
+    // Not as secure as SecureStore but far better than a publicly known constant.
+    const deviceSeed = [
+      Device.modelName || 'unknown',
+      Device.osVersion || '0',
+      Device.deviceName || 'device',
+      Platform.OS,
+    ].join('-');
+    // SHA-256 the seed to get a consistent, non-obvious key
+    const hash = await ExpoCrypto.digestStringAsync(
+      ExpoCrypto.CryptoDigestAlgorithm.SHA256,
+      `sukoon-device-key-${deviceSeed}`
+    );
+    return hash.slice(0, 32);
   }
 }
 
@@ -77,8 +89,15 @@ export function getCachedEncryptionKey(): string {
   if (cachedKey) {
     return cachedKey;
   }
-  // Return fallback if not yet initialized
-  return 'sukoon-temp-encryption-key';
+  // Return a device-derived fallback synchronously if not yet initialized.
+  // This is used briefly before initializeEncryptionKey() completes.
+  const seed = `${Platform.OS}-${Device.modelName || 'u'}-${Device.osVersion || '0'}`;
+  // Simple hash — this path is only hit for the first few ms of app launch
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) {
+    h = ((h << 5) - h + seed.charCodeAt(i)) | 0;
+  }
+  return `sukoon-init-${Math.abs(h).toString(36).padStart(12, '0')}`;
 }
 
 export function setCachedEncryptionKey(key: string): void {

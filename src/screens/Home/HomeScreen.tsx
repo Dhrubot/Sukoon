@@ -1,5 +1,5 @@
 // src/screens/Home/HomeScreen.tsx
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -9,9 +9,9 @@ import {
   Dimensions,
   ColorValue,
   ActivityIndicator,
-  AppState,
   NativeScrollEvent,
   NativeSyntheticEvent,
+  Linking,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
@@ -27,6 +27,7 @@ import { AppTheme } from "../../theme";
 // NEW: Use our centralized prayer times hook
 import { usePrayerTimes } from "../../providers/PrayerTimesProvider";
 import { useMosqueMode } from "../../hooks/useMosqueMode";
+import { useAppStateChange } from "../../hooks/useAppStateChange";
 
 // Components
 import PrayerCard from "../../components/prayer/PrayerCard";
@@ -56,10 +57,9 @@ import TreeGrowthStateService from "../../services/TreeGrowthStateService";
 import { getLocalDateKey } from "../../utils/dateHelpers";
 import MoonSightingPrompt from "../../components/MoonSightingPrompt";
 
-const { width } = Dimensions.get("window");
+import { HERO_ADVANCE_MINUTES } from "../../constants/NotificationConstants";
 
-// Hero ring advances to the next prayer this many minutes before its adhan
-const HERO_ADVANCE_MINUTES = 15;
+const { width } = Dimensions.get("window");
 
 const HomeScreen = ({ navigation }: any) => {
   const { theme } = useTheme();
@@ -131,12 +131,12 @@ const HomeScreen = ({ navigation }: any) => {
     navigation.setParams({ quickLogPrayer: undefined });
   }, [route.params?.quickLogPrayer, todayPrayerTimes]);
 
-  const handleQuickLogTrigger = (prayer: PrayerTime) => {
+  const handleQuickLogTrigger = useCallback((prayer: PrayerTime) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setQuickLogPrayer(prayer);
-  };
+  }, []);
 
-  const handleQuickLogConfirm = () => {
+  const handleQuickLogConfirm = useCallback(() => {
     if (!quickLogPrayer) return;
 
     const dateKey = getLocalDateKey();
@@ -168,15 +168,15 @@ const HomeScreen = ({ navigation }: any) => {
 
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     setQuickLogPrayer(null);
-  };
+  }, [quickLogPrayer, addPrayerRecord]);
 
-  const handleQuickLogOpenFlow = () => {
+  const handleQuickLogOpenFlow = useCallback(() => {
     const prayer = quickLogPrayer;
     setQuickLogPrayer(null);
     if (prayer) {
       handlePrayerComplete(prayer);
     }
-  };
+  }, [quickLogPrayer]);
 
   // Mosque mode prompt: notification tap path
   useEffect(() => {
@@ -192,18 +192,26 @@ const HomeScreen = ({ navigation }: any) => {
   // 🎯 REMOVED: location checks - now handled by provider!
   // 🎯 REMOVED: prayer time error handling - now handled by provider!
 
-  // Load records on mount + reload on foreground
+  // Load records on mount
   useEffect(() => {
     loadTodayRecords();
-
-    const subscription = AppState.addEventListener('change', (nextState) => {
-      if (nextState === 'active') {
-        loadTodayRecords();
-      }
-    });
-
-    return () => subscription.remove();
+    checkNotificationPermission();
   }, []);
+
+  // Notification permission denied banner
+  const [notificationsDenied, setNotificationsDenied] = useState(false);
+  const checkNotificationPermission = useCallback(() => {
+    const denied = StorageService.getValue('notification_permission_denied') === 'true';
+    setNotificationsDenied(denied);
+  }, []);
+
+  // Reload on foreground via shared AppState listener
+  useAppStateChange((nextState) => {
+    if (nextState === 'active') {
+      loadTodayRecords();
+      checkNotificationPermission();
+    }
+  });
 
   // Check for moon sighting prompt — gates on Maghrib time for eve dates
   // Re-checks every minute (via currentTime) to catch the Maghrib crossover
@@ -253,14 +261,14 @@ const HomeScreen = ({ navigation }: any) => {
     }
   }, [todayPrayerTimes, currentTime]);
 
-  const loadTodayRecords = () => {
+  const loadTodayRecords = useCallback(() => {
     const today = format(new Date(), "yyyy-MM-dd");
     const records = StorageService.getDayPrayerRecords(today);
     setTodayPrayerRecords(records);
-  };
+  }, [setTodayPrayerRecords]);
 
 
-  const handlePrayerComplete = (prayerTime: PrayerTime) => {
+  const handlePrayerComplete = useCallback((prayerTime: PrayerTime) => {
     // Create a serializable version of prayerTime by converting Date to ISO string
     const serializablePrayer = {
       ...prayerTime,
@@ -268,9 +276,9 @@ const HomeScreen = ({ navigation }: any) => {
     };
     
     navigation.navigate("MindfulnessFlow", { prayer: serializablePrayer });
-  };
+  }, [navigation]);
 
-  const handleOptionalPrayerPrepare = (prayer: OptionalPrayerTime) => {
+  const handleOptionalPrayerPrepare = useCallback((prayer: OptionalPrayerTime) => {
     const serializablePrayer = {
       name: prayer.name,
       time: prayer.time.toISOString(),
@@ -278,9 +286,9 @@ const HomeScreen = ({ navigation }: any) => {
       isNext: false,
     };
     navigation.navigate("MindfulnessFlow", { prayer: serializablePrayer, isSunnah: true });
-  };
+  }, [navigation]);
 
-  const handleSunnahPrayer = () => {
+  const handleSunnahPrayer = useCallback(() => {
     const prayerName = nextPrayer?.name ?? 'Fajr';
     const sunnahPrayer = {
       name: prayerName,
@@ -289,7 +297,7 @@ const HomeScreen = ({ navigation }: any) => {
       isNext: false,
     };
     navigation.navigate("MindfulnessFlow", { prayer: sunnahPrayer, isSunnah: true });
-  };
+  }, [navigation, nextPrayer?.name]);
 
   const getBackgroundGradient = (): readonly [ColorValue, ColorValue] => {
     return [theme.colors.background.primary, theme.colors.background.secondary];
@@ -367,13 +375,17 @@ const HomeScreen = ({ navigation }: any) => {
     return base;
   }, [nextPrayer, todayPrayerTimes, todayPrayerRecords, tomorrowFajr, todayMidnight, currentTime]);
 
+  // Stable identity key — only changes when the hero prayer actually transitions.
+  // Downstream memos use this instead of heroPrayer (which rebuilds every 60s tick).
+  const heroPrayerName = heroPrayer?.name ?? null;
+
   // Previous prayer time for inter-prayer ring progress
   const previousPrayerTime = useMemo(() => {
     if (!heroPrayer) return undefined;
     const heroIdx = todayPrayerTimes.findIndex(p => p.name === heroPrayer.name);
     if (heroIdx > 0) return todayPrayerTimes[heroIdx - 1].time;
     return undefined;
-  }, [heroPrayer, todayPrayerTimes]);
+  }, [heroPrayerName, todayPrayerTimes]);
 
   // Unified mosque mode info for the hero pill — scoped to heroPrayer
   const mosqueModeHeroInfo = useMemo(() => {
@@ -405,7 +417,7 @@ const HomeScreen = ({ navigation }: any) => {
     const iqamah = getIqamahTime(heroPrayer);
     if (!iqamah) return null;
     return { iqamahTime: iqamah };
-  }, [isMosqueModeEnabled, isMosqueModeActive, mosqueModeState, mosqueModeSettings, heroPrayer, todayPrayerTimes, getIqamahTime, currentTime]);
+  }, [isMosqueModeEnabled, isMosqueModeActive, mosqueModeState, mosqueModeSettings, heroPrayerName, todayPrayerTimes, getIqamahTime, currentTime]);
 
   // Focus Mode: sanctuary expands during prayer window or active mosque mode
   const isFocusMode = useMemo(() => {
@@ -428,7 +440,7 @@ const HomeScreen = ({ navigation }: any) => {
     return todayPrayerRecords.find(
       r => r.prayer === heroPrayer.name && r.status === 'prayed'
     );
-  }, [heroPrayer, todayPrayerRecords]);
+  }, [heroPrayerName, todayPrayerRecords]);
 
   // Check if the hero prayer's adhan has actually happened
   const isHeroPrayerTimeEntered = useMemo(() => {
@@ -449,7 +461,7 @@ const HomeScreen = ({ navigation }: any) => {
       if (!prayed) return p;
     }
     return undefined;
-  }, [heroPrayer, todayPrayerTimes, todayPrayerRecords, isHeroPrayerTimeEntered]);
+  }, [heroPrayerName, todayPrayerTimes, todayPrayerRecords, isHeroPrayerTimeEntered]);
 
   // All missed prayers today (past time, no record, next prayer started)
   const missedPrayersToday = useMemo(() => {
@@ -661,6 +673,19 @@ const HomeScreen = ({ navigation }: any) => {
             </View>
           )}
 
+          {/* Notification Permission Denied Banner */}
+          {notificationsDenied && userSettings?.notifications?.enabled && (
+            <TouchableOpacity
+              style={styles.permissionBanner}
+              onPress={() => Linking.openSettings()}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.permissionBannerText}>
+                Prayer reminders are off — tap to re-enable
+              </Text>
+            </TouchableOpacity>
+          )}
+
 
           {/* Ramadan Suhoor/Iftar — only during Ramadan */}
           {isRamadan() && todayPrayerTimes.length > 0 && (() => {
@@ -744,38 +769,46 @@ const HomeScreen = ({ navigation }: any) => {
       )}
 
       {/* Hijri date nudge — "Is today X?" sheet during days 1–3 of critical months */}
-      <HijriNudgeSheet
-        visible={showHijriNudgeSheet && !!hijriNudge && !moonSightingEvent}
-        nudge={hijriNudge}
-        onDismissed={() => {
-          setShowHijriNudgeSheet(false);
-          setHijriNudge(null);
-        }}
-      />
+      {showHijriNudgeSheet && !!hijriNudge && !moonSightingEvent && (
+        <HijriNudgeSheet
+          visible
+          nudge={hijriNudge}
+          onDismissed={() => {
+            setShowHijriNudgeSheet(false);
+            setHijriNudge(null);
+          }}
+        />
+      )}
 
       {/* Auto-deduce celebration — Ramadan 30 → Eid, Dhul Qi'dah 30 → Dhul Hijjah */}
-      <AutoDeduceSheet
-        visible={!!autoDeduceEvent}
-        event={autoDeduceEvent}
-        onDismiss={() => setAutoDeduceEvent(null)}
-      />
+      {!!autoDeduceEvent && (
+        <AutoDeduceSheet
+          visible
+          event={autoDeduceEvent}
+          onDismiss={() => setAutoDeduceEvent(null)}
+        />
+      )}
 
       {/* Catch-up sheet — once per session when ≥3 prayers missed */}
-      <CatchUpSheet
-        visible={showCatchUpSheet}
-        missedPrayers={missedPrayersToday}
-        onCatchUp={(prayer: PrayerTime) => handlePrayerComplete(prayer)}
-        onDismiss={() => setShowCatchUpSheet(false)}
-      />
+      {showCatchUpSheet && (
+        <CatchUpSheet
+          visible
+          missedPrayers={missedPrayersToday}
+          onCatchUp={(prayer: PrayerTime) => handlePrayerComplete(prayer)}
+          onDismiss={() => setShowCatchUpSheet(false)}
+        />
+      )}
 
       {/* Quick-log sheet — long-press or notification tap */}
-      <QuickLogSheet
-        visible={!!quickLogPrayer}
-        prayerName={quickLogPrayer?.name ?? null}
-        onConfirm={handleQuickLogConfirm}
-        onOpenFlow={handleQuickLogOpenFlow}
-        onDismiss={() => setQuickLogPrayer(null)}
-      />
+      {!!quickLogPrayer && (
+        <QuickLogSheet
+          visible
+          prayerName={quickLogPrayer.name}
+          onConfirm={handleQuickLogConfirm}
+          onOpenFlow={handleQuickLogOpenFlow}
+          onDismiss={() => setQuickLogPrayer(null)}
+        />
+      )}
     </SafeAreaView>
   );
 };
@@ -926,6 +959,22 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   offlineBannerText: {
     fontSize: theme.typography.fontSize.sm,
     color: theme.colors.status.warning,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
+  },
+  permissionBanner: {
+    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    borderRadius: theme.borderRadius.sm,
+    paddingVertical: theme.spacing.sm,
+    paddingHorizontal: theme.spacing.lg,
+    marginHorizontal: theme.spacing.xl,
+    marginBottom: theme.spacing.sm,
+    borderWidth: 1,
+    borderColor: 'rgba(239, 68, 68, 0.25)',
+    alignItems: 'center' as const,
+  },
+  permissionBannerText: {
+    fontSize: theme.typography.fontSize.sm,
+    color: '#ef4444',
     fontFamily: theme.typography.fontFamily.bodyMedium,
   },
 });

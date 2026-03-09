@@ -7,7 +7,7 @@ import StorageService from './StorageService';
 import PrayerTimeService from './PrayerTimeService';
 import ReminderStateService from './ReminderStateService';
 import { format } from 'date-fns';
-import { CHANNELS, SOUNDS, NOTIFICATION_CHANNEL_VERSION, NOTIFICATION_SCHEDULING_DAYS, NOTIFICATION_LOWER_TIER_DAYS, NOTIFICATION_MAX_FUTURE_DAYS, IOS_NOTIFICATION_CAP } from '../constants/NotificationConstants';
+import { CHANNELS, SOUNDS, NOTIFICATION_CHANNEL_VERSION, NOTIFICATION_SCHEDULING_DAYS, NOTIFICATION_LOWER_TIER_DAYS, NOTIFICATION_MAX_FUTURE_DAYS, IOS_NOTIFICATION_CAP, SCHEDULING_LOCK_TIMEOUT_MS, KEEP_ALIVE_INTERVAL_MS } from '../constants/NotificationConstants';
 import MosqueModeService from './MosqueModeService';
 import { NOTIFICATION_CATEGORIES, initializeChannelsAndCategories } from './notifications/NotificationChannels';
 import AdhanPlayer from './notifications/AdhanPlayer';
@@ -50,13 +50,22 @@ interface NotificationContent {
   subtitle?: string;
 }
 
+// Typed notification data — eliminates 'as any' casts on notification.content.data
+interface NotificationData {
+  type?: string;
+  prayer?: PrayerName;
+  prayerId?: string;
+  action?: string;
+  [key: string]: unknown;
+}
+
 type PrayerTimesFetcher = (params: {
   location: UserSettings['location'];
   date: Date;
   calculationMethod: UserSettings['calculationMethod'];
   adjustments?: UserSettings['adjustments'];
   asrJuristic?: UserSettings['asrJuristic'];
-}) => Promise<{ prayerTimes: PrayerTime[]; sunrise: Date; sunset: Date }>;
+}) => Promise<{ prayerTimes: PrayerTime[]; sunrise: Date; sunset: Date; midnight?: Date | null }>;
 
 class NotificationService {
   private notificationListener: Notifications.Subscription | null = null;
@@ -68,7 +77,7 @@ class NotificationService {
     const lockTime = StorageService.getValue('notification_scheduling_lock');
     if (lockTime) {
       const elapsed = Date.now() - parseInt(lockTime, 10);
-      if (elapsed < 120_000) return false; // Lock held < 2 min → scheduling in progress
+      if (elapsed < SCHEDULING_LOCK_TIMEOUT_MS) return false; // Lock held < 2 min → scheduling in progress
       // Lock is stale (>2 min) → previous run crashed, steal it
     }
     StorageService.setValue('notification_scheduling_lock', Date.now().toString());
@@ -637,7 +646,7 @@ class NotificationService {
   }
 
   private async scheduleKeepAliveNotification(iosCounter?: { count: number }): Promise<void> {
-    const keepAliveTime = new Date(Date.now() + 48 * 60 * 60 * 1000);
+    const keepAliveTime = new Date(Date.now() + KEEP_ALIVE_INTERVAL_MS);
     try {
       if (Platform.OS === 'ios' && iosCounter && iosCounter.count >= IOS_NOTIFICATION_CAP) {
         logger.log(`🚫 iOS cap reached, skipping keep-alive notification`);
@@ -788,7 +797,7 @@ class NotificationService {
   async cancelPrayerNotifications(prayerName: PrayerName) {
     const scheduled = await Notifications.getAllScheduledNotificationsAsync();
     const toCancel = scheduled.filter((notif) => {
-      const data = notif.content.data as any;
+      const data = notif.content.data as NotificationData | undefined;
       if (data?.type && typeof data.type === 'string' && data.type.startsWith('mosque_mode')) return false;
       return data?.prayer === prayerName;
     });
@@ -812,7 +821,7 @@ class NotificationService {
     ]);
 
     const prayerNotifications = scheduled.filter((notif) => {
-      const data = notif.content.data as any;
+      const data = notif.content.data as NotificationData | undefined;
       if (data?.type && typeof data.type === 'string' && data.type.startsWith('mosque_mode')) return false;
       if (data?.type && prayerNotificationTypes.has(data.type)) return true;
       return false;
@@ -892,6 +901,16 @@ class NotificationService {
 
     this.schedulingProgress = 0;
     try {
+      // Check permission status before scheduling — handles revocation
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status !== 'granted') {
+        logger.warn('🚫 Notification permission not granted (status: ' + status + '), skipping scheduling');
+        StorageService.setValue('notification_permission_denied', 'true');
+        return;
+      }
+      // Permission is granted — clear any stale denial flag
+      StorageService.deleteValue('notification_permission_denied');
+
       logger.log('🗓️ Starting split-tier horizontal scheduling...');
 
       const settings = StorageService.getUserSettings();
@@ -906,7 +925,7 @@ class NotificationService {
 
       if (shouldRebuild) {
         await this.cancelAllPrayerNotifications();
-        StorageService.setValue('notification_schedule_fingerprint', fingerprint);
+        // Fingerprint saved AFTER all passes complete (see below)
       }
 
       // Get ALL scheduled notifications once for the entire scheduling cycle
@@ -937,11 +956,11 @@ class NotificationService {
         this.prayerTimesFetcher ||
         ((params) =>
           PrayerTimeService.getPrayerTimesList(
-            params.location as any,
+            params.location,
             params.date,
-            params.calculationMethod as any,
-            params.adjustments as any,
-            (params.asrJuristic as any) || 'Standard'
+            params.calculationMethod,
+            params.adjustments,
+            params.asrJuristic || 'Standard'
           ));
 
       // Step 0: Fetch prayer times for all days upfront (max of Tier 1 horizon)
@@ -987,29 +1006,34 @@ class NotificationService {
 
       // PASS 1: Tier 1 (Main Adhan) — NOTIFICATION_SCHEDULING_DAYS (3 days)
       logger.log('📢 Pass 1: Scheduling Tier 1 (Adhan) for 3 days...');
+      const pass1Promises: Promise<unknown>[] = [];
       for (let dayIdx = 0; dayIdx < NOTIFICATION_SCHEDULING_DAYS && dayIdx < allDays.length; dayIdx++) {
         const { prayers } = allDays[dayIdx];
         for (const prayer of prayers) {
           if (prayer.time > now) {
-            await this.scheduleMainPrayerNotification(prayer, settings, existingIdentifiers, iosCounter);
+            pass1Promises.push(this.scheduleMainPrayerNotification(prayer, settings, existingIdentifiers, iosCounter));
           }
         }
       }
+      await Promise.all(pass1Promises);
 
       // PASS 2: Pre-prayer — NOTIFICATION_LOWER_TIER_DAYS (2 days)
       const lowerDays = Math.min(NOTIFICATION_LOWER_TIER_DAYS, allDays.length);
       logger.log(`🔔 Pass 2: Scheduling pre-prayer for ${lowerDays} days...`);
+      const pass2Promises: Promise<unknown>[] = [];
       for (let dayIdx = 0; dayIdx < lowerDays; dayIdx++) {
         const { prayers } = allDays[dayIdx];
         for (const prayer of prayers) {
           if (prayer.time > now) {
-            await this.schedulePrePrayerNotification(prayer, settings, existingIdentifiers, iosCounter);
+            pass2Promises.push(this.schedulePrePrayerNotification(prayer, settings, existingIdentifiers, iosCounter));
           }
         }
       }
+      await Promise.all(pass2Promises);
 
       // PASS 3: Tier 3 (Grace period warnings) — 2 days
       if (settings.habitBuilder?.enabled) {
+        const pass3Promises: Promise<unknown>[] = [];
         logger.log(`⚠️ Pass 3: Scheduling Tier 3 (grace warnings) for ${lowerDays} days...`);
         for (let dayIdx = 0; dayIdx < lowerDays; dayIdx++) {
           const { prayers, sunrise } = allDays[dayIdx];
@@ -1022,13 +1046,15 @@ class NotificationService {
             const prayerId = `${prayer.name}-${dateStr}`;
             const deadline = prayer.name === 'Fajr' && sunrise ? sunrise : nextPrayer?.time || undefined;
 
-            await scheduleTier3GracePeriodWarning(prayer, nextPrayer, prayerId, settings, existingIdentifiers, deadline, iosCounter);
+            pass3Promises.push(scheduleTier3GracePeriodWarning(prayer, nextPrayer, prayerId, settings, existingIdentifiers, deadline, iosCounter));
           }
         }
+        await Promise.all(pass3Promises);
       }
 
       // PASS 4: Tier 2 (Persistent reminders) — 2 days, fills remaining budget
       if (settings.habitBuilder?.enabled) {
+        const pass4Promises: Promise<unknown>[] = [];
         logger.log(`🏗️ Pass 4: Scheduling Tier 2 (reminders) for ${lowerDays} days...`);
         for (let dayIdx = 0; dayIdx < lowerDays; dayIdx++) {
           const { prayers, sunrise } = allDays[dayIdx];
@@ -1041,26 +1067,35 @@ class NotificationService {
             const prayerId = `${prayer.name}-${dateStr}`;
             const deadline = prayer.name === 'Fajr' && sunrise ? sunrise : nextPrayer?.time || undefined;
 
-            await scheduleTier2PersistentReminders(prayer, prayerId, settings, existingIdentifiers, deadline, iosCounter);
+            pass4Promises.push(scheduleTier2PersistentReminders(prayer, prayerId, settings, existingIdentifiers, deadline, iosCounter));
           }
         }
+        await Promise.all(pass4Promises);
       }
 
       // PASS 5: Legacy post-prayer check — 2 days (for users without Habit Builder)
       if (!settings.habitBuilder?.enabled && settings.notifications.postPrayerCheck) {
+        const pass5Promises: Promise<unknown>[] = [];
         for (let dayIdx = 0; dayIdx < lowerDays; dayIdx++) {
           const { prayers, sunrise } = allDays[dayIdx];
           for (let j = 0; j < prayers.length; j++) {
             const prayer = prayers[j];
             const nextPrayer = prayers[j + 1] || null;
             if (prayer.time <= now) continue;
-            await this.scheduleLegacyPostPrayerCheck(prayer, nextPrayer, sunrise, settings, existingIdentifiers, iosCounter);
+            pass5Promises.push(this.scheduleLegacyPostPrayerCheck(prayer, nextPrayer, sunrise, settings, existingIdentifiers, iosCounter));
           }
         }
+        await Promise.all(pass5Promises);
       }
 
       // PASS 6: Keep-alive notification at T+48h (self-renewing safety net)
       await this.scheduleKeepAliveNotification(iosCounter);
+
+      // Save fingerprint AFTER all passes complete — if we crash mid-scheduling,
+      // the stale fingerprint forces a full rebuild on next invocation.
+      if (shouldRebuild) {
+        StorageService.setValue('notification_schedule_fingerprint', fingerprint);
+      }
 
       if (iosCounter) {
         logger.log(`📊 iOS notification count: ${iosCounter.count}/${IOS_NOTIFICATION_CAP}`);
@@ -1142,12 +1177,12 @@ class NotificationService {
       sourceLoading: false,
       upcomingNotifications: scheduled.slice(0, 5).map((n) => {
         let triggerDisplay = 'Unknown';
-        const t = n.trigger as any;
+        const t = n.trigger as Record<string, unknown> | null;
 
         if (t) {
-          if (t.date) triggerDisplay = new Date(t.date).toLocaleString();
-          else if (t.value) triggerDisplay = new Date(t.value).toLocaleString(); // Android often uses 'value'
-          else if (t.seconds) triggerDisplay = `In ${t.seconds}s`;
+          if (t.date && (typeof t.date === 'number' || typeof t.date === 'string')) triggerDisplay = new Date(t.date).toLocaleString();
+          else if (t.value && (typeof t.value === 'number' || typeof t.value === 'string')) triggerDisplay = new Date(t.value).toLocaleString();
+          else if (typeof t.seconds === 'number') triggerDisplay = `In ${t.seconds}s`;
         }
 
         return {
@@ -1227,11 +1262,11 @@ class NotificationService {
             this.prayerTimesFetcher ||
             ((params) =>
               PrayerTimeService.getPrayerTimesList(
-                params.location as any,
+                params.location,
                 params.date,
-                params.calculationMethod as any,
-                params.adjustments as any,
-                (params.asrJuristic as any) || 'Standard'
+                params.calculationMethod,
+                params.adjustments,
+                params.asrJuristic || 'Standard'
               ));
 
           const prayerData = await fetcher({
@@ -1243,7 +1278,7 @@ class NotificationService {
           });
 
           // Get midnight time — schedule notification at midnight (start of last third)
-          const midnight = (prayerData as any).midnight as Date | null;
+          const midnight = prayerData.midnight ?? null;
           if (!midnight || midnight <= new Date()) continue;
 
           // Respect quiet hours
@@ -1325,7 +1360,7 @@ class NotificationService {
   async cancelTahajjudNotifications(): Promise<void> {
     const scheduled = await Notifications.getAllScheduledNotificationsAsync();
     const tahajjudNotifs = scheduled.filter(
-      (notif) => (notif.content.data as any)?.type === 'tahajjud-reminder'
+      (notif) => (notif.content.data as NotificationData | undefined)?.type === 'tahajjud-reminder'
     );
     if (tahajjudNotifs.length > 0) {
       await Promise.all(
