@@ -40,10 +40,11 @@ const SupportScreen: React.FC = () => {
   const styles = useThemedStyles(createStyles);
   const [isLoading, setIsLoading] = useState(!servicesInitialized);
   const [currentPlan, setCurrentPlan] = useState<SubscriptionPlan | null>(null);
-  const [canWatchAd, setCanWatchAd] = useState(false);
-  const [hoursUntilNextAd, setHoursUntilNextAd] = useState(0);
+  // TODO: Re-enable watch ad tab once we have a solid userbase
+  // const [canWatchAd, setCanWatchAd] = useState(false);
+  // const [hoursUntilNextAd, setHoursUntilNextAd] = useState(0);
   // TODO: Re-enable 'subscription' as default once we have premium features ready
-  const [selectedTab, setSelectedTab] = useState<'subscription' | 'watch' | 'donate'>('watch');
+  const [selectedTab, setSelectedTab] = useState<'subscription' | 'watch' | 'donate'>('donate');
 
   const handleTabChange = (tab: 'subscription' | 'watch' | 'donate') => {
     setSelectedTab(tab);
@@ -53,12 +54,12 @@ const SupportScreen: React.FC = () => {
 
   useEffect(() => {
     initializeServices();
-    // Poll ad readiness so button re-enables after next ad loads
-    const adPoll = setInterval(async () => {
-      const canShow = await AdService.canShowAd();
-      setCanWatchAd(canShow);
-    }, 10_000);
-    return () => clearInterval(adPoll);
+    // TODO: Re-enable ad polling once watch ad tab is back
+    // const adPoll = setInterval(async () => {
+    //   const canShow = await AdService.canShowAd();
+    //   setCanWatchAd(canShow);
+    // }, 10_000);
+    // return () => clearInterval(adPoll);
   }, []);
 
   const initializeServices = async () => {
@@ -69,7 +70,8 @@ const SupportScreen: React.FC = () => {
         // IAPManager must be initialized first — owns the single IAP connection + listener
         await IAPManager.initialize();
         await SubscriptionService.initialize();
-        await AdService.initialize();
+        // TODO: Re-enable AdService once watch ad tab is back
+        // await AdService.initialize();
         await DonationService.initialize();
         servicesInitialized = true;
       }
@@ -80,9 +82,10 @@ const SupportScreen: React.FC = () => {
         setCurrentPlan(SubscriptionService.getCurrentSubscription());
       }
 
-      const canShow = await AdService.canShowAd();
-      setCanWatchAd(canShow);
-      setHoursUntilNextAd(AdService.getHoursUntilNextAd());
+      // TODO: Re-enable ad status checks once watch ad tab is back
+      // const canShow = await AdService.canShowAd();
+      // setCanWatchAd(canShow);
+      // setHoursUntilNextAd(AdService.getHoursUntilNextAd());
     } catch (error) {
       logger.error('Failed to initialize support services:', error);
     } finally {
@@ -105,31 +108,31 @@ const SupportScreen: React.FC = () => {
     }
   };
 
-  const handleWatchAd = async () => {
-    setIsProcessing(true);
-    try {
-      const success = await AdService.showRewardedAd();
-      if (success) {
-        Alert.alert(
-          'JazakAllah Khair!',
-          'Your support helps keep Sukoon free for the Ummah. May Allah reward your generosity.',
-          [{ text: 'Alhamdulillah' }]
-        );
-        // Next ad needs time to load after the previous one closes
-        setCanWatchAd(false);
-        setTimeout(async () => {
-          const canShow = await AdService.canShowAd();
-          setCanWatchAd(canShow);
-        }, 3000);
-      } else {
-        Alert.alert('Ad Not Ready', 'Please try again in a moment.');
-      }
-    } catch (error) {
-      Alert.alert('Error', 'Failed to show ad. Please try again.');
-    } finally {
-      setIsProcessing(false);
-    }
-  };
+  // TODO: Re-enable handleWatchAd once we have a solid userbase
+  // const handleWatchAd = async () => {
+  //   setIsProcessing(true);
+  //   try {
+  //     const success = await AdService.showRewardedAd();
+  //     if (success) {
+  //       Alert.alert(
+  //         'JazakAllah Khair!',
+  //         'Your support helps keep Sukoon free for the Ummah. May Allah reward your generosity.',
+  //         [{ text: 'Alhamdulillah' }]
+  //       );
+  //       setCanWatchAd(false);
+  //       setTimeout(async () => {
+  //         const canShow = await AdService.canShowAd();
+  //         setCanWatchAd(canShow);
+  //       }, 3000);
+  //     } else {
+  //       Alert.alert('Ad Not Ready', 'Please try again in a moment.');
+  //     }
+  //   } catch (error) {
+  //     Alert.alert('Error', 'Failed to show ad. Please try again.');
+  //   } finally {
+  //     setIsProcessing(false);
+  //   }
+  // };
 
   const handleDonation = async (tierId: string) => {
     setIsProcessing(true);
@@ -242,64 +245,60 @@ const SupportScreen: React.FC = () => {
   //   </ScrollView>
   // );
 
-  const renderWatchAdTab = () => {
-    const adStatus = AdService.getAdFreeStatus();
-    
-    return (
-      <View style={styles.adContainer}>
-        <View style={styles.adCard}>
-          <Text style={styles.adEmoji}>📺</Text>
-          <Text style={styles.adTitle}>Support by Watching</Text>
-          <Text style={styles.adDescription}>
-            Watch a short ad to help cover our server and development costs
-          </Text>
-
-          <Text style={styles.adNote}>
-            • Completely voluntary{'\n'}
-            • No forced or popup ads{'\n'}
-            • All ads are halal content only{'\n'}
-            • Support development costs
-          </Text>
-
-          {canWatchAd ? (
-            <TouchableOpacity
-              style={styles.watchAdButton}
-              onPress={handleWatchAd}
-              disabled={isProcessing}
-            >
-              <LinearGradient
-                colors={[theme.colors.status.success, theme.colors.primary.dark]}
-                style={styles.watchAdGradient}
-              >
-                <Text style={styles.watchAdButtonText}>
-                  {isProcessing ? 'Loading...' : 'Watch Ad'}
-                </Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.adUnavailable}>
-              {/* TODO: [PREMIUM] Re-add hoursUntilNextAd cooldown messaging when premium features are implemented */}
-              <Text style={styles.adUnavailableText}>
-                {AdService.isAdReady()
-                  ? 'Ready to watch another ad!'
-                  : 'Ad is loading... please wait a moment'}
-              </Text>
-            </View>
-          )}
-        </View>
-
-        <View style={styles.privacyNote}>
-          <Text style={styles.privacyTitle}>Our Promise</Text>
-          <Text style={styles.privacyText}>
-            • We will NEVER show popup or forced ads{'\n'}
-            • All ads are screened for halal content{'\n'}
-            • You choose when to support us{'\n'}
-            • Your privacy is always protected
-          </Text>
-        </View>
-      </View>
-    );
-  };
+  // TODO: Re-enable renderWatchAdTab once we have a solid userbase
+  // const renderWatchAdTab = () => {
+  //   const adStatus = AdService.getAdFreeStatus();
+  //   return (
+  //     <View style={styles.adContainer}>
+  //       <View style={styles.adCard}>
+  //         <Text style={styles.adEmoji}>📺</Text>
+  //         <Text style={styles.adTitle}>Support by Watching</Text>
+  //         <Text style={styles.adDescription}>
+  //           Watch a short ad to help cover our server and development costs
+  //         </Text>
+  //         <Text style={styles.adNote}>
+  //           • Completely voluntary{'\n'}
+  //           • No forced or popup ads{'\n'}
+  //           • All ads use family-safe settings{'\n'}
+  //           • Support development costs
+  //         </Text>
+  //         {canWatchAd ? (
+  //           <TouchableOpacity
+  //             style={styles.watchAdButton}
+  //             onPress={handleWatchAd}
+  //             disabled={isProcessing}
+  //           >
+  //             <LinearGradient
+  //               colors={[theme.colors.status.success, theme.colors.primary.dark]}
+  //               style={styles.watchAdGradient}
+  //             >
+  //               <Text style={styles.watchAdButtonText}>
+  //                 {isProcessing ? 'Loading...' : 'Watch Ad'}
+  //               </Text>
+  //             </LinearGradient>
+  //           </TouchableOpacity>
+  //         ) : (
+  //           <View style={styles.adUnavailable}>
+  //             <Text style={styles.adUnavailableText}>
+  //               {AdService.isAdReady()
+  //                 ? 'Ready to watch another ad!'
+  //                 : 'Ad is loading... please wait a moment'}
+  //             </Text>
+  //           </View>
+  //         )}
+  //       </View>
+  //       <View style={styles.privacyNote}>
+  //         <Text style={styles.privacyTitle}>Our Promise</Text>
+  //         <Text style={styles.privacyText}>
+  //           • We will NEVER show popup or forced ads{'\n'}
+  //           • All ads use family-safe settings{'\n'}
+  //           • You choose when to support us{'\n'}
+  //           • Your privacy is always protected
+  //         </Text>
+  //       </View>
+  //     </View>
+  //   );
+  // };
 
   const renderDonateTab = () => (
     <ScrollView showsVerticalScrollIndicator={false}>
@@ -362,9 +361,9 @@ const SupportScreen: React.FC = () => {
 
         {/* Tab Selector */}
         {/* TODO: Re-enable 'subscription' tab once we have premium features ready */}
-        <View style={styles.tabContainer}>
-          {/* {(['subscription', 'watch', 'donate'] as const).map((tab) => ( */}
-          {(['watch', 'donate'] as const).map((tab) => (
+        {/* TODO: Re-enable 'watch' tab once we have a solid userbase */}
+        {/* <View style={styles.tabContainer}>
+          {(['donate'] as const).map((tab) => (
             <TouchableOpacity
               key={tab}
               style={[styles.tab, selectedTab === tab && styles.tabActive]}
@@ -373,21 +372,18 @@ const SupportScreen: React.FC = () => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
               }}
             >
-              {/* <Text style={[styles.tabIcon, selectedTab === tab && styles.tabIconActive]}>
-                { tab === 'subscription' ? '⭐' :  tab === 'watch' ? '📺' : '🤲'}
-              </Text> */}
               <Text style={[styles.tabText, selectedTab === tab && styles.tabTextActive]}>
-                {/* tab === 'subscription' ? 'Premium' : */ tab === 'watch' ? 'Watch Ad' : 'Donate'}
+                Donate
               </Text>
             </TouchableOpacity>
           ))}
-        </View>
+        </View> */}
 
-        {/* Tab Content */}
+        {/* Tab Content — donate only for now */}
         <View style={styles.tabContent}>
           {/* {selectedTab === 'subscription' && renderSubscriptionTab()} */}
-          {selectedTab === 'watch' && renderWatchAdTab()}
-          {selectedTab === 'donate' && renderDonateTab()}
+          {/* {selectedTab === 'watch' && renderWatchAdTab()} */}
+          {renderDonateTab()}
         </View>
 
         {/* Footer Message */}
