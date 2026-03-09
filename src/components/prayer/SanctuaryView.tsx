@@ -44,7 +44,7 @@ interface SanctuaryViewProps {
   onPrepareQada?: () => void;
   onPraySunnah?: () => void;
   onRepeatPrayer?: () => void;
-  onQuickLog?: () => void;
+  onLongPress?: () => void;
   isFocusMode?: boolean;
   mosqueModeInfo?: MosqueModeHeroInfo;
   onMosqueModeTap?: () => void;
@@ -62,7 +62,7 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
   onPrepareQada,
   onPraySunnah,
   onRepeatPrayer,
-  onQuickLog,
+  onLongPress,
   isFocusMode = false,
   mosqueModeInfo,
   onMosqueModeTap,
@@ -112,6 +112,16 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
       setShowPreAdhanSheet(true);
     } else {
       onPrepare();
+    }
+  };
+
+  const handleLongPress = () => {
+    if (isCTAActive) {
+      // Prayer window open — skip sheet, go straight to MindfulnessFlow
+      onLongPress?.();
+    } else {
+      // Same as tap for pre-adhan / already-prayed states
+      handlePress();
     }
   };
 
@@ -204,6 +214,8 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
               !isCTAActive && styles.mutedButton,
             ]}
             onPress={handlePress}
+            onLongPress={handleLongPress}
+            delayLongPress={400}
             activeOpacity={0.7}
           >
             <Text style={styles.prepareText}>

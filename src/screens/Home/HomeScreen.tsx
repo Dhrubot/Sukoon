@@ -471,8 +471,9 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
   const missedPreviousPrayer = useMemo(() => {
     if (!heroPrayer || isHeroPrayerTimeEntered) return undefined;
     const heroIdx = todayPrayerTimes.findIndex(p => p.name === heroPrayer.name);
-    // Walk backwards to find the first unprayed prayer
-    for (let i = heroIdx - 1; i >= 0; i--) {
+    // When hero is Fajr (idx 0) or tomorrowFajr (idx -1), search from end (Isha)
+    const startIdx = heroIdx <= 0 ? todayPrayerTimes.length - 1 : heroIdx - 1;
+    for (let i = startIdx; i >= 0; i--) {
       const p = todayPrayerTimes[i];
       const prayed = todayPrayerRecords.some(
         r => r.prayer === p.name && r.status === 'prayed'
@@ -662,7 +663,7 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
             onPrepareQada={missedPreviousPrayer ? () => handlePrayerComplete(missedPreviousPrayer) : undefined}
             onPraySunnah={handleSunnahPrayer}
             onRepeatPrayer={() => handlePrayerComplete(heroPrayer)}
-            onQuickLog={() => handlePrayerComplete(heroPrayer)}
+            onLongPress={() => handlePrayerComplete(heroPrayer)}
             isFocusMode={isFocusMode}
             mosqueModeInfo={mosqueModeHeroInfo ?? undefined}
             onMosqueModeTap={() => navigation.navigate('MosqueMode' as never)}
