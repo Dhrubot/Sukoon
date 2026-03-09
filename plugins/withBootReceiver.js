@@ -272,10 +272,10 @@ function withWorkManagerDependency(config) {
         if (!buildGradle.includes('androidx.work:work-runtime')) {
           buildGradle = buildGradle.replace(
             /dependencies\s*\{/,
-            'dependencies {\n    implementation "androidx.work:work-runtime:2.9.1"\n    implementation "com.google.guava:listenablefuture:9999.0-empty-to-avoid-conflict-with-guava"'
+            'dependencies {\n    implementation "androidx.work:work-runtime:2.9.1"\n    // Guava needed on compile classpath for WorkManager\'s ListenableFuture\n    implementation "com.google.guava:guava:33.0.0-android"'
           );
-          fs.writeFileSync(buildGradlePath, buildGradle);
         }
+        fs.writeFileSync(buildGradlePath, buildGradle);
       }
       return cfg;
     },
