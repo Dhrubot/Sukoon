@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useAppInitialization } from '../hooks/useAppInitialization';
 import OnboardingScreen from '../screens/Onboarding/OnboardingScreen';
 import { LoadingScreen } from './LoadingScreen';
@@ -6,7 +6,7 @@ import { LocationModal } from './LocationModal';
 import { AppNavigator } from '../navigation/AppNavigator';
 import { ServiceProvider } from '../providers/ServiceProvider';
 import { useNotificationRescheduler } from '../hooks/useNotificationRescheduler';
-import StorageService from '../services/StorageService';
+
 import SetupHealthScreen from '../screens/SetupHealth/SetupHealthScreen';
 
 export const AppInitializer: React.FC = () => {
@@ -14,18 +14,16 @@ export const AppInitializer: React.FC = () => {
     isLoading,
     isFirstLaunch,
     showLocationModal,
+    showSetupHealth,
     error,
     completeOnboarding,
     closeLocationModal,
+    dismissSetupHealth,
     retryInitialization,
   } = useAppInitialization();
 
   // This activates the "Check every 24h" logic
   useNotificationRescheduler();
-
-  const [showSetupHealth, setShowSetupHealth] = useState(
-    StorageService.getValue('setup_health_shown') !== 'true'
-  );
 
   if (isLoading) {
     return <LoadingScreen message="Initializing Sukoon..." />;
@@ -48,10 +46,7 @@ export const AppInitializer: React.FC = () => {
     <ServiceProvider>
       {showSetupHealth ? (
         <SetupHealthScreen
-          onDone={() => {
-            StorageService.setValue('setup_health_shown', 'true');
-            setShowSetupHealth(false);
-          }}
+          onDone={dismissSetupHealth}
         />
       ) : (
         <AppNavigator />

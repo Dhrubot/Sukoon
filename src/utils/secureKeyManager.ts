@@ -47,7 +47,7 @@ export async function getOrCreateEncryptionKey(): Promise<string> {
     const existingKey = await SecureStore.getItemAsync(ENCRYPTION_KEY_STORAGE_KEY);
     
     if (existingKey) {
-      logger.log('🔐 Retrieved existing encryption key from secure storage');
+      logger.log(`🔐 [KeyDiag] SecureStore HIT — existing key fingerprint: ${existingKey.slice(0, 4)}...${existingKey.slice(-4)}`);
       return existingKey;
     }
 
@@ -58,10 +58,10 @@ export async function getOrCreateEncryptionKey(): Promise<string> {
       keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
     });
     
-    logger.log('🔐 Generated and stored new encryption key in secure storage');
+    logger.warn(`🔐 [KeyDiag] SecureStore MISS — generated NEW key fingerprint: ${newKey.slice(0, 4)}...${newKey.slice(-4)} (existing MMKV data will be unreadable!)`);
     return newKey;
   } catch (error) {
-    logger.error('⚠️ SecureStore error, using random fallback key:', error);
+    logger.error(`⚠️ [KeyDiag] SecureStore FAILED — error: ${error instanceof Error ? error.message : String(error)}`);
     // SecureStore failed (rare, but real on some Android OEMs).
     // Generate a random key and persist it to unencrypted MMKV.
     // This is less secure than Keychain/Keystore but far better than a
@@ -71,16 +71,16 @@ export async function getOrCreateEncryptionKey(): Promise<string> {
       const fallbackStore = createMMKV({ id: 'sukoon-key-fallback' });
       const existing = fallbackStore.getString('fallback_enc_key');
       if (existing) {
-        logger.log('🔐 Retrieved existing fallback encryption key from MMKV');
+        logger.log(`🔐 [KeyDiag] MMKV fallback HIT — fingerprint: ${existing.slice(0, 4)}...${existing.slice(-4)}`);
         return existing;
       }
       const randomKey = generateRandomKey(32);
       fallbackStore.set('fallback_enc_key', randomKey);
-      logger.log('🔐 Generated and stored random fallback encryption key in MMKV');
+      logger.warn(`🔐 [KeyDiag] MMKV fallback MISS — generated NEW random key (existing data unreadable!)`);
       return randomKey;
     } catch (mmkvError) {
       // Absolute last resort: derive from device properties (deterministic but non-obvious)
-      logger.error('⚠️ MMKV fallback also failed, using device-derived key:', mmkvError);
+      logger.error(`⚠️ [KeyDiag] MMKV fallback also FAILED — using device-derived key. Error: ${mmkvError instanceof Error ? mmkvError.message : String(mmkvError)}`);
       const deviceSeed = [
         Device.modelName || 'unknown',
         Device.osVersion || '0',

@@ -18,6 +18,7 @@ interface AppInitializationState {
   isLoading: boolean;
   isFirstLaunch: boolean;
   showLocationModal: boolean;
+  showSetupHealth: boolean;
   error: string | null;
 }
 
@@ -26,6 +27,7 @@ export const useAppInitialization = () => {
     isLoading: true,
     isFirstLaunch: false,
     showLocationModal: false,
+    showSetupHealth: false,
     error: null,
   });
 
@@ -117,10 +119,13 @@ export const useAppInitialization = () => {
       // If no location is set, show location modal
       const needsLocation = !isValidCoordinates(settings.location);
 
+      const setupHealthShown = StorageService.getValue('setup_health_shown') === 'true';
+
       setState({
         isLoading: false,
         isFirstLaunch: firstLaunch,
         showLocationModal: needsLocation,
+        showSetupHealth: !setupHealthShown,
         error: null,
       });
 
@@ -182,10 +187,16 @@ export const useAppInitialization = () => {
     }));
   };
 
+  const dismissSetupHealth = () => {
+    StorageService.setValue('setup_health_shown', 'true');
+    setState((prev) => ({ ...prev, showSetupHealth: false }));
+  };
+
   return {
     ...state,
     completeOnboarding,
     closeLocationModal,
+    dismissSetupHealth,
     retryInitialization: initializeApp,
   };
 };

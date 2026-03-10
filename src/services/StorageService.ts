@@ -63,6 +63,14 @@ class StorageService {
       this._pendingWrites = [];
     }
 
+    // Diagnostic: check if we can actually read existing data
+    const keyCount = this.storage.getAllKeys().length;
+    const hasSettings = this.storage.getString('user_settings') !== undefined;
+    logger.log(`🔍 [InitDiag] Encrypted storage: ${keyCount} key(s), user_settings=${hasSettings ? 'FOUND' : 'MISSING'}`);
+    if (keyCount === 0) {
+      logger.warn('🔍 [InitDiag] Zero keys in encrypted storage — either fresh install or encryption key mismatch (data loss!)');
+    }
+
     logger.log('✅ StorageService initialized with secure encryption');
   }
 
