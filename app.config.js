@@ -46,10 +46,10 @@ export default {
         "ACCESS_COARSE_LOCATION",
         "VIBRATE",
         "RECEIVE_BOOT_COMPLETED",
+        "SCHEDULE_EXACT_ALARM",
         "WAKE_LOCK",
         "ACCESS_NOTIFICATION_POLICY",
         "MODIFY_AUDIO_SETTINGS",
-        "android.permission.PACKAGE_USAGE_STATS",
       ],
       blockedPermissions: [
         "android.permission.RECORD_AUDIO",

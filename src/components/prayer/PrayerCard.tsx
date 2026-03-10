@@ -57,7 +57,7 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
     }
 
     if (newState) {
-      await NotificationService.scheduleAllPrayerNotifications();
+      await NotificationService.reconcileScheduling('settings_change');
     } else {
       await NotificationService.cancelPrayerNotifications(prayerName);
     }

@@ -10,10 +10,8 @@ import {
   Platform,
   Linking,
 } from 'react-native';
-import Slider from '@react-native-community/slider';
 import * as Haptics from 'expo-haptics';
 import NotificationService from '../../services/NotificationService';
-import StorageService from '../../services/StorageService';
 import { UserSettings } from '../../types';
 import PrayerHabitBuilderSettings from './PrayerHabitBuilderSettings';
 import { useTheme } from '../../providers/ThemeProvider';
@@ -88,16 +86,15 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
     setLocalSettings(newSettings);
 
     try {
-      await NotificationService.updateNotificationSettings(newSettings);
-      
       if (userSettings) {
         const updated = {
           ...userSettings,
           notifications: newSettings,
         };
-        StorageService.setUserSettings(updated);
         onUpdateSettings(updated);
       }
+
+      await NotificationService.updateNotificationSettings(newSettings);
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
@@ -125,9 +122,8 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
 
     try {
       setIsUpdating(true);
-      StorageService.setUserSettings(updated);
       onUpdateSettings(updated);
-      await NotificationService.scheduleAllPrayerNotifications();
+      await NotificationService.reconcileScheduling('settings_change');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
       logger.error('Failed to update intensity settings:', error);

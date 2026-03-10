@@ -170,6 +170,9 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
     if (currentRoute?.name) {
       AnalyticsService.logScreenView(currentRoute.name);
     }
+    NotificationService.consumeInitialNotificationResponse().catch((error) => {
+      logger.warn('Failed to consume initial notification response:', error);
+    });
   }, []);
 
   const onNavigationStateChange = useCallback(async () => {

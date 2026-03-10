@@ -241,7 +241,6 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
       settings.mosqueMode.enabled = true;
     }
 
-    StorageService.setUserSettings(settings);
     setUserSettings(settings);
 
     AnalyticsService.logOnboardingCompleted();

@@ -1,9 +1,9 @@
 // src/services/LocationService.ts (FINAL ENHANCED VERSION)
 import * as ExpoLocation from 'expo-location';
-import { Platform } from 'react-native';
 import { Location } from '../types';
 import GeocodingService from './GeocodingService';
 import StorageService from './StorageService';
+import { useStore } from '../store/useStore';
 import logger from '../utils/logger';
 
 interface LocationUpdateCallback {
@@ -144,23 +144,20 @@ class LocationService {
         return null;
       }
 
-      logger.log('🔍 Geocoding address:', { city, country });
+      logger.log('🔍 Geocoding address provided by user');
       
       const locationQuery = `${city}, ${country}`;
       const location = await GeocodingService.geocodeAddress(locationQuery, country);
       
       if (location) {
-        logger.log('✅ Address geocoded successfully:', {
-          query: locationQuery,
-          result: { lat: location.latitude, lng: location.longitude }
-        });
+        logger.log(`✅ Address geocoded successfully to ${location.city || 'Unknown city'}, ${location.country || 'Unknown country'}`);
         
         // 🎯 Save and notify (automatic prayer time refresh)
         await this.saveLocationAndNotify(location);
         return location;
       }
       
-      logger.warn('❌ Could not find location for:', locationQuery);
+      logger.warn('❌ Could not find location for the provided address');
       return null;
     } catch (error) {
       logger.error('❌ Error setting location by address:', error);
@@ -178,22 +175,19 @@ class LocationService {
         return null;
       }
 
-      logger.log('🔍 Geocoding postal code:', { postalCode, countryCode });
+      logger.log('🔍 Geocoding postal code provided by user');
 
       const location = await GeocodingService.geocodePostalCode(postalCode, countryCode);
       
       if (location) {
-        logger.log('✅ Postal code geocoded successfully:', {
-          postalCode,
-          result: { lat: location.latitude, lng: location.longitude }
-        });
+        logger.log(`✅ Postal code geocoded successfully to ${location.city || 'Unknown city'}, ${location.country || 'Unknown country'}`);
         
         // 🎯 Save and notify (automatic prayer time refresh)
         await this.saveLocationAndNotify(location);
         return location;
       }
       
-      logger.warn('❌ Could not find location for postal code:', postalCode);
+      logger.warn('❌ Could not find location for the provided postal code');
       return null;
     } catch (error) {
       logger.error('❌ Error setting location by postal code:', error);
@@ -271,7 +265,7 @@ class LocationService {
       // Update settings with the new location
       const settings = StorageService.getUserSettings() || StorageService.getDefaultSettings();
       settings.location = location;
-      StorageService.setUserSettings(settings);
+      useStore.getState().setUserSettings(settings);
       
       logger.log('✅ Location saved to storage');
       

@@ -23,6 +23,7 @@ import logger from "../utils/logger";
 import StorageService from "./StorageService";
 import { getLocalDateKey } from "../utils/dateHelpers";
 import { PRAYER_API_TIMEOUT_MS } from "../constants/NotificationConstants";
+import { fetchWithTimeout, describeNetworkError } from '../utils/networkRequest';
 
 interface CachedPrayerTimesData {
   date: string;           // YYYY-MM-DD
@@ -125,18 +126,9 @@ export class PrayerTimeService {
 
       const url = `${ALADHAN_API_BASE}/timings/${dateStr}?latitude=${coordinates.latitude}&longitude=${coordinates.longitude}&method=${methodId}&school=${school}`;
 
-      logger.log(`Fetching prayer times from: ${url}`);
+      logger.log(`Fetching prayer times for ${dateStr} with ${method}/${asrJuristic}`);
 
-      // AbortController with 8s timeout to prevent indefinite hangs on poor network
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), PRAYER_API_TIMEOUT_MS);
-
-      let response: Response;
-      try {
-        response = await fetch(url, { signal: controller.signal });
-      } finally {
-        clearTimeout(timeoutId);
-      }
+      const response = await fetchWithTimeout(url, undefined, PRAYER_API_TIMEOUT_MS);
 
       if (!response.ok) {
         throw new Error(`API responded with status: ${response.status}`);
@@ -193,7 +185,7 @@ export class PrayerTimeService {
         // Cache for tomorrow as well if it's after Asr
         const now = new Date();
         const asrTime = this.parseTimeToDate(times.Asr, date);
-        if (isAfter(now, asrTime)) {
+        if (getLocalDateKey(now) === getLocalDateKey(date) && isAfter(now, asrTime)) {
           this.fetchPrayerTimes(
             coordinates,
             addDays(date, 1),
@@ -210,7 +202,7 @@ export class PrayerTimeService {
         throw new Error("Invalid API response format");
       }
     } catch (error) {
-      logger.error("Error fetching prayer times:", error);
+      logger.error("Error fetching prayer times:", describeNetworkError(error));
       // Return calculated times as fallback
       this._lastFetchWasFallback = true;
       return this.calculatePrayerTimes(coordinates, date, method);

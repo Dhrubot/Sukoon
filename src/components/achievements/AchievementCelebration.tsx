@@ -33,6 +33,7 @@ const AchievementCelebration: React.FC<AchievementCelebrationProps> = ({
   const slideAnim = useRef(new Animated.Value(100)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const glowAnim = useRef(new Animated.Value(0.3)).current;
+  const glowLoopRef = useRef<Animated.CompositeAnimation | null>(null);
 
   useEffect(() => {
     if (isVisible && achievement) {
@@ -40,6 +41,10 @@ const AchievementCelebration: React.FC<AchievementCelebrationProps> = ({
     } else {
       animateOut();
     }
+    return () => {
+      glowLoopRef.current?.stop();
+      glowLoopRef.current = null;
+    };
   }, [isVisible, achievement]);
 
   const animateIn = () => {
@@ -62,7 +67,8 @@ const AchievementCelebration: React.FC<AchievementCelebrationProps> = ({
     ]).start();
 
     // Soft pulsing glow
-    Animated.loop(
+    glowLoopRef.current?.stop();
+    glowLoopRef.current = Animated.loop(
       Animated.sequence([
         Animated.timing(glowAnim, {
           toValue: 0.8,
@@ -75,10 +81,13 @@ const AchievementCelebration: React.FC<AchievementCelebrationProps> = ({
           useNativeDriver: true,
         }),
       ])
-    ).start();
+    );
+    glowLoopRef.current.start();
   };
 
   const animateOut = () => {
+    glowLoopRef.current?.stop();
+    glowLoopRef.current = null;
     Animated.parallel([
       Animated.timing(slideAnim, {
         toValue: 100,

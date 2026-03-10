@@ -76,7 +76,7 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
     }
 
     if (newState) {
-      await NotificationService.scheduleAllPrayerNotifications();
+      await NotificationService.reconcileScheduling('settings_change');
     } else {
       await NotificationService.cancelPrayerNotifications(prayerName);
     }

@@ -1,8 +1,10 @@
 import { Coordinates, Location } from '../types';
 import logger from '../utils/logger';
+import { fetchWithTimeout, describeNetworkError } from '../utils/networkRequest';
 
 const NOMINATIM_API_BASE = 'https://nominatim.openstreetmap.org';
 const USER_AGENT = 'Sukoon'; // Nominatim requires a user agent
+const GEOCODING_TIMEOUT_MS = 8000;
 
 interface NominatimResponse {
   lat: string;
@@ -42,7 +44,7 @@ class GeocodingService {
       // Check cache first
       const cacheKey = `${query}-${countryCode || ''}`.toLowerCase();
       if (this.cachedLocations.has(cacheKey)) {
-        logger.log('Returning cached location for:', query);
+        logger.log('Returning cached location for geocoding request');
         return this.cachedLocations.get(cacheKey)!;
       }
 
@@ -60,14 +62,14 @@ class GeocodingService {
       }
 
       // Call Nominatim API
-      logger.log(`Geocoding "${query}" using Nominatim...`);
+      logger.log('Geocoding location query via Nominatim');
       const url = `${NOMINATIM_API_BASE}/search?${params.toString()}`;
       
-      const response = await fetch(url, {
+      const response = await fetchWithTimeout(url, {
         headers: {
           'User-Agent': USER_AGENT,
         },
-      });
+      }, GEOCODING_TIMEOUT_MS);
 
       if (!response.ok) {
         throw new Error(`Nominatim API responded with status: ${response.status}`);
@@ -76,7 +78,7 @@ class GeocodingService {
       const data = await response.json() as NominatimResponse[];
       
       if (!data || data.length === 0) {
-        logger.warn(`No location found for query: ${query}`);
+        logger.warn('No location found for geocoding query');
         return null;
       }
 
@@ -103,10 +105,10 @@ class GeocodingService {
       // Cache the result
       this.cachedLocations.set(cacheKey, location);
       
-      logger.log(`Geocoded "${query}" to:`, location);
+      logger.log(`Geocoded location to ${city || 'Unknown city'}, ${country || 'Unknown country'}`);
       return location;
     } catch (error) {
-      logger.error('Error geocoding address:', error);
+      logger.error('Error geocoding address:', describeNetworkError(error));
       return null;
     }
   }
@@ -136,14 +138,14 @@ class GeocodingService {
       }
 
       // Call Nominatim API for reverse geocoding
-      logger.log(`Reverse geocoding coordinates: ${latitude}, ${longitude}`);
+      logger.log('Reverse geocoding device coordinates');
       const url = `${NOMINATIM_API_BASE}/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`;
       
-      const response = await fetch(url, {
+      const response = await fetchWithTimeout(url, {
         headers: {
           'User-Agent': USER_AGENT,
         },
-      });
+      }, GEOCODING_TIMEOUT_MS);
 
       if (!response.ok) {
         throw new Error(`Nominatim API responded with status: ${response.status}`);
@@ -152,7 +154,7 @@ class GeocodingService {
       const result = await response.json() as NominatimResponse;
       
       if (!result) {
-        logger.warn(`No address found for coordinates: ${latitude}, ${longitude}`);
+        logger.warn('No address found for reverse geocoding request');
         return null;
       }
 
@@ -179,7 +181,7 @@ class GeocodingService {
       
       return location;
     } catch (error) {
-      logger.error('Error reverse geocoding:', error);
+      logger.error('Error reverse geocoding:', describeNetworkError(error));
       return null;
     }
   }

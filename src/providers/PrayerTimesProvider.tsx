@@ -5,7 +5,7 @@ import { useAppStateChange } from '../hooks/useAppStateChange';
 import { useStore } from '../store/useStore';
 import { useShallow } from 'zustand/react/shallow';
 import PrayerTimeService from '../services/PrayerTimeService';
-import { PrayerTime, PrayerName, PrayerTimes, Location } from '../types';
+import { PrayerTime, PrayerName, PrayerTimes } from '../types';
 import { isValidCoordinates } from '../utils/locationValidation';
 import logger from '../utils/logger';
 import WidgetService from '../services/WidgetService';
@@ -13,6 +13,7 @@ import LiveActivityService from '../services/LiveActivityService';
 import StorageService from '../services/StorageService';
 import { getLocalDateKey } from '../utils/dateHelpers';
 import { ISHA_FALLBACK_DEADLINE_MS } from '../constants/time';
+import { usePrayerTimeRefresh } from '../hooks/usePrayerTimeRefresh';
 
 interface PrayerTimesContextType {
   todayPrayerTimes: PrayerTime[];
@@ -74,6 +75,7 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
   const [isOffline, setIsOffline] = useState(false);
   const [usingHardcodedDefaults, setUsingHardcodedDefaults] = useState(false);
   const [highLatitudeWarning, setHighLatitudeWarning] = useState(false);
+  const { recordRefreshAttempt, recordRefreshSuccess } = usePrayerTimeRefresh();
 
   const adjustmentsKey = useMemo(() => {
     return JSON.stringify(userSettings?.adjustments ?? {});
@@ -203,6 +205,11 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
     setError(null);
 
     try {
+      recordRefreshAttempt(
+        freshLocation,
+        freshSettings.calculationMethod,
+        freshSettings.asrJuristic
+      );
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
@@ -214,6 +221,9 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
         freshSettings.adjustments,
         freshSettings.asrJuristic
       );
+      const todayFetchWasFallback = PrayerTimeService.lastFetchWasFallback;
+      const usedHardcodedDefaults = PrayerTimeService.usingHardcodedDefaults;
+      const hasHighLatitudeWarning = PrayerTimeService.highLatitudeWarning;
 
       // Always fetch tomorrow's Fajr — needed for Isha's fiqh deadline calculation
       // (Isha's window extends until tomorrow's Fajr, so we need it even before Isha adhan)
@@ -257,10 +267,19 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
         setTodayPrayerTimes(syncedTimes);
       }
 
-      setIsOffline(PrayerTimeService.lastFetchWasFallback);
-      setUsingHardcodedDefaults(PrayerTimeService.usingHardcodedDefaults);
-      setHighLatitudeWarning(PrayerTimeService.highLatitudeWarning);
+      setIsOffline(todayFetchWasFallback);
+      setUsingHardcodedDefaults(usedHardcodedDefaults);
+      setHighLatitudeWarning(hasHighLatitudeWarning);
+      if (!todayFetchWasFallback) {
+        recordRefreshSuccess(
+          freshLocation,
+          freshSettings.calculationMethod,
+          freshSettings.asrJuristic
+        );
+      }
       lastLoadedDateRef.current = getLocalDateKey();
+      lastLoadedOffsetRef.current = new Date().getTimezoneOffset();
+      lastLoadedLocationRef.current = `${freshLocation.latitude.toFixed(3)},${freshLocation.longitude.toFixed(3)}`;
       logger.log('✅ Prayer times loaded successfully');
 
       // Push data to iOS widget
@@ -310,6 +329,9 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
   const recalcRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const runRecalcRef = useRef<() => void>(() => {});
   const lastLoadedDateRef = useRef<string>(getLocalDateKey());
+  const lastLoadedOffsetRef = useRef<number>(new Date().getTimezoneOffset());
+  const lastLoadedLocationRef = useRef<string | null>(null);
+  const lastBackgroundedAtRef = useRef<number | null>(null);
 
   const runRecalc = () => {
     if (todayPrayerTimes.length === 0) return;
@@ -365,18 +387,42 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
   // Resume/pause via shared AppState listener (single native bridge subscription)
   useAppStateChange((nextState) => {
     if (nextState === 'active') {
-      // Day-boundary check: if the date changed while backgrounded,
-      // reload prayer times entirely instead of just recalculating
       const currentDateKey = getLocalDateKey();
-      if (currentDateKey !== lastLoadedDateRef.current) {
-        logger.log(`📅 Day boundary crossed (${lastLoadedDateRef.current} → ${currentDateKey}), reloading prayer times`);
-        loadPrayerTimes();
+      const currentOffset = new Date().getTimezoneOffset();
+      const currentLocation = useStore.getState().location;
+      const currentLocationFingerprint = currentLocation
+        ? `${currentLocation.latitude.toFixed(3)},${currentLocation.longitude.toFixed(3)}`
+        : null;
+      const backgroundGapMs = lastBackgroundedAtRef.current
+        ? Date.now() - lastBackgroundedAtRef.current
+        : 0;
+
+      const shouldReload =
+        currentDateKey !== lastLoadedDateRef.current ||
+        currentOffset !== lastLoadedOffsetRef.current ||
+        (currentLocationFingerprint !== null &&
+          currentLocationFingerprint !== lastLoadedLocationRef.current) ||
+        backgroundGapMs >= 12 * 60 * 60 * 1000;
+
+      if (shouldReload) {
+        logger.log('📅 Prayer times invalidated on resume, reloading', {
+          previousDate: lastLoadedDateRef.current,
+          currentDate: currentDateKey,
+          previousOffset: lastLoadedOffsetRef.current,
+          currentOffset,
+          previousLocation: lastLoadedLocationRef.current,
+          currentLocation: currentLocationFingerprint,
+          backgroundGapMs,
+        });
+        void loadPrayerTimes();
+      } else {
+        tick();
       }
-      // Immediately recalculate stale nextPrayer and restart interval
-      tick();
+
+      lastBackgroundedAtRef.current = null;
       startInterval();
     } else {
-      // Pause interval when backgrounded/inactive
+      lastBackgroundedAtRef.current = Date.now();
       if (recalcRef.current) {
         clearInterval(recalcRef.current);
         recalcRef.current = null;

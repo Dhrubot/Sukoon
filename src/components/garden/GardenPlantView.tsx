@@ -1,6 +1,6 @@
 // src/components/garden/GardenPlantView.tsx
 import React, { useEffect, useRef } from 'react';
-import { View, Text, Animated, TouchableOpacity, StyleSheet } from 'react-native';
+import { Text, Animated, TouchableOpacity, StyleSheet } from 'react-native';
 import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../providers/ThemeProvider';
 import { GardenPlant } from '../../types/garden';
@@ -18,6 +18,7 @@ const GardenPlantView: React.FC<GardenPlantViewProps> = ({ plant, delay = 0, onP
   const { theme } = useTheme();
   const breathAnim = useRef(new Animated.Value(1)).current;
   const entryAnim = useRef(new Animated.Value(0)).current;
+  const breathLoopRef = useRef<Animated.CompositeAnimation | null>(null);
 
   useEffect(() => {
     // Staggered fade-in entry
@@ -33,7 +34,7 @@ const GardenPlantView: React.FC<GardenPlantViewProps> = ({ plant, delay = 0, onP
 
     // Gentle breathing animation
     const breathTimer = setTimeout(() => {
-      Animated.loop(
+      breathLoopRef.current = Animated.loop(
         Animated.sequence([
           Animated.timing(breathAnim, {
             toValue: 1.03,
@@ -46,14 +47,17 @@ const GardenPlantView: React.FC<GardenPlantViewProps> = ({ plant, delay = 0, onP
             useNativeDriver: true,
           }),
         ])
-      ).start();
+      );
+      breathLoopRef.current.start();
     }, delay + 600);
 
     return () => {
       clearTimeout(entryTimer);
       clearTimeout(breathTimer);
+      breathLoopRef.current?.stop();
+      breathLoopRef.current = null;
     };
-  }, []);
+  }, [breathAnim, delay, entryAnim]);
 
   const handlePress = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

@@ -34,6 +34,7 @@ jest.mock('expo-secure-store', () => ({
 jest.mock('expo-notifications', () => ({
   getPermissionsAsync: jest.fn(async () => ({ status: 'granted', granted: true })),
   requestPermissionsAsync: jest.fn(async () => ({ status: 'granted', granted: true })),
+  getLastNotificationResponseAsync: jest.fn(async () => null),
   scheduleNotificationAsync: jest.fn(async () => 'mock-id'),
   cancelScheduledNotificationAsync: jest.fn(async () => {}),
   cancelAllScheduledNotificationsAsync: jest.fn(async () => {}),
@@ -43,6 +44,7 @@ jest.mock('expo-notifications', () => ({
   setNotificationCategoryAsync: jest.fn(async () => null),
   addNotificationReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
   addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
+  DEFAULT_ACTION_IDENTIFIER: 'expo.modules.notifications.actions.DEFAULT',
   AndroidImportance: { MAX: 5, HIGH: 4, DEFAULT: 3 },
 }));
 

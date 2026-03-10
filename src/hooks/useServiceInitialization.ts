@@ -127,7 +127,7 @@ export const useServiceInitialization = () => {
 
         InteractionManager.runAfterInteractions(() => {
           logger.log("📅 Settings changed — rescheduling prayer notifications...");
-          NotificationService.scheduleAllPrayerNotifications();
+          NotificationService.reconcileScheduling('settings_change');
         });
         scheduleTimerRef.current = null;
       }, SCHEDULING_DEBOUNCE_MS);

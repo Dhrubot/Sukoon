@@ -65,6 +65,23 @@ describe('Encryption key fallback chain', () => {
     expect(ExpoCryptoMock.digestStringAsync).toHaveBeenCalled();
   });
 
+  it('exposes degraded security state when falling back from SecureStore', async () => {
+    jest.resetModules();
+
+    const SecureStoreMock = require('expo-secure-store');
+    const ExpoCryptoMock = require('expo-crypto');
+
+    SecureStoreMock.getItemAsync.mockRejectedValue(new Error('SecureStore unavailable'));
+    SecureStoreMock.setItemAsync.mockRejectedValue(new Error('SecureStore unavailable'));
+    ExpoCryptoMock.digestStringAsync.mockResolvedValue('device-specific-hash-value-32chars-padded');
+
+    const { initializeEncryptionKey, getEncryptionSecurityState } = require('../utils/secureKeyManager');
+
+    await initializeEncryptionKey();
+
+    expect(getEncryptionSecurityState()).toBe('device_derived');
+  });
+
   it('getCachedEncryptionKey should never return a static fallback', () => {
     jest.resetModules();
     const { getCachedEncryptionKey } = require('../utils/secureKeyManager');

@@ -83,7 +83,10 @@ export const useStore = create<AppState>((set) => ({
   userSettings: null,
   setUserSettings: (settings) => {
     StorageService.setUserSettings(settings);
-    set({ userSettings: settings });
+    set({
+      userSettings: settings,
+      location: settings.location,
+    });
   },
   updateUserSettings: (updates) => 
     set((state) => {
@@ -118,19 +121,15 @@ export const useStore = create<AppState>((set) => ({
         updates as unknown as Record<string, unknown>
       ) as unknown as UserSettings;
       StorageService.setUserSettings(updated);
-      return { userSettings: updated };
+      return {
+        userSettings: updated,
+        location: updated.location,
+      };
     }),
   
-  // Location — write-through to StorageService
+  // Location — in-memory only. Persist through setUserSettings/updateUserSettings.
   location: null,
-  setLocation: (location) => {
-    // Persist location inside userSettings
-    const settings = StorageService.getUserSettings();
-    if (settings) {
-      StorageService.setUserSettings({ ...settings, location });
-    }
-    set({ location });
-  },
+  setLocation: (location) => set({ location }),
   
   // Prayer times
   todayPrayerTimes: [],

@@ -14,9 +14,8 @@ import PostPrayerSheet from './PostPrayerSheet';
 import CountdownRing from './CountdownRing';
 import StarField from './StarField';
 import { LinearGradient } from 'expo-linear-gradient';
-import { PrayerTime, PrayerRecord, PrayerName } from '../../types';
+import { PrayerTime, PrayerRecord } from '../../types';
 import { format } from 'date-fns';
-import PrayerTimeService from '../../services/PrayerTimeService';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
@@ -69,34 +68,16 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
 }) => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
-  const { userSettings } = useStore();
-  const hijriAdjustment = userSettings?.hijriAdjustment ?? 0;
+  const hijriAdjustment = useStore((state) => state.userSettings?.hijriAdjustment ?? 0);
   const [hijriDateStr, setHijriDateStr] = useState(formatHijriDateSync());
   const pulseAnim = useRef(new Animated.Value(0.6)).current;
+  const pulseLoopRef = useRef<Animated.CompositeAnimation | null>(null);
 
   // Fetch accurate Hijri date — re-run when hijriAdjustment changes
   useEffect(() => {
     setHijriDateStr(formatHijriDateSync());
     formatHijriDate().then(setHijriDateStr).catch(() => {});
   }, [hijriAdjustment]);
-
-  // Subtle pulse animation for the CTA
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.timing(pulseAnim, {
-          toValue: 1,
-          duration: 3000,
-          useNativeDriver: true,
-        }),
-        Animated.timing(pulseAnim, {
-          toValue: 0.6,
-          duration: 3000,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  }, []);
 
   const isAlreadyPrayed = record?.status === 'prayed';
   const isJummah = prayer.name === 'Dhuhr' && isFriday();
@@ -127,6 +108,38 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
 
   // Pulse only when time has entered and prayer is not yet prayed (State 2)
   const isCTAActive = isTimeEntered && !isAlreadyPrayed;
+
+  useEffect(() => {
+    pulseLoopRef.current?.stop();
+    pulseLoopRef.current = null;
+
+    if (!isCTAActive) {
+      pulseAnim.setValue(1);
+      return;
+    }
+
+    pulseAnim.setValue(0.6);
+    pulseLoopRef.current = Animated.loop(
+      Animated.sequence([
+        Animated.timing(pulseAnim, {
+          toValue: 1,
+          duration: 3000,
+          useNativeDriver: true,
+        }),
+        Animated.timing(pulseAnim, {
+          toValue: 0.6,
+          duration: 3000,
+          useNativeDriver: true,
+        }),
+      ])
+    );
+    pulseLoopRef.current.start();
+
+    return () => {
+      pulseLoopRef.current?.stop();
+      pulseLoopRef.current = null;
+    };
+  }, [isCTAActive, pulseAnim]);
 
   const getButtonText = (): string => {
     return 'Prepare for Prayer';

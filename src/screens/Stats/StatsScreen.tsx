@@ -15,6 +15,7 @@ import PrayerDotGrid from '../../components/charts/PrayerDotGrid';
 import FocusRing from '../../components/charts/FocusRing';
 import PrayerBreakdownBar from '../../components/charts/PrayerBreakdownBar';
 import { format, startOfWeek, endOfWeek, eachDayOfInterval, subDays, startOfMonth } from 'date-fns';
+import { useShallow } from 'zustand/react/shallow';
 
 // Store and Services
 import { useStore } from '../../store/useStore';
@@ -45,7 +46,11 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
   } = usePrayerTimes();
 
   // Keep existing store state for other features
-  const { currentDawam, engagementDawam, todayPrayerRecords } = useStore();
+  const { currentDawam, engagementDawam, todayPrayerRecords } = useStore(useShallow((state) => ({
+    currentDawam: state.currentDawam,
+    engagementDawam: state.engagementDawam,
+    todayPrayerRecords: state.todayPrayerRecords,
+  })));
   
   const [timeRange, setTimeRange] = useState<TimeRange>('week');
   const [isLoading, setIsLoading] = useState(true);

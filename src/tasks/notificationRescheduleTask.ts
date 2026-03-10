@@ -7,7 +7,7 @@ export const NOTIFICATION_RESCHEDULE_TASK = 'NOTIFICATION_RESCHEDULE_TASK';
 
 TaskManager.defineTask(NOTIFICATION_RESCHEDULE_TASK, async () => {
   try {
-    const didReschedule = await NotificationService.maybeRescheduleExtendedNotifications(24);
+    const didReschedule = await NotificationService.maybeRescheduleExtendedNotifications(24, 'background_refresh');
 
     return didReschedule
       ? BackgroundTask.BackgroundTaskResult.Success

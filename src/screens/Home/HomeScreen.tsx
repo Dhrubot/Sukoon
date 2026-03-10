@@ -16,6 +16,7 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { format, addMinutes } from "date-fns";
+import { useShallow } from "zustand/react/shallow";
 
 // Store and Services
 import { useStore } from "../../store/useStore";
@@ -95,7 +96,14 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
     todaySunrise,
     todaySunset,
     todayMidnight,
-  } = useStore();
+  } = useStore(useShallow((state) => ({
+    userSettings: state.userSettings,
+    todayPrayerRecords: state.todayPrayerRecords,
+    setTodayPrayerRecords: state.setTodayPrayerRecords,
+    todaySunrise: state.todaySunrise,
+    todaySunset: state.todaySunset,
+    todayMidnight: state.todayMidnight,
+  })));
 
   // Mosque mode state for focus mode + pill badge
   const { isActive: isMosqueModeActive, activeState: mosqueModeState, isEnabled: isMosqueModeEnabled, settings: mosqueModeSettings, getIqamahTime, scheduleSilentMode } = useMosqueMode();
@@ -123,7 +131,7 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
   // Quick-log state
   const [quickLogPrayer, setQuickLogPrayer] = useState<PrayerTime | null>(null);
   const route = useRoute<any>();
-  const { addPrayerRecord } = useStore();
+  const addPrayerRecord = useStore((state) => state.addPrayerRecord);
 
   // Handle notification tap → auto-show QuickLogSheet
   const VALID_PRAYER_NAMES_SET = useMemo(() => new Set(['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']), []);

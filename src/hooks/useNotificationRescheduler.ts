@@ -8,6 +8,9 @@ import LocationService from '../services/LocationService';
 import { useStore } from '../store/useStore';
 import logger from '../utils/logger';
 
+let lastObservedWallClockMs: number | null = null;
+let lastObservedMonotonicMs: number | null = null;
+
 export const useNotificationRescheduler = () => {
   // Check on mount (deferred to avoid blocking UI)
   useEffect(() => {
@@ -19,6 +22,8 @@ export const useNotificationRescheduler = () => {
           if (needsReschedule) {
             logger.log('🔄 Boot reschedule flag detected — forcing full reschedule');
             StorageService.deleteValue('last_batch_schedule_date');
+            await NotificationService.reconcileScheduling('boot', { force: true });
+            return;
           }
         } catch (e) {
           // Module may not exist on older builds — fall through to normal check
@@ -40,6 +45,8 @@ export const useNotificationRescheduler = () => {
 
   const checkAndReschedule = async () => {
     try {
+      let invalidateReason: 'timezone_change' | 'location_change' | 'clock_change' | null = null;
+
       // ── DST offset detection ──────────────────────────────────
       // If the UTC offset changed since last schedule (DST transition),
       // all scheduled times are wrong → force a full reschedule.
@@ -48,8 +55,7 @@ export const useNotificationRescheduler = () => {
 
       if (savedOffset !== null && parseInt(savedOffset, 10) !== currentOffset) {
         logger.warn(`⏰ UTC offset changed (${savedOffset} → ${currentOffset}), forcing reschedule`);
-        // Clear last run so maybeReschedule always fires
-        StorageService.deleteValue('last_batch_schedule_date');
+        invalidateReason = 'timezone_change';
 
         // Timezone changed — likely international travel. Refresh device location
         // so prayer times are recalculated for the new region.
@@ -67,6 +73,31 @@ export const useNotificationRescheduler = () => {
         }
       }
 
+      const currentLocation = useStore.getState().userSettings?.location;
+      const savedLocationFingerprint = StorageService.getValue('notification_location_fingerprint');
+      const currentLocationFingerprint = currentLocation
+        ? `${currentLocation.latitude.toFixed(3)},${currentLocation.longitude.toFixed(3)}`
+        : null;
+      if (
+        currentLocationFingerprint &&
+        savedLocationFingerprint &&
+        savedLocationFingerprint !== currentLocationFingerprint
+      ) {
+        logger.warn(`📍 Material location change detected (${savedLocationFingerprint} → ${currentLocationFingerprint})`);
+        invalidateReason = 'location_change';
+      }
+
+      const now = Date.now();
+      const monotonicNow = globalThis.performance?.now?.() ?? null;
+      if (lastObservedWallClockMs !== null && lastObservedMonotonicMs !== null && monotonicNow !== null) {
+        const expectedNow = lastObservedWallClockMs + (monotonicNow - lastObservedMonotonicMs);
+        const clockDriftMs = Math.abs(now - expectedNow);
+        if (clockDriftMs > 30 * 60 * 1000) {
+          logger.warn(`🕰️ Device clock jump detected (${Math.round(clockDriftMs / 60000)} min)`);
+          invalidateReason = invalidateReason || 'clock_change';
+        }
+      }
+
       // Detect stale notification state (>48h without refresh)
       const lastRunStr = StorageService.getValue('last_batch_schedule_date');
       if (lastRunStr) {
@@ -77,7 +108,18 @@ export const useNotificationRescheduler = () => {
         }
       }
 
-      const rescheduled = await NotificationService.maybeRescheduleExtendedNotifications();
+      let rescheduled = false;
+      if (invalidateReason) {
+        rescheduled = await NotificationService.reconcileScheduling(invalidateReason, { force: true });
+      } else {
+        rescheduled = await NotificationService.maybeRescheduleExtendedNotifications();
+      }
+
+      if (currentLocationFingerprint) {
+        StorageService.setValue('notification_location_fingerprint', currentLocationFingerprint);
+      }
+      lastObservedWallClockMs = now;
+      lastObservedMonotonicMs = monotonicNow;
 
       // Persist current offset after successful schedule
       if (rescheduled || savedOffset === null) {

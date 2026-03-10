@@ -5,9 +5,8 @@ import NotificationService from "../services/NotificationService";
 import PrayerTimeService from "../services/PrayerTimeService";
 import LocationService from "../services/LocationService";
 import { useStore } from "../store/useStore";
-import { Location as LocationType } from "../types";
 import { usePrayerTimeRefresh } from "./usePrayerTimeRefresh";
-import { initializeEncryptionKey } from "../utils/secureKeyManager";
+import { initializeEncryptionKey, getEncryptionSecurityState } from "../utils/secureKeyManager";
 import { isValidCoordinates } from "../utils/locationValidation";
 import logger from "../utils/logger";
 import PerformanceService from "../services/PerformanceService";
@@ -32,7 +31,7 @@ export const useAppInitialization = () => {
   });
 
   const { setUserSettings, setLocation, setCurrentDawam, setEngagementDawam } = useStore();
-  const { shouldRefreshPrayerTimes } = usePrayerTimeRefresh();
+  const { shouldRefreshPrayerTimes, recordRefreshAttempt, recordRefreshSuccess } = usePrayerTimeRefresh();
 
   useEffect(() => {
     initializeApp();
@@ -48,6 +47,11 @@ export const useAppInitialization = () => {
 
       // Create encrypted MMKV now that the key is ready
       await StorageService.initialize();
+      const encryptionSecurityState = getEncryptionSecurityState();
+      StorageService.setValue('encryption_security_state', encryptionSecurityState);
+      if (encryptionSecurityState !== 'secure_store') {
+        logger.warn(`🔐 Storage security degraded: ${encryptionSecurityState}`);
+      }
 
       // Check if first launch
       const firstLaunch = StorageService.isFirstLaunch();
@@ -56,7 +60,6 @@ export const useAppInitialization = () => {
       let settings = StorageService.getUserSettings();
       if (!settings) {
         settings = StorageService.getDefaultSettings();
-        StorageService.setUserSettings(settings);
       }
 
       setUserSettings(settings);
@@ -97,18 +100,31 @@ export const useAppInitialization = () => {
       if (isValidCoordinates(settings.location)) {
         const needsRefresh = await shouldRefreshPrayerTimes(
           settings.location,
-          settings.calculationMethod
+          settings.calculationMethod,
+          settings.asrJuristic
         );
 
         if (needsRefresh) {
           logger.log("Refreshing prayer times...");
           try {
+            recordRefreshAttempt(
+              settings.location,
+              settings.calculationMethod,
+              settings.asrJuristic
+            );
             await PrayerTimeService.fetchPrayerTimes(
               settings.location,
               new Date(),
               settings.calculationMethod,
               settings.asrJuristic
             );
+            if (!PrayerTimeService.lastFetchWasFallback) {
+              recordRefreshSuccess(
+                settings.location,
+                settings.calculationMethod,
+                settings.asrJuristic
+              );
+            }
           } catch (error) {
             logger.error("Failed to refresh prayer times:", error);
             // Continue anyway, use cached times

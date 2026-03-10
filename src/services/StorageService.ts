@@ -228,10 +228,11 @@ class StorageService {
         adhanEnabled: true,
         soundEnabled: true,
         vibrationEnabled: true,
-        beforePrayer: 10,
+        beforePrayer: 5,
         reminderText: "Time for {prayer} prayer 🕌",
         postPrayerCheck: false, // DEPRECATED
         liveActivityEnabled: false,
+        intensity: 'gentle',
       },
       prayerNotifications: {
         Fajr: true,
@@ -249,16 +250,16 @@ class StorageService {
   // Default Prayer Habit Builder settings
   private getDefaultHabitBuilderSettings(): HabitBuilderSettings {
     return {
-      enabled: true, // Enable by default for better user engagement
+      enabled: true, // Keep the feature available, but start with a calmer baseline
       persistentReminders: {
         enabled: true,
-        firstCheckDelay: 15, // 15 min after prayer time
-        interval: 15, // Every 15 minutes
-        maxReminders: 3, // Up to 3 reminders
+        firstCheckDelay: 20,
+        interval: 20,
+        maxReminders: 2,
       },
       gracePeriodWarning: {
-        enabled: true,
-        minutesBeforeNext: 15, // Warn 15 min before next prayer
+        enabled: false,
+        minutesBeforeNext: 10,
       },
       snooze: {
         allowedIntervals: [5, 10, 15, 30], // Available snooze options

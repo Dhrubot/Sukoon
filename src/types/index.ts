@@ -130,6 +130,15 @@ export interface UserSettings {
   theme: "light" | "dark" | "midnight" | "auto";
 }
 
+export type NotificationSchedulingReason =
+  | 'boot'
+  | 'permission_change'
+  | 'timezone_change'
+  | 'location_change'
+  | 'clock_change'
+  | 'settings_change'
+  | 'background_refresh';
+
 // Mindfulness types
 export interface MindfulnessSession {
   id: string;

@@ -11,7 +11,6 @@ import {
 } from 'react-native';
 import Slider from '@react-native-community/slider';
 import * as Haptics from 'expo-haptics';
-import StorageService from '../../services/StorageService';
 import NotificationService from '../../services/NotificationService';
 import { UserSettings, HabitBuilderSettings } from '../../types';
 import { useTheme } from '../../providers/ThemeProvider';
@@ -78,12 +77,11 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
         habitBuilder: newSettings,
       };
       
-      StorageService.setUserSettings(updated);
       onUpdateSettings(updated);
       
       // Reschedule notifications with new settings
       if (newSettings.enabled) {
-        await NotificationService.scheduleAllPrayerNotifications();
+        await NotificationService.reconcileScheduling('settings_change');
       }
 
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);

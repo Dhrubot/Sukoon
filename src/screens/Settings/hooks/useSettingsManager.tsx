@@ -5,18 +5,27 @@ import * as DocumentPicker from 'expo-document-picker';
 import { useStore } from '../../../store/useStore';
 import StorageService from '../../../services/StorageService';
 import LocationService from '../../../services/LocationService';
-import { CalculationMethodType, CALCULATION_METHODS } from '../../../types';
+import { CalculationMethodType, CALCULATION_METHODS, PrayerTime } from '../../../types';
 import { usePrayerTimes } from '../../../providers/PrayerTimesProvider';
 import logger from '../../../utils/logger';
 
+interface PreviewPrayerTimes {
+  method: string;
+  times: PrayerTime[];
+}
+
+interface SettingsNavigation {
+  navigate: (screen: string) => void;
+}
+
 export const useSettingsManager = () => {
-  const { userSettings, setUserSettings, setLocation } = useStore();
+  const { userSettings, setUserSettings } = useStore();
   const [showCalculationPicker, setShowCalculationPicker] = useState(false);
   const [showNotificationModal, setShowNotificationModal] = useState(false);
   const [showManualLocationModal, setShowManualLocationModal] = useState(false);
   const [isUpdatingLocation, setIsUpdatingLocation] = useState(false);
   const [isUpdatingMethod, setIsUpdatingMethod] = useState(false);
-  const [previewPrayerTimes, setPreviewPrayerTimes] = useState<any>(null);
+  const [previewPrayerTimes, setPreviewPrayerTimes] = useState<PreviewPrayerTimes | null>(null);
 
   const { 
     todayPrayerTimes, 
@@ -43,9 +52,7 @@ export const useSettingsManager = () => {
           location: location,
         };
         
-        StorageService.setUserSettings(updatedSettings);
         setUserSettings(updatedSettings);
-        setLocation(location); // Update store
         
         await refreshPrayerTimes();
         
@@ -96,9 +103,7 @@ export const useSettingsManager = () => {
           location: location,
         };
         
-        StorageService.setUserSettings(updatedSettings);
         setUserSettings(updatedSettings);
-        setLocation(location);
         
         await refreshPrayerTimes();
         
@@ -148,9 +153,7 @@ export const useSettingsManager = () => {
           location: location,
         };
         
-        StorageService.setUserSettings(updatedSettings);
         setUserSettings(updatedSettings);
-        setLocation(location);
         
         await refreshPrayerTimes();
         
@@ -201,9 +204,7 @@ export const useSettingsManager = () => {
           location: location,
         };
         
-        StorageService.setUserSettings(updatedSettings);
         setUserSettings(updatedSettings);
-        setLocation(location);
         
         await refreshPrayerTimes();
         
@@ -242,7 +243,6 @@ export const useSettingsManager = () => {
         calculationMethod: method.value,
       };
 
-      StorageService.setUserSettings(updatedSettings);
       setUserSettings(updatedSettings);
       setShowCalculationPicker(false);
 
@@ -372,7 +372,7 @@ export const useSettingsManager = () => {
     );
   };
 
-  const handlePrivacyPolicy = (navigation: any) => {
+  const handlePrivacyPolicy = (navigation: SettingsNavigation) => {
     navigation.navigate('PrivacyPolicy');
   };
 

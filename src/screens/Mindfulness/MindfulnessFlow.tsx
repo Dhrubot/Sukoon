@@ -18,6 +18,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import * as Haptics from "expo-haptics";
 import { useKeepAwake } from "expo-keep-awake";
+import { useShallow } from "zustand/react/shallow";
 
 // Components
 import BreathingCircle from "../../components/mindfulness/BreathingCircle";
@@ -67,7 +68,10 @@ const MindfulnessFlow: React.FC = () => {
   } = usePrayerTimes();
 
   // P0-G: Access sunrise/midnight for fiqh-aware prayer deadlines
-  const { todaySunrise, todayMidnight } = useStore();
+  const { todaySunrise, todayMidnight } = useStore(useShallow((state) => ({
+    todaySunrise: state.todaySunrise,
+    todayMidnight: state.todayMidnight,
+  })));
   
   // Parse the serialized prayer object and convert the ISO string back to a Date
   const serializedPrayer = route.params.prayer;
@@ -80,7 +84,10 @@ const MindfulnessFlow: React.FC = () => {
   const isSunnah = route.params.isSunnah ?? false;
   const displayName = isSunnah ? 'Sunnah / Nafl' : PrayerTimeService.getPrayerDisplayName(prayer.name);
 
-  const { setCurrentMindfulnessSession, addPrayerRecord } = useStore();
+  const { setCurrentMindfulnessSession, addPrayerRecord } = useStore(useShallow((state) => ({
+    setCurrentMindfulnessSession: state.setCurrentMindfulnessSession,
+    addPrayerRecord: state.addPrayerRecord,
+  })));
 
   // Flow state
   const [currentStep, setCurrentStep] = useState<FlowStep>("transition");
@@ -102,13 +109,22 @@ const MindfulnessFlow: React.FC = () => {
   const completeScale = useRef(new Animated.Value(0)).current;
   const transitionFade = useRef(new Animated.Value(0)).current;
   const stillnessPulse = useRef(new Animated.Value(0.3)).current;
+  const stillnessLoopRef = useRef<Animated.CompositeAnimation | null>(null);
+  const completionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const stopStillnessLoop = () => {
+    stillnessLoopRef.current?.stop();
+    stillnessLoopRef.current = null;
+  };
 
 
   // Start gentle pulse during "praying" step
   useEffect(() => {
+    stopStillnessLoop();
+
     if (currentStep === 'praying') {
       stillnessPulse.setValue(0.3);
-      Animated.loop(
+      stillnessLoopRef.current = Animated.loop(
         Animated.sequence([
           Animated.timing(stillnessPulse, {
             toValue: 1,
@@ -121,9 +137,20 @@ const MindfulnessFlow: React.FC = () => {
             useNativeDriver: true,
           }),
         ])
-      ).start();
+      );
+      stillnessLoopRef.current.start();
     }
-  }, [currentStep]);
+    return stopStillnessLoop;
+  }, [currentStep, stillnessPulse]);
+
+  useEffect(() => {
+    return () => {
+      stopStillnessLoop();
+      if (completionTimerRef.current) {
+        clearTimeout(completionTimerRef.current);
+      }
+    };
+  }, []);
 
   // Fade-in when step changes — decoupled from animation callbacks
   // so React renders the new step content BEFORE the fade-in targets native views
@@ -577,7 +604,8 @@ const MindfulnessFlow: React.FC = () => {
         ]).start(() => {
           Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
 
-          Animated.loop(
+          stopStillnessLoop();
+          stillnessLoopRef.current = Animated.loop(
             Animated.sequence([
               Animated.timing(stillnessPulse, {
                 toValue: 1,
@@ -590,9 +618,13 @@ const MindfulnessFlow: React.FC = () => {
                 useNativeDriver: true,
               }),
             ])
-          ).start();
+          );
+          stillnessLoopRef.current.start();
 
-          setTimeout(() => {
+          if (completionTimerRef.current) {
+            clearTimeout(completionTimerRef.current);
+          }
+          completionTimerRef.current = setTimeout(() => {
             Animated.timing(fadeAnim, {
               toValue: 0,
               duration: 1000,

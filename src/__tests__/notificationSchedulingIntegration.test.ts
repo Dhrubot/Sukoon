@@ -15,9 +15,23 @@ const mockScheduledNotifications: Array<{
 // ── Mock expo-notifications ──────────────────────────────────────────────────
 jest.mock('expo-notifications', () => ({
   getPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
-  getAllScheduledNotificationsAsync: jest.fn(() => Promise.resolve([])),
+  getAllScheduledNotificationsAsync: jest.fn(() =>
+    Promise.resolve(
+      mockScheduledNotifications.map((notification) => ({
+        identifier: notification.identifier,
+        content: notification.content,
+        trigger: notification.trigger,
+      }))
+    )
+  ),
   cancelAllScheduledNotificationsAsync: jest.fn(() => Promise.resolve()),
-  cancelScheduledNotificationAsync: jest.fn(() => Promise.resolve()),
+  cancelScheduledNotificationAsync: jest.fn((identifier: string) => {
+    const index = mockScheduledNotifications.findIndex((notification) => notification.identifier === identifier);
+    if (index >= 0) {
+      mockScheduledNotifications.splice(index, 1);
+    }
+    return Promise.resolve();
+  }),
   scheduleNotificationAsync: jest.fn((input: any) => {
     const id = input.identifier || `notif-${mockScheduledNotifications.length}`;
     mockScheduledNotifications.push({
@@ -165,6 +179,7 @@ jest.mock('../services/notifications/FullAdhanScheduler', () => ({
   scheduleFullAdhan: jest.fn(() => Promise.resolve()),
   cancelAllFullAdhans: jest.fn(() => Promise.resolve()),
   stopFullAdhan: jest.fn(),
+  getExactAlarmStatus: jest.fn(() => Promise.resolve('granted')),
 }));
 
 jest.mock('../services/notifications/HabitBuilderNotifications', () => ({
@@ -221,6 +236,17 @@ describe('scheduleExtendedNotifications integration', () => {
     const ids = mockScheduledNotifications.map((n) => n.identifier);
     const uniqueIds = new Set(ids);
     expect(uniqueIds.size).toBe(ids.length);
+  });
+
+  it('reconcileScheduling is idempotent across repeated settings-change calls', async () => {
+    await NotificationService.reconcileScheduling('settings_change');
+    const firstPassIdentifiers = new Set(mockScheduledNotifications.map((n) => n.identifier));
+
+    await NotificationService.reconcileScheduling('settings_change');
+    const secondPassIdentifiers = mockScheduledNotifications.map((n) => n.identifier);
+
+    expect(new Set(secondPassIdentifiers)).toEqual(firstPassIdentifiers);
+    expect(secondPassIdentifiers).toHaveLength(firstPassIdentifiers.size);
   });
 
   it('schedules Tier 1 (Adhan) for future prayers across all scheduling days', async () => {

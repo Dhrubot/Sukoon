@@ -7,6 +7,15 @@ import logger from './logger';
 
 const ENCRYPTION_KEY_STORAGE_KEY = 'sukoon_encryption_key';
 
+export type EncryptionSecurityState =
+  | 'secure_store'
+  | 'mmkv_fallback'
+  | 'device_derived'
+  | 'web_fallback'
+  | 'preinit_fallback';
+
+let encryptionSecurityState: EncryptionSecurityState = 'preinit_fallback';
+
 /**
  * Generates a random encryption key
  */
@@ -38,7 +47,8 @@ function generateRandomKey(length: number = 32): string {
 export async function getOrCreateEncryptionKey(): Promise<string> {
   // Web platform doesn't support SecureStore - use a fixed key (less secure but functional)
   if (Platform.OS === 'web') {
-    logger.log('🌐 Web platform: Using fallback encryption key');
+    encryptionSecurityState = 'web_fallback';
+    logger.warn('🌐 Web platform: using fallback encryption storage mode');
     return 'sukoon-web-encryption-key-v1';
   }
 
@@ -47,7 +57,8 @@ export async function getOrCreateEncryptionKey(): Promise<string> {
     const existingKey = await SecureStore.getItemAsync(ENCRYPTION_KEY_STORAGE_KEY);
     
     if (existingKey) {
-      logger.log(`🔐 [KeyDiag] SecureStore HIT — existing key fingerprint: ${existingKey.slice(0, 4)}...${existingKey.slice(-4)}`);
+      encryptionSecurityState = 'secure_store';
+      logger.log('🔐 [KeyDiag] SecureStore key available');
       return existingKey;
     }
 
@@ -58,7 +69,8 @@ export async function getOrCreateEncryptionKey(): Promise<string> {
       keychainAccessible: SecureStore.WHEN_UNLOCKED_THIS_DEVICE_ONLY,
     });
     
-    logger.warn(`🔐 [KeyDiag] SecureStore MISS — generated NEW key fingerprint: ${newKey.slice(0, 4)}...${newKey.slice(-4)} (existing MMKV data will be unreadable!)`);
+    encryptionSecurityState = 'secure_store';
+    logger.warn('🔐 [KeyDiag] SecureStore did not contain a key; generated a new device-bound key');
     return newKey;
   } catch (error) {
     logger.error(`⚠️ [KeyDiag] SecureStore FAILED — error: ${error instanceof Error ? error.message : String(error)}`);
@@ -71,12 +83,14 @@ export async function getOrCreateEncryptionKey(): Promise<string> {
       const fallbackStore = createMMKV({ id: 'sukoon-key-fallback' });
       const existing = fallbackStore.getString('fallback_enc_key');
       if (existing) {
-        logger.log(`🔐 [KeyDiag] MMKV fallback HIT — fingerprint: ${existing.slice(0, 4)}...${existing.slice(-4)}`);
+        encryptionSecurityState = 'mmkv_fallback';
+        logger.warn('🔐 [KeyDiag] Secure storage degraded to MMKV fallback');
         return existing;
       }
       const randomKey = generateRandomKey(32);
       fallbackStore.set('fallback_enc_key', randomKey);
-      logger.warn(`🔐 [KeyDiag] MMKV fallback MISS — generated NEW random key (existing data unreadable!)`);
+      encryptionSecurityState = 'mmkv_fallback';
+      logger.warn('🔐 [KeyDiag] Secure storage degraded to MMKV fallback with a newly generated key');
       return randomKey;
     } catch (mmkvError) {
       // Absolute last resort: derive from device properties (deterministic but non-obvious)
@@ -91,6 +105,7 @@ export async function getOrCreateEncryptionKey(): Promise<string> {
         ExpoCrypto.CryptoDigestAlgorithm.SHA256,
         `sukoon-device-key-${deviceSeed}`
       );
+      encryptionSecurityState = 'device_derived';
       return hash.slice(0, 32);
     }
   }
@@ -106,6 +121,7 @@ export function getCachedEncryptionKey(): string {
   if (cachedKey) {
     return cachedKey;
   }
+  encryptionSecurityState = 'preinit_fallback';
   // Return a device-derived fallback synchronously if not yet initialized.
   // This is used briefly before initializeEncryptionKey() completes.
   const seed = `${Platform.OS}-${Device.modelName || 'u'}-${Device.osVersion || '0'}`;
@@ -119,6 +135,10 @@ export function getCachedEncryptionKey(): string {
 
 export function setCachedEncryptionKey(key: string): void {
   cachedKey = key;
+}
+
+export function getEncryptionSecurityState(): EncryptionSecurityState {
+  return encryptionSecurityState;
 }
 
 /**
