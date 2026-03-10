@@ -1,13 +1,9 @@
 import {
   format,
-  parse,
   isAfter,
-  isBefore,
   addDays,
-  startOfDay,
 } from "date-fns";
 import { isFriday } from "../utils/ramadan";
-import { toZonedTime, formatInTimeZone } from "date-fns-tz";
 import {
   PrayerTimes,
   PrayerTime,
@@ -24,6 +20,7 @@ import StorageService from "./StorageService";
 import { getLocalDateKey } from "../utils/dateHelpers";
 import { PRAYER_API_TIMEOUT_MS } from "../constants/NotificationConstants";
 import { fetchWithTimeout, describeNetworkError } from '../utils/networkRequest';
+import { fetchPrayerTimesFromEdge } from './api/EdgeApiClient';
 
 interface CachedPrayerTimesData {
   date: string;           // YYYY-MM-DD
@@ -52,6 +49,15 @@ const CALCULATION_METHOD_MAP: Record<CalculationMethod, number> = {
 };
 
 const MAX_CACHE_SIZE = 30;
+
+interface PrayerApiResult {
+  times: PrayerTimes;
+  hijri?: {
+    day: string;
+    month: { number: number; en: string; ar: string };
+    year: string;
+  };
+}
 
 export class PrayerTimeService {
   private static instance: PrayerTimeService;
@@ -121,92 +127,148 @@ export class PrayerTimeService {
     }
 
     try {
-      const methodId = CALCULATION_METHOD_MAP[method];
-      const school = asrJuristic === "Hanafi" ? 1 : 0;
-
-      const url = `${ALADHAN_API_BASE}/timings/${dateStr}?latitude=${coordinates.latitude}&longitude=${coordinates.longitude}&method=${methodId}&school=${school}`;
-
       logger.log(`Fetching prayer times for ${dateStr} with ${method}/${asrJuristic}`);
+      const apiResult = await this.fetchPrayerTimesFromProvider(
+        coordinates,
+        date,
+        method,
+        asrJuristic
+      );
 
-      const response = await fetchWithTimeout(url, undefined, PRAYER_API_TIMEOUT_MS);
+      const times = apiResult.times;
 
-      if (!response.ok) {
-        throw new Error(`API responded with status: ${response.status}`);
-      }
+      const requiredTimes = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
+      const missingTimes = requiredTimes.filter(
+        (time) => !times[time as keyof typeof times]
+      );
 
-      const data: AladhanResponse = await response.json();
-
-      if (data.code === 200 && data.data && data.data.timings) {
-        const apiTimes = data.data.timings;
-        logger.log("Prayer times received:", apiTimes);
-
-        // Create normalized version with lowercase keys to match our internal format
-        const times: PrayerTimes = {
-          Fajr: apiTimes.Fajr || "",
-          Sunrise: apiTimes.Sunrise || "",
-          Dhuhr: apiTimes.Dhuhr || "",
-          Asr: apiTimes.Asr || "",
-          Sunset: apiTimes.Sunset || "",
-          Maghrib: apiTimes.Maghrib || "",
-          Isha: apiTimes.Isha || "",
-          Midnight: apiTimes.Midnight || "",
-        };
-
-        // Check for any missing times
-        const requiredTimes = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
-        const missingTimes = requiredTimes.filter(
-          (time) => !times[time as keyof typeof times]
+      if (missingTimes.length > 0) {
+        logger.warn(
+          `Missing prayer times after normalization: ${missingTimes.join(", ")}`
         );
-
-        if (missingTimes.length > 0) {
-          logger.warn(
-            `Missing prayer times after normalization: ${missingTimes.join(
-              ", "
-            )}`
-          );
-        }
-
-        this._lastFetchWasFallback = false;
-        this._usingHardcodedDefaults = false;
-        this._highLatitudeWarning = false;
-        this.cachedTimes.set(cacheKey, times);
-        this.evictCacheIfNeeded();
-
-        // Cache Hijri date for Ramadan detection (no extra API call).
-        // Pass the requested date so pre-fetches for tomorrow don't
-        // overwrite today's Hijri cache.
-        if (data.data.date?.hijri) {
-          cacheHijriDate(data.data.date.hijri, date);
-        }
-
-        // Persist to disk for instant boot (stale-while-revalidate)
-        this.cachePrayerTimesToDisk(coordinates, date, method, asrJuristic, times);
-
-        // Cache for tomorrow as well if it's after Asr
-        const now = new Date();
-        const asrTime = this.parseTimeToDate(times.Asr, date);
-        if (getLocalDateKey(now) === getLocalDateKey(date) && isAfter(now, asrTime)) {
-          this.fetchPrayerTimes(
-            coordinates,
-            addDays(date, 1),
-            method,
-            asrJuristic
-          ).catch((err) =>
-            logger.warn("Failed to pre-cache tomorrow prayer times:", err)
-          );
-        }
-
-        return times;
-      } else {
-        logger.error("Invalid API response format:", data);
-        throw new Error("Invalid API response format");
       }
+
+      this._lastFetchWasFallback = false;
+      this._usingHardcodedDefaults = false;
+      this._highLatitudeWarning = false;
+      this.cachedTimes.set(cacheKey, times);
+      this.evictCacheIfNeeded();
+
+      if (apiResult.hijri) {
+        cacheHijriDate(apiResult.hijri, date);
+      }
+
+      this.cachePrayerTimesToDisk(coordinates, date, method, asrJuristic, times);
+
+      const now = new Date();
+      const asrTime = this.parseTimeToDate(times.Asr, date);
+      if (getLocalDateKey(now) === getLocalDateKey(date) && isAfter(now, asrTime)) {
+        this.fetchPrayerTimes(
+          coordinates,
+          addDays(date, 1),
+          method,
+          asrJuristic
+        ).catch((err) =>
+          logger.warn("Failed to pre-cache tomorrow prayer times:", err)
+        );
+      }
+
+      return times;
     } catch (error) {
       logger.error("Error fetching prayer times:", describeNetworkError(error));
       // Return calculated times as fallback
       this._lastFetchWasFallback = true;
       return this.calculatePrayerTimes(coordinates, date, method);
     }
+  }
+
+  private async fetchPrayerTimesFromProvider(
+    coordinates: Coordinates,
+    date: Date,
+    method: CalculationMethod,
+    asrJuristic: "Standard" | "Hanafi"
+  ): Promise<PrayerApiResult> {
+    try {
+      const edgePayload = await fetchPrayerTimesFromEdge(
+        coordinates,
+        date,
+        method,
+        asrJuristic
+      );
+
+      return {
+        times: edgePayload.timings,
+        hijri: edgePayload.hijri
+          ? {
+              day: String(edgePayload.hijri.day),
+              month: {
+                number: edgePayload.hijri.month,
+                en: edgePayload.hijri.monthName,
+                ar: edgePayload.hijri.monthNameAr ?? '',
+              },
+              year: String(edgePayload.hijri.year),
+            }
+          : undefined,
+      };
+    } catch (edgeError) {
+      logger.warn(
+        "Edge prayer time fetch unavailable, falling back to direct provider:",
+        describeNetworkError(edgeError)
+      );
+      return this.fetchPrayerTimesFromAladhan(coordinates, date, method, asrJuristic);
+    }
+  }
+
+  private async fetchPrayerTimesFromAladhan(
+    coordinates: Coordinates,
+    date: Date,
+    method: CalculationMethod,
+    asrJuristic: "Standard" | "Hanafi"
+  ): Promise<PrayerApiResult> {
+    const dateStr = format(date, "dd-MM-yyyy");
+    const methodId = CALCULATION_METHOD_MAP[method];
+    const school = asrJuristic === "Hanafi" ? 1 : 0;
+    const url = `${ALADHAN_API_BASE}/timings/${dateStr}?latitude=${coordinates.latitude}&longitude=${coordinates.longitude}&method=${methodId}&school=${school}`;
+
+    const response = await fetchWithTimeout(url, undefined, PRAYER_API_TIMEOUT_MS);
+
+    if (!response.ok) {
+      throw new Error(`API responded with status: ${response.status}`);
+    }
+
+    const data: AladhanResponse = await response.json();
+
+    if (!(data.code === 200 && data.data && data.data.timings)) {
+      logger.error("Invalid API response format:", data);
+      throw new Error("Invalid API response format");
+    }
+
+    const apiTimes = data.data.timings;
+    logger.log("Prayer times received:", apiTimes);
+
+    return {
+      times: {
+        Fajr: apiTimes.Fajr || "",
+        Sunrise: apiTimes.Sunrise || "",
+        Dhuhr: apiTimes.Dhuhr || "",
+        Asr: apiTimes.Asr || "",
+        Sunset: apiTimes.Sunset || "",
+        Maghrib: apiTimes.Maghrib || "",
+        Isha: apiTimes.Isha || "",
+        Midnight: apiTimes.Midnight || "",
+      },
+      hijri: data.data.date?.hijri
+        ? {
+            day: data.data.date.hijri.day,
+            month: {
+              number: data.data.date.hijri.month.number,
+              en: data.data.date.hijri.month.en,
+              ar: data.data.date.hijri.month.ar,
+            },
+            year: data.data.date.hijri.year,
+          }
+        : undefined,
+    };
   }
 
   /**
@@ -498,8 +560,8 @@ export class PrayerTimeService {
     let month = date.getMonth() + 1;
     const day = date.getDate();
 
-    let A = Math.floor(year / 100);
-    let B = 2 - A + Math.floor(A / 4);
+    const A = Math.floor(year / 100);
+    const B = 2 - A + Math.floor(A / 4);
 
     if (month <= 2) {
       year--;
@@ -598,8 +660,8 @@ export class PrayerTimeService {
     const decRad = (declination * Math.PI) / 180;
     const angleRad = (angle * Math.PI) / 180;
 
-    let num = Math.sin(angleRad) - Math.sin(latRad) * Math.sin(decRad);
-    let den = Math.cos(latRad) * Math.cos(decRad);
+    const num = Math.sin(angleRad) - Math.sin(latRad) * Math.sin(decRad);
+    const den = Math.cos(latRad) * Math.cos(decRad);
 
     let cosAng = num / den;
 

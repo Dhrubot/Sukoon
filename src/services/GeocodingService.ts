@@ -1,6 +1,7 @@
 import { Coordinates, Location } from '../types';
 import logger from '../utils/logger';
 import { fetchWithTimeout, describeNetworkError } from '../utils/networkRequest';
+import { geocodeAddressFromEdge, reverseGeocodeFromEdge } from './api/EdgeApiClient';
 
 const NOMINATIM_API_BASE = 'https://nominatim.openstreetmap.org';
 const USER_AGENT = 'Sukoon'; // Nominatim requires a user agent
@@ -48,6 +49,16 @@ class GeocodingService {
         return this.cachedLocations.get(cacheKey)!;
       }
 
+      try {
+        const edgeLocation = await geocodeAddressFromEdge(query, countryCode);
+        if (edgeLocation) {
+          this.cachedLocations.set(cacheKey, edgeLocation);
+          return edgeLocation;
+        }
+      } catch (edgeError) {
+        logger.warn('Edge geocoding unavailable, falling back to direct provider:', describeNetworkError(edgeError));
+      }
+
       // Prepare query parameters
       const params = new URLSearchParams({
         q: query,
@@ -57,7 +68,7 @@ class GeocodingService {
       });
 
       // Add country code if provided
-      if (countryCode) {
+      if (countryCode && countryCode.trim().length === 2) {
         params.append('countrycodes', countryCode);
       }
 
@@ -135,6 +146,16 @@ class GeocodingService {
       const cacheKey = `${latitude}-${longitude}`.toLowerCase();
       if (this.cachedLocations.has(cacheKey)) {
         return this.cachedLocations.get(cacheKey)!;
+      }
+
+      try {
+        const edgeLocation = await reverseGeocodeFromEdge(coordinates);
+        if (edgeLocation) {
+          this.cachedLocations.set(cacheKey, edgeLocation);
+          return edgeLocation;
+        }
+      } catch (edgeError) {
+        logger.warn('Edge reverse geocoding unavailable, falling back to direct provider:', describeNetworkError(edgeError));
       }
 
       // Call Nominatim API for reverse geocoding

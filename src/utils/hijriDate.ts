@@ -2,6 +2,8 @@
 // Accurate Hijri date via Aladhan API with offline fallback.
 
 import StorageService from '../services/StorageService';
+import { fetchHijriDateFromEdge } from '../services/api/EdgeApiClient';
+import { cacheHijriDate } from './ramadan';
 
 const HIJRI_MONTHS = [
   'Muharram', 'Safar', 'Rabi al-Awwal', 'Rabi al-Thani',
@@ -49,24 +51,49 @@ function applyAdjustment(h: HijriResult, offset: -1 | 0 | 1): HijriResult {
  */
 async function fetchHijriFromAPI(date: Date): Promise<HijriResult | null> {
   try {
-    const dd = String(date.getDate()).padStart(2, '0');
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
-    const yyyy = date.getFullYear();
-    const url = `https://api.aladhan.com/v1/gToH/${dd}-${mm}-${yyyy}`;
+    try {
+      const edgeHijri = await fetchHijriDateFromEdge(date);
+      cacheHijriDate(
+        {
+          day: String(edgeHijri.day),
+          month: {
+            number: edgeHijri.month,
+            en: edgeHijri.monthName,
+            ar: edgeHijri.monthNameAr ?? '',
+          },
+          year: String(edgeHijri.year),
+        },
+        date
+      );
 
-    const response = await fetch(url, { method: 'GET' });
-    if (!response.ok) return null;
+      return {
+        day: edgeHijri.day,
+        month: edgeHijri.month,
+        monthName: edgeHijri.monthName || HIJRI_MONTHS[edgeHijri.month - 1] || '',
+        year: edgeHijri.year,
+      };
+    } catch {
+      const dd = String(date.getDate()).padStart(2, '0');
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const yyyy = date.getFullYear();
+      const url = `https://api.aladhan.com/v1/gToH/${dd}-${mm}-${yyyy}`;
 
-    const json = await response.json();
-    const hijri = json?.data?.hijri;
-    if (!hijri) return null;
+      const response = await fetch(url, { method: 'GET' });
+      if (!response.ok) return null;
 
-    return {
-      day: parseInt(hijri.day, 10),
-      month: parseInt(hijri.month.number, 10),
-      monthName: hijri.month.en || HIJRI_MONTHS[parseInt(hijri.month.number, 10) - 1] || '',
-      year: parseInt(hijri.year, 10),
-    };
+      const json = await response.json();
+      const hijri = json?.data?.hijri;
+      if (!hijri) return null;
+
+      cacheHijriDate(hijri, date);
+
+      return {
+        day: parseInt(hijri.day, 10),
+        month: parseInt(hijri.month.number, 10),
+        monthName: hijri.month.en || HIJRI_MONTHS[parseInt(hijri.month.number, 10) - 1] || '',
+        year: parseInt(hijri.year, 10),
+      };
+    }
   } catch {
     return null;
   }

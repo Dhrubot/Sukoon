@@ -1,0 +1,23 @@
+name = "sukoon-edge-api"
+main = "src/index.ts"
+compatibility_date = "2026-03-10"
+workers_dev = true
+
+[[kv_namespaces]]
+binding = "CACHE_KV"
+id = "5f7be722d4fd4818a4c6d4cd34227b9e"
+preview_id = "38cd653dd7d745e8bff2e1fc5efc4eeb"
+
+[[kv_namespaces]]
+binding = "HIJRI_OVERRIDES"
+id = "d06ee11df9f342b78356884eef0e5600"
+preview_id = "18be1cdb3c8e4eebbec31f0e7afbe3d6"
+
+[vars]
+ALADHAN_API_BASE = "https://api.aladhan.com/v1"
+NOMINATIM_API_BASE = "https://nominatim.openstreetmap.org"
+PRAYER_CACHE_TTL_SECONDS = "86400"
+HIJRI_CACHE_TTL_SECONDS = "86400"
+GEOCODE_CACHE_TTL_SECONDS = "604800"
+SEARCH_CACHE_TTL_SECONDS = "604800"
+

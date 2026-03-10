@@ -1,4 +1,10 @@
 // app.config.js
+const edgeApiBaseUrl = process.env.EXPO_PUBLIC_EDGE_API_BASE_URL ?? null;
+const edgeApiEnabled =
+  edgeApiBaseUrl !== null &&
+  edgeApiBaseUrl !== "" &&
+  process.env.EXPO_PUBLIC_EDGE_API_ENABLED !== "false";
+
 export default {
   expo: {
     name: "Sukoon",
@@ -120,6 +126,10 @@ export default {
     extra: {
       eas: {
         projectId: "1df4a37a-5211-4ef7-9a89-37d7ef2f8b52",
+      },
+      edgeApi: {
+        baseUrl: edgeApiBaseUrl,
+        enabled: edgeApiEnabled,
       },
       notificationSounds: [
         "./assets/sounds/adhan_short.ogg",
