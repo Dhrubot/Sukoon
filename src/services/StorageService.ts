@@ -74,6 +74,10 @@ class StorageService {
     logger.log('✅ StorageService initialized with secure encryption');
   }
 
+  isInitialized(): boolean {
+    return this._initialized;
+  }
+
   private _preInitAccessLogged = false;
   /** Returns true if storage is ready, false if still using MemoryStorage placeholder. */
   private _ensureInitialized(): boolean {

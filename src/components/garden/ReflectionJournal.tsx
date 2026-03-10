@@ -12,6 +12,7 @@ import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import { ReflectionEntry } from '../../types/garden';
+import { withAlpha } from '../../utils/color';
 
 interface ReflectionJournalProps {
   reflections: ReflectionEntry[];
@@ -82,8 +83,8 @@ const ReflectionEntryCard: React.FC<{
             styles.chip,
             {
               backgroundColor: isBloom
-                ? theme.colors.garden.bloomGlow + '18'
-                : theme.colors.card.hover || accentColor + '12',
+                ? withAlpha(theme.colors.garden.bloomGlow, 0.09)
+                : theme.colors.card.hover || withAlpha(accentColor, 0.07),
             },
           ]}
         >

@@ -19,6 +19,7 @@ import Svg, {
   Stop,
 } from 'react-native-svg';
 import { useTheme } from '../../providers/ThemeProvider';
+import { withAlpha } from '../../utils/color';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import { STAGE_THRESHOLDS, STAGE_INFO } from '../../constants/tubaTree';
@@ -415,7 +416,7 @@ const TubaTreeInfoScreen: React.FC = () => {
             leave it. Its branches extend over the walls of Paradise, and from it flow
             rivers of honey, milk, and pure water.
           </Text>
-          <View style={[styles.quoteCard, { borderColor: theme.colors.interactive.active + '30' }]}>
+          <View style={[styles.quoteCard, { borderColor: withAlpha(theme.colors.interactive.active, 0.19) }]}>
             <Text style={[styles.quoteText, { color: theme.colors.text.secondary }]}>
               "Tuba is a tree in Paradise. Its extent is a journey of a hundred years.
               The garments of the people of Paradise emerge from its sheaths."
@@ -509,7 +510,7 @@ const TubaTreeInfoScreen: React.FC = () => {
               <View key={prayer} style={styles.branchColorItem}>
                 <View style={[styles.branchColorDot, { backgroundColor: prayerColors[i] }]} />
                 <Text style={[styles.branchColorName, { color: theme.colors.text.primary }]}>{prayer}</Text>
-                <View style={[styles.branchColorBar, { backgroundColor: prayerColors[i] + '25' }]}>
+                <View style={[styles.branchColorBar, { backgroundColor: withAlpha(prayerColors[i], 0.15) }]}>
                   <View
                     style={[
                       styles.branchColorFill,

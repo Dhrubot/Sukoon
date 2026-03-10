@@ -17,6 +17,7 @@ import { useStore } from '../../store/useStore';
 import ReflectionGardenService from '../../services/ReflectionGardenService';
 import Svg, { Path, Circle, Line, Polyline, Rect } from 'react-native-svg';
 import DailyVerse, { DailyVerseRef } from '../../components/common/DailyVerse';
+import { withAlpha } from '../../utils/color';
 
 // ═══════════════════════════════════════════════════════════════
 // Outline SVG Icon Components
@@ -305,12 +306,12 @@ const MenuScreen: React.FC = () => {
   const getAccentColors = (colorKey: string) => {
     switch (colorKey) {
       case 'teal':
-        return { bg: theme.colors.interactive.active + '14', icon: theme.colors.interactive.active };
+        return { bg: withAlpha(theme.colors.interactive.active, 0.08), icon: theme.colors.interactive.active };
       case 'gold':
-        return { bg: theme.colors.gold + '18', icon: theme.colors.gold };
+        return { bg: withAlpha(theme.colors.gold, 0.09), icon: theme.colors.gold };
       case 'purple':
         const taraweeh = (theme.colors.prayer as Record<string, string>)?.taraweeh;
-        return { bg: taraweeh ? taraweeh + '20' : '#a78bfa20', icon: taraweeh || '#a78bfa' };
+        return { bg: taraweeh ? withAlpha(taraweeh, 0.12) : '#a78bfa20', icon: taraweeh || '#a78bfa' };
       case 'amber':
         return { bg: '#f59e0b18', icon: '#f59e0b' };
       default:
@@ -332,21 +333,21 @@ const MenuScreen: React.FC = () => {
       title: 'My Journey',
       subtitle: 'Reflect on your prayer history',
       screen: 'MyJourney',
-      iconBg: theme.colors.interactive.active + '14',
+      iconBg: withAlpha(theme.colors.interactive.active, 0.08),
     },
     {
       icon: SetupIcon,
       title: 'Setup & Health',
       subtitle: 'Location, reminders, diagnostics',
       screen: 'SetupHealth',
-      iconBg: theme.colors.gold + '18',
+      iconBg: withAlpha(theme.colors.gold, 0.09),
     },
     {
       icon: ThemeIcon,
       title: 'App Theme',
       subtitle: `Currently: ${themeMode === 'dark' ? 'Dark' : themeMode === 'light' ? 'Light' : 'Midnight'}`,
       screen: '',
-      iconBg: theme.colors.interactive.active + '14',
+      iconBg: withAlpha(theme.colors.interactive.active, 0.08),
       onPress: toggleTheme,
     },
     {
@@ -564,7 +565,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   gardenCard: {
     backgroundColor: theme.colors.card.background,
     borderWidth: 1,
-    borderColor: theme.colors.interactive.active + '30',
+    borderColor: withAlpha(theme.colors.interactive.active, 0.19),
     borderRadius: 18,
     overflow: 'hidden',
     position: 'relative',
@@ -576,7 +577,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     width: 150,
     height: 150,
     borderRadius: 75,
-    backgroundColor: theme.colors.interactive.active + '0A',
+    backgroundColor: withAlpha(theme.colors.interactive.active, 0.04),
   },
   gardenTop: {
     flexDirection: 'row',
@@ -587,9 +588,9 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: 16,
-    backgroundColor: theme.colors.interactive.active + '14',
+    backgroundColor: withAlpha(theme.colors.interactive.active, 0.08),
     borderWidth: 1,
-    borderColor: theme.colors.interactive.active + '28',
+    borderColor: withAlpha(theme.colors.interactive.active, 0.16),
     alignItems: 'center',
     justifyContent: 'center',
   },

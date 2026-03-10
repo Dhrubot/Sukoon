@@ -50,6 +50,8 @@ export const LocationModal: React.FC<LocationModalProps> = ({ visible, onClose }
       visible={visible}
       transparent
       animationType="slide"
+      presentationStyle="overFullScreen"
+      statusBarTranslucent
       onRequestClose={handleClose}
     >
       <View style={styles.modalContainer}>

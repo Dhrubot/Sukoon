@@ -119,9 +119,7 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
       }
     };
 
-    // Register the handler with NotificationService
     NotificationService.registerNavigationHandler(handleNotificationNavigation);
-    logger.log("Navigation handler registered");
 
     // Deep-link handler for Live Activity actions (sukoon://prepare?prayer=X, sukoon://prayed?prayer=X)
     const handleDeepLink = (event: { url: string }) => {
@@ -160,6 +158,7 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
     });
 
     return () => {
+      NotificationService.registerNavigationHandler(null);
       linkingSub.remove();
     };
   }, []);

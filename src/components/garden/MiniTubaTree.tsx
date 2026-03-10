@@ -8,6 +8,7 @@ import React from 'react';
 import Svg, { Path } from 'react-native-svg';
 import { useTheme } from '../../providers/ThemeProvider';
 import { MINI_TREE } from '../../constants/tubaTree';
+import { withAlpha } from '../../utils/color';
 
 interface MiniTubaTreeProps {
   size?: number;
@@ -29,7 +30,7 @@ const MiniTubaTree: React.FC<MiniTubaTreeProps> = ({
 
   const trunkColor = theme.colors.garden.trunk;
   const activeColor = theme.colors.interactive.active;
-  const mutedColor = theme.colors.text.muted + '40';
+  const mutedColor = withAlpha(theme.colors.text.muted, 0.25);
 
   // Prayer colors in fard order for branch coloring
   const prayerKeys = ['fajr', 'dhuhr', 'asr', 'maghrib', 'isha'] as const;

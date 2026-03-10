@@ -189,6 +189,11 @@ class NotificationService {
     reason: NotificationSchedulingReason = 'background_refresh'
   ): Promise<boolean> {
     try {
+      if (!StorageService.isInitialized()) {
+        logger.log(`⏳ Skipping notification reconcile (${reason}) — storage not initialized`);
+        return false;
+      }
+
       const lastRunStr = StorageService.getValue('last_batch_schedule_date');
       const lastRun = lastRunStr ? new Date(lastRunStr) : new Date(0);
       const now = new Date();
@@ -211,9 +216,20 @@ class NotificationService {
   }
 
   // Register a handler function that will be called when navigation is needed
-  registerNavigationHandler(handler: (prayer: PrayerName, action: string) => void) {
+  registerNavigationHandler(handler: ((prayer: PrayerName, action: string) => void) | null) {
+    if (this.navigationHandler === handler) {
+      logger.log('♻️ Navigation handler already registered');
+      return;
+    }
+
+    const replacingHandler = this.navigationHandler !== null;
     this.navigationHandler = handler;
-    logger.log('✅ Navigation handler registered');
+    if (!handler) {
+      logger.log('🧹 Navigation handler cleared');
+      return;
+    }
+
+    logger.log(replacingHandler ? '♻️ Navigation handler replaced' : '✅ Navigation handler registered');
   }
 
   async initialize(): Promise<boolean> {
@@ -566,6 +582,11 @@ class NotificationService {
     }
   ): Promise<boolean> {
     try {
+      if (!StorageService.isInitialized()) {
+        logger.log(`⏳ Skipping notification reconcile (${reason}) — storage not initialized`);
+        return false;
+      }
+
       const settings = StorageService.getUserSettings();
       if (!settings) {
         logger.log(`📵 Skipping notification reconcile (${reason}) — no user settings`);

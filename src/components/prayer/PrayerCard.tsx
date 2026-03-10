@@ -18,6 +18,7 @@ import { Icon } from '../common/Icon';
 import { NotificationToggleButton } from '../common/NotificationToggleButton';
 import { getPrayerIcon } from '../../assets/icons';
 import logger from '../../utils/logger';
+import { withAlpha } from '../../utils/color';
 
 interface PrayerCardProps {
   prayer: PrayerTime;
@@ -138,9 +139,9 @@ const PrayerCard: React.FC<PrayerCardProps> = ({
       style={[
         styles.container,
         { backgroundColor: theme.colors.card.background, borderColor: theme.colors.border.secondary },
-        isActive() && [styles.activeContainer, { backgroundColor: theme.colors.gold + '18', borderColor: theme.colors.gold + '40' }],
-        record?.status === 'prayed' && [styles.prayedContainer, { backgroundColor: theme.colors.interactive.active + '12', borderColor: theme.colors.interactive.active + '30' }],
-        isMissed() && [styles.missedContainer, { backgroundColor: theme.colors.status.error + '10', borderColor: theme.colors.status.error + '25' }],
+        isActive() && [styles.activeContainer, { backgroundColor: withAlpha(theme.colors.gold, 0.09), borderColor: withAlpha(theme.colors.gold, 0.25) }],
+        record?.status === 'prayed' && [styles.prayedContainer, { backgroundColor: withAlpha(theme.colors.interactive.active, 0.07), borderColor: withAlpha(theme.colors.interactive.active, 0.19) }],
+        isMissed() && [styles.missedContainer, { backgroundColor: withAlpha(theme.colors.status.error, 0.06), borderColor: withAlpha(theme.colors.status.error, 0.15) }],
       ]}
       onPress={onComplete}
       onLongPress={onLongPress}

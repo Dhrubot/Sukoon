@@ -27,12 +27,17 @@ interface NominatimResponse {
 class GeocodingService {
   private static instance: GeocodingService;
   private cachedLocations: Map<string, Location> = new Map();
+  private lastSource: 'edge' | 'direct' | 'cache' | null = null;
   
   static getInstance(): GeocodingService {
     if (!GeocodingService.instance) {
       GeocodingService.instance = new GeocodingService();
     }
     return GeocodingService.instance;
+  }
+
+  getLastSource(): 'edge' | 'direct' | 'cache' | null {
+    return this.lastSource;
   }
 
   /**
@@ -46,6 +51,7 @@ class GeocodingService {
       const cacheKey = `${query}-${countryCode || ''}`.toLowerCase();
       if (this.cachedLocations.has(cacheKey)) {
         logger.log('Returning cached location for geocoding request');
+        this.lastSource = 'cache';
         return this.cachedLocations.get(cacheKey)!;
       }
 
@@ -53,6 +59,8 @@ class GeocodingService {
         const edgeLocation = await geocodeAddressFromEdge(query, countryCode);
         if (edgeLocation) {
           this.cachedLocations.set(cacheKey, edgeLocation);
+          this.lastSource = 'edge';
+          logger.log('🌐 Geocoding source: edge');
           return edgeLocation;
         }
       } catch (edgeError) {
@@ -115,6 +123,8 @@ class GeocodingService {
       
       // Cache the result
       this.cachedLocations.set(cacheKey, location);
+      this.lastSource = 'direct';
+      logger.log('🌐 Geocoding source: direct_fallback');
       
       logger.log(`Geocoded location to ${city || 'Unknown city'}, ${country || 'Unknown country'}`);
       return location;
@@ -145,6 +155,7 @@ class GeocodingService {
       // Check cache first
       const cacheKey = `${latitude}-${longitude}`.toLowerCase();
       if (this.cachedLocations.has(cacheKey)) {
+        this.lastSource = 'cache';
         return this.cachedLocations.get(cacheKey)!;
       }
 
@@ -152,6 +163,8 @@ class GeocodingService {
         const edgeLocation = await reverseGeocodeFromEdge(coordinates);
         if (edgeLocation) {
           this.cachedLocations.set(cacheKey, edgeLocation);
+          this.lastSource = 'edge';
+          logger.log('🌐 Reverse geocoding source: edge');
           return edgeLocation;
         }
       } catch (edgeError) {
@@ -199,6 +212,8 @@ class GeocodingService {
       
       // Cache the result
       this.cachedLocations.set(cacheKey, location);
+      this.lastSource = 'direct';
+      logger.log('🌐 Reverse geocoding source: direct_fallback');
       
       return location;
     } catch (error) {

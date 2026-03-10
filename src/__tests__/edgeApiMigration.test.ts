@@ -138,6 +138,63 @@ describe('edge API migration', () => {
     expect((global.fetch as jest.Mock).mock.calls[1][0]).toContain('https://api.aladhan.com/v1/timings/');
   });
 
+  it('deduplicates concurrent prayer-time fetches for the same request context', async () => {
+    let resolveFetch: ((value: Response) => void) | null = null;
+    (global.fetch as jest.Mock).mockImplementationOnce(
+      () =>
+        new Promise((resolve) => {
+          resolveFetch = resolve;
+        })
+    );
+
+    const requestDate = new Date('2026-03-20T08:00:00.000Z');
+    const coordinates = { latitude: 23.81, longitude: 90.41 };
+
+    const firstPromise = PrayerTimeService.fetchPrayerTimes(
+      coordinates,
+      requestDate,
+      'MWL',
+      'Standard'
+    );
+
+    const secondPromise = PrayerTimeService.fetchPrayerTimes(
+      coordinates,
+      requestDate,
+      'MWL',
+      'Standard'
+    );
+
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+
+    resolveFetch?.(
+      mockJsonResponse({
+        data: {
+          date: '2026-03-20',
+          calculationFingerprint: 'fp',
+          timings: {
+            Fajr: '05:01',
+            Sunrise: '06:18',
+            Dhuhr: '12:09',
+            Asr: '15:22',
+            Sunset: '18:01',
+            Maghrib: '18:01',
+            Isha: '19:17',
+            Midnight: '00:02',
+          },
+          hijri: {
+            day: 1,
+            month: 9,
+            monthName: 'Ramadan',
+            year: 1447,
+          },
+        },
+      })
+    );
+
+    const [firstResult, secondResult] = await Promise.all([firstPromise, secondPromise]);
+    expect(firstResult).toEqual(secondResult);
+  });
+
   it('uses edge geocoding when configured', async () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce(
       mockJsonResponse({

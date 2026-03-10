@@ -105,29 +105,39 @@ export const useAppInitialization = () => {
         );
 
         if (needsRefresh) {
-          logger.log("Refreshing prayer times...");
-          try {
-            recordRefreshAttempt(
-              settings.location,
-              settings.calculationMethod,
-              settings.asrJuristic
-            );
-            await PrayerTimeService.fetchPrayerTimes(
-              settings.location,
-              new Date(),
-              settings.calculationMethod,
-              settings.asrJuristic
-            );
-            if (!PrayerTimeService.lastFetchWasFallback) {
-              recordRefreshSuccess(
+          const refreshDate = new Date();
+          if (PrayerTimeService.hasInFlightPrayerTimesFetch(
+            settings.location,
+            refreshDate,
+            settings.calculationMethod,
+            settings.asrJuristic
+          )) {
+            logger.log("♻️ Prayer times refresh already in progress — skipping duplicate boot refresh");
+          } else {
+            logger.log("Refreshing prayer times...");
+            try {
+              recordRefreshAttempt(
                 settings.location,
                 settings.calculationMethod,
                 settings.asrJuristic
               );
+              await PrayerTimeService.fetchPrayerTimes(
+                settings.location,
+                refreshDate,
+                settings.calculationMethod,
+                settings.asrJuristic
+              );
+              if (!PrayerTimeService.lastFetchWasFallback) {
+                recordRefreshSuccess(
+                  settings.location,
+                  settings.calculationMethod,
+                  settings.asrJuristic
+                );
+              }
+            } catch (error) {
+              logger.error("Failed to refresh prayer times:", error);
+              // Continue anyway, use cached times
             }
-          } catch (error) {
-            logger.error("Failed to refresh prayer times:", error);
-            // Continue anyway, use cached times
           }
         }
       }

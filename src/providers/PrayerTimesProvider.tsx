@@ -76,6 +76,7 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
   const [usingHardcodedDefaults, setUsingHardcodedDefaults] = useState(false);
   const [highLatitudeWarning, setHighLatitudeWarning] = useState(false);
   const { recordRefreshAttempt, recordRefreshSuccess } = usePrayerTimeRefresh();
+  const lastAnnouncedPrayerStateRef = useRef<string | null>(null);
 
   const adjustmentsKey = useMemo(() => {
     return JSON.stringify(userSettings?.adjustments ?? {});
@@ -101,6 +102,24 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
   ): PrayerTime | null => {
     if (todayPrayers.length === 0) return null;
 
+    const announcePrayerState = (kind: 'active' | 'upcoming' | 'tomorrow', prayerName: PrayerName) => {
+      const key = `${kind}:${prayerName}`;
+      if (lastAnnouncedPrayerStateRef.current === key) return;
+      lastAnnouncedPrayerStateRef.current = key;
+
+      if (kind === 'active') {
+        logger.log('✅ Active prayer window:', prayerName);
+        return;
+      }
+
+      if (kind === 'tomorrow') {
+        logger.log('✅ Next prayer is tomorrow\'s Fajr');
+        return;
+      }
+
+      logger.log('✅ Next prayer today:', prayerName);
+    };
+
     const now = new Date();
     // First pass: find the first prayer whose TIME hasn't arrived yet (upcoming)
     for (let i = 0; i < todayPrayers.length; i++) {
@@ -113,11 +132,11 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
             ? sunrise
             : todayPrayers[i].time; // deadline = next prayer's start
           if (now < prevDeadline) {
-            logger.log('✅ Active prayer window:', prev.name);
+            announcePrayerState('active', prev.name);
             return { ...prev, isNext: true };
           }
         }
-        logger.log('✅ Next prayer today:', todayPrayers[i].name);
+        announcePrayerState('upcoming', todayPrayers[i].name);
         return { ...todayPrayers[i], isNext: true };
       }
     }
@@ -132,13 +151,13 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
         ? midnight
         : new Date(lastPrayer.time.getTime() + ISHA_FALLBACK_DEADLINE_MS);
     if (now < ishaAbsoluteDeadline) {
-      logger.log('✅ Active prayer window (last):', lastPrayer.name);
+      announcePrayerState('active', lastPrayer.name);
       return { ...lastPrayer, isNext: true };
     }
 
     // If no more prayers today, return tomorrow's Fajr
     if (tmrwFajr) {
-      logger.log('✅ Next prayer is tomorrow\'s Fajr');
+      announcePrayerState('tomorrow', tmrwFajr.name);
       return { ...tmrwFajr, isNext: true };
     }
 

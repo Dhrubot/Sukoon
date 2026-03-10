@@ -1,5 +1,5 @@
 // src/hooks/useNotificationRescheduler.ts
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { InteractionManager, NativeModules, Platform } from 'react-native';
 import { useAppStateChange } from './useAppStateChange';
 import NotificationService from '../services/NotificationService';
@@ -12,8 +12,15 @@ let lastObservedWallClockMs: number | null = null;
 let lastObservedMonotonicMs: number | null = null;
 
 export const useNotificationRescheduler = () => {
-  // Check on mount (deferred to avoid blocking UI)
+  const userSettings = useStore((state) => state.userSettings);
+  const initialCheckStartedRef = useRef(false);
+  const hasReadySettings = StorageService.isInitialized() && !!userSettings;
+
+  // Check once after app initialization has hydrated storage and settings.
   useEffect(() => {
+    if (!hasReadySettings || initialCheckStartedRef.current) return;
+    initialCheckStartedRef.current = true;
+
     InteractionManager.runAfterInteractions(async () => {
       // Android: check if device rebooted since last launch (boot receiver sets flag)
       if (Platform.OS === 'android') {
@@ -30,21 +37,32 @@ export const useNotificationRescheduler = () => {
           logger.warn('⚠️ BootPrefsModule unavailable:', e);
         }
       }
-      checkAndReschedule();
+      await checkAndReschedule();
     });
-  }, []);
+  }, [hasReadySettings]);
 
   // Check on resume via shared AppState listener
   useAppStateChange((nextState) => {
     if (nextState === 'active') {
       InteractionManager.runAfterInteractions(() => {
-        checkAndReschedule();
+        void checkAndReschedule();
       });
     }
   });
 
   const checkAndReschedule = async () => {
     try {
+      if (!StorageService.isInitialized()) {
+        logger.log('⏳ Skipping notification reschedule — storage not initialized');
+        return;
+      }
+
+      const currentUserSettings = useStore.getState().userSettings;
+      if (!currentUserSettings) {
+        logger.log('⏳ Skipping notification reschedule — user settings not ready');
+        return;
+      }
+
       let invalidateReason: 'timezone_change' | 'location_change' | 'clock_change' | null = null;
 
       // ── DST offset detection ──────────────────────────────────
@@ -73,7 +91,7 @@ export const useNotificationRescheduler = () => {
         }
       }
 
-      const currentLocation = useStore.getState().userSettings?.location;
+      const currentLocation = currentUserSettings.location;
       const savedLocationFingerprint = StorageService.getValue('notification_location_fingerprint');
       const currentLocationFingerprint = currentLocation
         ? `${currentLocation.latitude.toFixed(3)},${currentLocation.longitude.toFixed(3)}`

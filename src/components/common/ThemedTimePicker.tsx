@@ -23,6 +23,7 @@ import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import * as Haptics from 'expo-haptics';
+import { withAlpha } from '../../utils/color';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SHEET_HEIGHT = 380;
@@ -366,7 +367,7 @@ const ThemedTimePicker: React.FC<ThemedTimePickerProps> = ({
                   style={styles.picker}
                   itemStyle={[styles.pickerItem, { color: pickerTextColor }]}
                   dropdownIconColor={pickerTextColor}
-                  selectionColor={theme.colors.primary.DEFAULT + '30'}
+                  selectionColor={withAlpha(theme.colors.primary.DEFAULT, 0.19)}
                   // @ts-ignore — themeVariant is typed on PickerIOS but forwarded by cross-platform Picker
                   themeVariant={themeMode}
                 >
@@ -386,7 +387,7 @@ const ThemedTimePicker: React.FC<ThemedTimePickerProps> = ({
                   style={styles.picker}
                   itemStyle={[styles.pickerItem, { color: pickerTextColor }]}
                   dropdownIconColor={pickerTextColor}
-                  selectionColor={theme.colors.primary.DEFAULT + '30'}
+                  selectionColor={withAlpha(theme.colors.primary.DEFAULT, 0.19)}
                   // @ts-ignore
                   themeVariant={themeMode}
                 >
@@ -404,7 +405,7 @@ const ThemedTimePicker: React.FC<ThemedTimePickerProps> = ({
                   style={styles.picker}
                   itemStyle={[styles.pickerItem, { color: pickerTextColor }]}
                   dropdownIconColor={pickerTextColor}
-                  selectionColor={theme.colors.primary.DEFAULT + '30'}
+                  selectionColor={withAlpha(theme.colors.primary.DEFAULT, 0.19)}
                   // @ts-ignore
                   themeVariant={themeMode}
                 >
@@ -423,7 +424,7 @@ const ThemedTimePicker: React.FC<ThemedTimePickerProps> = ({
                   onValueChange={(v) => setHour(v as number)}
                   labelFn={(h) => h.toString()}
                   textColor={pickerTextColor}
-                  selectedBgColor={theme.colors.primary.DEFAULT + '18'}
+                  selectedBgColor={withAlpha(theme.colors.primary.DEFAULT, 0.09)}
                 />
               </View>
 
@@ -436,7 +437,7 @@ const ThemedTimePicker: React.FC<ThemedTimePickerProps> = ({
                   onValueChange={(v) => setMinute(v as number)}
                   labelFn={(m) => m.toString().padStart(2, '0')}
                   textColor={pickerTextColor}
-                  selectedBgColor={theme.colors.primary.DEFAULT + '18'}
+                  selectedBgColor={withAlpha(theme.colors.primary.DEFAULT, 0.09)}
                 />
               </View>
 
@@ -446,7 +447,7 @@ const ThemedTimePicker: React.FC<ThemedTimePickerProps> = ({
                   selectedValue={period}
                   onValueChange={(v) => setPeriod(v as 'AM' | 'PM')}
                   textColor={pickerTextColor}
-                  selectedBgColor={theme.colors.primary.DEFAULT + '18'}
+                  selectedBgColor={withAlpha(theme.colors.primary.DEFAULT, 0.09)}
                 />
               </View>
             </>

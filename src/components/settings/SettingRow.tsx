@@ -10,6 +10,7 @@ import {
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
+import { withAlpha } from '../../utils/color';
 
 interface SettingRowProps {
   label: string;
@@ -48,7 +49,7 @@ export const SettingRow: React.FC<SettingRowProps> = ({
       {icon && (
         <View style={[
           styles.iconWrap,
-          iconColor ? { backgroundColor: iconColor + '1A' } : { backgroundColor: theme.colors.primary.DEFAULT + '1A' },
+          { backgroundColor: withAlpha(iconColor || theme.colors.primary.DEFAULT, 0.1) },
         ]}>
           {icon}
         </View>

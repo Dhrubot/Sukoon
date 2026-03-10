@@ -201,14 +201,15 @@ class LocationService {
   async reverseGeocodeCoordinates(coordinates: { latitude: number, longitude: number }): Promise<Location | null> {
     logger.log('🔄 Reverse geocoding coordinates:', coordinates);
     
-    // First try using GeocodingService (Nominatim)
-    try {
-      const location = await GeocodingService.reverseGeocode(coordinates);
+      // First try using GeocodingService (edge API or direct fallback)
+      try {
+        const location = await GeocodingService.reverseGeocode(coordinates);
       
       if (location) {
-        logger.log('✅ Nominatim reverse geocoding successful:', {
+        logger.log('✅ Reverse geocoding successful:', {
           city: location.city,
-          country: location.country
+          country: location.country,
+          source: GeocodingService.getLastSource(),
         });
         return location;
       }

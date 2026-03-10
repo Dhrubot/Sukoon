@@ -1,10 +1,9 @@
 // src/screens/Settings/SettingsScreen.tsx (ENHANCED)
 import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LocationModal } from '../../components/LocationModal';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
-import { useTheme } from '../../providers/ThemeProvider';
 import { AppTheme } from '../../theme';
 
 // Hooks
@@ -30,13 +29,15 @@ import { CalculationMethodModal, NotificationModal, HijriAdjustmentModal } from 
 
 // Services
 import NotificationService from '../../services/NotificationService';
-import { getCachedHijriDate, getRawCachedHijriDate } from '../../utils/ramadan';
+import { getCachedHijriDate } from '../../utils/ramadan';
 import { NotificationDebugScreen } from '../Debug/NotificationDebugScreen';
+
+type SettingsModalKey = 'calculation' | 'hijri' | 'notification' | 'location' | null;
 
 const SettingsScreen = ({ navigation }: any) => {
   const styles = useThemedStyles(createStyles);
-  const { theme } = useTheme();
   const [showHijriModal, setShowHijriModal] = useState(false);
+  const [activeModal, setActiveModal] = useState<SettingsModalKey>(null);
 
   const {
     // Existing state
@@ -71,7 +72,6 @@ const SettingsScreen = ({ navigation }: any) => {
 
     // 🎯 NEW: Enhanced actions
     previewCalculationMethod,
-    selectLocationManually,
     testPrayerCalculations,
     showDebugInfo,
     refreshPrayerTimes,
@@ -87,6 +87,38 @@ const SettingsScreen = ({ navigation }: any) => {
       </SafeAreaView>
     );
   }
+
+  const closeAllModals = () => {
+    setActiveModal(null);
+    setShowCalculationPicker(false);
+    setShowHijriModal(false);
+    setShowNotificationModal(false);
+    setShowManualLocationModal(false);
+  };
+
+  const openCalculationModal = () => {
+    closeAllModals();
+    setActiveModal('calculation');
+    setShowCalculationPicker(true);
+  };
+
+  const openHijriModal = () => {
+    closeAllModals();
+    setActiveModal('hijri');
+    setShowHijriModal(true);
+  };
+
+  const openNotificationModal = () => {
+    closeAllModals();
+    setActiveModal('notification');
+    setShowNotificationModal(true);
+  };
+
+  const openLocationModal = () => {
+    closeAllModals();
+    setActiveModal('location');
+    setShowManualLocationModal(true);
+  };
 
   // Tahajjud toggle handler
   const handleToggleTahajjud = async () => {
@@ -129,7 +161,7 @@ const SettingsScreen = ({ navigation }: any) => {
         <PrayerSettingsSection
           userSettings={userSettings}
           setUserSettings={setUserSettings}
-          onCalculationMethodPress={() => setShowCalculationPicker(true)}
+          onCalculationMethodPress={openCalculationModal}
           calculationMethods={calculationMethods}
           isUpdatingMethod={isUpdatingMethod}
           todayPrayerTimes={todayPrayerTimes}
@@ -144,7 +176,7 @@ const SettingsScreen = ({ navigation }: any) => {
         {/* 2. Notifications — consolidated with Tahajjud & Jumu'ah */}
         <NotificationSection
           userSettings={userSettings}
-          onNotificationPress={() => setShowNotificationModal(true)}
+          onNotificationPress={openNotificationModal}
           onToggleTahajjud={handleToggleTahajjud}
           onToggleJummah={handleToggleJummah}
         />
@@ -163,7 +195,7 @@ const SettingsScreen = ({ navigation }: any) => {
               const adj = userSettings.hijriAdjustment ?? 0;
               return adj === 0 ? 'Default' : adj === -1 ? '−1 Day' : '+1 Day';
             })()}
-            onPress={() => setShowHijriModal(true)}
+            onPress={openHijriModal}
           />
         </SettingSection>
 
@@ -172,13 +204,13 @@ const SettingsScreen = ({ navigation }: any) => {
           userSettings={userSettings}
           isUpdatingLocation={isUpdatingLocation}
           onUpdateLocation={updateLocation}
-          onSelectManually={selectLocationManually}
+          onSelectManually={openLocationModal}
           hasValidLocation={hasValidLocation}
         />
 
         <LocationModal
-          visible={showManualLocationModal}
-          onClose={() => setShowManualLocationModal(false)}
+          visible={showManualLocationModal && activeModal === 'location'}
+          onClose={closeAllModals}
         />
 
         {/* 5. App Data */}
@@ -230,8 +262,8 @@ const SettingsScreen = ({ navigation }: any) => {
 
       {/* 🎯 ENHANCED: Calculation Method Modal with previews */}
       <CalculationMethodModal
-        visible={showCalculationPicker}
-        onClose={() => setShowCalculationPicker(false)}
+        visible={showCalculationPicker && activeModal === 'calculation'}
+        onClose={closeAllModals}
         calculationMethods={calculationMethods}
         selectedMethod={userSettings.calculationMethod}
         onMethodSelect={handleCalculationMethodChange}
@@ -244,8 +276,8 @@ const SettingsScreen = ({ navigation }: any) => {
 
       {/* Hijri Adjustment Modal */}
       <HijriAdjustmentModal
-        visible={showHijriModal}
-        onClose={() => setShowHijriModal(false)}
+        visible={showHijriModal && activeModal === 'hijri'}
+        onClose={closeAllModals}
         currentAdjustment={(userSettings.hijriAdjustment ?? 0) as -1 | 0 | 1}
         onAdjustmentChange={(val) => {
           setUserSettings({ ...userSettings, hijriAdjustment: val });
@@ -254,8 +286,8 @@ const SettingsScreen = ({ navigation }: any) => {
 
       {/* Notification Modal */}
       <NotificationModal
-        visible={showNotificationModal}
-        onClose={() => setShowNotificationModal(false)}
+        visible={showNotificationModal && activeModal === 'notification'}
+        onClose={closeAllModals}
         userSettings={userSettings}
         onUpdateSettings={setUserSettings}
       />

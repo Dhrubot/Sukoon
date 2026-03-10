@@ -63,9 +63,11 @@ export class PrayerTimeService {
   private static instance: PrayerTimeService;
   private cachedTimes: Map<string, PrayerTimes> = new Map();
   private cachedLocations: Map<string, Coordinates> = new Map();
+  private inFlightFetches: Map<string, Promise<PrayerTimes>> = new Map();
   private _lastFetchWasFallback: boolean = false;
   private _usingHardcodedDefaults: boolean = false;
   private _highLatitudeWarning: boolean = false;
+  private _lastProviderSource: 'edge' | 'direct' | 'memory_cache' | 'calculated_fallback' | 'disk_cache' | 'hardcoded_defaults' | null = null;
 
   get lastFetchWasFallback(): boolean {
     return this._lastFetchWasFallback;
@@ -77,6 +79,10 @@ export class PrayerTimeService {
 
   get highLatitudeWarning(): boolean {
     return this._highLatitudeWarning;
+  }
+
+  get lastProviderSource(): string | null {
+    return this._lastProviderSource;
   }
 
   static getInstance(): PrayerTimeService {
@@ -96,6 +102,28 @@ export class PrayerTimeService {
         this.cachedTimes.delete(key);
       }
     }
+  }
+
+  private getFetchCacheKey(
+    coordinates: Coordinates,
+    date: Date,
+    method: CalculationMethod,
+    asrJuristic: "Standard" | "Hanafi"
+  ): string {
+    const dateStr = format(date, "dd-MM-yyyy");
+    const tzOffset = new Date().getTimezoneOffset();
+    return `${coordinates.latitude}-${coordinates.longitude}-${dateStr}-${method}-${asrJuristic}-${tzOffset}`;
+  }
+
+  hasInFlightPrayerTimesFetch(
+    coordinates: Coordinates,
+    date: Date,
+    method: CalculationMethod = "MWL",
+    asrJuristic: "Standard" | "Hanafi" = "Standard"
+  ): boolean {
+    if (!isValidCoordinates(coordinates)) return false;
+    const cacheKey = this.getFetchCacheKey(coordinates, date, method, asrJuristic);
+    return this.inFlightFetches.has(cacheKey);
   }
 
   /**
@@ -118,68 +146,82 @@ export class PrayerTimeService {
     }
 
     const dateStr = format(date, "dd-MM-yyyy");
-    const tzOffset = new Date().getTimezoneOffset();
-    const cacheKey = `${coordinates.latitude}-${coordinates.longitude}-${dateStr}-${method}-${asrJuristic}-${tzOffset}`;
+    const cacheKey = this.getFetchCacheKey(coordinates, date, method, asrJuristic);
 
     // Check cache first
     if (this.cachedTimes.has(cacheKey)) {
+      this._lastProviderSource = 'memory_cache';
       return this.cachedTimes.get(cacheKey)!;
     }
 
-    try {
+    const inFlight = this.inFlightFetches.get(cacheKey);
+    if (inFlight) {
+      logger.log(`♻️ Reusing in-flight prayer times for ${dateStr} with ${method}/${asrJuristic}`);
+      return inFlight;
+    }
+
+    const fetchPromise = (async () => {
       logger.log(`Fetching prayer times for ${dateStr} with ${method}/${asrJuristic}`);
-      const apiResult = await this.fetchPrayerTimesFromProvider(
-        coordinates,
-        date,
-        method,
-        asrJuristic
-      );
-
-      const times = apiResult.times;
-
-      const requiredTimes = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
-      const missingTimes = requiredTimes.filter(
-        (time) => !times[time as keyof typeof times]
-      );
-
-      if (missingTimes.length > 0) {
-        logger.warn(
-          `Missing prayer times after normalization: ${missingTimes.join(", ")}`
-        );
-      }
-
-      this._lastFetchWasFallback = false;
-      this._usingHardcodedDefaults = false;
-      this._highLatitudeWarning = false;
-      this.cachedTimes.set(cacheKey, times);
-      this.evictCacheIfNeeded();
-
-      if (apiResult.hijri) {
-        cacheHijriDate(apiResult.hijri, date);
-      }
-
-      this.cachePrayerTimesToDisk(coordinates, date, method, asrJuristic, times);
-
-      const now = new Date();
-      const asrTime = this.parseTimeToDate(times.Asr, date);
-      if (getLocalDateKey(now) === getLocalDateKey(date) && isAfter(now, asrTime)) {
-        this.fetchPrayerTimes(
+      try {
+        const apiResult = await this.fetchPrayerTimesFromProvider(
           coordinates,
-          addDays(date, 1),
+          date,
           method,
           asrJuristic
-        ).catch((err) =>
-          logger.warn("Failed to pre-cache tomorrow prayer times:", err)
         );
-      }
 
-      return times;
-    } catch (error) {
-      logger.error("Error fetching prayer times:", describeNetworkError(error));
-      // Return calculated times as fallback
-      this._lastFetchWasFallback = true;
-      return this.calculatePrayerTimes(coordinates, date, method);
-    }
+        const times = apiResult.times;
+
+        const requiredTimes = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
+        const missingTimes = requiredTimes.filter(
+          (time) => !times[time as keyof typeof times]
+        );
+
+        if (missingTimes.length > 0) {
+          logger.warn(
+            `Missing prayer times after normalization: ${missingTimes.join(", ")}`
+          );
+        }
+
+        this._lastFetchWasFallback = false;
+        this._usingHardcodedDefaults = false;
+        this._highLatitudeWarning = false;
+        this.cachedTimes.set(cacheKey, times);
+        this.evictCacheIfNeeded();
+
+        if (apiResult.hijri) {
+          cacheHijriDate(apiResult.hijri, date);
+        }
+
+        this.cachePrayerTimesToDisk(coordinates, date, method, asrJuristic, times);
+
+        const now = new Date();
+        const asrTime = this.parseTimeToDate(times.Asr, date);
+        if (getLocalDateKey(now) === getLocalDateKey(date) && isAfter(now, asrTime)) {
+          this.fetchPrayerTimes(
+            coordinates,
+            addDays(date, 1),
+            method,
+            asrJuristic
+          ).catch((err) =>
+            logger.warn("Failed to pre-cache tomorrow prayer times:", err)
+          );
+        }
+
+        return times;
+      } catch (error) {
+        logger.error("Error fetching prayer times:", describeNetworkError(error));
+        // Return calculated times as fallback
+        this._lastFetchWasFallback = true;
+        this._lastProviderSource = 'calculated_fallback';
+        return this.calculatePrayerTimes(coordinates, date, method);
+      } finally {
+        this.inFlightFetches.delete(cacheKey);
+      }
+    })();
+
+    this.inFlightFetches.set(cacheKey, fetchPromise);
+    return fetchPromise;
   }
 
   private async fetchPrayerTimesFromProvider(
@@ -195,6 +237,8 @@ export class PrayerTimeService {
         method,
         asrJuristic
       );
+      this._lastProviderSource = 'edge';
+      logger.log('🌐 Prayer times source: edge');
 
       return {
         times: edgePayload.timings,
@@ -245,6 +289,8 @@ export class PrayerTimeService {
 
     const apiTimes = data.data.timings;
     logger.log("Prayer times received:", apiTimes);
+    this._lastProviderSource = 'direct';
+    logger.log('🌐 Prayer times source: direct_fallback');
 
     return {
       times: {
@@ -529,6 +575,7 @@ export class PrayerTimeService {
             logger.warn("Using last-known-good cached prayer times as fallback");
             this._lastFetchWasFallback = true;
             this._usingHardcodedDefaults = false;
+            this._lastProviderSource = 'disk_cache';
             return cached.times;
           }
         }
@@ -539,6 +586,7 @@ export class PrayerTimeService {
       // Absolute last resort: hardcoded defaults
       logger.error("No cached times available — using hardcoded defaults");
       this._usingHardcodedDefaults = true;
+      this._lastProviderSource = 'hardcoded_defaults';
       return {
         Fajr: "05:00",
         Sunrise: "06:30",
@@ -782,6 +830,7 @@ export class PrayerTimeService {
    */
   clearCache(): void {
     this.cachedTimes.clear();
+    this.inFlightFetches.clear();
   }
 
   /**
