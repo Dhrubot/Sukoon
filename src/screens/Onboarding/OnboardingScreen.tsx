@@ -11,6 +11,7 @@ import {
   Alert,
   ActivityIndicator,
   AppState,
+  Linking,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -38,6 +39,7 @@ interface OnboardingScreenProps {
 
 type NotificationIntensity = 'gentle' | 'balanced' | 'persistent';
 type OnboardingStep = 'welcome' | 'location' | 'name' | 'notifications' | 'mosque' | 'method';
+type LocationFailureReason = 'none' | 'permission_denied' | 'permission_blocked' | 'gps_failed';
 
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   const { theme } = useTheme();
@@ -52,6 +54,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   // Phase 1: Location UX
   const [isLocating, setIsLocating] = useState(false);
   const [locationFailed, setLocationFailed] = useState(false);
+  const [locationFailureReason, setLocationFailureReason] = useState<LocationFailureReason>('none');
   const [showManualLocationSheet, setShowManualLocationSheet] = useState(false);
 
   // Phase 2: Notification intensity
@@ -151,8 +154,19 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   const requestLocationPermission = async () => {
     setIsLocating(true);
     setLocationFailed(false);
+    setLocationFailureReason('none');
     try {
-      const location = await LocationService.getCurrentLocation();
+      logger.log('📍 Requesting location permission...');
+      const permission = await Location.requestForegroundPermissionsAsync();
+      if (permission.status !== 'granted') {
+        logger.log('❌ Location permission denied');
+        setIsLocating(false);
+        setLocationFailed(true);
+        setLocationFailureReason(permission.canAskAgain ? 'permission_denied' : 'permission_blocked');
+        return;
+      }
+
+      const location = await LocationService.getCurrentLocation({ requestPermission: false });
 
       if (location) {
         setLocationData(location);
@@ -161,13 +175,25 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
       } else {
         setIsLocating(false);
         setLocationFailed(true);
-        setShowManualLocationSheet(true);
+        setLocationFailureReason('gps_failed');
       }
     } catch (error) {
       logger.log('Onboarding location error:', error);
       setIsLocating(false);
       setLocationFailed(true);
-      setShowManualLocationSheet(true);
+      setLocationFailureReason('gps_failed');
+    }
+  };
+
+  const openAppSettings = async () => {
+    try {
+      if (Platform.OS === 'ios') {
+        await Linking.openURL('app-settings:');
+      } else {
+        await Linking.openSettings();
+      }
+    } catch (error) {
+      logger.warn('Unable to open app settings:', error);
     }
   };
 
@@ -286,16 +312,32 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
             ) : locationFailed ? (
               <View style={styles.manualLocationContainer}>
                 <Text style={styles.manualLocationHint}>
-                  We couldn't detect your location automatically.{'\n'}Open the location picker and choose your city.
+                  {locationFailureReason === 'permission_blocked'
+                    ? 'Location access is blocked in system settings.\nOpen Settings or choose your nearest major city manually.'
+                    : locationFailureReason === 'permission_denied'
+                      ? 'Location access is still off.\nTry again or choose your nearest major city manually.'
+                      : 'We could not detect your location automatically.\nTry GPS again or choose your nearest major city manually.'}
                 </Text>
+                {locationFailureReason === 'permission_blocked' ? (
+                  <TouchableOpacity
+                    style={styles.button}
+                    onPress={openAppSettings}
+                  >
+                    <Text style={styles.buttonText}>Open App Settings</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity style={styles.button} onPress={requestLocationPermission}>
+                    <Text style={styles.buttonText}>Allow Location Access</Text>
+                  </TouchableOpacity>
+                )}
                 <TouchableOpacity
-                  style={styles.button}
+                  style={styles.buttonSecondary}
                   onPress={() => setShowManualLocationSheet(true)}
                 >
-                  <Text style={styles.buttonText}>Choose City Manually</Text>
+                  <Text style={styles.buttonSecondaryText}>Choose City Manually</Text>
                 </TouchableOpacity>
-                <TouchableOpacity onPress={() => { setLocationFailed(false); }}>
-                  <Text style={styles.skipText}>Try GPS again</Text>
+                <TouchableOpacity onPress={handleNext}>
+                  <Text style={styles.skipText}>Skip for now</Text>
                 </TouchableOpacity>
               </View>
             ) : (
@@ -596,6 +638,21 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   buttonText: {
     fontSize: theme.typography.fontSize.xl,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
+    color: theme.colors.text.primary,
+  },
+  buttonSecondary: {
+    marginTop: theme.spacing.md,
+    borderRadius: theme.borderRadius.md,
+    paddingVertical: theme.spacing.lg,
+    paddingHorizontal: 32,
+    borderWidth: 1,
+    borderColor: theme.colors.border.primary,
+    width: '100%',
+    alignItems: 'center',
+  },
+  buttonSecondaryText: {
+    fontSize: theme.typography.fontSize.lg,
     fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
   },

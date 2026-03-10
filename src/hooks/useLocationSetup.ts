@@ -9,6 +9,11 @@ import { useStructuredLocationSearch } from './useStructuredLocationSearch';
 
 export const useLocationSetup = () => {
   const { userSettings } = useStore();
+  const seededCountry =
+    userSettings?.location.country &&
+    userSettings.location.country.trim().toLowerCase() !== 'unknown'
+      ? userSettings.location.country
+      : undefined;
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     city: '',
@@ -18,7 +23,7 @@ export const useLocationSetup = () => {
   
   const [isGpsAvailable, setIsGpsAvailable] = useState(true);
   const structuredSearch = useStructuredLocationSearch({
-    initialCountryName: userSettings?.location.country,
+    initialCountryName: seededCountry,
   });
 
   // 🎯 ENHANCED: GPS location with better error handling

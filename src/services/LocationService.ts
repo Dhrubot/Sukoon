@@ -79,11 +79,19 @@ class LocationService {
   /**
    * 🎯 ENHANCED: Get current location with better error handling
    */
-  async getCurrentLocation(): Promise<Location | null> {
+  async getCurrentLocation(options?: { requestPermission?: boolean }): Promise<Location | null> {
     try {
-      logger.log('📍 Requesting location permission...');
-      
-      const { status } = await ExpoLocation.requestForegroundPermissionsAsync();
+      const shouldRequestPermission = options?.requestPermission !== false;
+
+      if (shouldRequestPermission) {
+        logger.log('📍 Requesting location permission...');
+      }
+
+      const permission = shouldRequestPermission
+        ? await ExpoLocation.requestForegroundPermissionsAsync()
+        : await ExpoLocation.getForegroundPermissionsAsync();
+
+      const { status } = permission;
       if (status !== 'granted') {
         logger.log('❌ Location permission denied');
         return null;

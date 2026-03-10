@@ -24,4 +24,9 @@ describe('country options', () => {
     expect(findCountryOptionByName('Brazil')?.code).toBe('BR');
     expect(findCountryOptionByName('United States')?.code).toBe('US');
   });
+
+  it('does not treat placeholder values as real countries', () => {
+    expect(findCountryOptionByName('Unknown')).toBeNull();
+    expect(findCountryOptionByName('Unknown Country')).toBeNull();
+  });
 });

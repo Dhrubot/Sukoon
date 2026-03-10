@@ -136,7 +136,7 @@ async function getCandidates(
 
   const maybeCountryCode = countryHint.length === 2 ? countryHint.toLowerCase() : null;
   const shardKeys = maybeCountryCode
-    ? [buildShardKey(version, maybeCountryCode, prefix), buildShardKey(version, FALLBACK_COUNTRY_CODE, prefix)]
+    ? [buildShardKey(version, maybeCountryCode, prefix)]
     : [buildShardKey(version, FALLBACK_COUNTRY_CODE, prefix)];
 
   const candidates: CityIndexEntry[] = [];

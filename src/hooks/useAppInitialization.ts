@@ -23,6 +23,7 @@ interface AppInitializationState {
 }
 
 export const useAppInitialization = () => {
+  const [suppressLocationModalForSession, setSuppressLocationModalForSession] = useState(false);
   const [state, setState] = useState<AppInitializationState>({
     isLoading: true,
     isFirstLaunch: false,
@@ -136,7 +137,7 @@ export const useAppInitialization = () => {
       setState({
         isLoading: false,
         isFirstLaunch: firstLaunch,
-        showLocationModal: needsLocation,
+        showLocationModal: needsLocation && !suppressLocationModalForSession,
         showSetupHealth: !setupHealthShown,
         error: null,
       });
@@ -211,17 +212,19 @@ export const useAppInitialization = () => {
       setLocation(settings.location);
     } else {
       logger.log('⚠️ Onboarding complete but no valid location set');
+      setSuppressLocationModalForSession(true);
     }
 
     setState((prev) => ({
       ...prev,
       isFirstLaunch: false,
-      // If we have a valid location now, ensure the modal doesn't show
-      showLocationModal: !hasValidLocation, 
+      // Don’t immediately re-prompt in the same launch if onboarding was completed without a location.
+      showLocationModal: false,
     }));
   };
 
   const closeLocationModal = () => {
+    setSuppressLocationModalForSession(true);
     setState((prev) => ({
       ...prev,
       showLocationModal: false,

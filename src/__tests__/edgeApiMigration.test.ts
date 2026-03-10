@@ -259,6 +259,39 @@ describe('edge API migration', () => {
     expect((global.fetch as jest.Mock).mock.calls[0][0]).toContain('country=GB');
   });
 
+  it('filters autocomplete results to the selected country', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      mockJsonResponse({
+        data: {
+          results: [
+            {
+              latitude: 27.9506,
+              longitude: -82.4572,
+              city: 'Tampa',
+              admin1: 'Florida',
+              country: 'United States',
+            },
+            {
+              latitude: 24.0123,
+              longitude: 89.2455,
+              city: 'Tampa',
+              admin1: 'Rajshahi',
+              country: 'Bangladesh',
+            },
+          ],
+        },
+      })
+    );
+
+    const results = await GeocodingService.searchCities('Tampa', 'US', 5);
+
+    expect(results).toHaveLength(1);
+    expect(results[0]).toMatchObject({
+      city: 'Tampa',
+      country: 'United States',
+    });
+  });
+
   it('uses the edge Hijri endpoint before local fallback logic', async () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce(
       mockJsonResponse({

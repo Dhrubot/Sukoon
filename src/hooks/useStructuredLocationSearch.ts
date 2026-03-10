@@ -16,16 +16,29 @@ interface StructuredLocationSearchOptions {
   resultLimit?: number;
 }
 
+function sanitizeInitialCountryValue(value?: string): string | undefined {
+  const trimmedValue = value?.trim();
+  if (!trimmedValue) return undefined;
+
+  const normalizedValue = trimmedValue.toLowerCase();
+  if (normalizedValue === 'unknown' || normalizedValue === 'unknown country') {
+    return undefined;
+  }
+
+  return trimmedValue;
+}
+
 export const useStructuredLocationSearch = (options?: StructuredLocationSearchOptions) => {
   const debounceMs = options?.debounceMs ?? 250;
   const resultLimit = options?.resultLimit ?? 6;
+  const sanitizedInitialCountryName = sanitizeInitialCountryValue(options?.initialCountryName);
 
   const initialCountry =
     findCountryOptionByCode(options?.initialCountryCode) ||
-    findCountryOptionByName(options?.initialCountryName) ||
+    findCountryOptionByName(sanitizedInitialCountryName) ||
     null;
 
-  const [countryQuery, setCountryQuery] = useState(initialCountry?.name ?? options?.initialCountryName ?? '');
+  const [countryQuery, setCountryQuery] = useState(initialCountry?.name ?? sanitizedInitialCountryName ?? '');
   const [selectedCountry, setSelectedCountry] = useState<CountryOption | null>(initialCountry);
   const [cityQuery, setCityQuery] = useState('');
   const [searchResults, setSearchResults] = useState<LocationSearchResult[]>([]);
@@ -120,7 +133,7 @@ export const useStructuredLocationSearch = (options?: StructuredLocationSearchOp
   };
 
   const reset = () => {
-    setCountryQuery(initialCountry?.name ?? options?.initialCountryName ?? '');
+    setCountryQuery(initialCountry?.name ?? sanitizedInitialCountryName ?? '');
     setSelectedCountry(initialCountry);
     setCityQuery('');
     setSearchResults([]);

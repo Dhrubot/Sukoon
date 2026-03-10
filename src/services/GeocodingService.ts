@@ -2,6 +2,7 @@ import { Coordinates, Location } from '../types';
 import logger from '../utils/logger';
 import { fetchWithTimeout, describeNetworkError } from '../utils/networkRequest';
 import { geocodeAddressFromEdge, reverseGeocodeFromEdge, searchCitiesFromEdge } from './api/EdgeApiClient';
+import { findCountryOptionByCode, findCountryOptionByName } from '../constants/countries';
 
 const NOMINATIM_API_BASE = 'https://nominatim.openstreetmap.org';
 const USER_AGENT = 'Sukoon'; // Nominatim requires a user agent
@@ -54,9 +55,19 @@ class GeocodingService {
 
     try {
       const results = await searchCitiesFromEdge(trimmedQuery, normalizedCountryCode, limit);
-      this.cachedSearchResults.set(cacheKey, results);
+      const filteredResults =
+        normalizedCountryCode.length === 2
+          ? results.filter((result) => {
+              const matchingCountry =
+                findCountryOptionByName(result.country) ||
+                findCountryOptionByCode(result.country);
+              return matchingCountry?.code === normalizedCountryCode;
+            })
+          : results;
+
+      this.cachedSearchResults.set(cacheKey, filteredResults);
       this.lastSource = 'edge';
-      return results;
+      return filteredResults;
     } catch (error) {
       logger.warn('City search unavailable from edge:', describeNetworkError(error));
       return [];
