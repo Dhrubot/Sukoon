@@ -5,6 +5,7 @@ import {
 } from './cityIndex';
 
 type CacheStatus = 'hit' | 'miss' | 'bypass';
+type TelemetryValue = string | number | boolean | null | undefined;
 
 interface Env {
   CACHE_KV?: KVNamespace;
@@ -144,6 +145,11 @@ async function handlePrayerTimes(url: URL, env: Env): Promise<Response> {
     });
 
     if (!upstream.ok) {
+      emitEdgeEvent('prayer_provider_error', {
+        status: upstream.status,
+        method,
+        school,
+      });
       throw new HttpError(502, `Prayer provider failed with status ${upstream.status}`);
     }
 
@@ -181,6 +187,14 @@ async function handlePrayerTimes(url: URL, env: Env): Promise<Response> {
       timings,
       hijri,
     };
+  }, {
+    eventName: 'prayer_times_resolved',
+    eventFields: (payload, cacheStatus) => ({
+      cacheStatus,
+      method,
+      school,
+      hasHijri: Boolean(payload.hijri),
+    }),
   });
 }
 
@@ -216,6 +230,9 @@ async function handleHijriDate(url: URL, env: Env): Promise<Response> {
     });
 
     if (!upstream.ok) {
+      emitEdgeEvent('hijri_provider_error', {
+        status: upstream.status,
+      });
       throw new HttpError(502, `Hijri provider failed with status ${upstream.status}`);
     }
 
@@ -245,6 +262,8 @@ async function handleHijriDate(url: URL, env: Env): Promise<Response> {
       monthNameAr: hijri.month.ar,
       year: parseInt(hijri.year, 10),
     };
+  }, {
+    eventName: 'hijri_resolved',
   });
 }
 
@@ -273,6 +292,9 @@ async function handleReverseGeocode(url: URL, env: Env): Promise<Response> {
     });
 
     if (!upstream.ok) {
+      emitEdgeEvent('reverse_geocode_provider_error', {
+        status: upstream.status,
+      });
       throw new HttpError(502, `Reverse geocode provider failed with status ${upstream.status}`);
     }
 
@@ -286,6 +308,8 @@ async function handleReverseGeocode(url: URL, env: Env): Promise<Response> {
         country: payload.address?.country ?? 'Unknown',
       },
     };
+  }, {
+    eventName: 'reverse_geocode_resolved',
   });
 }
 
@@ -298,6 +322,7 @@ async function handleLocationSearch(url: URL, env: Env): Promise<Response> {
   const cityIndexVersion = readCityIndexVersion(env);
   const cacheKey = `search:${cityIndexVersion}:${query.toLowerCase()}:${normalizedCountry}:${limit}`;
   const hasCountryCoverage = await hasCityIndexCoverageForCountry(env.CACHE_KV, cityIndexVersion, country);
+  const queryPrefix = normalizeQueryPrefix(query);
 
   return serveCachedJson(cacheKey, ttl, env, async () => {
     const indexedResults = await searchCityIndex(env.CACHE_KV, cityIndexVersion, query, country, limit);
@@ -314,6 +339,16 @@ async function handleLocationSearch(url: URL, env: Env): Promise<Response> {
       searchSource: 'city_index_miss',
       hasCountryCoverage,
     };
+  }, {
+    eventName: 'city_search_resolved',
+    eventFields: (payload) => ({
+      searchSource: payload.searchSource,
+      resultCount: payload.results.length,
+      country: normalizedCountry || 'unknown',
+      queryPrefix,
+      hasCountryCoverage,
+      cityIndexVersion,
+    }),
   });
 }
 
@@ -326,22 +361,41 @@ async function serveCachedJson<T>(
   cacheKey: string,
   ttlSeconds: number,
   env: Env,
-  producer: () => Promise<T>
+  producer: () => Promise<T>,
+  options?: {
+    eventName?: string;
+    eventFields?: (payload: T, cacheStatus: CacheStatus) => Record<string, TelemetryValue>;
+  }
 ): Promise<Response> {
   const cacheRequest = new Request(`https://sukoon-edge-cache/${cacheKey}`);
   const cached = await safeCacheMatch(cacheRequest);
   if (cached) {
+    if (options?.eventName) {
+      const cachedEnvelope = await parseCachedEnvelope<T>(cached);
+      emitEdgeEvent(
+        options.eventName,
+        cachedEnvelope && options.eventFields
+          ? options.eventFields(cachedEnvelope, 'hit')
+          : { cacheStatus: 'hit' }
+      );
+    }
     return cached;
   }
 
   const stored = await env.CACHE_KV?.get(cacheKey, 'json') as T | null;
   if (stored) {
+    if (options?.eventName) {
+      emitEdgeEvent(options.eventName, options.eventFields?.(stored, 'hit') ?? { cacheStatus: 'hit' });
+    }
     const response = jsonEnvelope(stored, 'hit');
     await safeCachePut(cacheRequest, response.clone());
     return response;
   }
 
   const payload = await producer();
+  if (options?.eventName) {
+    emitEdgeEvent(options.eventName, options.eventFields?.(payload, 'miss') ?? { cacheStatus: 'miss' });
+  }
   const response = jsonEnvelope(payload, 'miss');
   await safeCachePut(cacheRequest, response.clone());
   await env.CACHE_KV?.put(cacheKey, JSON.stringify(payload), {
@@ -385,6 +439,36 @@ async function safeCachePut(request: Request, response: Response): Promise<void>
 
 function getDefaultCache(): Cache {
   return (caches as CacheStorage & { readonly default: Cache }).default;
+}
+
+async function parseCachedEnvelope<T>(response: Response): Promise<T | null> {
+  try {
+    const payload = await response.clone().json() as { data?: T };
+    return payload.data ?? null;
+  } catch {
+    return null;
+  }
+}
+
+function emitEdgeEvent(event: string, fields: Record<string, TelemetryValue>): void {
+  const sanitizedFields = Object.fromEntries(
+    Object.entries(fields).filter(([, value]) => value !== undefined)
+  );
+  console.log(JSON.stringify({
+    event,
+    ...sanitizedFields,
+  }));
+}
+
+function normalizeQueryPrefix(query: string): string {
+  return query
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-zA-Z0-9\s]/g, ' ')
+    .toLowerCase()
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 3) || 'none';
 }
 
 function json(payload: unknown, status = 200): Response {

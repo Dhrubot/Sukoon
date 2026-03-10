@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { InteractionManager } from 'react-native';
 import * as SplashScreen from "expo-splash-screen";
 import StorageService from "../services/StorageService";
 import NotificationService from "../services/NotificationService";
@@ -48,7 +49,6 @@ export const useAppInitialization = () => {
       // Create encrypted MMKV now that the key is ready
       await StorageService.initialize();
       const encryptionSecurityState = getEncryptionSecurityState();
-      StorageService.setValue('encryption_security_state', encryptionSecurityState);
       if (encryptionSecurityState !== 'secure_store') {
         logger.warn(`🔐 Storage security degraded: ${encryptionSecurityState}`);
       }
@@ -64,23 +64,9 @@ export const useAppInitialization = () => {
 
       setUserSettings(settings);
 
-      // One-time migration: split encrypted/unencrypted storage
-      StorageService.migrateSplitStorage();
-
-      // Prune old data (once per day, 365-day retention)
-      StorageService.pruneOldData(365);
-
-      // Check and update dawam on every boot (breaks dawam if yesterday was missed)
-      StorageService.updateDawam();
+      // Render immediately from stored counters; maintenance refresh runs after first paint.
       setCurrentDawam(StorageService.getCurrentDawam());
       setEngagementDawam(StorageService.getEngagementDawam());
-
-      // Bootstrap TreeGrowthState if it doesn't exist yet (one-time migration)
-      if (!TreeGrowthStateService.hasState()) {
-        logger.log("🌳 Bootstrapping TreeGrowthState from existing reflections...");
-        const existingPlants = ReflectionGardenService.getAllPlants(365);
-        TreeGrowthStateService.bootstrapFromExistingData(existingPlants);
-      }
 
       // ONLY SET LOCATION IF IT'S ACTUALLY VALID
       const isValidLocation = isValidCoordinates(settings.location);
@@ -158,6 +144,7 @@ export const useAppInitialization = () => {
       // Hide splash screen
       await SplashScreen.hideAsync();
       await stopStartupTrace();
+      scheduleDeferredStartupMaintenance(encryptionSecurityState);
       logger.log("App initialization complete");
     } catch (error) {
       logger.error("App initialization failed:", error);
@@ -171,6 +158,34 @@ export const useAppInitialization = () => {
       await SplashScreen.hideAsync();
       await stopStartupTrace();
     }
+  };
+
+  const scheduleDeferredStartupMaintenance = (encryptionSecurityState: string) => {
+    InteractionManager.runAfterInteractions(() => {
+      void PerformanceService.traceAsync('startup_deferred_maintenance', async () => {
+        StorageService.setValue('encryption_security_state', encryptionSecurityState);
+
+        // One-time migration: split encrypted/unencrypted storage
+        StorageService.migrateSplitStorage();
+
+        // Prune old data (once per day, 365-day retention)
+        StorageService.pruneOldData(365);
+
+        // Recompute dawam after first paint so boot stays responsive.
+        StorageService.updateDawam();
+        setCurrentDawam(StorageService.getCurrentDawam());
+        setEngagementDawam(StorageService.getEngagementDawam());
+
+        // Bootstrap TreeGrowthState if it doesn't exist yet (one-time migration)
+        if (!TreeGrowthStateService.hasState()) {
+          logger.log("🌳 Bootstrapping TreeGrowthState from existing reflections...");
+          const existingPlants = ReflectionGardenService.getAllPlants(365);
+          TreeGrowthStateService.bootstrapFromExistingData(existingPlants);
+        }
+      }).catch((error) => {
+        logger.error('Deferred startup maintenance failed:', error);
+      });
+    });
   };
 
   const completeOnboarding = () => {

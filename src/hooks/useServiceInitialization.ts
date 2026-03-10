@@ -35,41 +35,43 @@ export const useServiceInitialization = () => {
 
   // 🔄 Initialize all services once on mount
   useEffect(() => {
-    const initializeServices = async () => {
-      logger.log("🚀 Initializing services...");
-      const stopTrace = await PerformanceService.startTrace('service_initialization');
+    let cancelled = false;
+    const interactionHandle = InteractionManager.runAfterInteractions(() => {
+      void PerformanceService.traceAsync('service_initialization', async () => {
+        if (cancelled) return;
 
-      try {
-        await Promise.all([
-          // SubscriptionService.initialize(),
-          // AdService.initialize(),
-          DonationService.initialize(),
-          LocationService.initialize(),
-        ]);
+        logger.log("🚀 Initializing deferred services...");
 
         try {
-          const isRegistered = await TaskManager.isTaskRegisteredAsync(NOTIFICATION_RESCHEDULE_TASK);
-          if (!isRegistered) {
-            await BackgroundTask.registerTaskAsync(NOTIFICATION_RESCHEDULE_TASK, {
-              minimumInterval: 24 * 60,
-            });
+          await Promise.all([
+            // SubscriptionService.initialize(),
+            // AdService.initialize(),
+            DonationService.initialize(),
+            LocationService.initialize(),
+          ]);
+
+          try {
+            const isRegistered = await TaskManager.isTaskRegisteredAsync(NOTIFICATION_RESCHEDULE_TASK);
+            if (!isRegistered) {
+              await BackgroundTask.registerTaskAsync(NOTIFICATION_RESCHEDULE_TASK, {
+                minimumInterval: 24 * 60,
+              });
+            }
+          } catch (error) {
+            logger.warn('⚠️ Failed to register background notification rescheduler:', error);
           }
+
+          void AnalyticsService.logEvent('app_open');
+          logger.log("✅ Deferred services initialized");
         } catch (error) {
-          logger.warn('⚠️ Failed to register background notification rescheduler:', error);
+          logger.error("❌ Error initializing deferred services:", error);
         }
-
-        AnalyticsService.logEvent('app_open');
-        await stopTrace();
-        logger.log("✅ All core services initialized");
-      } catch (error) {
-        await stopTrace();
-        logger.error("❌ Error initializing services:", error);
-      }
-    };
-
-    initializeServices();
+      });
+    });
 
     return () => {
+      cancelled = true;
+      interactionHandle.cancel();
       logger.log("🧹 Cleaning up services...");
       SubscriptionService.cleanup();
       AdService.cleanup();
