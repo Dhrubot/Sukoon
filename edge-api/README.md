@@ -19,12 +19,19 @@ The mobile app should call this worker instead of calling Aladhan or Nominatim d
 ## Local development
 
 1. Install dependencies in this folder.
-2. Run `npm run dev`.
-3. Point `EXPO_PUBLIC_EDGE_API_BASE_URL` at the local worker URL.
+2. Run `npm run build:city-index` after changing `data/cities.v1.json`.
+3. Upload the generated city index into the remote `CACHE_KV` namespace before testing search:
+   `wrangler kv bulk put --binding CACHE_KV dist/city-index.kv.json --preview false --remote`
+4. Run `npm run dev`.
+5. Point `EXPO_PUBLIC_EDGE_API_BASE_URL` at the local worker URL.
 
 ## Production notes
 
-- `CACHE_KV` is optional but strongly recommended.
+- `CACHE_KV` is required for city search and strongly recommended for response caching.
 - `HIJRI_OVERRIDES` is optional and allows date-specific corrections without an app release.
-- Search still proxies Nominatim as a temporary compatibility path. Replace that with a curated city index before high-scale public rollout.
-
+- City search now reads KV-backed shards generated from `data/cities.v1.json`.
+- Upload search shards to `CACHE_KV` after every city dataset change:
+  `wrangler kv bulk put --binding CACHE_KV dist/city-index.kv.json --preview false --remote`
+- Search no longer falls back to live Nominatim lookups.
+- If a town is not indexed, the app should guide the user to choose the nearest major city instead.
+- `CITY_INDEX_VERSION` lets you roll forward to a new shard set without breaking old keys.

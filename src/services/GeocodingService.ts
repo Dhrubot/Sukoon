@@ -1,7 +1,7 @@
 import { Coordinates, Location } from '../types';
 import logger from '../utils/logger';
 import { fetchWithTimeout, describeNetworkError } from '../utils/networkRequest';
-import { geocodeAddressFromEdge, reverseGeocodeFromEdge } from './api/EdgeApiClient';
+import { geocodeAddressFromEdge, reverseGeocodeFromEdge, searchCitiesFromEdge } from './api/EdgeApiClient';
 
 const NOMINATIM_API_BASE = 'https://nominatim.openstreetmap.org';
 const USER_AGENT = 'Sukoon'; // Nominatim requires a user agent
@@ -27,6 +27,7 @@ interface NominatimResponse {
 class GeocodingService {
   private static instance: GeocodingService;
   private cachedLocations: Map<string, Location> = new Map();
+  private cachedSearchResults: Map<string, LocationSearchResult[]> = new Map();
   private lastSource: 'edge' | 'direct' | 'cache' | null = null;
   
   static getInstance(): GeocodingService {
@@ -40,6 +41,28 @@ class GeocodingService {
     return this.lastSource;
   }
 
+  async searchCities(query: string, countryCode?: string, limit = 5): Promise<LocationSearchResult[]> {
+    const trimmedQuery = query.trim();
+    const normalizedCountryCode = countryCode?.trim().toUpperCase() || '';
+    if (trimmedQuery.length < 2) return [];
+
+    const cacheKey = `${trimmedQuery}-${normalizedCountryCode}-${limit}`.toLowerCase();
+    if (this.cachedSearchResults.has(cacheKey)) {
+      this.lastSource = 'cache';
+      return this.cachedSearchResults.get(cacheKey)!;
+    }
+
+    try {
+      const results = await searchCitiesFromEdge(trimmedQuery, normalizedCountryCode, limit);
+      this.cachedSearchResults.set(cacheKey, results);
+      this.lastSource = 'edge';
+      return results;
+    } catch (error) {
+      logger.warn('City search unavailable from edge:', describeNetworkError(error));
+      return [];
+    }
+  }
+
   /**
    * Geocode an address or location name to coordinates
    * @param query Address, city name, postal code, or any location identifier
@@ -47,8 +70,11 @@ class GeocodingService {
    */
   async geocodeAddress(query: string, countryCode?: string): Promise<Location | null> {
     try {
+      const normalizedCountryFilter =
+        countryCode && countryCode.trim().length === 2 ? countryCode.trim().toUpperCase() : undefined;
+
       // Check cache first
-      const cacheKey = `${query}-${countryCode || ''}`.toLowerCase();
+      const cacheKey = `${query}-${normalizedCountryFilter || ''}`.toLowerCase();
       if (this.cachedLocations.has(cacheKey)) {
         logger.log('Returning cached location for geocoding request');
         this.lastSource = 'cache';
@@ -56,7 +82,7 @@ class GeocodingService {
       }
 
       try {
-        const edgeLocation = await geocodeAddressFromEdge(query, countryCode);
+        const edgeLocation = await geocodeAddressFromEdge(query, normalizedCountryFilter);
         if (edgeLocation) {
           this.cachedLocations.set(cacheKey, edgeLocation);
           this.lastSource = 'edge';
@@ -76,8 +102,8 @@ class GeocodingService {
       });
 
       // Add country code if provided
-      if (countryCode && countryCode.trim().length === 2) {
-        params.append('countrycodes', countryCode);
+      if (normalizedCountryFilter) {
+        params.append('countrycodes', normalizedCountryFilter.toLowerCase());
       }
 
       // Call Nominatim API
@@ -227,7 +253,12 @@ class GeocodingService {
    */
   clearCache(): void {
     this.cachedLocations.clear();
+    this.cachedSearchResults.clear();
   }
+}
+
+export interface LocationSearchResult extends Location {
+  admin1?: string;
 }
 
 export default GeocodingService.getInstance();

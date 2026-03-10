@@ -54,6 +54,7 @@ export const AppInitializer: React.FC = () => {
       <LocationModal 
         visible={showLocationModal} 
         onClose={closeLocationModal} 
+        dismissLabel="Not now"
       />
     </ServiceProvider>
   );

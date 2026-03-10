@@ -223,6 +223,42 @@ describe('edge API migration', () => {
     expect((global.fetch as jest.Mock).mock.calls[0][0]).toContain('/v1/location/search');
   });
 
+  it('uses edge city search for structured location autocomplete', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      mockJsonResponse({
+        data: {
+          results: [
+            {
+              latitude: 51.5072,
+              longitude: -0.1276,
+              city: 'London',
+              admin1: 'England',
+              country: 'United Kingdom',
+            },
+            {
+              latitude: 51.4545,
+              longitude: -2.5879,
+              city: 'Bristol',
+              admin1: 'England',
+              country: 'United Kingdom',
+            },
+          ],
+        },
+      })
+    );
+
+    const results = await GeocodingService.searchCities('Lo', 'GB', 5);
+
+    expect(results).toHaveLength(2);
+    expect(results[0]).toMatchObject({
+      city: 'London',
+      admin1: 'England',
+      country: 'United Kingdom',
+    });
+    expect((global.fetch as jest.Mock).mock.calls[0][0]).toContain('/v1/location/search');
+    expect((global.fetch as jest.Mock).mock.calls[0][0]).toContain('country=GB');
+  });
+
   it('uses the edge Hijri endpoint before local fallback logic', async () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce(
       mockJsonResponse({

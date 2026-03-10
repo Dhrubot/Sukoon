@@ -1,24 +1,25 @@
 // src/hooks/useLocationSetup.ts (FINAL ENHANCED VERSION)
 import { useState } from 'react';
 import { Alert } from 'react-native';
+import { Location } from '../types';
 import LocationService from '../services/LocationService';
 import { useStore } from '../store/useStore';
 import logger from '../utils/logger';
+import { useStructuredLocationSearch } from './useStructuredLocationSearch';
 
 export const useLocationSetup = () => {
+  const { userSettings } = useStore();
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     city: '',
     country: '',
-    postalCode: '',
   });
   const [error, setError] = useState('');
   
-  // 🎯 ENHANCED: Better UX state management
-  const [locationMethod, setLocationMethod] = useState<'gps' | 'manual' | 'postal'>('gps');
   const [isGpsAvailable, setIsGpsAvailable] = useState(true);
-
-  const { userSettings } = useStore();
+  const structuredSearch = useStructuredLocationSearch({
+    initialCountryName: userSettings?.location.country,
+  });
 
   // 🎯 ENHANCED: GPS location with better error handling
   const handleGpsLocation = async () => {
@@ -60,10 +61,9 @@ export const useLocationSetup = () => {
       // 🎯 SMART FALLBACK: Suggest manual entry
       Alert.alert(
         'GPS Location Failed',
-        `${errorMessage}\n\nWould you like to enter your location manually instead?`,
+        `${errorMessage}\n\nYou can enter your location manually from the location picker.`,
         [
-          { text: 'Try GPS Again', onPress: () => setError('') },
-          { text: 'Enter Manually', onPress: () => setLocationMethod('manual') }
+          { text: 'OK', onPress: () => setError('') },
         ]
       );
       
@@ -74,43 +74,51 @@ export const useLocationSetup = () => {
   };
 
   // 🎯 ENHANCED: Manual location with better validation
-  const handleManualLocation = async () => {
+  const handleManualLocation = async (): Promise<Location | null> => {
     const { city, country } = formData;
+
+    if (!country.trim()) {
+      setError('Please select a country');
+      return null;
+    }
 
     if (!city.trim()) {
       setError('Please enter a city name');
-      return false;
+      return null;
     }
 
-    if (!country.trim()) {
-      setError('Please enter a country name');
-      return false;
+    if (!structuredSearch.selectedSearchResult) {
+      setError('Choose a city from the list. If your town is not listed, pick the nearest major city.');
+      return null;
     }
 
     setIsLoading(true);
     setError('');
 
     try {
-      logger.log('🔍 Setting manual location:', { city: city.trim(), country: country.trim() });
-      
-      const location = await LocationService.setLocationByAddress(city.trim(), country.trim());
+      logger.log('📍 Saving selected city search result directly');
+      await LocationService.saveLocation({
+        latitude: structuredSearch.selectedSearchResult.latitude,
+        longitude: structuredSearch.selectedSearchResult.longitude,
+        city: structuredSearch.selectedSearchResult.city,
+        country: structuredSearch.selectedSearchResult.country,
+        timezone: structuredSearch.selectedSearchResult.timezone,
+      });
 
-      if (location) {
-        logger.log('✅ Manual location set successfully');
-        
-        // 🎯 AUTOMATIC: Prayer times refresh through your architecture
-        Alert.alert(
-          'Location Set! ✅',
-          `Your location has been set to ${location.city}, ${location.country}.\n\nPrayer times have been calculated for your area.`,
-          [{ text: 'Perfect!' }]
-        );
-        
-        // Clear form
-        resetForm();
-        return true;
-      } else {
-        throw new Error('Location not found');
-      }
+      Alert.alert(
+        'Location Set! ✅',
+        `Your location has been set to ${structuredSearch.selectedSearchResult.city}, ${structuredSearch.selectedSearchResult.country}.\n\nPrayer times have been calculated for your area.`,
+        [{ text: 'Perfect!' }]
+      );
+
+      resetForm();
+      return {
+        latitude: structuredSearch.selectedSearchResult.latitude,
+        longitude: structuredSearch.selectedSearchResult.longitude,
+        city: structuredSearch.selectedSearchResult.city,
+        country: structuredSearch.selectedSearchResult.country,
+        timezone: structuredSearch.selectedSearchResult.timezone,
+      };
     } catch (error) {
       logger.error('❌ Manual location failed:', error);
       
@@ -120,67 +128,11 @@ export const useLocationSetup = () => {
       // 🎯 HELPFUL GUIDANCE: Suggest alternatives
       Alert.alert(
         'Location Not Found',
-        `${errorMessage}\n\nTry:\n• Check spelling\n• Use a major city nearby\n• Include state/province if needed`,
+        `${errorMessage}\n\nTry:\n• Search again with a nearby major city\n• Use GPS location if available`,
         [{ text: 'OK' }]
       );
       
-      return false;
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // 🎯 NEW: Postal code location method
-  const handlePostalCodeLocation = async () => {
-    const { postalCode, country } = formData;
-
-    if (!postalCode.trim()) {
-      setError('Please enter a postal/zip code');
-      return false;
-    }
-
-    if (!country.trim()) {
-      setError('Please enter a country name');
-      return false;
-    }
-
-    setIsLoading(true);
-    setError('');
-
-    try {
-      logger.log('🔍 Setting location by postal code:', { postalCode: postalCode.trim(), country: country.trim() });
-      
-      const location = await LocationService.setLocationByPostalCode(postalCode.trim(), country.trim());
-
-      if (location) {
-        logger.log('✅ Postal code location set successfully');
-        
-        // 🎯 AUTOMATIC: Prayer times refresh through your architecture
-        Alert.alert(
-          'Location Found! ✅',
-          `Found your location: ${location.city}, ${location.country}\n\nPrayer times have been calculated for your area.`,
-          [{ text: 'Excellent!' }]
-        );
-        
-        // Clear form
-        resetForm();
-        return true;
-      } else {
-        throw new Error('Postal code not found');
-      }
-    } catch (error) {
-      logger.error('❌ Postal code location failed:', error);
-      
-      const errorMessage = error instanceof Error ? error.message : 'Could not find this postal code';
-      setError(errorMessage);
-      
-      Alert.alert(
-        'Postal Code Not Found',
-        `${errorMessage}\n\nPlease check:\n• Postal code format\n• Country name spelling\n• Try city name instead`,
-        [{ text: 'OK' }]
-      );
-      
-      return false;
+      return null;
     } finally {
       setIsLoading(false);
     }
@@ -233,10 +185,32 @@ export const useLocationSetup = () => {
     if (error) setError(''); // Clear error when user types
   };
 
+  const updateCity = (value: string) => {
+    updateFormData('city', value);
+    structuredSearch.updateCityQuery(value);
+  };
+
+  const updateCountry = (value: string) => {
+    updateFormData('country', value);
+    structuredSearch.updateCountryQuery(value);
+  };
+
+  const selectCountry = (country: { code: string; name: string }) => {
+    structuredSearch.selectCountry(country);
+    updateFormData('country', country.name);
+  };
+
+  const selectSearchResult = (result: { latitude: number; longitude: number; city?: string; country?: string; timezone?: string; admin1?: string }) => {
+    structuredSearch.selectSearchResult(result);
+    updateFormData('city', result.city || '');
+    updateFormData('country', result.country || formData.country);
+  };
+
   const resetForm = () => {
-    setFormData({ city: '', country: '', postalCode: '' });
+    setFormData({ city: '', country: '' });
     setError('');
     setIsLoading(false);
+    structuredSearch.reset();
   };
 
   // 🎯 NEW: Get current location info
@@ -256,20 +230,22 @@ export const useLocationSetup = () => {
     formData,
     error,
     isLoading,
-    locationMethod,
     isGpsAvailable,
 
     // 🎯 MULTIPLE LOCATION METHODS
     handleGpsLocation,
     handleManualLocation,
-    handlePostalCodeLocation,
     refreshLocation,
     checkGpsAvailability,
+    structuredSearch,
     
     // Form helpers
     updateFormData,
+    updateCity,
+    updateCountry,
+    selectCountry,
+    selectSearchResult,
     resetForm,
-    setLocationMethod,
     setError,
     
     // Location info

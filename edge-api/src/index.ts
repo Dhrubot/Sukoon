@@ -1,3 +1,9 @@
+import {
+  getCityIndexManifest,
+  hasCityIndexCoverageForCountry,
+  searchCityIndex,
+} from './cityIndex';
+
 type CacheStatus = 'hit' | 'miss' | 'bypass';
 
 interface Env {
@@ -5,6 +11,7 @@ interface Env {
   HIJRI_OVERRIDES?: KVNamespace;
   ALADHAN_API_BASE?: string;
   NOMINATIM_API_BASE?: string;
+  CITY_INDEX_VERSION?: string;
   PRAYER_CACHE_TTL_SECONDS?: string;
   HIJRI_CACHE_TTL_SECONDS?: string;
   GEOCODE_CACHE_TTL_SECONDS?: string;
@@ -81,8 +88,19 @@ export default {
           return handleReverseGeocode(url, env);
         case '/v1/location/search':
           return handleLocationSearch(url, env);
-        case '/health':
-          return json({ ok: true, schemaVersion: SCHEMA_VERSION });
+        case '/health': {
+          const cityIndexManifest = await getCityIndexManifest(
+            env.CACHE_KV,
+            readCityIndexVersion(env)
+          );
+          return json({
+            ok: true,
+            schemaVersion: SCHEMA_VERSION,
+            cityIndexReady: Boolean(cityIndexManifest),
+            cityIndexVersion: cityIndexManifest?.version ?? null,
+            indexedCountryCount: cityIndexManifest ? Object.keys(cityIndexManifest.countryCounts).length : 0,
+          });
+        }
         default:
           return json({ error: 'Not found' }, 404);
       }
@@ -274,48 +292,34 @@ async function handleReverseGeocode(url: URL, env: Env): Promise<Response> {
 async function handleLocationSearch(url: URL, env: Env): Promise<Response> {
   const query = requireValue(url.searchParams.get('q'), 'q').trim();
   const country = (url.searchParams.get('country') ?? '').trim();
+  const normalizedCountry = country.toLowerCase();
   const limit = Math.min(Number(url.searchParams.get('limit') ?? '5') || 5, 5);
-  const normalizedCountry = country.length === 2 ? country.toLowerCase() : '';
   const ttl = readTtl(env.SEARCH_CACHE_TTL_SECONDS, 604800);
-  const cacheKey = `search:${query.toLowerCase()}:${normalizedCountry}:${limit}`;
+  const cityIndexVersion = readCityIndexVersion(env);
+  const cacheKey = `search:${cityIndexVersion}:${query.toLowerCase()}:${normalizedCountry}:${limit}`;
+  const hasCountryCoverage = await hasCityIndexCoverageForCountry(env.CACHE_KV, cityIndexVersion, country);
 
   return serveCachedJson(cacheKey, ttl, env, async () => {
-    const upstreamBase = env.NOMINATIM_API_BASE ?? 'https://nominatim.openstreetmap.org';
-    const params = new URLSearchParams({
-      q: query,
-      format: 'json',
-      limit: String(limit),
-      addressdetails: '1',
-    });
-    if (normalizedCountry) {
-      params.set('countrycodes', normalizedCountry);
+    const indexedResults = await searchCityIndex(env.CACHE_KV, cityIndexVersion, query, country, limit);
+    if (indexedResults.length > 0) {
+      return {
+        results: indexedResults,
+        searchSource: 'city_index',
+        hasCountryCoverage,
+      };
     }
 
-    const upstream = await fetch(`${upstreamBase}/search?${params.toString()}`, {
-      headers: {
-        Accept: 'application/json',
-        'User-Agent': 'SukoonEdge/1.0 (+https://sukoon.app)',
-      },
-      cf: {
-        cacheTtl: ttl,
-        cacheEverything: true,
-      },
-    });
-
-    if (!upstream.ok) {
-      throw new HttpError(502, `Search provider failed with status ${upstream.status}`);
-    }
-
-    const payload = await upstream.json() as NominatimResponse[];
     return {
-      results: payload.map((result) => ({
-        latitude: parseFloat(result.lat),
-        longitude: parseFloat(result.lon),
-        city: extractCity(result.address),
-        country: result.address?.country ?? 'Unknown',
-      })),
+      results: [],
+      searchSource: 'city_index_miss',
+      hasCountryCoverage,
     };
   });
+}
+
+function readCityIndexVersion(env: Env): string {
+  const version = env.CITY_INDEX_VERSION?.trim();
+  return version || 'v1';
 }
 
 async function serveCachedJson<T>(

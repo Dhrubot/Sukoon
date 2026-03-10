@@ -42,10 +42,12 @@ interface EdgeLocationResult {
   city?: string;
   country?: string;
   timezone?: string;
+  admin1?: string;
 }
 
 interface EdgeGeocodePayload {
   results: EdgeLocationResult[];
+  searchSource?: string;
 }
 
 interface EdgeReverseGeocodePayload {
@@ -144,6 +146,31 @@ export async function geocodeAddressFromEdge(query: string, countryCode?: string
   };
 }
 
+export interface EdgeLocationSearchResult extends Location {
+  admin1?: string;
+}
+
+export async function searchCitiesFromEdge(
+  query: string,
+  countryCode?: string,
+  limit = 5
+): Promise<EdgeLocationSearchResult[]> {
+  const payload = await getEdgeJson<EdgeGeocodePayload>('/v1/location/search', {
+    q: query,
+    country: toCountryFilter(countryCode),
+    limit,
+  });
+
+  return payload.results.map((result) => ({
+    latitude: result.latitude,
+    longitude: result.longitude,
+    city: result.city,
+    country: result.country,
+    timezone: result.timezone,
+    admin1: result.admin1,
+  }));
+}
+
 export async function reverseGeocodeFromEdge(coordinates: Coordinates): Promise<Location | null> {
   const payload = await getEdgeJson<EdgeReverseGeocodePayload>('/v1/location/reverse', {
     lat: coordinates.latitude,
@@ -161,4 +188,3 @@ export async function reverseGeocodeFromEdge(coordinates: Coordinates): Promise<
     timezone: location.timezone,
   };
 }
-

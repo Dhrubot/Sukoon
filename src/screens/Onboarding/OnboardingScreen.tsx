@@ -27,9 +27,10 @@ import logger from '../../utils/logger';
 import { CalculationMethod, CALCULATION_METHODS } from '../../types';
 import LocationService from '../../services/LocationService';
 import RingerControlService from '../../services/RingerControlService';
-import { Location as AppLocation } from '../../types'
+import { Location as AppLocation } from '../../types';
 import { Switch } from 'react-native';
 import { applyIntensityPreset } from '../../utils/notificationPresets';
+import { LocationModal } from '../../components/LocationModal';
 
 interface OnboardingScreenProps {
   onComplete: () => void;
@@ -51,10 +52,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   // Phase 1: Location UX
   const [isLocating, setIsLocating] = useState(false);
   const [locationFailed, setLocationFailed] = useState(false);
-  const [manualCity, setManualCity] = useState('');
-  const [manualCountry, setManualCountry] = useState('');
-  const [manualLocationError, setManualLocationError] = useState('');
-  const [isSubmittingManual, setIsSubmittingManual] = useState(false);
+  const [showManualLocationSheet, setShowManualLocationSheet] = useState(false);
 
   // Phase 2: Notification intensity
   const [notificationIntensity, setNotificationIntensity] = useState<NotificationIntensity>('gentle');
@@ -153,7 +151,6 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   const requestLocationPermission = async () => {
     setIsLocating(true);
     setLocationFailed(false);
-    setManualLocationError('');
     try {
       const location = await LocationService.getCurrentLocation();
 
@@ -164,40 +161,13 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
       } else {
         setIsLocating(false);
         setLocationFailed(true);
+        setShowManualLocationSheet(true);
       }
     } catch (error) {
       logger.log('Onboarding location error:', error);
       setIsLocating(false);
       setLocationFailed(true);
-    }
-  };
-
-  const handleManualLocationSubmit = async () => {
-    if (!manualCity.trim()) {
-      setManualLocationError('Please enter a city name');
-      return;
-    }
-    if (!manualCountry.trim()) {
-      setManualLocationError('Please enter a country name');
-      return;
-    }
-
-    setIsSubmittingManual(true);
-    setManualLocationError('');
-    try {
-      const location = await LocationService.setLocationByAddress(manualCity.trim(), manualCountry.trim());
-      if (location) {
-        setLocationData(location);
-        setIsSubmittingManual(false);
-        handleNext();
-      } else {
-        setManualLocationError('Could not find that location. Please check your spelling.');
-        setIsSubmittingManual(false);
-      }
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Failed to set location';
-      setManualLocationError(msg);
-      setIsSubmittingManual(false);
+      setShowManualLocationSheet(true);
     }
   };
 
@@ -316,40 +286,13 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
             ) : locationFailed ? (
               <View style={styles.manualLocationContainer}>
                 <Text style={styles.manualLocationHint}>
-                  We couldn't detect your location automatically.{'\n'}Enter it manually below.
+                  We couldn't detect your location automatically.{'\n'}Open the location picker and choose your city.
                 </Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="City (e.g. London)"
-                  placeholderTextColor={theme.colors.onboarding.placeholder}
-                  selectionColor={theme.colors.primary.DEFAULT}
-                  value={manualCity}
-                  onChangeText={setManualCity}
-                  autoCapitalize="words"
-                  returnKeyType="next"
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="Country (e.g. United Kingdom)"
-                  placeholderTextColor={theme.colors.onboarding.placeholder}
-                  selectionColor={theme.colors.primary.DEFAULT}
-                  value={manualCountry}
-                  onChangeText={setManualCountry}
-                  autoCapitalize="words"
-                  returnKeyType="done"
-                  onSubmitEditing={handleManualLocationSubmit}
-                />
-                {manualLocationError ? (
-                  <Text style={styles.errorText}>{manualLocationError}</Text>
-                ) : null}
                 <TouchableOpacity
-                  style={[styles.button, isSubmittingManual && styles.buttonDisabled]}
-                  onPress={handleManualLocationSubmit}
-                  disabled={isSubmittingManual}
+                  style={styles.button}
+                  onPress={() => setShowManualLocationSheet(true)}
                 >
-                  <Text style={styles.buttonText}>
-                    {isSubmittingManual ? 'Setting Location...' : 'Set Location'}
-                  </Text>
+                  <Text style={styles.buttonText}>Choose City Manually</Text>
                 </TouchableOpacity>
                 <TouchableOpacity onPress={() => { setLocationFailed(false); }}>
                   <Text style={styles.skipText}>Try GPS again</Text>
@@ -548,6 +491,21 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
 
           {renderStep()}
         </KeyboardAvoidingView>
+
+        <LocationModal
+          visible={showManualLocationSheet}
+          onClose={() => setShowManualLocationSheet(false)}
+          title="Choose Your City"
+          subtitle="Search for your country, then pick your city from the list."
+          submitLabel="Use This Location"
+          dismissLabel="Not now"
+          onLocationResolved={(location) => {
+            setLocationData(location);
+            setLocationFailed(false);
+            setShowManualLocationSheet(false);
+            handleNext();
+          }}
+        />
       </SafeAreaView>
     </LinearGradient>
   );
