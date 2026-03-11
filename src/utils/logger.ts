@@ -6,17 +6,31 @@
 
 const noop = () => {};
 
+export function sanitizeLogText(value: string): string {
+  return value
+    .replace(/"[^"]*"/g, '"[redacted]"')
+    .replace(/-?\d{1,3}\.\d{3,}/g, '[redacted-number]')
+    .replace(/\b(?:lat|latitude|lng|longitude|coords|coordinate|location)\b\s*[:=]\s*[^\s,;]+/gi, '[redacted-location]');
+}
+
+function sanitizeLogArg(arg: unknown): string {
+  if (typeof arg === 'string') {
+    return sanitizeLogText(arg);
+  }
+
+  if (arg instanceof Error) {
+    return `${arg.name}: ${sanitizeLogText(arg.message)}`;
+  }
+
+  return '[redacted]';
+}
+
 /**
  * In production, strip non-string/non-Error args to prevent PII leakage.
  * Keeps the error message but drops raw objects (settings, location, etc.).
  */
 const sanitizedError = (...args: unknown[]) => {
-  const safe = args.map((arg) => {
-    if (typeof arg === 'string') return arg;
-    if (arg instanceof Error) return `${arg.name}: ${arg.message}`;
-    // Drop raw objects/arrays that may contain coordinates, settings, etc.
-    return '[redacted]';
-  });
+  const safe = args.map(sanitizeLogArg);
   console.error(...safe);
 };
 

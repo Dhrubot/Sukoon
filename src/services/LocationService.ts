@@ -169,7 +169,7 @@ class LocationService {
       return null;
     } catch (error) {
       logger.error('❌ Error setting location by address:', error);
-      throw new Error(`Failed to find location for "${city}, ${country}". Please check your spelling or try a different format.`);
+      throw new Error('Failed to find that location. Please check the spelling or choose the nearest major city.');
     }
   }
 
@@ -199,7 +199,7 @@ class LocationService {
       return null;
     } catch (error) {
       logger.error('❌ Error setting location by postal code:', error);
-      throw new Error(`Failed to find location for postal code "${postalCode}". Please check the code and country.`);
+      throw new Error('Failed to find that postal code. Please check the code or choose the nearest major city.');
     }
   }
 

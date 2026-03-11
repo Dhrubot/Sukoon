@@ -28,7 +28,7 @@ class AnalyticsService {
 
   async logEvent(event: AnalyticsEvent, params?: AnalyticsParams): Promise<void> {
     if (__DEV__) {
-      logger.log(`[Analytics] ${event}`, params);
+      logger.log(`[Analytics] ${event}`);
     }
 
     if (!this.enabled) return;
