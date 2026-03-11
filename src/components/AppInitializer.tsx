@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useAppInitialization } from '../hooks/useAppInitialization';
 import OnboardingScreen from '../screens/Onboarding/OnboardingScreen';
 import { LoadingScreen } from './LoadingScreen';
@@ -26,6 +26,19 @@ export const AppInitializer: React.FC = () => {
   // This activates the "Check every 24h" logic
   useNotificationRescheduler();
 
+  useEffect(() => {
+    if (isLoading || error) return;
+
+    if (isFirstLaunch) {
+      PerformanceService.markLaunchMilestoneOnce('onboarding_screen_rendered');
+      return;
+    }
+
+    PerformanceService.markLaunchMilestoneOnce(
+      showSetupHealth ? 'setup_health_rendered' : 'app_navigator_rendered'
+    );
+  }, [error, isFirstLaunch, isLoading, showSetupHealth]);
+
   if (isLoading) {
     return <LoadingScreen message="Initializing Sukoon..." />;
   }
@@ -40,13 +53,8 @@ export const AppInitializer: React.FC = () => {
   }
 
   if (isFirstLaunch) {
-    PerformanceService.markLaunchMilestone('onboarding_screen_rendered');
     return <OnboardingScreen onComplete={completeOnboarding} />;
   }
-
-  PerformanceService.markLaunchMilestone(
-    showSetupHealth ? 'setup_health_rendered' : 'app_navigator_rendered'
-  );
 
   return (
     <ServiceProvider>

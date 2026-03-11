@@ -65,8 +65,17 @@ class PerformanceService {
     this.debugLog(`${name} @ ${mark.sinceLaunchMs}ms${detail ? ` (${detail})` : ''}`);
   }
 
+  markLaunchMilestoneOnce(name: string, detail?: string) {
+    const existingMark = this.launchMarks.find((entry) => entry.name === name);
+    if (existingMark) {
+      return;
+    }
+
+    this.markLaunchMilestone(name, detail);
+  }
+
   finalizeLaunchSummary(reason: string) {
-    this.markLaunchMilestone('launch_summary_ready', reason);
+    this.markLaunchMilestoneOnce('launch_summary_ready', reason);
     this.commitLaunchSummary();
     const summary = this.getLatestLaunchSummary();
     if (!summary || !this.perfValidationEnabled) return;
