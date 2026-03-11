@@ -19,6 +19,7 @@ import { captureNow } from '../constants/time';
 import AnalyticsService from './AnalyticsService';
 import NotificationLedger from './NotificationLedger';
 import { useStore } from '../store/useStore';
+import NotificationTraceService from './NotificationTraceService';
 
 // NOTIFICATION_CATEGORIES now imported from ./notifications/NotificationChannels
 
@@ -78,6 +79,14 @@ class NotificationService {
   private channelsInitialized = false;
   private pendingInitialResponse: Notifications.NotificationResponse | null = null;
   private lastHandledResponseKey: string | null = null;
+  private lastScheduleSummary:
+    | {
+        reason: NotificationSchedulingReason;
+        scheduledCount: number;
+        totalScheduledCount: number;
+        exactAlarmStatus?: string;
+      }
+    | null = null;
 
   private async syncAndroidExactAlarmStatus(settings: UserSettings): Promise<void> {
     if (Platform.OS !== 'android') return;
@@ -191,6 +200,10 @@ class NotificationService {
     try {
       if (!StorageService.isInitialized()) {
         logger.log(`⏳ Skipping notification reconcile (${reason}) — storage not initialized`);
+        NotificationTraceService.log('reschedule_check_skipped', {
+          reason,
+          skipReason: 'storage_not_initialized',
+        });
         return false;
       }
 
@@ -199,12 +212,32 @@ class NotificationService {
       const now = new Date();
       const hoursSinceLastRun = (now.getTime() - lastRun.getTime()) / (1000 * 60 * 60);
 
+      NotificationTraceService.log('reschedule_check_started', {
+        reason,
+        hoursThreshold,
+        hoursSinceLastRun: Number(hoursSinceLastRun.toFixed(2)),
+      });
+
       if (hoursSinceLastRun > hoursThreshold) {
+        NotificationTraceService.log('reschedule_check_triggered', {
+          reason,
+          hoursThreshold,
+          hoursSinceLastRun: Number(hoursSinceLastRun.toFixed(2)),
+        });
         return this.reconcileScheduling(reason, { force: reason !== 'settings_change' });
       }
 
+      NotificationTraceService.log('reschedule_check_skipped', {
+        reason,
+        skipReason: 'within_threshold',
+        hoursThreshold,
+        hoursSinceLastRun: Number(hoursSinceLastRun.toFixed(2)),
+      });
       return false;
     } catch (error) {
+      NotificationTraceService.log('reschedule_check_failed', {
+        reason,
+      });
       logger.error('❌ Reschedule failed:', error);
       return false;
     }
@@ -234,14 +267,17 @@ class NotificationService {
 
   async initialize(): Promise<boolean> {
     try {
+      NotificationTraceService.log('initialize_started');
       if (this.initialized) {
         logger.log('♻️ Re-initializing NotificationService safely');
+        NotificationTraceService.log('initialize_reentered');
       }
 
       // Request permissions
       const hasPermission = await this.requestPermissions();
       if (!hasPermission) {
         logger.log('📵 Notification permissions not granted');
+        NotificationTraceService.log('initialize_permissions_missing');
         return false;
       }
 
@@ -262,9 +298,11 @@ class NotificationService {
       await this.hydrateInitialNotificationResponse();
 
       this.initialized = true;
+      NotificationTraceService.log('initialize_completed');
       logger.log('✅ NotificationService initialized');
       return true;
     } catch (error) {
+      NotificationTraceService.log('initialize_failed');
       logger.error('❌ Failed to initialize notifications:', error);
       return false;
     }
@@ -273,10 +311,14 @@ class NotificationService {
   private async requestPermissions(): Promise<boolean> {
     if (!Device.isDevice) {
       logger.log('📱 Notifications only work on physical devices');
+      NotificationTraceService.log('permission_request_skipped_simulator');
       return false;
     }
 
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    NotificationTraceService.log('permission_status_checked', {
+      existingStatus,
+    });
     let finalStatus = existingStatus;
 
     if (existingStatus !== 'granted') {
@@ -288,6 +330,10 @@ class NotificationService {
         },
       });
       finalStatus = status;
+      NotificationTraceService.log('permission_request_result', {
+        requestedFrom: existingStatus,
+        finalStatus,
+      });
     }
 
     return finalStatus === 'granted';
@@ -340,6 +386,10 @@ class NotificationService {
       const key = this.getResponseKey(response);
       if (this.lastHandledResponseKey === key) return;
       this.pendingInitialResponse = response;
+      NotificationTraceService.log('initial_response_hydrated', {
+        type: String((response.notification.request.content.data as NotificationData | undefined)?.type || 'unknown'),
+        action: response.actionIdentifier,
+      });
     } catch (error) {
       logger.warn('⚠️ Failed to hydrate initial notification response:', error);
     }
@@ -355,15 +405,18 @@ class NotificationService {
     const key = this.getResponseKey(response);
     if (this.lastHandledResponseKey === key) {
       this.pendingInitialResponse = null;
+      NotificationTraceService.log('initial_response_skipped_duplicate');
       return false;
     }
 
     if (this.responseNeedsNavigation(response) && !this.navigationHandler) {
       this.pendingInitialResponse = response;
+      NotificationTraceService.log('initial_response_waiting_for_navigation');
       return false;
     }
 
     this.pendingInitialResponse = null;
+    NotificationTraceService.log('initial_response_consumed');
     await this.handleNotificationResponse(response);
     return true;
   }
@@ -384,6 +437,11 @@ class NotificationService {
     const { notification, actionIdentifier } = response;
     const data = notification.request.content.data as NotificationData | undefined;
     this.lastHandledResponseKey = this.getResponseKey(response);
+    NotificationTraceService.log('notification_response_handled', {
+      action: actionIdentifier,
+      type: String(data?.type || 'unknown'),
+      prayer: String(data?.prayer || 'unknown'),
+    });
 
     // Log notification tap
     NotificationLedger.recordTapped(notification.request.identifier);
@@ -524,6 +582,11 @@ class NotificationService {
     // Handle notifications when app is in foreground
     this.notificationListener = Notifications.addNotificationReceivedListener((notification) => {
       logger.log('🔔 Notification received:', notification.request.content.title);
+      NotificationTraceService.log('notification_received', {
+        identifier: notification.request.identifier,
+        type: (notification.request.content.data?.type as string) || 'unknown',
+        prayer: (notification.request.content.data?.prayer as string) || null,
+      });
 
       // Ledger: record delivery
       NotificationLedger.recordDelivered(notification.request.identifier);
@@ -582,14 +645,26 @@ class NotificationService {
     }
   ): Promise<boolean> {
     try {
+      NotificationTraceService.log('reconcile_started', {
+        reason,
+        force: Boolean(options?.force),
+      });
       if (!StorageService.isInitialized()) {
         logger.log(`⏳ Skipping notification reconcile (${reason}) — storage not initialized`);
+        NotificationTraceService.log('reconcile_skipped', {
+          reason,
+          skipReason: 'storage_not_initialized',
+        });
         return false;
       }
 
       const settings = StorageService.getUserSettings();
       if (!settings) {
         logger.log(`📵 Skipping notification reconcile (${reason}) — no user settings`);
+        NotificationTraceService.log('reconcile_skipped', {
+          reason,
+          skipReason: 'no_user_settings',
+        });
         return false;
       }
 
@@ -598,28 +673,56 @@ class NotificationService {
         await this.cancelAllPrayerNotifications();
         StorageService.deleteValue('notification_schedule_fingerprint');
         StorageService.deleteValue('last_batch_schedule_date');
+        NotificationTraceService.log('reconcile_skipped', {
+          reason,
+          skipReason: 'notifications_disabled',
+        });
         return false;
       }
 
       if (!isValidCoordinates(settings.location)) {
         logger.log(`❌ No valid location for notification reconcile (${reason})`);
+        NotificationTraceService.log('reconcile_skipped', {
+          reason,
+          skipReason: 'no_valid_location',
+        });
         return false;
       }
 
       await this.syncAndroidExactAlarmStatus(settings);
+      const exactAlarmStatus = Platform.OS === 'android'
+        ? StorageService.getValue('android_exact_alarm_status') || 'unknown'
+        : 'not_applicable';
       const scheduled = await this.scheduleExtendedNotifications(options?.onProgress, {
         forceRebuild: options?.force ?? reason !== 'settings_change',
         reason,
       });
 
-      if (!scheduled) return false;
+      if (!scheduled) {
+        NotificationTraceService.log('reconcile_completed', {
+          reason,
+          scheduled: false,
+          exactAlarmStatus,
+        });
+        return false;
+      }
 
       const now = new Date();
       StorageService.setValue('last_batch_schedule_date', now.toISOString());
       StorageService.setValue('notification_schedule_last_reason', reason);
       StorageService.setValue('notification_utc_offset', now.getTimezoneOffset().toString());
+      NotificationTraceService.log('reconcile_completed', {
+        reason,
+        scheduled: true,
+        exactAlarmStatus,
+        prayerScheduledCount: this.lastScheduleSummary?.scheduledCount ?? 0,
+        totalScheduledCount: this.lastScheduleSummary?.totalScheduledCount ?? 0,
+      });
       return true;
     } catch (error) {
+      NotificationTraceService.log('reconcile_failed', {
+        reason,
+      });
       logger.error(`❌ Failed to reconcile notifications (${reason}):`, error);
       return false;
     }
@@ -1078,6 +1181,9 @@ class NotificationService {
   ): Promise<boolean> {
     if (!this.acquireSchedulingLock()) {
       logger.log('🔒 Scheduling already in progress, skipping');
+      NotificationTraceService.log('schedule_skipped_locked', {
+        reason: options?.reason || 'unspecified',
+      });
       return false;
     }
 
@@ -1088,17 +1194,30 @@ class NotificationService {
       if (status !== 'granted') {
         logger.warn('🚫 Notification permission not granted (status: ' + status + '), skipping scheduling');
         StorageService.setValue('notification_permission_denied', 'true');
+        NotificationTraceService.log('schedule_skipped_permission', {
+          reason: options?.reason || 'unspecified',
+          status,
+        });
         return false;
       }
       // Permission is granted — clear any stale denial flag
       StorageService.deleteValue('notification_permission_denied');
 
       logger.log(`🗓️ Starting split-tier horizontal scheduling (${options?.reason || 'unspecified'})...`);
+      NotificationTraceService.log('schedule_started', {
+        reason: options?.reason || 'unspecified',
+        forceRebuild: Boolean(options?.forceRebuild),
+      });
 
       const settings = StorageService.getUserSettings();
       if (!settings?.notifications.enabled || !isValidCoordinates(settings.location)) {
         logger.log('📵 Notifications disabled or no location');
-        return;
+        NotificationTraceService.log('schedule_skipped_prereqs', {
+          reason: options?.reason || 'unspecified',
+          notificationsEnabled: Boolean(settings?.notifications.enabled),
+          hasValidLocation: Boolean(settings?.location && isValidCoordinates(settings.location)),
+        });
+        return false;
       }
 
       const fingerprint = this.getScheduleFingerprint(settings);
@@ -1290,10 +1409,34 @@ class NotificationService {
         logger.log(`📊 iOS notification count: ${iosCounter.count}/${IOS_NOTIFICATION_CAP}`);
       }
 
+      const allScheduledAfter = await Notifications.getAllScheduledNotificationsAsync();
+      const prayerScheduledCount = allScheduledAfter.filter((notif) => {
+        const data = (notif.content?.data || {}) as Record<string, unknown>;
+        return this.isPrayerNotificationType(data?.type) || typeof data?.prayer === 'string';
+      }).length;
+      const exactAlarmStatus = Platform.OS === 'android'
+        ? StorageService.getValue('android_exact_alarm_status') || 'unknown'
+        : 'not_applicable';
+      this.lastScheduleSummary = {
+        reason: options?.reason || 'background_refresh',
+        scheduledCount: prayerScheduledCount,
+        totalScheduledCount: allScheduledAfter.length,
+        exactAlarmStatus,
+      };
+      NotificationTraceService.log('schedule_completed', {
+        reason: options?.reason || 'unspecified',
+        prayerScheduledCount,
+        totalScheduledCount: allScheduledAfter.length,
+        exactAlarmStatus,
+      });
+
       this.schedulingProgress = 1;
       onProgress?.(NOTIFICATION_SCHEDULING_DAYS, NOTIFICATION_SCHEDULING_DAYS);
       return true;
     } catch (error) {
+      NotificationTraceService.log('schedule_failed', {
+        reason: options?.reason || 'unspecified',
+      });
       logger.error('❌ Extended scheduling failed:', error);
       return false;
     } finally {
@@ -1362,6 +1505,9 @@ class NotificationService {
       totalScheduledCount: allScheduled.length,
       prayerScheduledCount: scheduled.length,
       iosCap: IOS_NOTIFICATION_CAP,
+      notificationTraceEnabled: NotificationTraceService.isEnabled(),
+      recentNotificationTraceCount: NotificationTraceService.getRecentEvents().length,
+      lastScheduleSummary: this.lastScheduleSummary,
       tierDistribution: tierCounts,
       hasSource,
       sourceHasLocation,
@@ -1564,6 +1710,7 @@ class NotificationService {
   // Force rescheduling method for debugging
   async forceReschedule() {
     logger.log('🔧 Force rescheduling notifications...');
+    NotificationTraceService.log('force_reschedule_requested');
     await this.reconcileScheduling('settings_change', { force: true });
   }
 

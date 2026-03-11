@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react';
 import { InteractionManager, NativeModules, Platform } from 'react-native';
 import { useAppStateChange } from './useAppStateChange';
 import NotificationService from '../services/NotificationService';
+import NotificationTraceService from '../services/NotificationTraceService';
 import StorageService from '../services/StorageService';
 import LocationService from '../services/LocationService';
 import { useStore } from '../store/useStore';
@@ -20,6 +21,7 @@ export const useNotificationRescheduler = () => {
   useEffect(() => {
     if (!hasReadySettings || initialCheckStartedRef.current) return;
     initialCheckStartedRef.current = true;
+    NotificationTraceService.log('rescheduler_initial_check_started');
 
     InteractionManager.runAfterInteractions(async () => {
       // Android: check if device rebooted since last launch (boot receiver sets flag)
@@ -28,6 +30,7 @@ export const useNotificationRescheduler = () => {
           const needsReschedule = await NativeModules.BootPrefsModule?.getAndClearBootRescheduleFlag();
           if (needsReschedule) {
             logger.log('🔄 Boot reschedule flag detected — forcing full reschedule');
+            NotificationTraceService.log('rescheduler_boot_flag_detected');
             StorageService.deleteValue('last_batch_schedule_date');
             await NotificationService.reconcileScheduling('boot', { force: true });
             return;
@@ -44,6 +47,7 @@ export const useNotificationRescheduler = () => {
   // Check on resume via shared AppState listener
   useAppStateChange((nextState) => {
     if (nextState === 'active') {
+      NotificationTraceService.log('rescheduler_app_state_active');
       InteractionManager.runAfterInteractions(() => {
         void checkAndReschedule();
       });
@@ -52,14 +56,21 @@ export const useNotificationRescheduler = () => {
 
   const checkAndReschedule = async () => {
     try {
+      NotificationTraceService.log('rescheduler_check_started');
       if (!StorageService.isInitialized()) {
         logger.log('⏳ Skipping notification reschedule — storage not initialized');
+        NotificationTraceService.log('rescheduler_check_skipped', {
+          skipReason: 'storage_not_initialized',
+        });
         return;
       }
 
       const currentUserSettings = useStore.getState().userSettings;
       if (!currentUserSettings) {
         logger.log('⏳ Skipping notification reschedule — user settings not ready');
+        NotificationTraceService.log('rescheduler_check_skipped', {
+          skipReason: 'user_settings_not_ready',
+        });
         return;
       }
 
@@ -74,6 +85,11 @@ export const useNotificationRescheduler = () => {
       if (savedOffset !== null && parseInt(savedOffset, 10) !== currentOffset) {
         logger.warn(`⏰ UTC offset changed (${savedOffset} → ${currentOffset}), forcing reschedule`);
         invalidateReason = 'timezone_change';
+        NotificationTraceService.log('rescheduler_invalidation_detected', {
+          reason: 'timezone_change',
+          previousOffset: parseInt(savedOffset, 10),
+          currentOffset,
+        });
 
         // Timezone changed — likely international travel. Refresh device location
         // so prayer times are recalculated for the new region.
@@ -103,6 +119,11 @@ export const useNotificationRescheduler = () => {
       ) {
         logger.warn(`📍 Material location change detected (${savedLocationFingerprint} → ${currentLocationFingerprint})`);
         invalidateReason = 'location_change';
+        NotificationTraceService.log('rescheduler_invalidation_detected', {
+          reason: 'location_change',
+          previousLocationFingerprint: savedLocationFingerprint,
+          currentLocationFingerprint,
+        });
       }
 
       const now = Date.now();
@@ -113,6 +134,10 @@ export const useNotificationRescheduler = () => {
         if (clockDriftMs > 30 * 60 * 1000) {
           logger.warn(`🕰️ Device clock jump detected (${Math.round(clockDriftMs / 60000)} min)`);
           invalidateReason = invalidateReason || 'clock_change';
+          NotificationTraceService.log('rescheduler_invalidation_detected', {
+            reason: 'clock_change',
+            clockDriftMinutes: Math.round(clockDriftMs / 60000),
+          });
         }
       }
 
@@ -123,13 +148,23 @@ export const useNotificationRescheduler = () => {
         if (hoursSinceLastRun > 48) {
           logger.warn('⚠️ Notification refresh was stale (>48h)');
           StorageService.setValue('notification_refresh_stale', 'true');
+          NotificationTraceService.log('rescheduler_stale_refresh_detected', {
+            hoursSinceLastRun: Number(hoursSinceLastRun.toFixed(2)),
+          });
         }
       }
 
       let rescheduled = false;
       if (invalidateReason) {
+        NotificationTraceService.log('rescheduler_reconcile_triggered', {
+          reason: invalidateReason,
+          force: true,
+        });
         rescheduled = await NotificationService.reconcileScheduling(invalidateReason, { force: true });
       } else {
+        NotificationTraceService.log('rescheduler_threshold_check_triggered', {
+          reason: 'background_refresh',
+        });
         rescheduled = await NotificationService.maybeRescheduleExtendedNotifications();
       }
 
@@ -143,7 +178,12 @@ export const useNotificationRescheduler = () => {
       if (rescheduled || savedOffset === null) {
         StorageService.setValue('notification_utc_offset', currentOffset.toString());
       }
+      NotificationTraceService.log('rescheduler_check_completed', {
+        rescheduled,
+        invalidateReason,
+      });
     } catch (error) {
+      NotificationTraceService.log('rescheduler_check_failed');
       logger.error('❌ Reschedule failed:', error);
     }
   };

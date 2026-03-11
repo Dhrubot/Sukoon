@@ -7,6 +7,9 @@ type ExpoExtraConfig = {
   perfValidation?: {
     enabled?: boolean;
   };
+  notificationTrace?: {
+    enabled?: boolean;
+  };
 };
 
 function readExpoExtraConfig(): ExpoExtraConfig {
@@ -60,4 +63,14 @@ export function isPerfValidationEnabled(): boolean {
 
   const extra = readExpoExtraConfig();
   return extra.perfValidation?.enabled === true;
+}
+
+export function isNotificationTraceEnabled(): boolean {
+  const envEnabled = process.env.EXPO_PUBLIC_NOTIFICATION_TRACE_ENABLED;
+  if (typeof envEnabled === 'string') {
+    return envEnabled === 'true';
+  }
+
+  const extra = readExpoExtraConfig();
+  return extra.notificationTrace?.enabled === true;
 }

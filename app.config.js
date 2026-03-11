@@ -5,6 +5,7 @@ const edgeApiEnabled =
   edgeApiBaseUrl !== "" &&
   process.env.EXPO_PUBLIC_EDGE_API_ENABLED !== "false";
 const perfValidationEnabled = process.env.EXPO_PUBLIC_PERF_VALIDATION_ENABLED === "true";
+const notificationTraceEnabled = process.env.EXPO_PUBLIC_NOTIFICATION_TRACE_ENABLED === "true";
 
 export default {
   expo: {
@@ -138,6 +139,9 @@ export default {
       },
       perfValidation: {
         enabled: perfValidationEnabled,
+      },
+      notificationTrace: {
+        enabled: notificationTraceEnabled,
       },
       notificationSounds: [
         "./assets/sounds/adhan_short.ogg",

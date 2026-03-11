@@ -1034,6 +1034,25 @@ class StorageService {
     this.storage.remove(key);
   }
 
+  getPublicJson<T>(key: string): T | null {
+    const data = this.publicStorage.getString(key);
+    if (!data) return null;
+
+    try {
+      return JSON.parse(data) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  setPublicJson(key: string, value: unknown): void {
+    this.publicStorage.set(key, JSON.stringify(value));
+  }
+
+  deletePublicValue(key: string): void {
+    this.publicStorage.remove(key);
+  }
+
   getPremiumFeatures(): PremiumFeatures {
     const data = this.storage.getString("premium_features");
     if (data) {
