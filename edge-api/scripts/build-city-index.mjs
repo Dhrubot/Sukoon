@@ -58,10 +58,22 @@ function buildShardKey(countryCode, prefix) {
 
 function buildKvRecords(entries) {
   const countryCounts = {};
+  const countryTopCities = {};
   const shards = new Map();
 
   for (const entry of entries) {
     countryCounts[entry.countryCode] = (countryCounts[entry.countryCode] || 0) + 1;
+    if (!countryTopCities[entry.countryCode]) {
+      countryTopCities[entry.countryCode] = [];
+    }
+    countryTopCities[entry.countryCode].push({
+      city: entry.name,
+      country: entry.country,
+      admin1: entry.admin1,
+      latitude: entry.latitude,
+      longitude: entry.longitude,
+      population: entry.population,
+    });
 
     for (const prefix of buildPrefixKeys(entry)) {
       const globalKey = buildShardKey('*', prefix);
@@ -81,6 +93,15 @@ function buildKvRecords(entries) {
       value: JSON.stringify({
         version: CITY_INDEX_VERSION,
         countryCounts,
+        countryTopCities: Object.fromEntries(
+          Object.entries(countryTopCities).map(([countryCode, cities]) => [
+            countryCode,
+            cities
+              .sort((left, right) => right.population - left.population)
+              .slice(0, 5)
+              .map(({ population, ...city }) => city),
+          ])
+        ),
       }),
     },
   ];

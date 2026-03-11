@@ -20,6 +20,7 @@ interface StructuredLocationSearchProps {
   countryOptions: CountryOption[];
   selectedCountry: CountryOption | null;
   searchResults: LocationSearchResult[];
+  suggestedResults: LocationSearchResult[];
   selectedSearchResult: LocationSearchResult | null;
   isSearching: boolean;
   searchError?: string;
@@ -36,6 +37,7 @@ export const StructuredLocationSearch: React.FC<StructuredLocationSearchProps> =
   countryOptions,
   selectedCountry,
   searchResults,
+  suggestedResults,
   selectedSearchResult,
   isSearching,
   searchError = '',
@@ -131,9 +133,30 @@ export const StructuredLocationSearch: React.FC<StructuredLocationSearchProps> =
             ) : searchError ? (
               <Text style={styles.emptyText}>{searchError}</Text>
             ) : cityQuery.trim().length >= 2 ? (
-              <Text style={styles.emptyText}>
-                We could not find that town. Try the nearest major city instead.
-              </Text>
+              <>
+                <Text style={styles.emptyText}>
+                  We could not find that town. Try the nearest major city instead.
+                </Text>
+                {suggestedResults.length > 0 ? (
+                  <View style={styles.suggestionsBlock}>
+                    <Text style={styles.suggestionsLabel}>Popular cities in {selectedCountry?.name}</Text>
+                    {suggestedResults.map((result) => (
+                      <TouchableOpacity
+                        key={`suggested:${result.latitude}:${result.longitude}:${result.city}`}
+                        style={styles.resultRow}
+                        onPress={() => onSearchResultSelect(result)}
+                        disabled={disabled}
+                      >
+                        <Text style={styles.resultTitle}>
+                          {result.city}
+                          {result.admin1 ? `, ${result.admin1}` : ''}
+                        </Text>
+                        <Text style={styles.resultSubtitle}>{result.country}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                ) : null}
+              </>
             ) : (
               <Text style={styles.helperText}>
                 Start typing a major city after selecting your country.
@@ -221,6 +244,18 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontSize: theme.typography.fontSize.sm,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
+  },
+  suggestionsBlock: {
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: theme.colors.border.secondary,
+  },
+  suggestionsLabel: {
+    paddingHorizontal: theme.spacing.md,
+    paddingTop: theme.spacing.sm,
+    paddingBottom: theme.spacing.xs,
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
+    color: theme.colors.text.muted,
   },
   selectionPill: {
     marginTop: theme.spacing.sm,

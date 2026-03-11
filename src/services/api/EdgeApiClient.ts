@@ -48,6 +48,8 @@ interface EdgeLocationResult {
 interface EdgeGeocodePayload {
   results: EdgeLocationResult[];
   searchSource?: string;
+  hasCountryCoverage?: boolean;
+  suggestedResults?: EdgeLocationResult[];
 }
 
 interface EdgeReverseGeocodePayload {
@@ -150,25 +152,39 @@ export interface EdgeLocationSearchResult extends Location {
   admin1?: string;
 }
 
+export interface EdgeLocationSearchResponse {
+  results: EdgeLocationSearchResult[];
+  searchSource?: string;
+  hasCountryCoverage?: boolean;
+  suggestedResults: EdgeLocationSearchResult[];
+}
+
 export async function searchCitiesFromEdge(
   query: string,
   countryCode?: string,
   limit = 5
-): Promise<EdgeLocationSearchResult[]> {
+): Promise<EdgeLocationSearchResponse> {
   const payload = await getEdgeJson<EdgeGeocodePayload>('/v1/location/search', {
     q: query,
     country: toCountryFilter(countryCode),
     limit,
   });
 
-  return payload.results.map((result) => ({
+  const mapResult = (result: EdgeLocationResult): EdgeLocationSearchResult => ({
     latitude: result.latitude,
     longitude: result.longitude,
     city: result.city,
     country: result.country,
     timezone: result.timezone,
     admin1: result.admin1,
-  }));
+  });
+
+  return {
+    results: payload.results.map(mapResult),
+    searchSource: payload.searchSource,
+    hasCountryCoverage: payload.hasCountryCoverage,
+    suggestedResults: (payload.suggestedResults ?? []).map(mapResult),
+  };
 }
 
 export async function reverseGeocodeFromEdge(coordinates: Coordinates): Promise<Location | null> {

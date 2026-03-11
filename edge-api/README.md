@@ -35,3 +35,13 @@ The mobile app should call this worker instead of calling Aladhan or Nominatim d
 - Search no longer falls back to live Nominatim lookups.
 - If a town is not indexed, the app should guide the user to choose the nearest major city instead.
 - `CITY_INDEX_VERSION` lets you roll forward to a new shard set without breaking old keys.
+- Search misses are logged as `city_search_resolved` events with `searchSource: "city_index_miss"`.
+- Review miss buckets from Wrangler logs with:
+  `npm run review:city-search-misses -- path/to/city-search.log`
+- If you pipe `wrangler tail` output into a file, the review script will group misses by `country + queryPrefix` so you can expand `data/cities.v1.json` based on real demand.
+
+
+Then, when you want to review misses from Cloudflare logs:
+
+npx wrangler tail sukoon-edge-api > city-search.log
+npm run review:city-search-misses -- city-search.log

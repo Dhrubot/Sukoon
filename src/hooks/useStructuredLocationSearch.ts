@@ -43,6 +43,7 @@ export const useStructuredLocationSearch = (options?: StructuredLocationSearchOp
   const [cityQuery, setCityQuery] = useState('');
   const [searchResults, setSearchResults] = useState<LocationSearchResult[]>([]);
   const [selectedSearchResult, setSelectedSearchResult] = useState<LocationSearchResult | null>(null);
+  const [suggestedResults, setSuggestedResults] = useState<LocationSearchResult[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const [searchError, setSearchError] = useState('');
 
@@ -54,6 +55,7 @@ export const useStructuredLocationSearch = (options?: StructuredLocationSearchOp
   useEffect(() => {
     if (!selectedCountry || cityQuery.trim().length < 2) {
       setSearchResults([]);
+      setSuggestedResults([]);
       setSearchError('');
       setIsSearching(false);
       return;
@@ -63,15 +65,17 @@ export const useStructuredLocationSearch = (options?: StructuredLocationSearchOp
       try {
         setIsSearching(true);
         setSearchError('');
-        const results = await GeocodingService.searchCities(
+        const response = await GeocodingService.searchCitiesDetailed(
           cityQuery.trim(),
           selectedCountry.code,
           resultLimit
         );
-        setSearchResults(results);
+        setSearchResults(response.results);
+        setSuggestedResults(response.suggestedResults);
       } catch (error) {
         logger.error('City search failed:', error);
         setSearchResults([]);
+        setSuggestedResults([]);
         setSearchError('City search is unavailable right now. Please try again or use GPS location.');
       } finally {
         setIsSearching(false);
@@ -92,6 +96,7 @@ export const useStructuredLocationSearch = (options?: StructuredLocationSearchOp
       setSelectedCountry(null);
       setSelectedSearchResult(null);
       setSearchResults([]);
+      setSuggestedResults([]);
     }
   };
 
@@ -113,6 +118,7 @@ export const useStructuredLocationSearch = (options?: StructuredLocationSearchOp
     setCountryQuery(country.name);
     setSelectedSearchResult(null);
     setSearchResults([]);
+    setSuggestedResults([]);
     setSearchError('');
   };
 
@@ -129,6 +135,7 @@ export const useStructuredLocationSearch = (options?: StructuredLocationSearchOp
     }
 
     setSearchResults([]);
+    setSuggestedResults([]);
     setSearchError('');
   };
 
@@ -137,6 +144,7 @@ export const useStructuredLocationSearch = (options?: StructuredLocationSearchOp
     setSelectedCountry(initialCountry);
     setCityQuery('');
     setSearchResults([]);
+    setSuggestedResults([]);
     setSelectedSearchResult(null);
     setIsSearching(false);
     setSearchError('');
@@ -148,6 +156,7 @@ export const useStructuredLocationSearch = (options?: StructuredLocationSearchOp
     countryOptions,
     selectedCountry,
     searchResults,
+    suggestedResults,
     selectedSearchResult,
     isSearching,
     searchError,

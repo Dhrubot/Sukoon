@@ -1,7 +1,11 @@
 import { Coordinates, Location } from '../types';
 import logger from '../utils/logger';
 import { fetchWithTimeout, describeNetworkError } from '../utils/networkRequest';
-import { geocodeAddressFromEdge, reverseGeocodeFromEdge, searchCitiesFromEdge } from './api/EdgeApiClient';
+import {
+  geocodeAddressFromEdge,
+  reverseGeocodeFromEdge,
+  searchCitiesFromEdge,
+} from './api/EdgeApiClient';
 import { findCountryOptionByCode, findCountryOptionByName } from '../constants/countries';
 
 const NOMINATIM_API_BASE = 'https://nominatim.openstreetmap.org';
@@ -42,20 +46,36 @@ class GeocodingService {
     return this.lastSource;
   }
 
-  async searchCities(query: string, countryCode?: string, limit = 5): Promise<LocationSearchResult[]> {
+  async searchCitiesDetailed(
+    query: string,
+    countryCode?: string,
+    limit = 5
+  ): Promise<LocationSearchResponse> {
     const trimmedQuery = query.trim();
     const normalizedCountryCode = countryCode?.trim().toUpperCase() || '';
-    if (trimmedQuery.length < 2) return [];
+    if (trimmedQuery.length < 2) {
+      return {
+        results: [],
+        suggestedResults: [],
+        searchSource: 'city_index',
+        hasCountryCoverage: Boolean(normalizedCountryCode),
+      };
+    }
 
     const cacheKey = `${trimmedQuery}-${normalizedCountryCode}-${limit}`.toLowerCase();
     if (this.cachedSearchResults.has(cacheKey)) {
       this.lastSource = 'cache';
-      return this.cachedSearchResults.get(cacheKey)!;
+      return {
+        results: this.cachedSearchResults.get(cacheKey)!,
+        suggestedResults: [],
+        searchSource: 'cache',
+        hasCountryCoverage: Boolean(normalizedCountryCode),
+      };
     }
 
     try {
-      const results = await searchCitiesFromEdge(trimmedQuery, normalizedCountryCode, limit);
-      const filteredResults =
+      const response = await searchCitiesFromEdge(trimmedQuery, normalizedCountryCode, limit);
+      const filterResultsToCountry = (results: LocationSearchResult[]) =>
         normalizedCountryCode.length === 2
           ? results.filter((result) => {
               const matchingCountry =
@@ -65,13 +85,31 @@ class GeocodingService {
             })
           : results;
 
+      const filteredResults = filterResultsToCountry(response.results);
+      const filteredSuggestedResults = filterResultsToCountry(response.suggestedResults);
+
       this.cachedSearchResults.set(cacheKey, filteredResults);
       this.lastSource = 'edge';
-      return filteredResults;
+      return {
+        results: filteredResults,
+        suggestedResults: filteredSuggestedResults,
+        searchSource: response.searchSource,
+        hasCountryCoverage: response.hasCountryCoverage,
+      };
     } catch (error) {
       logger.warn('City search unavailable from edge:', describeNetworkError(error));
-      return [];
+      return {
+        results: [],
+        suggestedResults: [],
+        searchSource: 'unavailable',
+        hasCountryCoverage: false,
+      };
     }
+  }
+
+  async searchCities(query: string, countryCode?: string, limit = 5): Promise<LocationSearchResult[]> {
+    const response = await this.searchCitiesDetailed(query, countryCode, limit);
+    return response.results;
   }
 
   /**
@@ -270,6 +308,13 @@ class GeocodingService {
 
 export interface LocationSearchResult extends Location {
   admin1?: string;
+}
+
+export interface LocationSearchResponse {
+  results: LocationSearchResult[];
+  suggestedResults: LocationSearchResult[];
+  searchSource?: string;
+  hasCountryCoverage?: boolean;
 }
 
 export default GeocodingService.getInstance();

@@ -137,6 +137,7 @@ export const LocationModal: React.FC<LocationModalProps> = ({
               countryOptions={structuredSearch.countryOptions}
               selectedCountry={structuredSearch.selectedCountry}
               searchResults={structuredSearch.searchResults}
+              suggestedResults={structuredSearch.suggestedResults}
               selectedSearchResult={structuredSearch.selectedSearchResult}
               isSearching={structuredSearch.isSearching}
               searchError={structuredSearch.searchError}

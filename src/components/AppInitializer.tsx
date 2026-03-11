@@ -8,6 +8,7 @@ import { ServiceProvider } from '../providers/ServiceProvider';
 import { useNotificationRescheduler } from '../hooks/useNotificationRescheduler';
 
 import SetupHealthScreen from '../screens/SetupHealth/SetupHealthScreen';
+import PerformanceService from '../services/PerformanceService';
 
 export const AppInitializer: React.FC = () => {
   const {
@@ -39,8 +40,13 @@ export const AppInitializer: React.FC = () => {
   }
 
   if (isFirstLaunch) {
+    PerformanceService.markLaunchMilestone('onboarding_screen_rendered');
     return <OnboardingScreen onComplete={completeOnboarding} />;
   }
+
+  PerformanceService.markLaunchMilestone(
+    showSetupHealth ? 'setup_health_rendered' : 'app_navigator_rendered'
+  );
 
   return (
     <ServiceProvider>

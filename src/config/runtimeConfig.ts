@@ -4,6 +4,9 @@ type ExpoExtraConfig = {
     enabled?: boolean;
   };
   edgeApiBaseUrl?: string | null;
+  perfValidation?: {
+    enabled?: boolean;
+  };
 };
 
 function readExpoExtraConfig(): ExpoExtraConfig {
@@ -49,3 +52,12 @@ export function isEdgeApiEnabled(): boolean {
   return extra.edgeApi?.enabled !== false;
 }
 
+export function isPerfValidationEnabled(): boolean {
+  const envEnabled = process.env.EXPO_PUBLIC_PERF_VALIDATION_ENABLED;
+  if (typeof envEnabled === 'string') {
+    return envEnabled === 'true';
+  }
+
+  const extra = readExpoExtraConfig();
+  return extra.perfValidation?.enabled === true;
+}

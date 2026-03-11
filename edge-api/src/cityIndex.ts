@@ -23,6 +23,16 @@ export interface CitySearchResult {
 interface CityIndexManifest {
   version: string;
   countryCounts: Record<string, number>;
+  countryTopCities?: Record<
+    string,
+    Array<{
+      city: string;
+      country: string;
+      admin1?: string;
+      latitude: number;
+      longitude: number;
+    }>
+  >;
 }
 
 const CITY_INDEX_KEY_PREFIX = 'city-index';
@@ -107,6 +117,29 @@ export async function getCityIndexManifest(
     manifestPromise = null;
     return null;
   }
+}
+
+export async function getSuggestedCitiesForCountry(
+  kv: KVNamespace | undefined,
+  version: string,
+  countryHint?: string,
+  limit = 3
+): Promise<CitySearchResult[]> {
+  if (!countryHint || !kv) return [];
+
+  const normalized = countryHint.trim().toUpperCase();
+  if (normalized.length !== 2) return [];
+
+  const manifest = await getCityIndexManifest(kv, version);
+  const suggested = manifest?.countryTopCities?.[normalized] ?? [];
+
+  return suggested.slice(0, Math.max(1, Math.min(limit, 5))).map((city) => ({
+    latitude: city.latitude,
+    longitude: city.longitude,
+    city: city.city,
+    country: city.country,
+    admin1: city.admin1,
+  }));
 }
 
 function parseSearchInput(query: string, countryHint?: string): { cityQuery: string; countryHint: string } {

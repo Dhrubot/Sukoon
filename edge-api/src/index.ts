@@ -1,5 +1,6 @@
 import {
   getCityIndexManifest,
+  getSuggestedCitiesForCountry,
   hasCityIndexCoverageForCountry,
   searchCityIndex,
 } from './cityIndex';
@@ -331,19 +332,26 @@ async function handleLocationSearch(url: URL, env: Env): Promise<Response> {
         results: indexedResults,
         searchSource: 'city_index',
         hasCountryCoverage,
+        suggestedResults: [],
       };
     }
+
+    const suggestedResults = hasCountryCoverage
+      ? await getSuggestedCitiesForCountry(env.CACHE_KV, cityIndexVersion, country, 3)
+      : [];
 
     return {
       results: [],
       searchSource: 'city_index_miss',
       hasCountryCoverage,
+      suggestedResults,
     };
   }, {
     eventName: 'city_search_resolved',
     eventFields: (payload) => ({
       searchSource: payload.searchSource,
       resultCount: payload.results.length,
+      suggestedCount: payload.suggestedResults?.length ?? 0,
       country: normalizedCountry || 'unknown',
       queryPrefix,
       hasCountryCoverage,

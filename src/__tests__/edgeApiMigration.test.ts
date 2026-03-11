@@ -292,6 +292,43 @@ describe('edge API migration', () => {
     });
   });
 
+  it('returns suggested major cities when the selected country has no direct match', async () => {
+    (global.fetch as jest.Mock).mockResolvedValueOnce(
+      mockJsonResponse({
+        data: {
+          results: [],
+          searchSource: 'city_index_miss',
+          hasCountryCoverage: true,
+          suggestedResults: [
+            {
+              latitude: 40.7128,
+              longitude: -74.006,
+              city: 'New York',
+              admin1: 'New York',
+              country: 'United States',
+            },
+            {
+              latitude: 34.0522,
+              longitude: -118.2437,
+              city: 'Los Angeles',
+              admin1: 'California',
+              country: 'United States',
+            },
+          ],
+        },
+      })
+    );
+
+    const response = await GeocodingService.searchCitiesDetailed('SomeSmallTown', 'US', 5);
+
+    expect(response.results).toHaveLength(0);
+    expect(response.suggestedResults).toHaveLength(2);
+    expect(response.suggestedResults[0]).toMatchObject({
+      city: 'New York',
+      country: 'United States',
+    });
+  });
+
   it('uses the edge Hijri endpoint before local fallback logic', async () => {
     (global.fetch as jest.Mock).mockResolvedValueOnce(
       mockJsonResponse({

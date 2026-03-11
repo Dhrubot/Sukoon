@@ -40,6 +40,7 @@ export const useServiceInitialization = () => {
       void PerformanceService.traceAsync('service_initialization', async () => {
         if (cancelled) return;
 
+        PerformanceService.markLaunchMilestone('deferred_services_started');
         logger.log("🚀 Initializing deferred services...");
 
         try {
@@ -62,6 +63,7 @@ export const useServiceInitialization = () => {
           }
 
           void AnalyticsService.logEvent('app_open');
+          PerformanceService.markLaunchMilestone('deferred_services_completed');
           logger.log("✅ Deferred services initialized");
         } catch (error) {
           logger.error("❌ Error initializing deferred services:", error);

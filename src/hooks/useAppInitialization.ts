@@ -42,6 +42,7 @@ export const useAppInitialization = () => {
   const initializeApp = async () => {
     const stopStartupTrace = await PerformanceService.startTrace('app_startup');
     try {
+      PerformanceService.markLaunchMilestone('app_init_started');
       logger.log("Initializing app...");
 
       // 🔐 Initialize secure encryption key first (before any storage access)
@@ -49,6 +50,7 @@ export const useAppInitialization = () => {
 
       // Create encrypted MMKV now that the key is ready
       await StorageService.initialize();
+      PerformanceService.markLaunchMilestone('storage_initialized');
       const encryptionSecurityState = getEncryptionSecurityState();
       if (encryptionSecurityState !== 'secure_store') {
         logger.warn(`🔐 Storage security degraded: ${encryptionSecurityState}`);
@@ -64,6 +66,7 @@ export const useAppInitialization = () => {
       }
 
       setUserSettings(settings);
+      PerformanceService.markLaunchMilestone('user_settings_loaded');
 
       // Render immediately from stored counters; maintenance refresh runs after first paint.
       setCurrentDawam(StorageService.getCurrentDawam());
@@ -82,6 +85,7 @@ export const useAppInitialization = () => {
 
       // Initialize notifications
       await NotificationService.initialize();
+      PerformanceService.markLaunchMilestone('notifications_initialized');
 
       // Check if prayer times need refreshing
       if (isValidCoordinates(settings.location)) {
@@ -141,11 +145,14 @@ export const useAppInitialization = () => {
         showSetupHealth: !setupHealthShown,
         error: null,
       });
+      PerformanceService.markLaunchMilestone('initial_state_ready');
 
       // Hide splash screen
       await SplashScreen.hideAsync();
+      PerformanceService.markLaunchMilestone('splash_hidden');
       await stopStartupTrace();
       scheduleDeferredStartupMaintenance(encryptionSecurityState);
+      PerformanceService.finalizeLaunchSummary(firstLaunch ? 'first_launch' : 'app_launch');
       logger.log("App initialization complete");
     } catch (error) {
       logger.error("App initialization failed:", error);
@@ -157,13 +164,16 @@ export const useAppInitialization = () => {
 
       // Hide splash screen even on error
       await SplashScreen.hideAsync();
+      PerformanceService.markLaunchMilestone('app_init_failed');
       await stopStartupTrace();
+      PerformanceService.finalizeLaunchSummary('init_failed');
     }
   };
 
   const scheduleDeferredStartupMaintenance = (encryptionSecurityState: string) => {
     InteractionManager.runAfterInteractions(() => {
       void PerformanceService.traceAsync('startup_deferred_maintenance', async () => {
+        PerformanceService.markLaunchMilestone('deferred_maintenance_started');
         StorageService.setValue('encryption_security_state', encryptionSecurityState);
 
         // One-time migration: split encrypted/unencrypted storage
@@ -183,6 +193,7 @@ export const useAppInitialization = () => {
           const existingPlants = ReflectionGardenService.getAllPlants(365);
           TreeGrowthStateService.bootstrapFromExistingData(existingPlants);
         }
+        PerformanceService.markLaunchMilestone('deferred_maintenance_completed');
       }).catch((error) => {
         logger.error('Deferred startup maintenance failed:', error);
       });
