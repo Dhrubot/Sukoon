@@ -324,7 +324,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   title: {
     fontSize: theme.typography.fontSize['2xl'],
     fontFamily: theme.typography.fontFamily.headingMedium,
-    color: theme.colors.text.primary,
+    color: theme.colors.text.secondary,
   },
   shareButton: {
     fontSize: theme.typography.fontSize.md,

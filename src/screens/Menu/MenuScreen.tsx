@@ -10,6 +10,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
@@ -130,19 +131,6 @@ const JourneyIcon: React.FC<{ color: string; size: number }> = ({ color, size })
     />
     <Polyline
       points="17 6 23 6 23 12"
-      stroke={color}
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
-
-// Wrench / setup icon
-const SetupIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"
       stroke={color}
       strokeWidth={1.8}
       strokeLinecap="round"
@@ -309,9 +297,10 @@ const MenuScreen: React.FC = () => {
         return { bg: withAlpha(theme.colors.interactive.active, 0.08), icon: theme.colors.interactive.active };
       case 'gold':
         return { bg: withAlpha(theme.colors.gold, 0.09), icon: theme.colors.gold };
-      case 'purple':
+      case 'purple': {
         const taraweeh = (theme.colors.prayer as Record<string, string>)?.taraweeh;
         return { bg: taraweeh ? withAlpha(taraweeh, 0.12) : '#a78bfa20', icon: taraweeh || '#a78bfa' };
+      }
       case 'amber':
         return { bg: '#f59e0b18', icon: '#f59e0b' };
       default:
@@ -336,13 +325,6 @@ const MenuScreen: React.FC = () => {
       iconBg: withAlpha(theme.colors.interactive.active, 0.08),
     },
     {
-      icon: SetupIcon,
-      title: 'Setup & Health',
-      subtitle: 'Location, reminders, diagnostics',
-      screen: 'SetupHealth',
-      iconBg: withAlpha(theme.colors.gold, 0.09),
-    },
-    {
       icon: ThemeIcon,
       title: 'App Theme',
       subtitle: `Currently: ${themeMode === 'dark' ? 'Dark' : themeMode === 'light' ? 'Light' : 'Midnight'}`,
@@ -359,8 +341,8 @@ const MenuScreen: React.FC = () => {
     },
     {
       icon: SupportIcon,
-      title: 'Support Us',
-      subtitle: 'Help keep this app ad-free',
+      title: 'Support Sukoon',
+      subtitle: 'Contribute to upkeep and development',
       screen: 'Support',
       iconBg: '#fb718518',
     },
@@ -368,18 +350,22 @@ const MenuScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Explore</Text>
-        <Text style={styles.headerSubtitle}>Features & tools for your practice</Text>
-      </View>
-
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+      <LinearGradient
+        colors={[theme.colors.ambient.top, theme.colors.ambient.bottom]}
+        style={styles.gradient}
       >
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Practice</Text>
+          <Text style={styles.headerSubtitle}>Quiet tools for before and after prayer</Text>
+        </View>
+
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
         {/* ── Your Practice: Garden Featured Card ── */}
-        <Text style={styles.sectionLabel}>YOUR PRACTICE</Text>
+        <Text style={styles.sectionLabel}>REFLECTION</Text>
         <TouchableOpacity
           style={styles.gardenCard}
           onPress={() => handleNavigate('ReflectionGarden')}
@@ -391,14 +377,14 @@ const MenuScreen: React.FC = () => {
               <GardenIcon color={theme.colors.interactive.active} size={26} />
             </View>
             <View style={styles.gardenText}>
-              <Text style={styles.gardenTitle}>Your Garden</Text>
+              <Text style={styles.gardenTitle}>Reflection Garden</Text>
               <Text style={styles.gardenSub}>
                 {gardenSummary.dawam > 0
-                  ? `${gardenSummary.dawam} days of dawam · Growing`
-                  : 'Your garden awaits'}
+                  ? `${gardenSummary.dawam} days of dawam · quietly growing`
+                  : 'A private record of consistency'}
               </Text>
               <Text style={styles.gardenDesc}>
-                Track your prayer consistency and grow a spiritual tree with each prayer.
+                Keep a gentle record of prayers, reflections, and spiritual steadiness.
               </Text>
             </View>
           </View>
@@ -406,9 +392,9 @@ const MenuScreen: React.FC = () => {
           {/* Progress bar */}
           <View style={styles.gardenProgressRow}>
             <View style={styles.progLabel}>
-              <Text style={styles.progLabelText}>Today's progress</Text>
+              <Text style={styles.progLabelText}>{"Today's prayers"}</Text>
               <Text style={[styles.progLabelValue, { color: theme.colors.interactive.active }]}>
-                {prayedCount > 0 ? `${prayedCount} of ${totalPrayers} prayers` : 'ready when you are'}
+                {prayedCount > 0 ? `${prayedCount} of ${totalPrayers} prayed` : 'ready when you are'}
               </Text>
             </View>
             <View style={styles.progBar}>
@@ -448,7 +434,7 @@ const MenuScreen: React.FC = () => {
         </TouchableOpacity>
 
         {/* ── Quick Access Grid ── */}
-        <Text style={styles.sectionLabel}>QUICK ACCESS</Text>
+        <Text style={styles.sectionLabel}>DEVOTION</Text>
         <View style={styles.quickGrid}>
           {quickAccessItems.map((item) => {
             const accent = getAccentColors(item.colorKey);
@@ -481,7 +467,7 @@ const MenuScreen: React.FC = () => {
         </View>
 
         {/* ── More Features List ── */}
-        <Text style={styles.sectionLabel}>MORE FEATURES</Text>
+        <Text style={styles.sectionLabel}>SETTINGS & SUPPORT</Text>
         <View style={styles.featuresList}>
           {moreFeatures.map((item, index) => (
             <TouchableOpacity
@@ -510,8 +496,9 @@ const MenuScreen: React.FC = () => {
           <Text style={styles.appVersion}>Sukoon v1.0.0</Text>
           <Text style={styles.blessing}>May Allah accept our efforts</Text>
         </View>
-      </ScrollView>
-    <DailyVerse ref={dailyVerseRef} modalOnly />
+        </ScrollView>
+      </LinearGradient>
+      <DailyVerse ref={dailyVerseRef} modalOnly />
     </SafeAreaView>
   );
 };
@@ -525,21 +512,24 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background.primary,
   },
+  gradient: {
+    flex: 1,
+  },
   header: {
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 18,
   },
   headerTitle: {
-    fontSize: 26,
-    fontFamily: theme.typography.fontFamily.headingRegular,
+    fontSize: 22,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
   },
   headerSubtitle: {
-    fontSize: 12,
+    fontSize: theme.typography.fontSize.sm,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.muted,
-    marginTop: 3,
+    marginTop: 4,
     letterSpacing: 0.2,
   },
   scrollView: {
@@ -552,7 +542,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
 
   // Section labels
   sectionLabel: {
-    fontSize: 10,
+    fontSize: theme.typography.fontSize.xs - 1,
     letterSpacing: 1.8,
     fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.text.muted,
@@ -610,11 +600,11 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     opacity: 0.8,
   },
   gardenDesc: {
-    fontSize: 12,
+    fontSize: theme.typography.fontSize.sm,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     marginTop: 6,
-    lineHeight: 17,
+    lineHeight: 18,
   },
   gardenProgressRow: {
     paddingHorizontal: 18,
@@ -661,9 +651,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderRightColor: theme.colors.interactive.active + '15',
   },
   gsVal: {
-    fontSize: 20,
-    fontFamily: theme.typography.fontFamily.headingRegular,
-    fontWeight: '300',
+    fontSize: theme.typography.fontSize['2xl'],
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   gsLabel: {
     fontSize: 10,

@@ -38,10 +38,10 @@ const GardenTeaser: React.FC = () => {
 
   const isEmpty = summary.total === 0;
   const message = isEmpty
-    ? 'Tap to plant your first reflection'
+    ? 'Begin with a single reflection'
     : summary.newBlooms > 0
       ? `${summary.newBlooms} new bloom${summary.newBlooms > 1 ? 's' : ''} this week`
-      : 'Your garden is growing';
+      : 'A quiet record of your prayers';
 
   // Simple progress: cap at 7 reflections per week
   const progressPercent = Math.min(summary.total / 7, 1);
@@ -94,7 +94,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   title: {
     fontSize: theme.typography.fontSize.base,
     fontFamily: theme.typography.fontFamily.bodyMedium,
-    color: theme.colors.text.primary,
+    color: theme.colors.text.secondary,
     marginBottom: theme.spacing.xxs,
   },
   message: {

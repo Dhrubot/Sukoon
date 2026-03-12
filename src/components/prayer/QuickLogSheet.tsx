@@ -98,10 +98,10 @@ const QuickLogSheet: React.FC<QuickLogSheetProps> = ({
         >
           <View style={styles.handle} />
 
-          <Text style={styles.title}>Mark {displayName} as Prayed?</Text>
+          <Text style={styles.title}>Did you already pray {displayName}?</Text>
 
           <Text style={styles.message}>
-            You can log your prayer quickly, or take a moment to prepare mindfully.
+            If yes, log it quietly. If not, take a moment to prepare with presence.
           </Text>
 
           <TouchableOpacity
@@ -110,7 +110,7 @@ const QuickLogSheet: React.FC<QuickLogSheetProps> = ({
             activeOpacity={0.8}
           >
             <Text style={styles.primaryButtonText}>
-              I Prayed {displayName}
+              I already prayed
             </Text>
           </TouchableOpacity>
 
@@ -119,7 +119,7 @@ const QuickLogSheet: React.FC<QuickLogSheetProps> = ({
             onPress={onOpenFlow}
             activeOpacity={0.7}
           >
-            <Text style={styles.secondaryButtonText}>Prepare Mindfully</Text>
+            <Text style={styles.secondaryButtonText}>Prepare for prayer</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>

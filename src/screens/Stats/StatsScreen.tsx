@@ -37,6 +37,7 @@ type TimeRange = 'week' | 'month' | 'all';
 const StatsScreen: React.FC = ({ navigation }: any) => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
+  const ambientColors = [theme.colors.ambient.top, theme.colors.ambient.bottom] as const;
   // 🎯 NEW: Use centralized prayer times hook
   const { 
     todayPrayerTimes, 
@@ -211,16 +212,18 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
   if (!hasValidLocation) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.emptyStateContainer}>
-          <Text style={styles.emptyStateIcon}>📍</Text>
-          <Text style={styles.emptyStateTitle}>Location Required</Text>
-          <Text style={styles.emptyStateText}>
-            Please set your location to view prayer statistics
-          </Text>
-          <Text style={styles.emptyStateSubtext}>
-            Go to Settings to configure your location
-          </Text>
-        </View>
+        <LinearGradient colors={ambientColors} style={styles.gradient}>
+          <View style={styles.emptyStateContainer}>
+            <Text style={styles.emptyStateIcon}>📍</Text>
+            <Text style={styles.emptyStateTitle}>Location Required</Text>
+            <Text style={styles.emptyStateText}>
+              Please set your location to view prayer statistics
+            </Text>
+            <Text style={styles.emptyStateSubtext}>
+              Go to Settings to configure your location
+            </Text>
+          </View>
+        </LinearGradient>
       </SafeAreaView>
     );
   }
@@ -229,10 +232,12 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
   if (prayerTimesLoading || (todayPrayerTimes.length === 0 && !prayerTimesError)) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary.DEFAULT} />
-          <Text style={styles.loadingText}>Loading prayer times...</Text>
-        </View>
+        <LinearGradient colors={ambientColors} style={styles.gradient}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={theme.colors.primary.DEFAULT} />
+            <Text style={styles.loadingText}>Loading prayer times...</Text>
+          </View>
+        </LinearGradient>
       </SafeAreaView>
     );
   }
@@ -241,14 +246,16 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
   if (prayerTimesError) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.emptyStateContainer}>
-          <Text style={styles.emptyStateIcon}>⚠️</Text>
-          <Text style={styles.emptyStateTitle}>Unable to Load Prayer Times</Text>
-          <Text style={styles.emptyStateText}>{prayerTimesError}</Text>
-          <Text style={styles.emptyStateSubtext}>
-            Statistics require prayer times to be available
-          </Text>
-        </View>
+        <LinearGradient colors={ambientColors} style={styles.gradient}>
+          <View style={styles.emptyStateContainer}>
+            <Text style={styles.emptyStateIcon}>⚠️</Text>
+            <Text style={styles.emptyStateTitle}>Unable to Load Prayer Times</Text>
+            <Text style={styles.emptyStateText}>{prayerTimesError}</Text>
+            <Text style={styles.emptyStateSubtext}>
+              Statistics require prayer times to be available
+            </Text>
+          </View>
+        </LinearGradient>
       </SafeAreaView>
     );
   }
@@ -257,43 +264,48 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary.DEFAULT} />
-          <Text style={styles.loadingText}>Calculating your statistics...</Text>
-        </View>
+        <LinearGradient colors={ambientColors} style={styles.gradient}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={theme.colors.primary.DEFAULT} />
+            <Text style={styles.loadingText}>Calculating your statistics...</Text>
+          </View>
+        </LinearGradient>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Prayer Statistics</Text>
-          
-          {/* Time Range Selector */}
-          <View style={styles.timeRangeContainer}>
-            {(['week', 'month', 'all'] as TimeRange[]).map((range) => (
-              <TouchableOpacity
-                key={range}
-                style={[
-                  styles.timeRangeButton,
-                  timeRange === range && styles.timeRangeButtonActive,
-                ]}
-                onPress={() => setTimeRange(range)}
-              >
-                <Text
+      <LinearGradient colors={ambientColors} style={styles.gradient}>
+        <ScrollView showsVerticalScrollIndicator={false}>
+          <View style={styles.header}>
+            <Text style={styles.eyebrow}>My Journey</Text>
+            <Text style={styles.title}>Prayer Statistics</Text>
+            <Text style={styles.subtitle}>A gentle record of consistency and presence</Text>
+            
+            {/* Time Range Selector */}
+            <View style={styles.timeRangeContainer}>
+              {(['week', 'month', 'all'] as TimeRange[]).map((range) => (
+                <TouchableOpacity
+                  key={range}
                   style={[
-                    styles.timeRangeText,
-                    timeRange === range && styles.timeRangeTextActive,
+                    styles.timeRangeButton,
+                    timeRange === range && styles.timeRangeButtonActive,
                   ]}
+                  onPress={() => setTimeRange(range)}
                 >
-                  {range === 'all' ? 'Last 90 Days' : range.charAt(0).toUpperCase() + range.slice(1)}
-                </Text>
-              </TouchableOpacity>
-            ))}
+                  <Text
+                    style={[
+                      styles.timeRangeText,
+                      timeRange === range && styles.timeRangeTextActive,
+                    ]}
+                  >
+                    {range === 'all' ? 'Last 90 Days' : range.charAt(0).toUpperCase() + range.slice(1)}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
           </View>
-        </View>
 
         {/* Key Statistics */}
         <View style={styles.statsGrid}>
@@ -320,8 +332,8 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
           
           <View style={styles.statCard}>
             <Text style={styles.statValue}>{stats.averageFocusScore > 0 ? stats.averageFocusScore.toFixed(0) : '—'}</Text>
-            <Text style={styles.statLabel}>Focus Score</Text>
-            <Text style={styles.statSubtext}>{stats.averageFocusScore > 0 ? 'average rating' : 'complete a reflection'}</Text>
+            <Text style={styles.statLabel}>Presence</Text>
+            <Text style={styles.statSubtext}>{stats.averageFocusScore > 0 ? 'average check-in' : 'complete a reflection'}</Text>
           </View>
         </View>
 
@@ -370,7 +382,7 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
         {/* Focus Trend — Ring */}
         {focusTrend.some(score => score > 0) && (
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Focus Trend (Last 7 Days)</Text>
+            <Text style={styles.sectionTitle}>Presence Trend (Last 7 Days)</Text>
             <FocusRing data={focusTrend} average={stats.averageFocusScore} />
           </View>
         )}
@@ -405,17 +417,18 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
 
           {stats.averageDailyCompletion >= 80 && (
             <View style={[styles.insightCard, styles.achievementCard]}>
-              <Text style={styles.insightTitle}>⭐ Excellent Consistency!</Text>
+              <Text style={styles.insightTitle}>Steady consistency</Text>
               <Text style={styles.insightDescription}>
-                You're maintaining an outstanding prayer completion rate. Keep up the amazing work!
+                Your recent prayer record is steady. Protect it with small, sincere returns.
               </Text>
             </View>
           )}
         </View>
 
-        {/* Bottom spacing */}
-        <View style={{ height: 30 }} />
-      </ScrollView>
+          {/* Bottom spacing */}
+          <View style={{ height: 30 }} />
+        </ScrollView>
+      </LinearGradient>
     </SafeAreaView>
   );
 };
@@ -425,24 +438,40 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background.primary,
   },
+  gradient: {
+    flex: 1,
+  },
   header: {
     padding: theme.spacing.xl,
-    backgroundColor: theme.colors.card.background,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border.primary,
+    paddingBottom: theme.spacing.lg,
+  },
+  eyebrow: {
+    fontSize: theme.typography.fontSize.xs,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
+    color: theme.colors.text.muted,
+    letterSpacing: 1.4,
+    marginBottom: theme.spacing.sm,
+    textTransform: 'uppercase',
   },
   title: {
-    fontSize: theme.typography.fontSize['4xl'],
-    fontWeight: theme.typography.fontWeight.bold,
-    fontFamily: theme.typography.fontFamily.heading,
+    fontSize: 22,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
+  },
+  subtitle: {
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
+    color: theme.colors.text.secondary,
+    marginTop: theme.spacing.xs,
     marginBottom: theme.spacing.xl,
   },
   timeRangeContainer: {
     flexDirection: 'row',
-    backgroundColor: theme.colors.card.hover,
+    backgroundColor: theme.colors.card.background,
     borderRadius: theme.borderRadius.sm,
     padding: theme.spacing.xs,
+    borderWidth: 1,
+    borderColor: theme.colors.border.secondary,
   },
   timeRangeButton: {
     flex: 1,
@@ -562,8 +591,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   sectionTitle: {
     fontSize: theme.typography.fontSize['2xl'],
-    fontWeight: theme.typography.fontWeight.semibold,
-    fontFamily: theme.typography.fontFamily.headingRegular,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.lg,
   },

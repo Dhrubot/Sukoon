@@ -2,7 +2,7 @@ import React from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import * as SplashScreen from 'expo-splash-screen';
-import { useFonts, Lora_400Regular, Lora_700Bold } from '@expo-google-fonts/lora';
+import { useFonts } from '@expo-google-fonts/lora';
 import { Amiri_400Regular, Amiri_700Bold } from '@expo-google-fonts/amiri';
 import {
   DMSans_400Regular,
@@ -29,8 +29,6 @@ SplashScreen.preventAutoHideAsync();
 
 export default function App() {
   const [fontsLoaded] = useFonts({
-    Lora_400Regular,
-    Lora_700Bold,
     Amiri_400Regular,
     Amiri_700Bold,
     DMSans_400Regular,

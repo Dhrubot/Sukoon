@@ -89,6 +89,7 @@ export interface UserSettings {
   name?: string;
   location: Location;
   calculationMethod: CalculationMethod;
+  calculationMethodManuallySelected?: boolean;
   asrJuristic: "Standard" | "Hanafi";
   adjustments: {
     Fajr: number;

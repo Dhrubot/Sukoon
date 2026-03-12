@@ -64,8 +64,8 @@ export const TabNavigator: React.FC = () => {
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.1,
           shadowRadius: 8,
-          paddingBottom: 14,
-          paddingTop: 8,
+          paddingBottom: 18,
+          paddingTop: 6,
           height: 72,
         },
         tabBarLabelStyle: {

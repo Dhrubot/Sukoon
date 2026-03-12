@@ -1,36 +1,24 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
   ScrollView,
   StyleSheet,
   TouchableOpacity,
-  Linking,
   Alert,
-  Platform,
   ActivityIndicator,
-  Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { useTheme } from '../../providers/ThemeProvider';
 import { AppTheme } from '../../theme';
 import { LinearGradient } from 'expo-linear-gradient';
-import * as Haptics from 'expo-haptics';
 import logger from '../../utils/logger';
 
 // Services
 import IAPManager from '../../services/monetization/IAPManager';
 import SubscriptionService from '../../services/monetization/SubscriptionService';
-import AdService from '../../services/monetization/AdService';
 import DonationService, { DONATION_TIERS } from '../../services/monetization/DonationService';
-import StorageService from '../../services/StorageService';
-import AnalyticsService from '../../services/AnalyticsService';
-
-// Types
-import { SubscriptionPlan } from '../../types';
-
-const { width } = Dimensions.get('window');
 
 // Module-level flag: services only need to be initialized once per app session
 let servicesInitialized = false;
@@ -38,18 +26,11 @@ let servicesInitialized = false;
 const SupportScreen: React.FC = () => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
+  const ambientColors = [theme.colors.ambient.top, theme.colors.ambient.bottom] as const;
   const [isLoading, setIsLoading] = useState(!servicesInitialized);
-  const [currentPlan, setCurrentPlan] = useState<SubscriptionPlan | null>(null);
   // TODO: Re-enable watch ad tab once we have a solid userbase
   // const [canWatchAd, setCanWatchAd] = useState(false);
   // const [hoursUntilNextAd, setHoursUntilNextAd] = useState(0);
-  // TODO: Re-enable 'subscription' as default once we have premium features ready
-  const [selectedTab, setSelectedTab] = useState<'subscription' | 'watch' | 'donate'>('donate');
-
-  const handleTabChange = (tab: 'subscription' | 'watch' | 'donate') => {
-    setSelectedTab(tab);
-    AnalyticsService.logEvent('premium_card_tapped', { tab });
-  };
   const [isProcessing, setIsProcessing] = useState(false);
 
   useEffect(() => {
@@ -76,11 +57,7 @@ const SupportScreen: React.FC = () => {
         servicesInitialized = true;
       }
 
-      // Always refresh status on mount (lightweight)
-      const hasSubscription = await SubscriptionService.checkSubscriptionStatus();
-      if (hasSubscription) {
-        setCurrentPlan(SubscriptionService.getCurrentSubscription());
-      }
+      await SubscriptionService.checkSubscriptionStatus();
 
       // TODO: Re-enable ad status checks once watch ad tab is back
       // const canShow = await AdService.canShowAd();
@@ -90,21 +67,6 @@ const SupportScreen: React.FC = () => {
       logger.error('Failed to initialize support services:', error);
     } finally {
       setIsLoading(false);
-    }
-  };
-
-  const handleSubscribe = async (planType: 'monthly' | 'yearly' | 'lifetime') => {
-    setIsProcessing(true);
-    try {
-      await SubscriptionService.purchaseSubscription(planType);
-      Alert.alert('Success!', 'Thank you for your support! Premium features are now active.');
-      await initializeServices();
-    } catch (error: any) {
-      if (error.code !== 'E_USER_CANCELLED') {
-        Alert.alert('Error', 'Failed to complete purchase. Please try again.');
-      }
-    } finally {
-      setIsProcessing(false);
     }
   };
 
@@ -141,7 +103,7 @@ const SupportScreen: React.FC = () => {
       if (success) {
         Alert.alert(
           'JazakAllah Khair!',
-          'May Allah reward your generosity. Your support helps us continue developing.',
+          'May Allah accept your contribution. It helps us keep caring for Sukoon.',
           [{ text: 'Ameen' }]
         );
       }
@@ -303,9 +265,10 @@ const SupportScreen: React.FC = () => {
   const renderDonateTab = () => (
     <ScrollView showsVerticalScrollIndicator={false}>
       <View style={styles.donateHeader}>
-        <Text style={styles.donateTitle}>Support Development</Text>
+        <Text style={styles.eyebrow}>Support</Text>
+        <Text style={styles.donateTitle}>Help sustain Sukoon</Text>
         <Text style={styles.donateSubtitle}>
-          Your generosity helps us maintain and improve Sukoon for the Ummah
+          If this app helps your prayer, you can help us maintain it carefully and continue improving it for the Ummah.
         </Text>
       </View>
 
@@ -330,9 +293,9 @@ const SupportScreen: React.FC = () => {
 
       {/* Sadaqah Jariyah Note */}
       <View style={styles.zakatNote}>
-        <Text style={styles.zakatTitle}>📿 Sadaqah Jariyah</Text>
+        <Text style={styles.zakatTitle}>Sadaqah Jariyah</Text>
         <Text style={styles.zakatText}>
-          Supporting Islamic tools can be a form of Sadaqah Jariyah — ongoing charity whose reward continues even after you've given.
+          Supporting a beneficial Islamic tool can be part of ongoing charity, especially when it helps someone return to prayer with steadiness.
         </Text>
       </View>
     </ScrollView>
@@ -341,58 +304,63 @@ const SupportScreen: React.FC = () => {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary.DEFAULT} />
-          <Text style={styles.loadingText}>Loading support options...</Text>
-        </View>
+        <LinearGradient colors={ambientColors} style={styles.gradient}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={theme.colors.primary.DEFAULT} />
+            <Text style={styles.loadingText}>Preparing support options...</Text>
+          </View>
+        </LinearGradient>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Text style={styles.title}>Support Sukoon</Text>
-          <Text style={styles.subtitle}>
-            Sukoon is built with love for the Ummah. Your support keeps it free and growing.
-          </Text>
-        </View>
+      <LinearGradient colors={ambientColors} style={styles.gradient}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+          <View style={styles.header}>
+            <Text style={styles.eyebrow}>Support</Text>
+            <Text style={styles.title}>Support Sukoon</Text>
+            <Text style={styles.subtitle}>
+              Contributions are optional. If Sukoon has become useful in your daily prayers, you can help sustain its upkeep.
+            </Text>
+          </View>
 
-        {/* Tab Selector */}
-        {/* TODO: Re-enable 'subscription' tab once we have premium features ready */}
-        {/* TODO: Re-enable 'watch' tab once we have a solid userbase */}
-        {/* <View style={styles.tabContainer}>
-          {(['donate'] as const).map((tab) => (
-            <TouchableOpacity
-              key={tab}
-              style={[styles.tab, selectedTab === tab && styles.tabActive]}
-              onPress={() => {
-                handleTabChange(tab);
-                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-              }}
-            >
-              <Text style={[styles.tabText, selectedTab === tab && styles.tabTextActive]}>
-                Donate
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View> */}
+          {/* Tab Selector */}
+          {/* TODO: Re-enable 'subscription' tab once we have premium features ready */}
+          {/* TODO: Re-enable 'watch' tab once we have a solid userbase */}
+          {/* <View style={styles.tabContainer}>
+            {(['donate'] as const).map((tab) => (
+              <TouchableOpacity
+                key={tab}
+                style={[styles.tab, selectedTab === tab && styles.tabActive]}
+                onPress={() => {
+                  handleTabChange(tab);
+                  Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                }}
+              >
+                <Text style={[styles.tabText, selectedTab === tab && styles.tabTextActive]}>
+                  Donate
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View> */}
 
-        {/* Tab Content — donate only for now */}
-        <View style={styles.tabContent}>
-          {/* {selectedTab === 'subscription' && renderSubscriptionTab()} */}
-          {/* {selectedTab === 'watch' && renderWatchAdTab()} */}
-          {renderDonateTab()}
-        </View>
+          {/* Tab Content — donate only for now */}
+          <View style={styles.tabContent}>
+            {/* {selectedTab === 'subscription' && renderSubscriptionTab()} */}
+            {/* {selectedTab === 'watch' && renderWatchAdTab()} */}
+            {renderDonateTab()}
+          </View>
 
-        {/* Footer Message */}
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            JazakAllah Khair for supporting us! May Allah reward your generosity.
-          </Text>
-        </View>
-      </ScrollView>
+          {/* Footer Message */}
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              May Allah accept every sincere contribution.
+            </Text>
+          </View>
+        </ScrollView>
+      </LinearGradient>
     </SafeAreaView>
   );
 };
@@ -402,10 +370,17 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background.primary,
   },
+  gradient: {
+    flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: theme.spacing.xl,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: theme.spacing.xl,
   },
   loadingText: {
     marginTop: theme.spacing.lg,
@@ -415,20 +390,26 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   header: {
     padding: theme.spacing.xl,
-    alignItems: 'center',
+    paddingBottom: theme.spacing.lg,
+  },
+  eyebrow: {
+    fontSize: theme.typography.fontSize.xs,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
+    color: theme.colors.text.muted,
+    letterSpacing: 1.4,
+    marginBottom: theme.spacing.sm,
+    textTransform: 'uppercase',
   },
   title: {
-    fontSize: theme.typography.fontSize['5xl'],
-    fontWeight: theme.typography.fontWeight.bold,
-    fontFamily: theme.typography.fontFamily.heading,
+    fontSize: 22,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
-    marginBottom: theme.spacing.sm,
   },
   subtitle: {
-    fontSize: theme.typography.fontSize.lg,
+    fontSize: theme.typography.fontSize.sm,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
-    textAlign: 'center',
+    marginTop: theme.spacing.xs,
   },
   tabContainer: {
     flexDirection: 'row',
@@ -684,20 +665,17 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   donateHeader: {
     paddingHorizontal: theme.spacing.xl,
     marginBottom: theme.spacing['2xl'],
-    alignItems: 'center',
   },
   donateTitle: {
-    fontSize: theme.typography.fontSize['3xl'],
-    fontWeight: theme.typography.fontWeight.bold,
-    fontFamily: theme.typography.fontFamily.headingRegular,
+    fontSize: 22,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
-    marginBottom: theme.spacing.sm,
   },
   donateSubtitle: {
-    fontSize: theme.typography.fontSize.lg,
+    fontSize: theme.typography.fontSize.sm,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
-    textAlign: 'center',
+    marginTop: theme.spacing.xs,
     lineHeight: 22,
   },
   donationTiers: {
@@ -760,18 +738,18 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontFamily: theme.typography.fontFamily.bodyMedium,
   },
   zakatNote: {
-    backgroundColor: theme.colors.card.hover,
+    backgroundColor: theme.colors.card.background,
     marginHorizontal: theme.spacing.xl,
     padding: theme.spacing.xl,
     borderRadius: theme.borderRadius.md,
     marginBottom: theme.spacing['2xl'],
     borderWidth: 1,
-    borderColor: theme.colors.primary.DEFAULT,
+    borderColor: theme.colors.border.secondary,
   },
   zakatTitle: {
-    fontSize: theme.typography.fontSize.xl,
+    fontSize: theme.typography.fontSize.lg,
     fontFamily: theme.typography.fontFamily.bodySemibold,
-    color: theme.colors.status.warning,
+    color: theme.colors.text.primary,
     marginBottom: theme.spacing.sm,
   },
   zakatText: {
@@ -785,7 +763,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     alignItems: 'center',
   },
   footerText: {
-    fontSize: theme.typography.fontSize.lg,
+    fontSize: theme.typography.fontSize.sm,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     textAlign: 'center',

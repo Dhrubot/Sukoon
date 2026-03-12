@@ -25,20 +25,21 @@ import * as Notifications from 'expo-notifications';
 import StorageService from '../../services/StorageService';
 import { useStore } from '../../store/useStore';
 import logger from '../../utils/logger';
-import { CalculationMethod, CALCULATION_METHODS } from '../../types';
+import { CALCULATION_METHODS } from '../../types';
 import LocationService from '../../services/LocationService';
 import RingerControlService from '../../services/RingerControlService';
 import { Location as AppLocation } from '../../types';
 import { Switch } from 'react-native';
 import { applyIntensityPreset } from '../../utils/notificationPresets';
 import { LocationModal } from '../../components/LocationModal';
+import { applyRegionalCalculationMethod, resolveCalculationMethodForCountry } from '../../utils/calculationMethodByRegion';
 
 interface OnboardingScreenProps {
   onComplete: () => void;
 }
 
 type NotificationIntensity = 'gentle' | 'balanced' | 'persistent';
-type OnboardingStep = 'welcome' | 'location' | 'name' | 'notifications' | 'mosque' | 'method';
+type OnboardingStep = 'welcome' | 'location' | 'name' | 'notifications' | 'mosque' | 'region';
 type LocationFailureReason = 'none' | 'permission_denied' | 'permission_blocked' | 'gps_failed';
 
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
@@ -46,7 +47,6 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   const styles = useThemedStyles(createStyles);
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome');
   const [name, setName] = useState('');
-  const [selectedMethod, setSelectedMethod] = useState<CalculationMethod>('MWL');
   const [locationData, setLocationData] = useState<AppLocation | null>(null);
   const [enableAdhan, setEnableAdhan] = useState(true);
   const [isNotificationEnabled, setIsNotificationEnabled] = useState(false);
@@ -143,9 +143,9 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
         setCurrentStep('mosque');
         break;
       case 'mosque':
-        setCurrentStep('method');
+        setCurrentStep('region');
         break;
-      case 'method':
+      case 'region':
         completeOnboarding();
         break;
     }
@@ -220,7 +220,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   const completeOnboarding = async () => {
     const settings = StorageService.getDefaultSettings();
     settings.name = name;
-    settings.calculationMethod = selectedMethod;
+    settings.calculationMethodManuallySelected = false;
 
     settings.notifications.enabled = isNotificationEnabled;
     settings.notifications.adhanEnabled = enableAdhan;
@@ -237,7 +237,12 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
       settings.mosqueMode.enabled = true;
     }
 
-    setUserSettings(settings);
+    const { settings: resolvedSettings } = applyRegionalCalculationMethod(
+      settings,
+      locationData
+    );
+
+    setUserSettings(resolvedSettings);
 
     AnalyticsService.logOnboardingCompleted();
     onComplete();
@@ -472,43 +477,40 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
           </View>
         );
 
-      case 'method':
+      case 'region': {
+        const regionalMethod = resolveCalculationMethodForCountry(locationData?.country);
+        const methodLabel =
+          CALCULATION_METHODS.find((method) => method.value === regionalMethod)?.label ||
+          regionalMethod;
+        const regionLabel = locationData?.country || 'your region';
+
         return (
-          <ScrollView contentContainerStyle={[styles.stepContainer, { flex: 0, flexGrow: 1, paddingVertical: 20 }]}
-            showsVerticalScrollIndicator={false}>
-            <Text style={styles.title}>Calculation Method</Text>
-            <Text style={styles.subtitle}>
-              Choose your preferred prayer time calculation method
+          <ScrollView
+            contentContainerStyle={[styles.stepContainer, { flex: 0, flexGrow: 1, paddingVertical: 20 }]}
+            showsVerticalScrollIndicator={false}
+          >
+            <Text style={styles.title}>
+              {locationData ? 'Prayer times set for your region' : 'Prayer times ready'}
             </Text>
-            <View style={styles.methodList}>
-              {CALCULATION_METHODS.map((method) => (
-                <TouchableOpacity
-                  key={method.value}
-                  style={[
-                    styles.methodOption,
-                    selectedMethod === method.value && styles.methodOptionSelected,
-                  ]}
-                  onPress={() => setSelectedMethod(method.value)}
-                >
-                  <Text style={[
-                    styles.methodText,
-                    selectedMethod === method.value && styles.methodTextSelected,
-                  ]}>
-                    {method.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+            <Text style={styles.subtitle}>
+              {locationData
+                ? `We selected ${methodLabel} based on your location in ${regionLabel}.`
+                : 'We will use Muslim World League until you set your location.'}
+            </Text>
+            <Text style={styles.description}>
+              You can always change the calculation method later in Settings.
+            </Text>
             <TouchableOpacity style={styles.button} onPress={handleNext}>
               <Text style={styles.buttonText}>Complete Setup</Text>
             </TouchableOpacity>
           </ScrollView>
         );
+      }
     }
   };
 
   const getProgress = () => {
-    const steps = ['welcome', 'location', 'name', 'notifications', 'mosque', 'method'];
+    const steps = ['welcome', 'location', 'name', 'notifications', 'mosque', 'region'];
     return (steps.indexOf(currentStep) + 1) / steps.length;
   };
 
@@ -589,8 +591,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginBottom: theme.spacing['3xl'],
   },
   title: {
-    fontSize: theme.typography.fontSize['5xl'],
-    fontWeight: theme.typography.fontWeight.bold,
+    fontSize: theme.typography.fontSize['4xl'],
     fontFamily: theme.typography.fontFamily.heading,
     color: theme.colors.text.primary,
     textAlign: 'center',
@@ -661,32 +662,6 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.onboarding.textHint,
     marginTop: theme.spacing.xl,
-  },
-  methodList: {
-    width: '100%',
-    marginBottom: theme.spacing['3xl'],
-  },
-  methodOption: {
-    backgroundColor: theme.colors.onboarding.optionBg,
-    borderRadius: theme.borderRadius.md,
-    paddingVertical: theme.spacing.lg,
-    paddingHorizontal: theme.spacing.xl,
-    marginBottom: theme.spacing.md,
-    borderWidth: 1,
-    borderColor: theme.colors.onboarding.optionBorder,
-  },
-  methodOptionSelected: {
-    backgroundColor: theme.colors.onboarding.optionActiveBg,
-    borderColor: theme.colors.primary.DEFAULT,
-  },
-  methodText: {
-    fontSize: theme.typography.fontSize.lg,
-    fontFamily: theme.typography.fontFamily.body,
-    color: theme.colors.onboarding.textBody,
-  },
-  methodTextSelected: {
-    color: theme.colors.primary.DEFAULT,
-    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   toggleContainer: {
     width: '100%',

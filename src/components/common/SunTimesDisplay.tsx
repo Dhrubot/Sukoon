@@ -71,13 +71,14 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   label: {
     fontSize: theme.typography.fontSize.sm,
-    fontFamily: theme.typography.fontFamily.bodyMedium,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
   },
   time: {
-    fontSize: theme.typography.fontSize.lg,
-    fontFamily: theme.typography.fontFamily.bodyBold,
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.primary,
+    fontVariant: ['tabular-nums'],
   },
 });
 

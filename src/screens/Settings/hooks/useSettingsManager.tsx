@@ -8,6 +8,7 @@ import LocationService from '../../../services/LocationService';
 import { CalculationMethodType, CALCULATION_METHODS, PrayerTime } from '../../../types';
 import { usePrayerTimes } from '../../../providers/PrayerTimesProvider';
 import logger from '../../../utils/logger';
+import { applyRegionalCalculationMethod } from '../../../utils/calculationMethodByRegion';
 
 interface PreviewPrayerTimes {
   method: string;
@@ -46,19 +47,21 @@ export const useSettingsManager = () => {
       const location = await LocationService.getCurrentLocation();
       
       if (location && userSettings) {
-        // ✅ Use the FULL location object (has city, country, timezone)
-        const updatedSettings = {
-          ...userSettings,
-          location: location,
-        };
+        const { settings: updatedSettings, calculationMethod, didAutoSelect } =
+          applyRegionalCalculationMethod(userSettings, location);
         
         setUserSettings(updatedSettings);
         
         await refreshPrayerTimes();
-        
+
+        const method = calculationMethods.find((item) => item.value === calculationMethod);
+        const methodNote = didAutoSelect
+          ? `\n\nPrayer times are now using ${method?.label || calculationMethod} for your region.`
+          : '';
+
         Alert.alert(
           'Location Updated ✅',
-          `Your location has been set to ${location.city}, ${location.country}.\n\nPrayer times have been updated.`,
+          `Your location has been set to ${location.city}, ${location.country}.\n\nPrayer times have been updated.${methodNote}`,
           [{ text: 'Great!' }]
         );
       }
@@ -90,6 +93,7 @@ export const useSettingsManager = () => {
       const updatedSettings = {
         ...userSettings,
         calculationMethod: method.value,
+        calculationMethodManuallySelected: true,
       };
 
       setUserSettings(updatedSettings);

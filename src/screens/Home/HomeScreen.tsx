@@ -13,7 +13,7 @@ import {
   NativeSyntheticEvent,
   Linking,
 } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { format, addMinutes } from "date-fns";
 import { useShallow } from "zustand/react/shallow";
@@ -73,6 +73,7 @@ type HomeScreenNavigationProp = CompositeNavigationProp<
 const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
+  const insets = useSafeAreaInsets();
   
   // 🎯 NEW: Replace complex prayer time logic with simple hook
   const { 
@@ -118,7 +119,7 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
   const currentTime = useStore((s) => s.currentTime);
 
   // Local state for UI features
-  const [focusExpanded, setFocusExpanded] = useState(false);
+  const [secondaryContentVisible, setSecondaryContentVisible] = useState(false);
   const [moonSightingEvent, setMoonSightingEvent] = useState<MoonSightingEvent | null>(null);
   const [hijriNudge, setHijriNudge] = useState<HijriNudgeEvent | null>(null);
   const [autoDeduceEvent, setAutoDeduceEvent] = useState<AutoDeduceEvent | null>(null);
@@ -127,6 +128,8 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
   const catchUpSheetShownRef = useRef(false);
   const [showCatchUpSheet, setShowCatchUpSheet] = useState(false);
   const [showHijriNudgeSheet, setShowHijriNudgeSheet] = useState(false);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const pendingRevealScrollRef = useRef(false);
 
   // Quick-log state
   const [quickLogPrayer, setQuickLogPrayer] = useState<PrayerTime | null>(null);
@@ -461,6 +464,13 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
     return minutesUntil >= -30 && minutesUntil <= 15;
   }, [heroPrayer, currentTime, mosqueModeHeroInfo]);
 
+  const isHeroImmersive = isFocusMode || !secondaryContentVisible;
+
+  useEffect(() => {
+    setSecondaryContentVisible(false);
+    pendingRevealScrollRef.current = false;
+  }, [heroPrayerName]);
+
   // Find the record for the current hero prayer (if already prayed)
   const heroPrayerRecord = useMemo(() => {
     if (!heroPrayer) return undefined;
@@ -590,10 +600,27 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
 
   // Re-lock focus mode when user scrolls back to top
   const handleScrollEnd = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
-    if (focusExpanded && isFocusMode && e.nativeEvent.contentOffset.y <= 20) {
-      setFocusExpanded(false);
+    if (secondaryContentVisible && e.nativeEvent.contentOffset.y <= 20) {
+      setSecondaryContentVisible(false);
     }
   };
+
+  const handleToggleSecondaryContent = useCallback(() => {
+    setSecondaryContentVisible((visible) => {
+      const nextVisible = !visible;
+
+      if (!nextVisible) {
+        pendingRevealScrollRef.current = false;
+        requestAnimationFrame(() => {
+          scrollViewRef.current?.scrollTo({ y: 0, animated: true });
+        });
+        return nextVisible;
+      }
+
+      pendingRevealScrollRef.current = true;
+      return nextVisible;
+    });
+  }, []);
 
   // 🎯 NEW: Handle invalid location state
   if (!hasValidLocation) {
@@ -651,6 +678,7 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]} edges={['top']}>
       <ScrollView
+        ref={scrollViewRef}
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         bounces={false}
@@ -672,27 +700,37 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
             onPraySunnah={handleSunnahPrayer}
             onRepeatPrayer={() => handlePrayerComplete(heroPrayer)}
             onLongPress={() => handlePrayerComplete(heroPrayer)}
-            isFocusMode={isFocusMode}
+            isFocusMode={isHeroImmersive}
             mosqueModeInfo={mosqueModeHeroInfo ?? undefined}
             onMosqueModeTap={() => navigation.navigate('MosqueMode' as never)}
           />
         )}
 
-        {/* Secondary content — collapsed in Focus Mode */}
-        {isFocusMode && !focusExpanded && (
-          <TouchableOpacity
-            style={styles.focusRevealButton}
-            onPress={() => setFocusExpanded(true)}
-            activeOpacity={0.7}
+        <TouchableOpacity
+          style={styles.focusRevealButton}
+          onPress={handleToggleSecondaryContent}
+          activeOpacity={0.7}
+        >
+          <Text style={styles.focusRevealText}>
+            {secondaryContentVisible ? 'Return to sanctuary ↑' : "See today's prayers ↓"}
+          </Text>
+        </TouchableOpacity>
+
+        {secondaryContentVisible && (
+          <View style={[
+            styles.secondaryContent,
+            { backgroundColor: theme.colors.background.primary },
+          ]}
+          onLayout={(event) => {
+            if (!pendingRevealScrollRef.current) return;
+            pendingRevealScrollRef.current = false;
+            const revealClearance = insets.top + theme.spacing.lg;
+            const targetY = Math.max(event.nativeEvent.layout.y - revealClearance, 0);
+            requestAnimationFrame(() => {
+              scrollViewRef.current?.scrollTo({ y: targetY, animated: true });
+            });
+          }}
           >
-            <Text style={styles.focusRevealText}>See today's prayers ↓</Text>
-          </TouchableOpacity>
-        )}
-        <View style={[
-          styles.secondaryContent,
-          { backgroundColor: theme.colors.background.primary },
-          (isFocusMode && !focusExpanded) && { display: 'none' },
-        ]}>
           {/* Offline / Hardcoded Defaults Banner */}
           {usingHardcodedDefaults && (
             <View style={[styles.offlineBanner, { backgroundColor: 'rgba(239, 68, 68, 0.15)', borderColor: 'rgba(239, 68, 68, 0.3)' }]}>
@@ -746,8 +784,8 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
 
           {/* Today's Prayer Times */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Today's Prayers</Text>
-            <View style={styles.prayerGrid}>
+            <Text style={styles.sectionTitle}>{"Today's Prayers"}</Text>
+            <View style={styles.prayerListCard}>
               {todayPrayerTimes.map((prayer, index) => {
                 const record = todayPrayerRecords.find(
                   (r) => r.prayer === prayer.name
@@ -761,6 +799,8 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
                     key={prayer.name}
                     prayer={prayer}
                     record={record} 
+                    compact
+                    isLast={index === todayPrayerTimes.length - 1}
                     onComplete={() => handleQuickLogTrigger(prayer)}
                     onLongPress={() => handlePrayerComplete(prayer)}
                     nextPrayer={nextPrayerInList}
@@ -776,9 +816,10 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
           {/* Daily Verse */}
           <DailyVerse />
 
-          {/* Bottom spacing */}
-          <View style={{ height: 40 }} />
-        </View>
+            {/* Bottom spacing */}
+            <View style={{ height: 40 }} />
+          </View>
+        )}
       </ScrollView>
 
       {/* 4c: Mosque mode activation overlay */}
@@ -863,11 +904,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   focusRevealButton: {
     alignItems: 'center',
-    paddingVertical: theme.spacing.md,
-    backgroundColor: theme.colors.background.primary,
+    paddingTop: theme.spacing.xs,
+    paddingBottom: 0,
+    marginTop: -10,
+    backgroundColor: 'transparent',
   },
   focusRevealText: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: theme.typography.fontSize.xs,
     color: theme.colors.text.muted,
     fontFamily: theme.typography.fontFamily.bodyMedium,
   },
@@ -878,7 +921,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     alignItems: 'center',
   },
   secondaryContent: {
-    paddingTop: theme.spacing.xs,
+    paddingTop: 0,
   },
   section: {
     paddingHorizontal: theme.spacing.xl,
@@ -886,13 +929,22 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     paddingBottom: theme.spacing.sm,
   },
   sectionTitle: {
-    fontSize: theme.typography.fontSize['2xl'],
-    fontFamily: theme.typography.fontFamily.headingMedium,
-    color: theme.colors.text.primary,
+    fontSize: theme.typography.fontSize.xl,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
+    color: theme.colors.text.secondary,
     marginBottom: theme.spacing.lg,
   },
   prayerGrid: {
     gap: theme.spacing.md,
+  },
+  prayerListCard: {
+    backgroundColor: theme.colors.card.background,
+    borderRadius: theme.borderRadius.lg,
+    borderWidth: 1,
+    borderColor: theme.colors.border.secondary,
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.xs,
+    overflow: 'hidden',
   },
   
   locationSetupContainer: {

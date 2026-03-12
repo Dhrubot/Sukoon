@@ -1,10 +1,10 @@
 // src/theme/typography.ts
 export const typography = {
   fontFamily: {
-    heading: 'Lora_700Bold',           // Serif bold — prayer names, screen titles
-    headingMedium: 'Lora_700Bold',     // Serif medium — (Lora has no 500; alias to bold)
-    headingLight: 'Lora_400Regular',   // Serif light — (Lora has no 300; alias to regular)
-    headingRegular: 'Lora_400Regular', // Serif regular — subtitles, quotes, greetings
+    heading: 'CormorantGaramond_600SemiBold',   // Primary serif voice — calmer and more cohesive
+    headingMedium: 'CormorantGaramond_500Medium',
+    headingLight: 'CormorantGaramond_300Light',
+    headingRegular: 'CormorantGaramond_400Regular',
     body: 'DMSans_400Regular',         // Sans — body text, descriptions, labels
     bodyMedium: 'DMSans_500Medium',    // Sans medium — emphasized body, status text
     bodySemibold: 'DMSans_600SemiBold',// Sans semibold — buttons, nav labels, time numbers
@@ -15,16 +15,16 @@ export const typography = {
     sanctuaryItalic: 'CormorantGaramond_400Regular', // Italic serif — iqamah line
   },
   fontSize: {
-    xs: 11,      // Tiny labels, timestamps
+    xs: 12,      // Tiny labels, timestamps
     sm: 13,      // Body text, descriptions
     md: 14,      // Default body, secondary info
     base: 15,    // Primary body text
-    lg: 16,      // Prayer names, list items
+    lg: 17,      // Prayer names, list items
     xl: 18,      // Section headers, card titles
-    '2xl': 20,   // Screen titles
-    '3xl': 24,   // Large numbers, featured text
-    '4xl': 28,   // Hero text
-    '5xl': 32,   // Extra large displays
+    '2xl': 19,   // Screen titles
+    '3xl': 23,   // Large numbers, featured text
+    '4xl': 26,   // Hero text
+    '5xl': 28,   // Extra large displays
     '6xl': 36,   // Countdown ring, hero display
   },
   fontWeight: {
@@ -59,17 +59,17 @@ export const midnightTypography = {
     sanctuaryItalic: 'CormorantGaramond_400Regular',
   },
   fontSize: {
-    xs: 10,
+    xs: 11,
     sm: 12,
     md: 13,
     base: 15,
-    lg: 15,
+    lg: 16,
     xl: 18,
     '2xl': 20,
     '3xl': 22,
     '4xl': 24,
     '5xl': 28,
-    '6xl': 36,
+    '6xl': 34,
   },
   fontWeight: {
     regular: '400' as const,

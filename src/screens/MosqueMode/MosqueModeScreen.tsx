@@ -7,6 +7,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
@@ -24,50 +25,55 @@ const MosqueModeScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-    <ScrollView
-      style={styles.scrollView}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Mosque Mode</Text>
-        <Text style={styles.headerSubtitle}>
-          Automatically silence your phone when iqamah starts so you can focus entirely on your prayer.
-        </Text>
-      </View>
-
-      <MosqueModeStatus />
-
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>MODE</Text>
-        <MosqueModeToggle />
-      </View>
-
-      {isEnabled && (
-        <>
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>IQAMAH TIMES</Text>
-            <IqamahTimeConfig />
+      <LinearGradient
+        colors={[theme.colors.ambient.top, theme.colors.ambient.bottom]}
+        style={styles.gradient}
+      >
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>Mosque Mode</Text>
+            <Text style={styles.headerSubtitle}>
+              Automatically silence your phone when iqamah starts so you can focus entirely on your prayer.
+            </Text>
           </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>SILENT MODE OPTIONS</Text>
-            <MosqueModeOptions />
-          </View>
+          <MosqueModeStatus />
 
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>JUMU'AH SETTINGS</Text>
-            <JummahMosqueConfig />
+            <Text style={styles.sectionLabel}>MODE</Text>
+            <MosqueModeToggle />
           </View>
-        </>
-      )}
 
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>
-          Your phone will go silent at iqamah time and restore automatically after the prayer ends.
-        </Text>
-      </View>
-    </ScrollView>
+          {isEnabled && (
+            <>
+              <View style={styles.section}>
+                <Text style={styles.sectionLabel}>IQAMAH TIMES</Text>
+                <IqamahTimeConfig />
+              </View>
+
+              <View style={styles.section}>
+                <Text style={styles.sectionLabel}>SILENT MODE OPTIONS</Text>
+                <MosqueModeOptions />
+              </View>
+
+              <View style={styles.section}>
+                <Text style={styles.sectionLabel}>{"JUMU'AH SETTINGS"}</Text>
+                <JummahMosqueConfig />
+              </View>
+            </>
+          )}
+
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              Your phone will go silent at iqamah time and restore automatically after the prayer ends.
+            </Text>
+          </View>
+        </ScrollView>
+      </LinearGradient>
     </SafeAreaView>
   );
 };
@@ -76,6 +82,9 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background.primary,
+  },
+  gradient: {
+    flex: 1,
   },
   scrollView: {
     flex: 1,
@@ -89,8 +98,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     paddingBottom: theme.spacing.sm,
   },
   headerTitle: {
-    fontSize: 26,
-    fontFamily: theme.typography.fontFamily.headingRegular,
+    fontSize: 22,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.sm,
   },

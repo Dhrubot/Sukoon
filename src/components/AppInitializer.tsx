@@ -6,8 +6,6 @@ import { LocationModal } from './LocationModal';
 import { AppNavigator } from '../navigation/AppNavigator';
 import { ServiceProvider } from '../providers/ServiceProvider';
 import { useNotificationRescheduler } from '../hooks/useNotificationRescheduler';
-
-import SetupHealthScreen from '../screens/SetupHealth/SetupHealthScreen';
 import PerformanceService from '../services/PerformanceService';
 
 export const AppInitializer: React.FC = () => {
@@ -15,11 +13,9 @@ export const AppInitializer: React.FC = () => {
     isLoading,
     isFirstLaunch,
     showLocationModal,
-    showSetupHealth,
     error,
     completeOnboarding,
     closeLocationModal,
-    dismissSetupHealth,
     retryInitialization,
   } = useAppInitialization();
 
@@ -34,10 +30,8 @@ export const AppInitializer: React.FC = () => {
       return;
     }
 
-    PerformanceService.markLaunchMilestoneOnce(
-      showSetupHealth ? 'setup_health_rendered' : 'app_navigator_rendered'
-    );
-  }, [error, isFirstLaunch, isLoading, showSetupHealth]);
+    PerformanceService.markLaunchMilestoneOnce('app_navigator_rendered');
+  }, [error, isFirstLaunch, isLoading]);
 
   if (isLoading) {
     return <LoadingScreen message="Initializing Sukoon..." />;
@@ -58,13 +52,7 @@ export const AppInitializer: React.FC = () => {
 
   return (
     <ServiceProvider>
-      {showSetupHealth ? (
-        <SetupHealthScreen
-          onDone={dismissSetupHealth}
-        />
-      ) : (
-        <AppNavigator />
-      )}
+      <AppNavigator />
       <LocationModal 
         visible={showLocationModal} 
         onClose={closeLocationModal} 

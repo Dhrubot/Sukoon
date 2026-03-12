@@ -13,6 +13,7 @@ import DevTreeTester from '../../components/garden/DevTreeTester';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
@@ -29,6 +30,7 @@ import { FARD_PRAYERS } from '../../constants/prayerRegistry';
 const ReflectionGardenScreen: React.FC = () => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
+  const ambientColors = [theme.colors.ambient.top, theme.colors.ambient.bottom] as const;
   const navigation = useNavigation();
   const {
     plants,
@@ -92,10 +94,12 @@ const ReflectionGardenScreen: React.FC = () => {
   if (isLoading) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={theme.colors.primary.DEFAULT} />
-          <Text style={styles.loadingText}>Growing your tree...</Text>
-        </View>
+        <LinearGradient colors={ambientColors} style={styles.gradient}>
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color={theme.colors.primary.DEFAULT} />
+            <Text style={styles.loadingText}>Gathering your reflections...</Text>
+          </View>
+        </LinearGradient>
       </SafeAreaView>
     );
   }
@@ -108,47 +112,50 @@ const ReflectionGardenScreen: React.FC = () => {
   if (isEmpty) {
     return (
       <SafeAreaView style={styles.container}>
-        <ScrollView contentContainerStyle={styles.emptyContainer}>
-          <Text style={styles.emptyEmoji}>🌱</Text>
-          <Text style={styles.emptyTitle}>
-            Every tree begins{'\n'}with a single seed
-          </Text>
-          <Text style={styles.emptySubtitle}>
-            Complete your next prayer with a reflection,{'\n'}and watch your Tuba Tree grow
-          </Text>
-          <TouchableOpacity
-            style={[styles.emptyCta, { borderColor: theme.colors.primary.DEFAULT }]}
-            onPress={() => navigation.goBack()}
-          >
-            <Text style={[styles.emptyCtaText, { color: theme.colors.primary.DEFAULT }]}>
-              Return to prayers
+        <LinearGradient colors={ambientColors} style={styles.gradient}>
+          <ScrollView contentContainerStyle={styles.emptyContainer}>
+            <Text style={styles.emptyEmoji}>🌱</Text>
+            <Text style={styles.emptyTitle}>
+              Every tree begins{'\n'}with a single seed
             </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.emptyInfoLink}
-            onPress={() => navigation.navigate('MainTabs', { screen: 'Menu', params: { screen: 'TubaTreeInfo' } })}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.emptyInfoLinkText, { color: theme.colors.interactive.active }]}>
-              Learn about the Tuba Tree →
+            <Text style={styles.emptySubtitle}>
+              After your next prayer, leave a short reflection and this space will begin to grow with you.
             </Text>
-          </TouchableOpacity>
-          {__DEV__ && (
             <TouchableOpacity
-              style={styles.devButton}
-              onPress={() => setDevMode(true)}
+              style={[styles.emptyCta, { borderColor: theme.colors.primary.DEFAULT }]}
+              onPress={() => navigation.goBack()}
+            >
+              <Text style={[styles.emptyCtaText, { color: theme.colors.primary.DEFAULT }]}>
+                Return to prayers
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.emptyInfoLink}
+              onPress={() => navigation.navigate('MainTabs', { screen: 'Menu', params: { screen: 'TubaTreeInfo' } })}
               activeOpacity={0.7}
             >
-              <Text style={styles.devButtonText}>🧪 Test Tree Stages</Text>
+              <Text style={[styles.emptyInfoLinkText, { color: theme.colors.interactive.active }]}>
+                Learn about the Tuba Tree →
+              </Text>
             </TouchableOpacity>
-          )}
-        </ScrollView>
+            {__DEV__ && (
+              <TouchableOpacity
+                style={styles.devButton}
+                onPress={() => setDevMode(true)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.devButtonText}>🧪 Test Tree Stages</Text>
+              </TouchableOpacity>
+            )}
+          </ScrollView>
+        </LinearGradient>
       </SafeAreaView>
     );
   }
 
   return (
     <SafeAreaView style={styles.container}>
+      <LinearGradient colors={ambientColors} style={styles.gradient}>
       <ScrollView showsVerticalScrollIndicator={false} bounces>
         {/* Header */}
         <View style={styles.header}>
@@ -156,7 +163,7 @@ const ReflectionGardenScreen: React.FC = () => {
             <Text style={styles.subtitle}>
               {ramadan
                 ? 'Blessed Ramadan — every prayer\nis shade on the Day of Judgment'
-                : 'Your prayers grow roots\nthat nothing can uproot'}
+                : 'A quiet witness to prayer,\nreflection, and steadiness'}
             </Text>
           </View>
           <DawamBadge days={dawamDays} />
@@ -206,7 +213,7 @@ const ReflectionGardenScreen: React.FC = () => {
               {plants.length > 0 ? plants.length : '—'}
             </Text>
             <Text style={[styles.statLabel, { color: theme.colors.text.muted }]}>
-              leaves
+              reflections
             </Text>
           </View>
           <View style={[styles.statBlock, styles.statBlockBorder]}>
@@ -214,7 +221,7 @@ const ReflectionGardenScreen: React.FC = () => {
               {dawamDays > 0 ? dawamDays : '—'}
             </Text>
             <Text style={[styles.statLabel, { color: theme.colors.text.muted }]}>
-              {dawamDays > 0 ? 'days of dawam' : 'begin today'}
+              {dawamDays > 0 ? 'days of steadiness' : 'begin today'}
             </Text>
           </View>
           <View style={[styles.statBlock, styles.statBlockBorder]}>
@@ -258,6 +265,7 @@ const ReflectionGardenScreen: React.FC = () => {
         {/* Bottom spacing */}
         <View style={{ height: 40 }} />
       </ScrollView>
+      </LinearGradient>
 
       {/* Leaf detail overlay — appears when a leaf is tapped */}
       <LeafDetailSheet detail={selectedLeaf} onDismiss={dismissLeafDetail} />
@@ -270,6 +278,9 @@ const createStyles = (theme: AppTheme) =>
     container: {
       flex: 1,
       backgroundColor: theme.colors.background.primary,
+    },
+    gradient: {
+      flex: 1,
     },
     loadingContainer: {
       flex: 1,

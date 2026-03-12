@@ -219,6 +219,7 @@ class StorageService {
         country: "Unknown",
       },
       calculationMethod: "MWL",
+      calculationMethodManuallySelected: false,
       asrJuristic: "Standard",
       adjustments: {
         Fajr: 0,

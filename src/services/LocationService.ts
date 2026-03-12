@@ -5,6 +5,7 @@ import GeocodingService from './GeocodingService';
 import StorageService from './StorageService';
 import { useStore } from '../store/useStore';
 import logger from '../utils/logger';
+import { applyRegionalCalculationMethod } from '../utils/calculationMethodByRegion';
 
 interface LocationUpdateCallback {
   onLocationUpdate: (location: Location) => Promise<void>;
@@ -273,8 +274,8 @@ class LocationService {
       
       // Update settings with the new location
       const settings = StorageService.getUserSettings() || StorageService.getDefaultSettings();
-      settings.location = location;
-      useStore.getState().setUserSettings(settings);
+      const { settings: updatedSettings } = applyRegionalCalculationMethod(settings, location);
+      useStore.getState().setUserSettings(updatedSettings);
       
       logger.log('✅ Location saved to storage');
       

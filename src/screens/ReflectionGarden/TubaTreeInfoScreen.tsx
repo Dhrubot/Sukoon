@@ -616,9 +616,9 @@ const TubaTreeInfoScreen: React.FC = () => {
           </Text>
         </View>
 
-        {/* ── Explore your leaves ──────────────────────────────── */}
+        {/* ── Read your leaves ─────────────────────────────────── */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Explore Your Leaves</Text>
+          <Text style={styles.sectionTitle}>Read Your Leaves</Text>
           <Text style={styles.bodyText}>
             Tap any leaf on your tree to see its details — which prayer it came from,
             when you prayed, your mood level, and whether you wrote a reflection.

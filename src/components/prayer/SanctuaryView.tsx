@@ -383,7 +383,7 @@ const createStyles = (theme: AppTheme) =>
       bottom: -1,
       left: 0,
       right: 0,
-      height: 40,
+      height: 32,
       backgroundColor: theme.colors.background.primary,
       borderTopLeftRadius: 24,
       borderTopRightRadius: 24,

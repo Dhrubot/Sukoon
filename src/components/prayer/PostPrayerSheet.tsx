@@ -92,10 +92,10 @@ const PostPrayerSheet: React.FC<PostPrayerSheetProps> = ({
         >
           <View style={styles.handle} />
 
-          <Text style={styles.title}>Mashallah, {displayName} Prayed</Text>
+          <Text style={styles.title}>{displayName} is complete</Text>
 
           <Text style={styles.message}>
-            You can continue earning reward with extra prayers.
+            If you wish, continue with Sunnah or return to the prayer flow quietly.
           </Text>
 
           {/* Option A: Pray Sunnah/Nafl */}
@@ -116,7 +116,7 @@ const PostPrayerSheet: React.FC<PostPrayerSheetProps> = ({
             activeOpacity={0.8}
           >
             <Text style={styles.outlineButtonText}>
-              Repeat {displayName}
+              Return to prayer flow
             </Text>
           </TouchableOpacity>
 

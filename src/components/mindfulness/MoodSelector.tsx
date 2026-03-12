@@ -16,11 +16,11 @@ interface MoodSelectorProps {
 }
 
 const moods = [
-  { value: 1, emoji: '😔', label: 'Distracted' },
-  { value: 2, emoji: '😐', label: 'Neutral' },
-  { value: 3, emoji: '😊', label: 'Focused' },
-  { value: 4, emoji: '😇', label: 'Peaceful' },
-  { value: 5, emoji: '🤲', label: 'Connected' },
+  { value: 1, label: 'Scattered' },
+  { value: 2, label: 'Uneven' },
+  { value: 3, label: 'Present' },
+  { value: 4, label: 'Settled' },
+  { value: 5, label: 'Deeply present' },
 ];
 
 const MoodSelector: React.FC<MoodSelectorProps> = ({
@@ -59,7 +59,7 @@ const MoodSelector: React.FC<MoodSelectorProps> = ({
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>How was your focus during prayer?</Text>
+      <Text style={styles.title}>How present did the prayer feel?</Text>
       
       <View style={styles.moodContainer}>
         {moods.map((mood, index) => (
@@ -80,7 +80,7 @@ const MoodSelector: React.FC<MoodSelectorProps> = ({
               onPress={() => handleMoodPress(mood.value, index)}
               activeOpacity={0.7}
             >
-              <Text style={styles.moodEmoji}>{mood.emoji}</Text>
+              <Text style={styles.moodValue}>{mood.value}</Text>
             </TouchableOpacity>
             <Text
               style={[
@@ -97,11 +97,11 @@ const MoodSelector: React.FC<MoodSelectorProps> = ({
       {selectedMood > 0 && (
         <View style={styles.feedbackContainer}>
           <Text style={styles.feedbackText}>
-            {selectedMood === 1 && "It's okay, tomorrow is a new opportunity"}
-            {selectedMood === 2 && "Every prayer is a step forward"}
-            {selectedMood === 3 && "Ma sha Allah! Keep building focus"}
-            {selectedMood === 4 && "Beautiful! Your khushoo is growing"}
-            {selectedMood === 5 && "Alhamdulillah! May Allah accept your prayer"}
+            {selectedMood === 1 && 'Return gently next time. Allah sees the effort.'}
+            {selectedMood === 2 && 'Even an uneven prayer can soften the heart.'}
+            {selectedMood === 3 && 'Presence grows through returning again and again.'}
+            {selectedMood === 4 && 'A settled prayer leaves a quiet trace.'}
+            {selectedMood === 5 && 'Alhamdulillah. May Allah accept this prayer.'}
           </Text>
         </View>
       )}
@@ -150,14 +150,17 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     shadowRadius: 10,
     elevation: 5,
   },
-  moodEmoji: {
-    fontSize: theme.typography.fontSize['5xl'],
+  moodValue: {
+    fontSize: theme.typography.fontSize.xl,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
+    color: theme.colors.text.primary,
   },
   moodLabel: {
     fontSize: theme.typography.fontSize.sm,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.muted,
     textAlign: 'center',
+    maxWidth: 72,
   },
   moodLabelActive: {
     color: theme.colors.text.primary,
