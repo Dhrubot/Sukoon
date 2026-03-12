@@ -21,7 +21,7 @@ export default {
       resizeMode: "contain",
       backgroundColor: "#00102a",
     },
-    assetBundlePatterns: ["**/*"],
+    assetBundlePatterns: ["assets/**"],
     ios: {
       supportsTablet: true,
       bundleIdentifier: "com.talukders.sukoon",

@@ -288,7 +288,6 @@ export class PrayerTimeService {
     }
 
     const apiTimes = data.data.timings;
-    logger.log("Prayer times received:", apiTimes);
     this._lastProviderSource = 'direct';
     logger.log('🌐 Prayer times source: direct_fallback');
 

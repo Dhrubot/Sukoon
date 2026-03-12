@@ -5,6 +5,7 @@ import StorageService from '../services/StorageService';
 import { fetchHijriDateFromEdge } from '../services/api/EdgeApiClient';
 import { cacheHijriDate } from './ramadan';
 import logger from './logger';
+import { fetchWithTimeout } from './networkRequest';
 
 const HIJRI_MONTHS = [
   'Muharram', 'Safar', 'Rabi al-Awwal', 'Rabi al-Thani',
@@ -23,6 +24,7 @@ interface HijriResult {
 let cachedDate: string | null = null;
 let cachedResult: HijriResult | null = null;
 let lastHijriSource: 'edge' | 'direct' | 'algorithmic_fallback' | 'memory_cache' | null = null;
+const HIJRI_API_TIMEOUT_MS = 8000;
 
 // Hijri month lengths: odd = 30, even = 29
 const hijriMonthLen = (m: number): number => m % 2 === 1 ? 30 : 29;
@@ -82,7 +84,7 @@ async function fetchHijriFromAPI(date: Date): Promise<HijriResult | null> {
       const yyyy = date.getFullYear();
       const url = `https://api.aladhan.com/v1/gToH/${dd}-${mm}-${yyyy}`;
 
-      const response = await fetch(url, { method: 'GET' });
+      const response = await fetchWithTimeout(url, { method: 'GET' }, HIJRI_API_TIMEOUT_MS);
       if (!response.ok) return null;
 
       const json = await response.json();

@@ -303,8 +303,8 @@ async function handleReverseGeocode(url: URL, env: Env): Promise<Response> {
 
     return {
       location: {
-        latitude,
-        longitude,
+        latitude: rounded.latitude,
+        longitude: rounded.longitude,
         city: extractCity(payload.address),
         country: payload.address?.country ?? 'Unknown',
       },
