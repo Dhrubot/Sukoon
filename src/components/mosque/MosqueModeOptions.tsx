@@ -11,6 +11,7 @@ import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import { useMosqueMode } from '../../hooks/useMosqueMode';
+import { mosqueModePlatformUi } from '../../utils/mosqueModePlatform';
 
 const DURATION_OPTIONS = [5, 10, 15, 20, 25, 30, 45, 60];
 
@@ -24,84 +25,89 @@ export const MosqueModeOptions: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>Silent Mode Options</Text>
+      <Text style={styles.sectionTitle}>{mosqueModePlatformUi.optionsSectionLabel === 'SILENT MODE OPTIONS' ? 'Silent Mode Options' : 'Reminder Options'}</Text>
 
-      {/* Silent Duration */}
-      <TouchableOpacity
-        style={styles.row}
-        onPress={() => setShowDurationPicker(!showDurationPicker)}
-        activeOpacity={0.7}
-      >
-        <View style={styles.rowInfo}>
-          <Text style={styles.rowLabel}>Silent Duration</Text>
-          <Text style={styles.rowValue}>{settings.silentDuration} minutes</Text>
-        </View>
-        <Text style={styles.chevron}>{showDurationPicker ? '▲' : '▼'}</Text>
-      </TouchableOpacity>
+      {mosqueModePlatformUi.showsSilentModeControls && (
+        <>
+          <TouchableOpacity
+            style={styles.row}
+            onPress={() => setShowDurationPicker(!showDurationPicker)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.rowInfo}>
+              <Text style={styles.rowLabel}>Silent Duration</Text>
+              <Text style={styles.rowValue}>{settings.silentDuration} minutes</Text>
+            </View>
+            <Text style={styles.chevron}>{showDurationPicker ? '▲' : '▼'}</Text>
+          </TouchableOpacity>
 
-      {showDurationPicker && (
-        <View style={styles.pickerContainer}>
-          <Text style={styles.pickerLabel}>How long should silent mode stay on?</Text>
-          <View style={styles.chipGrid}>
-            {DURATION_OPTIONS.map((min) => {
-              const isSelected = settings.silentDuration === min;
-              return (
-                <TouchableOpacity
-                  key={min}
-                  style={[
-                    styles.chip,
-                    isSelected && styles.chipActive,
-                  ]}
-                  onPress={() => {
-                    updateMosqueModeSettings({ silentDuration: min });
-                    setShowDurationPicker(false);
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text
-                    style={[
-                      styles.chipText,
-                      isSelected && styles.chipTextActive,
-                    ]}
-                  >
-                    {min} min
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
+          {showDurationPicker && (
+            <View style={styles.pickerContainer}>
+              <Text style={styles.pickerLabel}>How long should silent mode stay on?</Text>
+              <View style={styles.chipGrid}>
+                {DURATION_OPTIONS.map((min) => {
+                  const isSelected = settings.silentDuration === min;
+                  return (
+                    <TouchableOpacity
+                      key={min}
+                      style={[
+                        styles.chip,
+                        isSelected && styles.chipActive,
+                      ]}
+                      onPress={() => {
+                        updateMosqueModeSettings({ silentDuration: min });
+                        setShowDurationPicker(false);
+                      }}
+                      activeOpacity={0.7}
+                    >
+                      <Text
+                        style={[
+                          styles.chipText,
+                          isSelected && styles.chipTextActive,
+                        ]}
+                      >
+                        {min} min
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+        </>
+      )}
+
+      {mosqueModePlatformUi.showsSilentModeControls && (
+        <View style={styles.row}>
+          <View style={styles.rowInfo}>
+            <Text style={styles.rowLabel}>Auto-Restore Ringer</Text>
+            <Text style={styles.rowValue}>Automatically restore sound after duration ends</Text>
           </View>
+          <Switch
+            value={settings.autoRestore}
+            onValueChange={(value) => updateMosqueModeSettings({ autoRestore: value })}
+            trackColor={{ false: theme.colors.switch.trackFalse, true: theme.colors.switch.trackTrue }}
+            thumbColor={theme.colors.switch.thumb}
+          />
         </View>
       )}
 
-      {/* Auto-Restore Toggle */}
-      <View style={styles.row}>
-        <View style={styles.rowInfo}>
-          <Text style={styles.rowLabel}>Auto-Restore Ringer</Text>
-          <Text style={styles.rowValue}>Automatically restore sound after duration ends</Text>
+      {mosqueModePlatformUi.showsSilentModeControls && (
+        <View style={styles.row}>
+          <View style={styles.rowInfo}>
+            <Text style={styles.rowLabel}>Vibrate Instead of Silent</Text>
+            <Text style={styles.rowValue}>
+              {settings.useVibrateInsteadOfSilent ? 'Phone will vibrate during prayer' : 'Phone will be completely silent'}
+            </Text>
+          </View>
+          <Switch
+            value={settings.useVibrateInsteadOfSilent}
+            onValueChange={(value) => updateMosqueModeSettings({ useVibrateInsteadOfSilent: value })}
+            trackColor={{ false: theme.colors.switch.trackFalse, true: theme.colors.switch.trackTrue }}
+            thumbColor={theme.colors.switch.thumb}
+          />
         </View>
-        <Switch
-          value={settings.autoRestore}
-          onValueChange={(value) => updateMosqueModeSettings({ autoRestore: value })}
-          trackColor={{ false: theme.colors.switch.trackFalse, true: theme.colors.switch.trackTrue }}
-          thumbColor={theme.colors.switch.thumb}
-        />
-      </View>
-
-      {/* Vibrate vs Silent Toggle */}
-      <View style={styles.row}>
-        <View style={styles.rowInfo}>
-          <Text style={styles.rowLabel}>Vibrate Instead of Silent</Text>
-          <Text style={styles.rowValue}>
-            {settings.useVibrateInsteadOfSilent ? 'Phone will vibrate during prayer' : 'Phone will be completely silent'}
-          </Text>
-        </View>
-        <Switch
-          value={settings.useVibrateInsteadOfSilent}
-          onValueChange={(value) => updateMosqueModeSettings({ useVibrateInsteadOfSilent: value })}
-          trackColor={{ false: theme.colors.switch.trackFalse, true: theme.colors.switch.trackTrue }}
-          thumbColor={theme.colors.switch.thumb}
-        />
-      </View>
+      )}
 
       {/* Confirm Before Each Prayer Toggle */}
       <View style={styles.row}>
@@ -109,8 +115,8 @@ export const MosqueModeOptions: React.FC = () => {
           <Text style={styles.rowLabel}>Confirm Before Each Prayer</Text>
           <Text style={styles.rowValue}>
             {settings.promptBeforeEnable
-              ? 'You\'ll be asked before your phone goes silent'
-              : 'Phone silences automatically at iqamah time'}
+              ? mosqueModePlatformUi.confirmBeforeValueEnabled
+              : mosqueModePlatformUi.confirmBeforeValueDisabled}
           </Text>
         </View>
         <Switch

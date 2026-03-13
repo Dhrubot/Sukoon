@@ -2,7 +2,6 @@ import React, { useEffect } from 'react';
 import { useAppInitialization } from '../hooks/useAppInitialization';
 import OnboardingScreen from '../screens/Onboarding/OnboardingScreen';
 import { LoadingScreen } from './LoadingScreen';
-import { LocationModal } from './LocationModal';
 import { AppNavigator } from '../navigation/AppNavigator';
 import { ServiceProvider } from '../providers/ServiceProvider';
 import { useNotificationRescheduler } from '../hooks/useNotificationRescheduler';
@@ -12,10 +11,8 @@ export const AppInitializer: React.FC = () => {
   const {
     isLoading,
     isFirstLaunch,
-    showLocationModal,
     error,
     completeOnboarding,
-    closeLocationModal,
     retryInitialization,
   } = useAppInitialization();
 
@@ -53,11 +50,6 @@ export const AppInitializer: React.FC = () => {
   return (
     <ServiceProvider>
       <AppNavigator />
-      <LocationModal 
-        visible={showLocationModal} 
-        onClose={closeLocationModal} 
-        dismissLabel="Not now"
-      />
     </ServiceProvider>
   );
 };

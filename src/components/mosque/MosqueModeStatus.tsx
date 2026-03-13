@@ -16,6 +16,7 @@ import { AppTheme } from '../../theme';
 import { useMosqueMode } from '../../hooks/useMosqueMode';
 import { usePrayerTimes } from '../../providers/PrayerTimesProvider';
 import { PrayerTime } from '../../types';
+import { mosqueModePlatformUi } from '../../utils/mosqueModePlatform';
 
 /**
  * Shows a banner when mosque mode is currently active
@@ -57,7 +58,9 @@ export const MosqueModeStatus: React.FC = () => {
     return candidates[0] || null;
   }, [isEnabled, settings, todayPrayerTimes, getIqamahTime]);
 
-  if (!isActive && !nextScheduled) return null;
+  const showActiveState = Platform.OS === 'android' && isActive;
+
+  if (!showActiveState && !nextScheduled) return null;
 
   const handleManualRestore = () => {
     if (Platform.OS !== 'android') {
@@ -100,16 +103,24 @@ export const MosqueModeStatus: React.FC = () => {
     );
   };
 
-  const title = isActive ? 'Mosque Mode Active' : 'Mosque Mode Scheduled';
-  const description = isActive
-    ? `${activeState!.prayer} • Silent until ${format(activeState!.restoreTime, 'h:mm a')}`
-    : `${nextScheduled!.prayer.name} • Iqamah at ${format(nextScheduled!.iqamahTime, 'h:mm a')}`;
+  const title = showActiveState
+    ? mosqueModePlatformUi.statusActiveTitle
+    : mosqueModePlatformUi.statusScheduledTitle;
+  const description = showActiveState
+    ? mosqueModePlatformUi.statusActiveDescription(
+        activeState!.prayer,
+        format(activeState!.restoreTime, 'h:mm a')
+      )
+    : mosqueModePlatformUi.statusScheduledDescription(
+        nextScheduled!.prayer.name,
+        format(nextScheduled!.iqamahTime, 'h:mm a')
+      );
 
   return (
     <View style={styles.container}>
       <View style={styles.content}>
         <View style={styles.dotRow}>
-          {isActive && (
+          {showActiveState && (
             <Animated.View
               style={[
                 styles.liveDot,
@@ -121,7 +132,7 @@ export const MosqueModeStatus: React.FC = () => {
         </View>
         <Text style={styles.description}>{description}</Text>
 
-        {Platform.OS === 'android' && isActive && (
+        {Platform.OS === 'android' && showActiveState && (
           <TouchableOpacity
             style={styles.button}
             onPress={handleManualRestore}

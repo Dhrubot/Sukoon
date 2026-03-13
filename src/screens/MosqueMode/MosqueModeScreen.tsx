@@ -17,6 +17,7 @@ import { IqamahTimeConfig } from '../../components/mosque/IqamahTimeConfig';
 import { MosqueModeOptions } from '../../components/mosque/MosqueModeOptions';
 import JummahMosqueConfig from '../../components/mosque/JummahMosqueConfig';
 import { useMosqueMode } from '../../hooks/useMosqueMode';
+import { mosqueModePlatformUi } from '../../utils/mosqueModePlatform';
 
 const MosqueModeScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -37,7 +38,7 @@ const MosqueModeScreen: React.FC = () => {
           <View style={styles.header}>
             <Text style={styles.headerTitle}>Mosque Mode</Text>
             <Text style={styles.headerSubtitle}>
-              Automatically silence your phone when iqamah starts so you can focus entirely on your prayer.
+              {mosqueModePlatformUi.headerSubtitle}
             </Text>
           </View>
 
@@ -56,7 +57,7 @@ const MosqueModeScreen: React.FC = () => {
               </View>
 
               <View style={styles.section}>
-                <Text style={styles.sectionLabel}>SILENT MODE OPTIONS</Text>
+                <Text style={styles.sectionLabel}>{mosqueModePlatformUi.optionsSectionLabel}</Text>
                 <MosqueModeOptions />
               </View>
 
@@ -69,7 +70,7 @@ const MosqueModeScreen: React.FC = () => {
 
           <View style={styles.footer}>
             <Text style={styles.footerText}>
-              Your phone will go silent at iqamah time and restore automatically after the prayer ends.
+              {mosqueModePlatformUi.footerText}
             </Text>
           </View>
         </ScrollView>

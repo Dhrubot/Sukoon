@@ -8,6 +8,7 @@ import RingerControlService from './RingerControlService';
 import type { RingerMode } from './RingerControlService';
 import { PrayerName, PrayerTime } from '../types';
 import logger from '../utils/logger';
+import { mosqueModePlatformUi } from '../utils/mosqueModePlatform';
 
 // Storage keys for mosque mode state
 const STORAGE_KEYS = {
@@ -301,7 +302,7 @@ class MosqueModeService {
       await Notifications.scheduleNotificationAsync({
         content: {
           title: `${prayer.name} Iqamah in 2 minutes`,
-          body: 'Silence your phone — swipe down from top-right to enable Do Not Disturb.',
+          body: mosqueModePlatformUi.iosReminderBody,
           data: {
             type: 'mosque_mode_reminder',
             prayer: prayer.name,
@@ -327,7 +328,7 @@ class MosqueModeService {
       await Notifications.scheduleNotificationAsync({
         content: {
           title: `${prayer.name} Iqamah Now`,
-          body: 'Please silence your phone for prayer.',
+          body: mosqueModePlatformUi.iosIqamahBody,
           data: {
             type: 'mosque_mode_iqamah',
             prayer: prayer.name,
@@ -452,7 +453,7 @@ class MosqueModeService {
       await Notifications.scheduleNotificationAsync({
         content: {
           title: `${prayer.name} Iqamah in ${minsUntilIqamah} min`,
-          body: 'Heading to the mosque? Tap to enable silent mode.',
+          body: mosqueModePlatformUi.promptNotificationBody,
           data: {
             type: 'mosque_mode_prompt',
             prayer: prayer.name,

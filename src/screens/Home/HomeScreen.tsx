@@ -1,6 +1,7 @@
 // src/screens/Home/HomeScreen.tsx
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  Alert,
   View,
   Text,
   ScrollView,
@@ -21,6 +22,7 @@ import { useShallow } from "zustand/react/shallow";
 // Store and Services
 import { useStore } from "../../store/useStore";
 import StorageService from "../../services/StorageService";
+import LocationService from "../../services/LocationService";
 import { useTheme } from "../../providers/ThemeProvider";
 import { useThemedStyles } from "../../hooks/useThemedStyles";
 import { AppTheme } from "../../theme";
@@ -43,6 +45,7 @@ import QuickLogSheet from "../../components/prayer/QuickLogSheet";
 import CatchUpSheet from "../../components/prayer/CatchUpSheet";
 import HijriNudgeSheet from "../../components/HijriNudgeSheet";
 import AutoDeduceSheet from "../../components/AutoDeduceSheet";
+import { LocationModal } from "../../components/LocationModal";
 
 // Types
 import { PrayerTime, PrayerRecord, OptionalPrayerTime, PrayerName } from "../../types";
@@ -60,10 +63,13 @@ import WidgetService from "../../services/WidgetService";
 import TreeGrowthStateService from "../../services/TreeGrowthStateService";
 import { getLocalDateKey } from "../../utils/dateHelpers";
 import MoonSightingPrompt from "../../components/MoonSightingPrompt";
+import { withAlpha } from "../../utils/color";
+import { mosqueModePlatformUi } from "../../utils/mosqueModePlatform";
 
 import { HERO_ADVANCE_MINUTES } from "../../constants/NotificationConstants";
 
 const { width } = Dimensions.get("window");
+const MOSQUE_MODE_TIP_SEEN_KEY = 'mosque_mode_tip_seen';
 
 type HomeScreenNavigationProp = CompositeNavigationProp<
   BottomTabNavigationProp<TabParamList, 'Home'>,
@@ -128,6 +134,9 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
   const catchUpSheetShownRef = useRef(false);
   const [showCatchUpSheet, setShowCatchUpSheet] = useState(false);
   const [showHijriNudgeSheet, setShowHijriNudgeSheet] = useState(false);
+  const [showHomeLocationModal, setShowHomeLocationModal] = useState(false);
+  const [isSettingHomeLocation, setIsSettingHomeLocation] = useState(false);
+  const [showMosqueModeTip, setShowMosqueModeTip] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
   const pendingRevealScrollRef = useRef(false);
 
@@ -154,9 +163,73 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
     navigation.setParams({ quickLogPrayer: undefined });
   }, [route.params?.quickLogPrayer, todayPrayerTimes]);
 
+  useEffect(() => {
+    if (!hasValidLocation || prayerTimesLoading || userSettings?.mosqueMode?.enabled) {
+      setShowMosqueModeTip(false);
+      return;
+    }
+
+    if (StorageService.getValue(MOSQUE_MODE_TIP_SEEN_KEY) === 'true') {
+      return;
+    }
+
+    setShowMosqueModeTip(true);
+    setSecondaryContentVisible(true);
+  }, [hasValidLocation, prayerTimesLoading, userSettings?.mosqueMode?.enabled]);
+
   const handleQuickLogTrigger = useCallback((prayer: PrayerTime) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     setQuickLogPrayer(prayer);
+  }, []);
+
+  const handleUseCurrentLocation = useCallback(async () => {
+    setIsSettingHomeLocation(true);
+
+    try {
+      const location = await LocationService.getCurrentLocation();
+
+      if (!location) {
+        Alert.alert(
+          'Location Needed',
+          'We could not access your location. You can choose your city manually instead.',
+          [
+            { text: 'Not now', style: 'cancel' },
+            { text: 'Choose City', onPress: () => setShowHomeLocationModal(true) },
+          ]
+        );
+        return;
+      }
+
+      await LocationService.saveLocation(location);
+      await refreshPrayerTimes();
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'We could not access your location right now. Choose your city manually instead.';
+
+      Alert.alert(
+        'Location Update Failed',
+        message,
+        [
+          { text: 'Not now', style: 'cancel' },
+          { text: 'Choose City', onPress: () => setShowHomeLocationModal(true) },
+        ]
+      );
+    } finally {
+      setIsSettingHomeLocation(false);
+    }
+  }, [refreshPrayerTimes]);
+
+  const handleOpenMosqueMode = useCallback(() => {
+    StorageService.setValue(MOSQUE_MODE_TIP_SEEN_KEY, 'true');
+    setShowMosqueModeTip(false);
+    navigation.navigate('MosqueMode' as never);
+  }, [navigation]);
+
+  const handleDismissMosqueModeTip = useCallback(() => {
+    StorageService.setValue(MOSQUE_MODE_TIP_SEEN_KEY, 'true');
+    setShowMosqueModeTip(false);
   }, []);
 
   const handleQuickLogConfirm = useCallback(() => {
@@ -423,14 +496,18 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
 
     // Path 1: Storage-backed active state (manual scheduling via "heading to mosque")
     if (isMosqueModeActive && mosqueModeState) {
-      return {
-        iqamahTime: mosqueModeState.iqamahTime,
-        restoreTime: mosqueModeState.restoreTime,
-      };
+      return mosqueModePlatformUi.showsRestoreWindow
+        ? {
+            iqamahTime: mosqueModeState.iqamahTime,
+            restoreTime: mosqueModeState.restoreTime,
+          }
+        : {
+            iqamahTime: mosqueModeState.iqamahTime,
+          };
     }
 
     // Path 2: Compute active window from settings — show pill during iqamah→restore window
-    if (mosqueModeSettings) {
+    if (mosqueModeSettings && mosqueModePlatformUi.showsRestoreWindow) {
       const now = new Date();
       for (const p of todayPrayerTimes) {
         const iq = getIqamahTime(p);
@@ -467,9 +544,10 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
   const isHeroImmersive = isFocusMode || !secondaryContentVisible;
 
   useEffect(() => {
+    if (showMosqueModeTip) return;
     setSecondaryContentVisible(false);
     pendingRevealScrollRef.current = false;
-  }, [heroPrayerName]);
+  }, [heroPrayerName, showMosqueModeTip]);
 
   // Find the record for the current hero prayer (if already prayed)
   const heroPrayerRecord = useMemo(() => {
@@ -628,16 +706,52 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
       <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]} edges={['top']}>
         <LinearGradient colors={getBackgroundGradient()} style={styles.container}>
           <View style={styles.locationSetupContainer}>
-            <Text style={styles.setupTitle}>Welcome to Sukoon</Text>
+            <Text style={styles.setupEyebrow}>SET UP PRAYER TIMES</Text>
+            <Text style={styles.setupTitle}>Set your location</Text>
             <Text style={styles.setupSubtitle}>
-              To show accurate prayer times, we need your location
+              Sukoon needs your city to show accurate prayer times, countdowns, and prayer status.
             </Text>
-            <View style={styles.setupHelpBox}>
+            <View style={styles.setupPreviewCard}>
+              <Text style={styles.setupCardLabel}>WHY IT MATTERS</Text>
+              <Text style={styles.setupCardTitle}>Prayer times change by city</Text>
               <Text style={styles.setupHelpText}>
-                📍 Please set your location in the modal that appeared, or go to Settings to configure your location manually.
+                Add your location once, and Sukoon will calculate Fajr, Dhuhr, Asr, Maghrib, and Isha for where you actually are.
               </Text>
             </View>
+            <TouchableOpacity
+              style={[styles.setupPrimaryButton, isSettingHomeLocation && styles.setupButtonDisabled]}
+              onPress={handleUseCurrentLocation}
+              activeOpacity={0.85}
+              disabled={isSettingHomeLocation}
+            >
+              <Text style={styles.setupPrimaryButtonText}>
+                {isSettingHomeLocation ? 'Finding your location...' : 'Use Current Location'}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.setupSecondaryButton}
+              onPress={() => setShowHomeLocationModal(true)}
+              activeOpacity={0.75}
+            >
+              <Text style={styles.setupSecondaryButtonText}>Choose City Manually</Text>
+            </TouchableOpacity>
+            <Text style={styles.setupFootnote}>
+              You can also set this later from Settings.
+            </Text>
           </View>
+
+          <LocationModal
+            visible={showHomeLocationModal}
+            onClose={() => setShowHomeLocationModal(false)}
+            title="Choose Your City"
+            subtitle="Search for your country, then pick your city for accurate prayer times."
+            submitLabel="Use This Location"
+            dismissLabel="Not now"
+            onLocationResolved={async () => {
+              setShowHomeLocationModal(false);
+              await refreshPrayerTimes();
+            }}
+          />
         </LinearGradient>
       </SafeAreaView>
     );
@@ -733,7 +847,15 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
           >
           {/* Offline / Hardcoded Defaults Banner */}
           {usingHardcodedDefaults && (
-            <View style={[styles.offlineBanner, { backgroundColor: 'rgba(239, 68, 68, 0.15)', borderColor: 'rgba(239, 68, 68, 0.3)' }]}>
+            <View
+              style={[
+                styles.offlineBanner,
+                {
+                  backgroundColor: withAlpha(theme.colors.status.error, 0.12),
+                  borderColor: withAlpha(theme.colors.status.error, 0.26),
+                },
+              ]}
+            >
               <Text style={[styles.offlineBannerText, { color: theme.colors.status.error }]}>
                 Unable to calculate prayer times — please check your connection
               </Text>
@@ -747,8 +869,16 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
             </View>
           )}
           {highLatitudeWarning && !usingHardcodedDefaults && (
-            <View style={[styles.offlineBanner, { backgroundColor: 'rgba(59, 130, 246, 0.12)', borderColor: 'rgba(59, 130, 246, 0.25)' }]}>
-              <Text style={[styles.offlineBannerText, { color: theme.colors.status.info || '#3b82f6' }]}>
+            <View
+              style={[
+                styles.offlineBanner,
+                {
+                  backgroundColor: withAlpha(theme.colors.status.info || theme.colors.primary.DEFAULT, 0.12),
+                  borderColor: withAlpha(theme.colors.status.info || theme.colors.primary.DEFAULT, 0.24),
+                },
+              ]}
+            >
+              <Text style={[styles.offlineBannerText, { color: theme.colors.status.info || theme.colors.primary.DEFAULT }]}>
                 High-latitude location — Fajr/Isha times may be approximate
               </Text>
             </View>
@@ -765,6 +895,32 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
                 Prayer reminders are off — tap to re-enable
               </Text>
             </TouchableOpacity>
+          )}
+
+          {showMosqueModeTip && (
+            <View style={styles.mosqueModeTipCard}>
+              <Text style={styles.mosqueModeTipLabel}>HELPFUL SETUP</Text>
+              <Text style={styles.mosqueModeTipTitle}>Set up Mosque Mode</Text>
+              <Text style={styles.mosqueModeTipText}>
+                {mosqueModePlatformUi.homeTipText}
+              </Text>
+              <View style={styles.mosqueModeTipActions}>
+                <TouchableOpacity
+                  style={styles.mosqueModeTipButton}
+                  onPress={handleOpenMosqueMode}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.mosqueModeTipButtonText}>Set Up Mosque Mode</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.mosqueModeTipDismiss}
+                  onPress={handleDismissMosqueModeTip}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.mosqueModeTipDismissText}>Not now</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           )}
 
 
@@ -950,38 +1106,93 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   locationSetupContainer: {
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
+    alignItems: 'stretch',
     padding: theme.spacing['4xl'],
+    gap: theme.spacing.lg,
+  },
+  setupEyebrow: {
+    fontSize: theme.typography.fontSize.xs,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
+    color: theme.colors.text.muted,
+    letterSpacing: 1.4,
+    textAlign: 'center',
   },
   setupTitle: {
-    fontSize: theme.typography.fontSize['4xl'],
-    fontWeight: '700',
-    fontFamily: theme.typography.fontFamily.heading,
+    fontSize: theme.typography.fontSize['3xl'],
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
     textAlign: 'center',
-    marginBottom: theme.spacing.lg,
   },
   setupSubtitle: {
-    fontSize: theme.typography.fontSize.lg,
+    fontSize: theme.typography.fontSize.base,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     textAlign: 'center',
-    marginBottom: theme.spacing['2xl'],
     lineHeight: 24,
   },
-  setupHelpBox: {
+  setupPreviewCard: {
     backgroundColor: theme.colors.card.background,
-    borderRadius: theme.borderRadius.md,
+    borderRadius: theme.borderRadius.lg,
     padding: theme.spacing.xl,
     borderWidth: 1,
     borderColor: theme.colors.border.primary,
+    gap: theme.spacing.sm,
+  },
+  setupCardLabel: {
+    fontSize: theme.typography.fontSize.xs,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
+    color: theme.colors.text.muted,
+    letterSpacing: 1.2,
+  },
+  setupCardTitle: {
+    fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
+    color: theme.colors.text.primary,
   },
   setupHelpText: {
     fontSize: theme.typography.fontSize.base,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
-    textAlign: 'center',
     lineHeight: 22,
+  },
+  setupPrimaryButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: theme.borderRadius.md,
+    paddingVertical: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.xl,
+    backgroundColor: theme.colors.card.background,
+    borderWidth: 1,
+    borderColor: theme.colors.border.primary,
+  },
+  setupPrimaryButtonText: {
+    fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
+    color: theme.colors.text.primary,
+  },
+  setupSecondaryButton: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: theme.borderRadius.md,
+    paddingVertical: theme.spacing.lg,
+    paddingHorizontal: theme.spacing.xl,
+    backgroundColor: theme.colors.card.hover,
+    borderWidth: 1,
+    borderColor: theme.colors.border.secondary,
+  },
+  setupSecondaryButtonText: {
+    fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
+    color: theme.colors.text.primary,
+  },
+  setupButtonDisabled: {
+    opacity: 0.6,
+  },
+  setupFootnote: {
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
+    color: theme.colors.text.muted,
+    textAlign: 'center',
   },
   
   loadingContainer: {
@@ -1039,14 +1250,14 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     textAlign: 'center',
   },
   offlineBanner: {
-    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    backgroundColor: withAlpha(theme.colors.status.warning, 0.12),
     borderRadius: theme.borderRadius.sm,
     paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.lg,
     marginHorizontal: theme.spacing.xl,
     marginBottom: theme.spacing.sm,
     borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.3)',
+    borderColor: withAlpha(theme.colors.status.warning, 0.26),
     alignItems: 'center',
   },
   offlineBannerText: {
@@ -1055,20 +1266,73 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontFamily: theme.typography.fontFamily.bodyMedium,
   },
   permissionBanner: {
-    backgroundColor: 'rgba(239, 68, 68, 0.12)',
+    backgroundColor: withAlpha(theme.colors.status.error, 0.12),
     borderRadius: theme.borderRadius.sm,
     paddingVertical: theme.spacing.sm,
     paddingHorizontal: theme.spacing.lg,
     marginHorizontal: theme.spacing.xl,
     marginBottom: theme.spacing.sm,
     borderWidth: 1,
-    borderColor: 'rgba(239, 68, 68, 0.25)',
+    borderColor: withAlpha(theme.colors.status.error, 0.24),
     alignItems: 'center' as const,
   },
   permissionBannerText: {
     fontSize: theme.typography.fontSize.sm,
-    color: '#ef4444',
+    color: theme.colors.status.error,
     fontFamily: theme.typography.fontFamily.bodyMedium,
+  },
+  mosqueModeTipCard: {
+    marginHorizontal: theme.spacing.xl,
+    marginBottom: theme.spacing.sm,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    backgroundColor: theme.colors.mosqueMode.card.bg,
+    borderWidth: 1,
+    borderColor: theme.colors.mosqueMode.card.border,
+    gap: theme.spacing.sm,
+  },
+  mosqueModeTipLabel: {
+    fontSize: theme.typography.fontSize.xs,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
+    color: theme.colors.text.muted,
+    letterSpacing: 1.2,
+  },
+  mosqueModeTipTitle: {
+    fontSize: theme.typography.fontSize.lg,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
+    color: theme.colors.text.primary,
+  },
+  mosqueModeTipText: {
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
+    color: theme.colors.text.secondary,
+    lineHeight: 20,
+  },
+  mosqueModeTipActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.md,
+    marginTop: theme.spacing.xs,
+  },
+  mosqueModeTipButton: {
+    paddingHorizontal: theme.spacing.lg,
+    paddingVertical: theme.spacing.sm,
+    borderRadius: theme.borderRadius.sm,
+    borderWidth: 1,
+    borderColor: theme.colors.mosqueMode.banner.button,
+  },
+  mosqueModeTipButtonText: {
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
+    color: theme.colors.mosqueMode.banner.button,
+  },
+  mosqueModeTipDismiss: {
+    paddingVertical: theme.spacing.sm,
+  },
+  mosqueModeTipDismissText: {
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
+    color: theme.colors.text.muted,
   },
 });
 

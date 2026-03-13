@@ -4,7 +4,6 @@ import * as SplashScreen from "expo-splash-screen";
 import StorageService from "../services/StorageService";
 import NotificationService from "../services/NotificationService";
 import PrayerTimeService from "../services/PrayerTimeService";
-import LocationService from "../services/LocationService";
 import { useStore } from "../store/useStore";
 import { usePrayerTimeRefresh } from "./usePrayerTimeRefresh";
 import { initializeEncryptionKey, getEncryptionSecurityState } from "../utils/secureKeyManager";
@@ -17,16 +16,13 @@ import ReflectionGardenService from "../services/ReflectionGardenService";
 interface AppInitializationState {
   isLoading: boolean;
   isFirstLaunch: boolean;
-  showLocationModal: boolean;
   error: string | null;
 }
 
 export const useAppInitialization = () => {
-  const [suppressLocationModalForSession, setSuppressLocationModalForSession] = useState(false);
   const [state, setState] = useState<AppInitializationState>({
     isLoading: true,
     isFirstLaunch: false,
-    showLocationModal: false,
     error: null,
   });
 
@@ -131,13 +127,9 @@ export const useAppInitialization = () => {
         }
       }
 
-      // If no location is set, show location modal
-      const needsLocation = !isValidCoordinates(settings.location);
-
       setState({
         isLoading: false,
         isFirstLaunch: firstLaunch,
-        showLocationModal: needsLocation && !suppressLocationModalForSession,
         error: null,
       });
       PerformanceService.markLaunchMilestone('initial_state_ready');
@@ -216,31 +208,17 @@ export const useAppInitialization = () => {
       
       // Update location in store (triggers prayer time refresh)
       setLocation(settings.location);
-    } else {
-      logger.log('⚠️ Onboarding complete but no valid location set');
-      setSuppressLocationModalForSession(true);
     }
 
     setState((prev) => ({
       ...prev,
       isFirstLaunch: false,
-      // Don’t immediately re-prompt in the same launch if onboarding was completed without a location.
-      showLocationModal: false,
-    }));
-  };
-
-  const closeLocationModal = () => {
-    setSuppressLocationModalForSession(true);
-    setState((prev) => ({
-      ...prev,
-      showLocationModal: false,
     }));
   };
 
   return {
     ...state,
     completeOnboarding,
-    closeLocationModal,
     retryInitialization: initializeApp,
   };
 };

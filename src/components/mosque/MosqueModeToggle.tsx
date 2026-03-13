@@ -15,6 +15,7 @@ import { AppTheme } from '../../theme';
 import { useMosqueMode } from '../../hooks/useMosqueMode';
 import RingerControlService from '../../services/RingerControlService';
 import MosqueModeService from '../../services/MosqueModeService';
+import { mosqueModePlatformUi } from '../../utils/mosqueModePlatform';
 
 export const MosqueModeToggle: React.FC = () => {
   const { theme } = useTheme();
@@ -117,9 +118,7 @@ export const MosqueModeToggle: React.FC = () => {
 
         Alert.alert(
           'Mosque Mode Enabled',
-          Platform.OS === 'android'
-            ? 'Your phone will automatically go silent at iqamah time for each prayer.'
-            : 'You will receive a reminder before each iqamah to silence your phone.',
+          mosqueModePlatformUi.enabledMessage,
           Platform.OS === 'android'
             ? [
                 { text: 'Great!' },
@@ -135,7 +134,7 @@ export const MosqueModeToggle: React.FC = () => {
       } else {
         Alert.alert(
           'Disable Mosque Mode?',
-          'You will no longer receive silent mode reminders at iqamah time.',
+          mosqueModePlatformUi.disableConfirmMessage,
           [
             { text: 'Cancel', style: 'cancel' },
             {
@@ -145,7 +144,7 @@ export const MosqueModeToggle: React.FC = () => {
                 await enableMosqueMode(false);
                 Alert.alert(
                   'Mosque Mode Disabled',
-                  'You will no longer receive automatic silent mode at iqamah time. You can re-enable this anytime.',
+                  mosqueModePlatformUi.disabledMessage,
                   [{ text: 'OK' }]
                 );
               },
@@ -160,9 +159,7 @@ export const MosqueModeToggle: React.FC = () => {
 
   const description = !nativeAvailable
     ? 'Unavailable — rebuild required (expo prebuild --clean)'
-    : Platform.OS === 'android'
-      ? 'Automatically silence phone at iqamah time'
-      : 'Get reminders to enable silent mode for prayers';
+    : mosqueModePlatformUi.toggleDescription;
 
   return (
     <View style={styles.container}>
