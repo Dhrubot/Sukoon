@@ -85,7 +85,7 @@ export const TabNavigator: React.FC = () => {
         name="Home"
         component={HomeScreen}
         options={{
-          tabBarLabel: 'Home',
+          tabBarLabel: 'Pray',
           tabBarIcon: ({ color }) => (
             <HomeIcon color={color} size={24} />
           ),
@@ -115,7 +115,7 @@ export const TabNavigator: React.FC = () => {
         name="Menu"
         component={MenuStackNavigator}
         options={{
-          tabBarLabel: 'More',
+          tabBarLabel: 'Tools',
           tabBarIcon: ({ color }) => (
             <MoreIcon color={color} size={22} />
           ),

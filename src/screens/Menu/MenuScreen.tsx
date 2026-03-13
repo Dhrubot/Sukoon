@@ -194,32 +194,32 @@ interface QuickAccessItem {
 
 const quickAccessItems: QuickAccessItem[] = [
   {
+    icon: AdhkarIcon,
+    title: 'Adhkar',
+    subtitle: 'Morning and evening remembrance',
+    screen: 'Adhkar',
+    colorKey: 'amber',
+  },
+  {
+    icon: DuaIcon,
+    title: 'Dua',
+    subtitle: 'Supplications for daily life',
+    screen: 'DuaLibrary',
+    colorKey: 'purple',
+  },
+  {
     icon: TasbihIcon,
-    title: 'Dhikr Counter',
-    subtitle: 'Tasbih tracker',
+    title: 'Tasbih',
+    subtitle: 'Post-prayer remembrance counter',
     screen: 'Tasbih',
     colorKey: 'teal',
   },
   {
     icon: VerseIcon,
     title: 'Daily Verse',
-    subtitle: 'Quran reflection',
+    subtitle: 'A single ayah for reflection',
     screen: '',
     colorKey: 'gold',
-  },
-  {
-    icon: DuaIcon,
-    title: 'Dua Collection',
-    subtitle: 'Supplications & prayers',
-    screen: 'DuaLibrary',
-    colorKey: 'purple',
-  },
-  {
-    icon: AdhkarIcon,
-    title: 'Adhkar',
-    subtitle: 'Morning & evening',
-    screen: 'Adhkar',
-    colorKey: 'amber',
   },
 ];
 
@@ -355,8 +355,8 @@ const MenuScreen: React.FC = () => {
         style={styles.gradient}
       >
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Practice</Text>
-          <Text style={styles.headerSubtitle}>Quiet tools for before and after prayer</Text>
+          <Text style={styles.headerTitle}>Companion Tools</Text>
+          <Text style={styles.headerSubtitle}>Secondary devotions and private reflection around prayer</Text>
         </View>
 
         <ScrollView
@@ -434,7 +434,10 @@ const MenuScreen: React.FC = () => {
         </TouchableOpacity>
 
         {/* ── Quick Access Grid ── */}
-        <Text style={styles.sectionLabel}>DEVOTION</Text>
+        <Text style={styles.sectionLabel}>DEVOTIONS</Text>
+        <Text style={styles.sectionIntro}>
+          Keep these close, but secondary. They support prayer without competing with it.
+        </Text>
         <View style={styles.quickGrid}>
           {quickAccessItems.map((item) => {
             const accent = getAccentColors(item.colorKey);
@@ -467,7 +470,7 @@ const MenuScreen: React.FC = () => {
         </View>
 
         {/* ── More Features List ── */}
-        <Text style={styles.sectionLabel}>SETTINGS & SUPPORT</Text>
+        <Text style={styles.sectionLabel}>APP & SUPPORT</Text>
         <View style={styles.featuresList}>
           {moreFeatures.map((item, index) => (
             <TouchableOpacity
@@ -549,6 +552,14 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginBottom: 8,
     marginTop: 20,
     marginLeft: 2,
+  },
+  sectionIntro: {
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
+    color: theme.colors.text.muted,
+    marginBottom: 12,
+    marginLeft: 2,
+    lineHeight: 20,
   },
 
   // ── Garden Featured Card ──

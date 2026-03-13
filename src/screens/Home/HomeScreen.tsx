@@ -35,12 +35,10 @@ import { useAppStateChange } from "../../hooks/useAppStateChange";
 // Components
 import PrayerCard from "../../components/prayer/PrayerCard";
 import SanctuaryView from "../../components/prayer/SanctuaryView";
-import DailyVerse from "../../components/common/DailyVerse";
 import { SunTimesDisplay } from "../../components/common/SunTimesDisplay";
 import { MosqueModeOverlay, MosqueModePrompt } from "../../components/mosque";
 import RamadanTimesCard from "../../components/prayer/RamadanTimesCard";
 import OptionalPrayersSection from "../../components/prayer/OptionalPrayersSection";
-import GardenTeaser from "../../components/garden/GardenTeaser";
 import QuickLogSheet from "../../components/prayer/QuickLogSheet";
 import CatchUpSheet from "../../components/prayer/CatchUpSheet";
 import HijriNudgeSheet from "../../components/HijriNudgeSheet";
@@ -935,9 +933,6 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
           {/* Sunrise & Sunset */}
           <SunTimesDisplay sunrise={todaySunrise} sunset={todaySunset} />
 
-          {/* Garden Teaser — subtle entry point to Reflection Garden */}
-          <GardenTeaser />
-
           {/* Today's Prayer Times */}
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>{"Today's Prayers"}</Text>
@@ -968,9 +963,6 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
 
           {/* Optional Prayers (Taraweeh during Ramadan, Tahajjud after Isha) */}
           <OptionalPrayersSection onPrepare={handleOptionalPrayerPrepare} />
-
-          {/* Daily Verse */}
-          <DailyVerse />
 
             {/* Bottom spacing */}
             <View style={{ height: 40 }} />
