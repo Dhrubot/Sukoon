@@ -1,5 +1,5 @@
 // src/screens/Menu/MenuScreen.tsx
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import {
   View,
   Text,
@@ -8,15 +8,14 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import { useStore } from '../../store/useStore';
-import ReflectionGardenService from '../../services/ReflectionGardenService';
-import Svg, { Path, Circle, Line, Polyline, Rect } from 'react-native-svg';
+import Svg, { Path, Circle, Line, Polyline } from 'react-native-svg';
 import DailyVerse, { DailyVerseRef } from '../../components/common/DailyVerse';
 import { withAlpha } from '../../utils/color';
 
@@ -102,20 +101,6 @@ const AdhkarIcon: React.FC<{ color: string; size: number }> = ({ color, size }) 
     <Line x1="21" y1="12" x2="23" y2="12" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
     <Line x1="4.22" y1="19.78" x2="5.64" y2="18.36" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
     <Line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke={color} strokeWidth={1.8} strokeLinecap="round" />
-  </Svg>
-);
-
-// Compass / qibla icon
-const CompassIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Circle cx="12" cy="12" r="10" stroke={color} strokeWidth={1.8} />
-    <Path
-      d="M16.24 7.76l-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z"
-      stroke={color}
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
   </Svg>
 );
 
@@ -210,7 +195,11 @@ const quickAccessItems: QuickAccessItem[] = [
   {
     icon: TasbihIcon,
     title: 'Tasbih',
+<<<<<<< HEAD
     subtitle: 'Post-prayer remembrance counter',
+=======
+    subtitle: 'Post-prayer dhikr',
+>>>>>>> a33fb06 (phase 1 finishes)
     screen: 'Tasbih',
     colorKey: 'teal',
   },
@@ -256,34 +245,8 @@ const MenuScreen: React.FC = () => {
   const { theme, themeMode, toggleTheme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const navigation = useNavigation();
-  const { currentDawam, todayPrayerRecords } = useStore();
+  const { currentDawam } = useStore();
   const dailyVerseRef = useRef<DailyVerseRef>(null);
-
-  // Garden data
-  const [gardenSummary, setGardenSummary] = useState({
-    totalPlants: 0,
-    newBlooms: 0,
-    dawam: 0,
-  });
-
-  useFocusEffect(
-    useCallback(() => {
-      try {
-        const data = ReflectionGardenService.getGardenData(28);
-        setGardenSummary({
-          totalPlants: data.totalPlants,
-          newBlooms: data.newBlooms,
-          dawam: currentDawam,
-        });
-      } catch {
-        // Silently ignore
-      }
-    }, [currentDawam])
-  );
-
-  const prayedCount = todayPrayerRecords.filter(r => r.status === 'prayed').length;
-  const totalPrayers = 5;
-  const progressPercent = prayedCount / totalPrayers;
 
   const handleNavigate = (screen: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -310,17 +273,10 @@ const MenuScreen: React.FC = () => {
 
   // More features list
   const moreFeatures: MoreFeatureItem[] = [
-    // {
-    //   icon: CompassIcon,
-    //   title: 'Qibla Compass',
-    //   subtitle: 'Find direction of prayer',
-    //   screen: 'QiblaFinder',
-    //   iconBg: theme.colors.interactive.active + '14',
-    // },
     {
       icon: JourneyIcon,
-      title: 'My Journey',
-      subtitle: 'Reflect on your prayer history',
+      title: 'Prayer Insights',
+      subtitle: 'Private view of your consistency',
       screen: 'MyJourney',
       iconBg: withAlpha(theme.colors.interactive.active, 0.08),
     },
@@ -364,75 +320,6 @@ const MenuScreen: React.FC = () => {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-        {/* ── Your Practice: Garden Featured Card ── */}
-        <Text style={styles.sectionLabel}>REFLECTION</Text>
-        <TouchableOpacity
-          style={styles.gardenCard}
-          onPress={() => handleNavigate('ReflectionGarden')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.gardenGlow} />
-          <View style={styles.gardenTop}>
-            <View style={styles.gardenIconLg}>
-              <GardenIcon color={theme.colors.interactive.active} size={26} />
-            </View>
-            <View style={styles.gardenText}>
-              <Text style={styles.gardenTitle}>Reflection Garden</Text>
-              <Text style={styles.gardenSub}>
-                {gardenSummary.dawam > 0
-                  ? `${gardenSummary.dawam} days of dawam · quietly growing`
-                  : 'A private record of consistency'}
-              </Text>
-              <Text style={styles.gardenDesc}>
-                Keep a gentle record of prayers, reflections, and spiritual steadiness.
-              </Text>
-            </View>
-          </View>
-
-          {/* Progress bar */}
-          <View style={styles.gardenProgressRow}>
-            <View style={styles.progLabel}>
-              <Text style={styles.progLabelText}>{"Today's prayers"}</Text>
-              <Text style={[styles.progLabelValue, { color: theme.colors.interactive.active }]}>
-                {prayedCount > 0 ? `${prayedCount} of ${totalPrayers} prayed` : 'ready when you are'}
-              </Text>
-            </View>
-            <View style={styles.progBar}>
-              <View
-                style={[
-                  styles.progFill,
-                  {
-                    width: `${Math.max(progressPercent * 100, 2)}%`,
-                    backgroundColor: theme.colors.interactive.active,
-                  },
-                ]}
-              />
-            </View>
-          </View>
-
-          {/* Stats row */}
-          <View style={styles.gardenStats}>
-            <View style={styles.gardenStat}>
-              <Text style={[styles.gsVal, { color: theme.colors.interactive.active }]}>
-                {gardenSummary.dawam > 0 ? gardenSummary.dawam : '—'}
-              </Text>
-              <Text style={styles.gsLabel}>Dawam</Text>
-            </View>
-            <View style={[styles.gardenStat, styles.gardenStatMiddle]}>
-              <Text style={[styles.gsVal, { color: theme.colors.interactive.active }]}>
-                {gardenSummary.totalPlants > 0 ? gardenSummary.totalPlants : '—'}
-              </Text>
-              <Text style={styles.gsLabel}>Prayers</Text>
-            </View>
-            <View style={styles.gardenStat}>
-              <Text style={[styles.gsVal, { color: theme.colors.interactive.active }]}>
-                {gardenSummary.newBlooms > 0 ? gardenSummary.newBlooms : '—'}
-              </Text>
-              <Text style={styles.gsLabel}>Blooms</Text>
-            </View>
-          </View>
-        </TouchableOpacity>
-
         {/* ── Quick Access Grid ── */}
         <Text style={styles.sectionLabel}>DEVOTIONS</Text>
         <Text style={styles.sectionIntro}>
@@ -468,6 +355,32 @@ const MenuScreen: React.FC = () => {
             );
           })}
         </View>
+
+        {/* ── Private reflection entry ── */}
+        <Text style={styles.sectionLabel}>PRIVATE REFLECTION</Text>
+        <TouchableOpacity
+          style={styles.gardenCard}
+          onPress={() => handleNavigate('ReflectionGarden')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.gardenGlow} />
+          <View style={styles.gardenTop}>
+            <View style={styles.gardenIconLg}>
+              <GardenIcon color={theme.colors.interactive.active} size={26} />
+            </View>
+            <View style={styles.gardenText}>
+              <Text style={styles.gardenTitle}>Tuba Tree</Text>
+              <Text style={styles.gardenSub}>
+                {currentDawam > 0
+                  ? `${currentDawam} days of dawam recorded quietly`
+                  : 'A private record of return and reflection'}
+              </Text>
+              <Text style={styles.gardenDesc}>
+                Visit your reflections without pulling them into the main prayer flow.
+              </Text>
+            </View>
+          </View>
+        </TouchableOpacity>
 
         {/* ── More Features List ── */}
         <Text style={styles.sectionLabel}>APP & SUPPORT</Text>

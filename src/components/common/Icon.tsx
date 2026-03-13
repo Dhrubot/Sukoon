@@ -47,7 +47,8 @@ export const Icon: React.FC<IconProps> = ({
       source={source as ImageSourcePropType}
       style={[
         styles.image,
-        { width: size, height: size, tintColor: color },
+        { width: size, height: size },
+        color ? { tintColor: color } : null,
         style
       ]}
       resizeMode="contain"
