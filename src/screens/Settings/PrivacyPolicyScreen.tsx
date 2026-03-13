@@ -35,7 +35,7 @@ const PrivacyPolicyScreen = () => {
           </Text>
           <Text style={styles.bulletPoint}>• Prayer times and records</Text>
           <Text style={styles.bulletPoint}>• Mindfulness sessions and reflections</Text>
-          <Text style={styles.bulletPoint}>• Reflection Garden entries</Text>
+          <Text style={styles.bulletPoint}>• Tuba Tree entries</Text>
           <Text style={styles.bulletPoint}>• Achievement progress</Text>
           <Text style={styles.bulletPoint}>• App settings and preferences</Text>
           <Text style={styles.bulletPoint}>• Location data (city, country, coordinates)</Text>

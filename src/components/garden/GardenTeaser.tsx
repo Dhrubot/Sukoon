@@ -38,10 +38,10 @@ const GardenTeaser: React.FC = () => {
 
   const isEmpty = summary.total === 0;
   const message = isEmpty
-    ? 'Begin with a single reflection'
+    ? 'Begin with a quiet note'
     : summary.newBlooms > 0
-      ? `${summary.newBlooms} new bloom${summary.newBlooms > 1 ? 's' : ''} this week`
-      : 'A quiet record of your prayers';
+      ? `${summary.newBlooms} quiet note${summary.newBlooms > 1 ? 's' : ''} this week`
+      : 'A private record of your prayers';
 
   // Simple progress: cap at 7 reflections per week
   const progressPercent = Math.min(summary.total / 7, 1);
@@ -55,7 +55,7 @@ const GardenTeaser: React.FC = () => {
       <View style={styles.topRow}>
         <Text style={styles.emoji}>{summary.topEmoji}</Text>
         <View style={styles.textCol}>
-          <Text style={styles.title}>Reflection Garden</Text>
+          <Text style={styles.title}>Tuba Tree</Text>
           <Text style={styles.message}>{message}</Text>
         </View>
         <Text style={[styles.chevron, { color: theme.colors.text.muted }]}>›</Text>

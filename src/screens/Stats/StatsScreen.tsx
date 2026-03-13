@@ -279,7 +279,7 @@ const StatsScreen: React.FC = ({ navigation }: any) => {
       <LinearGradient colors={ambientColors} style={styles.gradient}>
         <ScrollView showsVerticalScrollIndicator={false}>
           <View style={styles.header}>
-            <Text style={styles.eyebrow}>My Journey</Text>
+            <Text style={styles.eyebrow}>Prayer Insights</Text>
             <Text style={styles.title}>Prayer Statistics</Text>
             <Text style={styles.subtitle}>A gentle record of consistency and presence</Text>
             
