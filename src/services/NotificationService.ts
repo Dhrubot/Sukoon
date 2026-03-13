@@ -933,7 +933,7 @@ class NotificationService {
       await Notifications.scheduleNotificationAsync({
         content: {
           title: 'Assalamu Alaikum',
-          body: 'Tap to keep your prayer reminders flowing. May your prayers be accepted.',
+          body: 'Open Sukoon occasionally so prayer reminders can stay active.',
           data: { type: 'keepalive' },
           ...(Platform.OS === 'android' && { channelId: CHANNELS.DEFAULT }),
         },
@@ -959,8 +959,8 @@ class NotificationService {
 
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: 'Mindful Moment 🧘‍♂️',
-        body: `Take a moment to prepare your heart for ${displayName} prayer`,
+        title: 'Prepare for prayer',
+        body: `Take a quiet moment before ${displayName} prayer`,
         data: {
           prayer: prayerName,
           type: 'mindfulness-reminder',

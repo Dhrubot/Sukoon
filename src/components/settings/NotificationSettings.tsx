@@ -127,7 +127,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
       logger.error('Failed to update intensity settings:', error);
-      Alert.alert('Error', 'Failed to update reminder intensity');
+      Alert.alert('Error', 'Failed to update reminder style');
     } finally {
       setIsUpdating(false);
     }
@@ -141,8 +141,8 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
   const showScheduledNotifications = async () => {
     const scheduled = await NotificationService.getScheduledNotifications();
     Alert.alert(
-      'Scheduled Notifications',
-      `You have ${scheduled.length} prayer notifications scheduled over the next 7 days.`,
+      'Scheduled Reminders',
+      `You have ${scheduled.length} prayer reminders scheduled over the next 7 days.`,
       [{ text: 'OK' }]
     );
   };
@@ -156,7 +156,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
           onPress={() => setActiveTab('basic')}
         >
           <Text style={[styles.tabText, activeTab === 'basic' && styles.tabTextActive]}>
-            Basic
+            Prayer Reminders
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -164,7 +164,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
           onPress={() => setActiveTab('habit')}
         >
           <Text style={[styles.tabText, activeTab === 'habit' && styles.tabTextActive]}>
-            Habit Builder
+            Gentle Support
           </Text>
         </TouchableOpacity>
       </View>
@@ -178,7 +178,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
           <View style={styles.settingInfo}>
             <Text style={styles.settingLabel}>Prayer Notifications</Text>
             <Text style={styles.settingDescription}>
-              Receive reminders for all five daily prayers
+              Receive reminders for the five daily prayers
             </Text>
           </View>
           <Switch
@@ -195,9 +195,9 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
         <>
           {/* Pre-Prayer Reminder */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Pre-Prayer Reminder</Text>
+            <Text style={styles.sectionTitle}>Preparation Reminder</Text>
             <Text style={styles.settingDescription}>
-              Get notified before prayer time to prepare
+              Receive a quiet nudge before prayer time
             </Text>
             
             <View style={styles.reminderOptions}>
@@ -227,9 +227,9 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
           <View style={styles.section}>
             <View style={styles.settingRow}>
               <View style={styles.settingInfo}>
-                <Text style={styles.settingLabel}>Notification Sound</Text>
+                <Text style={styles.settingLabel}>Sound</Text>
                 <Text style={styles.settingDescription}>
-                  Play sound with notifications
+                  Play a sound with reminders
                 </Text>
               </View>
               <Switch
@@ -263,9 +263,9 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
           <View style={styles.section}>
             <View style={styles.settingRow}>
               <View style={styles.settingInfo}>
-                <Text style={styles.settingLabel}>Post-Prayer Check</Text>
+                <Text style={styles.settingLabel}>Quiet Check-In</Text>
                 <Text style={styles.settingDescription}>
-                  Remind me to mark prayers 15 min after prayer time
+                  Offer a gentle follow-up after prayer time begins
                 </Text>
               </View>
               <Switch
@@ -279,16 +279,16 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
 
           {/* Notification Intensity */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Reminder Intensity</Text>
+            <Text style={styles.sectionTitle}>Reminder Style</Text>
             <Text style={styles.settingDescription}>
-              How persistent should follow-up reminders be?
+              Choose how much support you want when prayer slips
             </Text>
 
             <View style={styles.reminderOptions}>
               {([
-                { key: 'gentle', label: 'Gentle', desc: 'Single reminder only' },
-                { key: 'balanced', label: 'Balanced', desc: 'Up to 2 follow-ups' },
-                { key: 'persistent', label: 'Persistent', desc: 'Remind until marked' },
+                { key: 'gentle', label: 'Gentle Return', desc: 'One quiet reminder' },
+                { key: 'balanced', label: 'Help Me Be On Time', desc: 'A few follow-ups' },
+                { key: 'persistent', label: 'Do Not Let Me Drift', desc: 'Stronger follow-up support' },
               ] as const).map((opt) => (
                 <TouchableOpacity
                   key={opt.key}
@@ -314,10 +314,10 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
 
           {/* Test & Debug */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Test Notifications</Text>
+            <Text style={styles.sectionTitle}>Test Reminders</Text>
             
             <TouchableOpacity style={styles.button} onPress={testNotification}>
-              <Text style={styles.buttonText}>Send Test Notification</Text>
+              <Text style={styles.buttonText}>Send Test Reminder</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -325,16 +325,16 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({ userSetting
               onPress={showScheduledNotifications}
             >
               <Text style={[styles.buttonText, styles.secondaryButtonText]}>
-                View Scheduled Notifications
+                View Scheduled Reminders
               </Text>
             </TouchableOpacity>
           </View>
 
           {/* Tips */}
           <View style={styles.tipsSection}>
-            <Text style={styles.tipsTitle}>Tips</Text>
+            <Text style={styles.tipsTitle}>Notes</Text>
             <Text style={styles.tipText}>
-              • Notifications work best when the app has been opened recently
+              • Reminders work best when the app has been opened recently
             </Text>
             <Text style={styles.tipText}>
               • On some devices, you may need to disable battery optimization

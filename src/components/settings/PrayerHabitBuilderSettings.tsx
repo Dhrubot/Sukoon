@@ -117,9 +117,9 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
       <View style={styles.section}>
         <View style={styles.headerRow}>
           <View style={styles.headerInfo}>
-            <Text style={styles.sectionTitle}>Prayer Habit Builder</Text>
+            <Text style={styles.sectionTitle}>Gentle Support</Text>
             <Text style={styles.settingDescription}>
-              Advanced reminders to help build consistent prayer habits
+              Extra support for days when you need more help returning to prayer
             </Text>
           </View>
           <Switch
@@ -137,7 +137,7 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
           {/* TIER 2: Persistent Reminders */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Persistent Reminders</Text>
+              <Text style={styles.sectionTitle}>Return Check-Ins</Text>
               <Switch
                 value={localSettings.persistentReminders.enabled}
                 onValueChange={(value) =>
@@ -153,7 +153,7 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
               />
             </View>
             <Text style={styles.settingDescription}>
-              "Have you prayed?" reminders after prayer time
+              Quiet follow-ups after prayer time begins
             </Text>
 
             {localSettings.persistentReminders.enabled && (
@@ -161,7 +161,7 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
                 {/* First Check Delay */}
                 <View style={styles.sliderContainer}>
                   <View style={styles.sliderHeader}>
-                    <Text style={styles.sliderLabel}>First Check After</Text>
+                    <Text style={styles.sliderLabel}>First Check-In</Text>
                     <Text style={styles.sliderValue}>
                       {localSettings.persistentReminders.firstCheckDelay} min
                     </Text>
@@ -194,14 +194,14 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
                     thumbTintColor={theme.colors.settings.sliderThumb}
                   />
                   <Text style={styles.sliderHint}>
-                    First "Have you prayed?" reminder
+                    First quiet follow-up
                   </Text>
                 </View>
 
                 {/* Reminder Interval */}
                 <View style={styles.sliderContainer}>
                   <View style={styles.sliderHeader}>
-                    <Text style={styles.sliderLabel}>Reminder Interval</Text>
+                    <Text style={styles.sliderLabel}>Space Between Check-Ins</Text>
                     <Text style={styles.sliderValue}>
                       {localSettings.persistentReminders.interval} min
                     </Text>
@@ -234,14 +234,14 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
                     thumbTintColor={theme.colors.settings.sliderThumb}
                   />
                   <Text style={styles.sliderHint}>
-                    Time between follow-up reminders
+                    Time between quiet reminders
                   </Text>
                 </View>
 
                 {/* Max Reminders */}
                 <View style={styles.sliderContainer}>
                   <View style={styles.sliderHeader}>
-                    <Text style={styles.sliderLabel}>Maximum Reminders</Text>
+                    <Text style={styles.sliderLabel}>Check-In Limit</Text>
                     <Text style={styles.sliderValue}>
                       {localSettings.persistentReminders.maxReminders}
                     </Text>
@@ -274,7 +274,7 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
                     thumbTintColor={theme.colors.settings.sliderThumb}
                   />
                   <Text style={styles.sliderHint}>
-                    Total follow-up reminders per prayer
+                    Total check-ins for one prayer
                   </Text>
                 </View>
               </>
@@ -284,7 +284,7 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
           {/* TIER 3: Grace Period Warning */}
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Grace Period Warning</Text>
+              <Text style={styles.sectionTitle}>Prayer Window Reminder</Text>
               <Switch
                 value={localSettings.gracePeriodWarning.enabled}
                 onValueChange={(value) =>
@@ -300,13 +300,13 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
               />
             </View>
             <Text style={styles.settingDescription}>
-              Urgent reminder before next prayer starts
+              A final reminder before the next prayer window begins
             </Text>
 
             {localSettings.gracePeriodWarning.enabled && (
               <View style={styles.sliderContainer}>
                 <View style={styles.sliderHeader}>
-                  <Text style={styles.sliderLabel}>Warn Before Next Prayer</Text>
+                  <Text style={styles.sliderLabel}>Remind Me Before Next Prayer</Text>
                   <Text style={styles.sliderValue}>
                     {localSettings.gracePeriodWarning.minutesBeforeNext} min
                   </Text>
@@ -339,7 +339,7 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
                   thumbTintColor={theme.colors.settings.sliderWarningThumb}
                 />
                 <Text style={styles.sliderHint}>
-                  "Last chance" notification timing
+                  Timing for the final quiet reminder
                 </Text>
               </View>
             )}
@@ -347,14 +347,14 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
 
           {/* Reminder Settings */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Reminder Options</Text>
+            <Text style={styles.sectionTitle}>Delay Options</Text>
             <Text style={styles.settingDescription}>
-              Customize how prayer reminders follow up
+              Set how reminder delays should behave
             </Text>
 
             {/* Default Reminder Delay */}
             <View style={styles.snoozeOptions}>
-              <Text style={styles.optionLabel}>Default Reminder Delay</Text>
+              <Text style={styles.optionLabel}>Default Delay</Text>
               <View style={styles.buttonRow}>
                 {[5, 10, 15, 30].map((minutes) => (
                   <TouchableOpacity
@@ -387,7 +387,7 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
             {/* Max Reminders */}
             <View style={styles.sliderContainer}>
               <View style={styles.sliderHeader}>
-                <Text style={styles.sliderLabel}>Max Reminders Per Prayer</Text>
+                <Text style={styles.sliderLabel}>Max Delays Per Prayer</Text>
                 <Text style={styles.sliderValue}>
                   {localSettings.snooze.maxSnoozesPerPrayer}
                 </Text>
@@ -414,7 +414,7 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
                 thumbTintColor={theme.colors.settings.sliderThumb}
               />
               <Text style={styles.sliderHint}>
-                Limit follow-up reminders
+                Limit how many times a reminder can be delayed
               </Text>
             </View>
           </View>
@@ -475,23 +475,23 @@ const PrayerHabitBuilderSettings: React.FC<PrayerHabitBuilderSettingsProps> = ({
 
           {/* Info Section */}
           <View style={styles.infoSection}>
-            <Text style={styles.infoTitle}>How it Works</Text>
+            <Text style={styles.infoTitle}>How Support Works</Text>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Tier 1: Main Notification</Text>
+              <Text style={styles.infoLabel}>Main Reminder</Text>
               <Text style={styles.infoText}>
-                Prayer time alert with snooze and complete options
+                The first prayer reminder with delay and complete options
               </Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Tier 2: Persistent Reminders</Text>
+              <Text style={styles.infoLabel}>Return Check-Ins</Text>
               <Text style={styles.infoText}>
-                Follow-up "Have you prayed?" checks at your chosen intervals
+                Follow-up reminders at the rhythm you choose
               </Text>
             </View>
             <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Tier 3: Grace Period</Text>
+              <Text style={styles.infoLabel}>Prayer Window Reminder</Text>
               <Text style={styles.infoText}>
-                Urgent warning before the window for this prayer closes
+                A final nudge before the next prayer window begins
               </Text>
             </View>
           </View>
