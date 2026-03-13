@@ -51,7 +51,15 @@ import { getLocalDateKey } from "../../utils/dateHelpers";
 
 const { width, height } = Dimensions.get("window");
 
-type FlowStep = "transition" | "breathing" | "niyyah" | "praying" | "dhikr" | "reflection" | "complete";
+type FlowStep =
+  | "transition"
+  | "breathing"
+  | "niyyah"
+  | "settling"
+  | "praying"
+  | "dhikr"
+  | "reflection"
+  | "complete";
 
 const MindfulnessFlow: React.FC = () => {
   useKeepAwake(); // Keep screen on during prayer — no dimming mid-salah
@@ -111,6 +119,7 @@ const MindfulnessFlow: React.FC = () => {
   const stillnessPulse = useRef(new Animated.Value(0.3)).current;
   const stillnessLoopRef = useRef<Animated.CompositeAnimation | null>(null);
   const completionTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const settlingTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const stopStillnessLoop = () => {
     stillnessLoopRef.current?.stop();
@@ -146,6 +155,9 @@ const MindfulnessFlow: React.FC = () => {
   useEffect(() => {
     return () => {
       stopStillnessLoop();
+      if (settlingTimerRef.current) {
+        clearTimeout(settlingTimerRef.current);
+      }
       if (completionTimerRef.current) {
         clearTimeout(completionTimerRef.current);
       }
@@ -160,7 +172,7 @@ const MindfulnessFlow: React.FC = () => {
     if (['transition', 'breathing', 'complete'].includes(currentStep)) return;
 
     // Praying and dhikr steps get a slower, gentler fade (no slide)
-    if (currentStep === 'praying' || currentStep === 'dhikr') {
+    if (currentStep === 'settling' || currentStep === 'praying' || currentStep === 'dhikr') {
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 800,
@@ -211,6 +223,33 @@ const MindfulnessFlow: React.FC = () => {
       return () => clearTimeout(timer);
     }
   }, [currentStep]);
+
+  useEffect(() => {
+    if (currentStep !== 'settling') {
+      if (settlingTimerRef.current) {
+        clearTimeout(settlingTimerRef.current);
+        settlingTimerRef.current = null;
+      }
+      return;
+    }
+
+    settlingTimerRef.current = setTimeout(() => {
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 500,
+        useNativeDriver: true,
+      }).start(() => {
+        setCurrentStep('praying');
+      });
+    }, 3200);
+
+    return () => {
+      if (settlingTimerRef.current) {
+        clearTimeout(settlingTimerRef.current);
+        settlingTimerRef.current = null;
+      }
+    };
+  }, [currentStep, fadeAnim]);
 
   // 🎯 Prayer validation effect - run once on mount
   // Skip for sunnah/optional prayers (Taraweeh, Tahajjud, etc.) — no strict fiqh deadline
@@ -349,13 +388,13 @@ const MindfulnessFlow: React.FC = () => {
     setSavedRecordId(recordId);
     setPrayerStartTime(new Date());
 
-    // Transition to minimal "praying" screen — fade out, then useEffect handles fade-in
+    // Transition to a short handoff that encourages putting the phone away
     Animated.timing(fadeAnim, {
       toValue: 0,
       duration: 500,
       useNativeDriver: true,
     }).start(() => {
-      setCurrentStep("praying");
+      setCurrentStep("settling");
     });
   };
 
@@ -659,7 +698,7 @@ const MindfulnessFlow: React.FC = () => {
       {nextPrayer?.name === prayer.name && (
         <View style={styles.timingInfoContainer}>
           <Text style={styles.timingText}>
-            ✨ Perfect timing! This is your next prayer
+            This is your next prayer
           </Text>
         </View>
       )}
@@ -714,9 +753,27 @@ const MindfulnessFlow: React.FC = () => {
           onPress={beginPrayer}
           activeOpacity={0.8}
         >
-          <Text style={styles.beginPrayerText}>Begin Prayer</Text>
+          <Text style={styles.beginPrayerText}>Step Into Prayer</Text>
         </TouchableOpacity>
       </View>
+    </Animated.View>
+  );
+
+  const renderSettlingStep = () => (
+    <Animated.View
+      style={[
+        styles.prayingContainer,
+        { opacity: fadeAnim },
+      ]}
+    >
+      <Text style={styles.prayingLabel}>{displayName}</Text>
+      <Text style={styles.prayingText}>Put your phone away now</Text>
+      <Text style={styles.settlingText}>
+        Let the next few minutes belong only to Allah.
+      </Text>
+      <Text style={styles.settlingHint}>
+        This screen will fade on its own.
+      </Text>
     </Animated.View>
   );
 
@@ -730,16 +787,19 @@ const MindfulnessFlow: React.FC = () => {
       <Text style={styles.prayingLabel}>
         {displayName}
       </Text>
-      <Text style={styles.prayingText}>You are in prayer</Text>
+      <Text style={styles.prayingText}>Your phone can wait</Text>
       <Animated.Text style={[styles.prayingSubtext, { opacity: stillnessPulse }]}>
         {khushuLine}
       </Animated.Text>
+      <Text style={styles.prayingHint}>
+        Return only after salah is complete.
+      </Text>
 
       <TouchableOpacity
-        style={styles.finishPrayerButton}
+        style={styles.returnFromPrayerButton}
         onPress={finishPrayer}
       >
-        <Text style={styles.finishPrayerText}>Finished Praying</Text>
+        <Text style={styles.returnFromPrayerText}>I'm back from prayer</Text>
       </TouchableOpacity>
     </Animated.View>
   );
@@ -759,7 +819,7 @@ const MindfulnessFlow: React.FC = () => {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={[styles.stepTitle, { color: theme.colors.text.primary }]}>How Was Your Prayer?</Text>
+        <Text style={[styles.stepTitle, { color: theme.colors.text.primary }]}>Leave a Quiet Note</Text>
 
         <ReflectionPrompts
           prayerName={prayer.name}
@@ -780,7 +840,7 @@ const MindfulnessFlow: React.FC = () => {
             onPress={skipReflection}
             activeOpacity={0.7}
           >
-            <Text style={styles.skipReflectionText}>Skip</Text>
+            <Text style={styles.skipReflectionText}>Not now</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -793,7 +853,7 @@ const MindfulnessFlow: React.FC = () => {
             activeOpacity={0.8}
           >
             <Text style={[styles.completeButtonText, { color: theme.colors.text.primary }]}>
-              Complete ✨
+              Save reflection
             </Text>
           </TouchableOpacity>
         </View>
@@ -808,7 +868,7 @@ const MindfulnessFlow: React.FC = () => {
         { opacity: transitionFade },
       ]}
     >
-      <Text style={styles.transitionText}>Leave the world behind...</Text>
+      <Text style={styles.transitionText}>Leave the world behind for a moment.</Text>
     </Animated.View>
   );
 
@@ -827,17 +887,13 @@ const MindfulnessFlow: React.FC = () => {
           },
         ]}
       >
-        <Animated.Text style={[styles.completeEmoji, { opacity: stillnessPulse }]}>✨</Animated.Text>
-        <Text style={styles.completeTitle}>Ma sha Allah!</Text>
+        <Animated.Text style={[styles.completeEmoji, { opacity: stillnessPulse }]}>•</Animated.Text>
+        <Text style={styles.completeTitle}>Prayer completed</Text>
         <Text style={styles.completeText}>
-          You've prepared & prayed for{" "}
-          {displayName} prayer.
+          You stepped away, prayed {displayName}, and returned with intention.
           {"\n\n"}
-          May your prayer be accepted and bring you peace.
+          May Allah accept it and place calm in what comes next.
         </Text>
-        {!isSunnah && reflectionText.length > 0 && (
-          <Text style={styles.gardenHint}>A new bloom appeared in your garden 🌱</Text>
-        )}
         <Text style={styles.tapToDismiss}>Tap anywhere to return</Text>
       </Animated.View>
     </TouchableOpacity>
@@ -849,8 +905,8 @@ const MindfulnessFlow: React.FC = () => {
   }
 
   const showGradient = !['reflection', 'dhikr'].includes(currentStep);
-  const showHeader = !['praying', 'dhikr'].includes(currentStep);
-  const showDots = !['transition', 'praying', 'dhikr', 'complete'].includes(currentStep);
+  const showHeader = !['settling', 'praying', 'dhikr'].includes(currentStep);
+  const showDots = !['transition', 'settling', 'praying', 'dhikr', 'complete'].includes(currentStep);
 
   // Progress: breathing=0, niyyah=1, reflection=2 (3 dots)
   const stepIndexMap: Record<string, number> = { breathing: 0, niyyah: 1, reflection: 2 };
@@ -907,6 +963,7 @@ const MindfulnessFlow: React.FC = () => {
             {currentStep === "transition" && renderTransitionStep()}
             {currentStep === "breathing" && renderBreathingStep()}
             {currentStep === "niyyah" && renderNiyyahStep()}
+            {currentStep === "settling" && renderSettlingStep()}
             {currentStep === "praying" && renderPrayingStep()}
             {currentStep === "dhikr" && (
               <DhikrCounter onComplete={finishDhikr} onSkip={finishDhikr} />
@@ -1094,14 +1151,6 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     textAlign: "center",
     lineHeight: 26,
   },
-  gardenHint: {
-    fontSize: theme.typography.fontSize.md,
-    fontFamily: theme.typography.fontFamily.body,
-    color: theme.colors.mindfulness.textMuted,
-    textAlign: "center",
-    fontStyle: "italic",
-    marginTop: theme.spacing.xl,
-  },
   tapToDismiss: {
     fontSize: theme.typography.fontSize.sm,
     fontFamily: theme.typography.fontFamily.body,
@@ -1181,17 +1230,38 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontStyle: "italic",
     marginBottom: theme.spacing['4xl'] + 20,
   },
-  finishPrayerButton: {
-    backgroundColor: theme.colors.mindfulness.buttonBg,
+  settlingText: {
+    fontSize: theme.typography.fontSize.xl,
+    fontFamily: theme.typography.fontFamily.body,
+    color: theme.colors.text.secondary,
+    textAlign: "center",
+    lineHeight: 30,
+    marginBottom: theme.spacing.lg,
+  },
+  settlingHint: {
+    fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.body,
+    color: theme.colors.text.muted,
+    textAlign: "center",
+  },
+  prayingHint: {
+    fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.body,
+    color: theme.colors.text.muted,
+    textAlign: "center",
+    marginBottom: theme.spacing['3xl'],
+  },
+  returnFromPrayerButton: {
     borderRadius: theme.borderRadius.lg,
-    paddingVertical: theme.spacing.xl - 2,
+    paddingVertical: theme.spacing.lg,
     paddingHorizontal: theme.spacing['3xl'],
     alignItems: "center",
     borderWidth: 1,
-    borderColor: theme.colors.mindfulness.buttonBorder,
+    borderColor: theme.colors.border.secondary,
+    backgroundColor: theme.colors.background.secondary,
   },
-  finishPrayerText: {
-    fontSize: theme.typography.fontSize.xl,
+  returnFromPrayerText: {
+    fontSize: theme.typography.fontSize.lg,
     fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
   },

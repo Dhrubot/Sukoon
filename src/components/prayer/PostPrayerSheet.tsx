@@ -95,7 +95,7 @@ const PostPrayerSheet: React.FC<PostPrayerSheetProps> = ({
           <Text style={styles.title}>{displayName} is complete</Text>
 
           <Text style={styles.message}>
-            If you wish, continue with Sunnah or return to the prayer flow quietly.
+            If you wish, continue with Sunnah or leave a private note about this prayer.
           </Text>
 
           {/* Option A: Pray Sunnah/Nafl */}
@@ -116,7 +116,7 @@ const PostPrayerSheet: React.FC<PostPrayerSheetProps> = ({
             activeOpacity={0.8}
           >
             <Text style={styles.outlineButtonText}>
-              Return to prayer flow
+              Open quiet reflection
             </Text>
           </TouchableOpacity>
 

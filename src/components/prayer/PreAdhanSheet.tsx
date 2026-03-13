@@ -148,7 +148,7 @@ const PreAdhanSheet: React.FC<PreAdhanSheetProps> = ({
             onPress={onDismiss}
             activeOpacity={0.7}
           >
-            <Text style={styles.dismissButtonText}>Wait for adhan</Text>
+            <Text style={styles.dismissButtonText}>Return when adhan begins</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>
