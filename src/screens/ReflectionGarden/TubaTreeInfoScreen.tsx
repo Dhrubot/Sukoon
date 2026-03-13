@@ -402,8 +402,8 @@ const TubaTreeInfoScreen: React.FC = () => {
           <Text style={styles.heroTitle}>Your Tuba Tree</Text>
           <Text style={[styles.heroArabic, { color: dawamColor }]}>طُوبَىٰ</Text>
           <Text style={styles.heroSubtitle}>
-            Every prayer with presence plants a leaf.{'\n'}
-            Every day of consistency deepens the roots.
+            Every prayer with presence leaves a trace.{'\n'}
+            Every day of return deepens the roots.
           </Text>
         </View>
 
@@ -426,9 +426,9 @@ const TubaTreeInfoScreen: React.FC = () => {
             </Text>
           </View>
           <Text style={styles.bodyText}>
-            Your Tuba Tree in Sukoon is a living mirror of your spiritual practice.
-            It grows only through genuine reflection — not just marking prayers complete,
-            but pausing to breathe, to feel, to connect.
+            Your Tuba Tree in Sukoon is a private metaphor for prayer and return.
+            It is not a score. It becomes fuller through sincere reflection,
+            quiet honesty, and showing up again.
           </Text>
         </View>
 
@@ -449,13 +449,13 @@ const TubaTreeInfoScreen: React.FC = () => {
             },
             {
               n: '3',
-              title: 'Focus determines leaf size',
-              body:  'Your mood after prayer shapes the leaf. Low focus (1–2) creates small seed-leaves. Present focus (3) grows sprout-leaves. Deep khushoo (4–5) produces large bloom-leaves with a gold sparkle.',
+              title: 'Your state leaves a trace',
+              body:  'Your mood after prayer shapes how the leaf appears. Distracted prayers look quieter, while deeper presence appears brighter. The point is not ranking prayer, but noticing your inner state honestly.',
             },
             {
               n: '4',
               title: 'Consistency deepens roots',
-              body:  "Your dawam (دوام) — consecutive days of reflection — thickens the trunk and advances the tree through growth stages. Breaks don't destroy the tree, but dawam makes it stronger.",
+              body:  "Your dawam (دوام) — consecutive days of reflection — deepens the roots. Breaks do not erase the tree. Return simply leaves its mark over time.",
             },
           ].map((step) => (
             <View key={step.n} style={styles.growthStep}>
@@ -527,8 +527,8 @@ const TubaTreeInfoScreen: React.FC = () => {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Growth Stages</Text>
           <Text style={styles.bodyText}>
-            As your total reflections increase, the tree advances through five stages.
-            Each stage changes the trunk thickness, branch reach, and unlocks new features.
+            As your reflections accumulate, the tree becomes fuller and more rooted.
+            These stages are a visual metaphor for return, not a level system.
           </Text>
 
           {STAGE_VISUALS.map((stageVis, index) => {
@@ -585,7 +585,7 @@ const TubaTreeInfoScreen: React.FC = () => {
                       ]}
                     >
                       <Text style={[styles.unlockText, { color: theme.colors.interactive.active }]}>
-                        ✦ Unlocks sub-branches
+                        Fuller branching appears
                       </Text>
                     </View>
                   )}
@@ -622,7 +622,7 @@ const TubaTreeInfoScreen: React.FC = () => {
           <Text style={styles.bodyText}>
             Tap any leaf on your tree to see its details — which prayer it came from,
             when you prayed, your mood level, and whether you wrote a reflection.
-            Each leaf is a moment of connection with Allah, preserved in your garden.
+            Each leaf is a private trace of a moment you turned back to Allah.
           </Text>
         </View>
 

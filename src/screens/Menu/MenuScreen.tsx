@@ -195,11 +195,7 @@ const quickAccessItems: QuickAccessItem[] = [
   {
     icon: TasbihIcon,
     title: 'Tasbih',
-<<<<<<< HEAD
-    subtitle: 'Post-prayer remembrance counter',
-=======
     subtitle: 'Post-prayer dhikr',
->>>>>>> a33fb06 (phase 1 finishes)
     screen: 'Tasbih',
     colorKey: 'teal',
   },
@@ -247,7 +243,6 @@ const MenuScreen: React.FC = () => {
   const navigation = useNavigation();
   const { currentDawam } = useStore();
   const dailyVerseRef = useRef<DailyVerseRef>(null);
-
   const handleNavigate = (screen: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     navigation.navigate(screen as never);

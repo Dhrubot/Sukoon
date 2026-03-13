@@ -86,9 +86,9 @@ const ReflectionGardenScreen: React.FC = () => {
     return count;
   }, [plants]);
 
-  const bloomCount = useMemo(
-    () => plants.filter((p) => p.growthStage === 'bloom' && p.mood >= 4).length,
-    [plants],
+  const writtenReflectionCount = useMemo(
+    () => recentReflections.filter((reflection) => reflection.text?.trim().length > 0).length,
+    [recentReflections],
   );
 
   if (isLoading) {
@@ -97,7 +97,7 @@ const ReflectionGardenScreen: React.FC = () => {
         <LinearGradient colors={ambientColors} style={styles.gradient}>
           <View style={styles.loadingContainer}>
             <ActivityIndicator size="large" color={theme.colors.primary.DEFAULT} />
-            <Text style={styles.loadingText}>Gathering your reflections...</Text>
+            <Text style={styles.loadingText}>Opening your private reflections...</Text>
           </View>
         </LinearGradient>
       </SafeAreaView>
@@ -114,12 +114,12 @@ const ReflectionGardenScreen: React.FC = () => {
       <SafeAreaView style={styles.container}>
         <LinearGradient colors={ambientColors} style={styles.gradient}>
           <ScrollView contentContainerStyle={styles.emptyContainer}>
-            <Text style={styles.emptyEmoji}>🌱</Text>
+            <Text style={styles.emptyEmoji}>•</Text>
             <Text style={styles.emptyTitle}>
-              Every tree begins{'\n'}with a single seed
+              The Tuba Tree begins{'\n'}with a single return
             </Text>
             <Text style={styles.emptySubtitle}>
-              After your next prayer, leave a short reflection and this space will begin to grow with you.
+              After your next prayer, you can leave a quiet note here. This space is private witness, not a score.
             </Text>
             <TouchableOpacity
               style={[styles.emptyCta, { borderColor: theme.colors.primary.DEFAULT }]}
@@ -163,7 +163,7 @@ const ReflectionGardenScreen: React.FC = () => {
             <Text style={styles.subtitle}>
               {ramadan
                 ? 'Blessed Ramadan — every prayer\nis shade on the Day of Judgment'
-                : 'A quiet witness to prayer,\nreflection, and steadiness'}
+                : 'A private witness to prayer,\nreturn, and reflection'}
             </Text>
           </View>
           <DawamBadge days={dawamDays} />
@@ -191,19 +191,6 @@ const ReflectionGardenScreen: React.FC = () => {
               </View>
             );
           })}
-          {bloomCount > 0 && (
-            <View style={styles.legendChip}>
-              <View
-                style={[
-                  styles.legendDot,
-                  { backgroundColor: theme.colors.garden.bloomGlow },
-                ]}
-              />
-              <Text style={[styles.legendLabel, { color: theme.colors.text.muted }]}>
-                Bloom ✦
-              </Text>
-            </View>
-          )}
         </View>
 
         {/* Stats row */}
@@ -221,15 +208,15 @@ const ReflectionGardenScreen: React.FC = () => {
               {dawamDays > 0 ? dawamDays : '—'}
             </Text>
             <Text style={[styles.statLabel, { color: theme.colors.text.muted }]}>
-              {dawamDays > 0 ? 'days of steadiness' : 'begin today'}
+              {dawamDays > 0 ? 'days of return' : 'begin today'}
             </Text>
           </View>
           <View style={[styles.statBlock, styles.statBlockBorder]}>
             <Text style={[styles.statVal, { color: theme.colors.primary.DEFAULT }]}>
-              {bloomCount > 0 ? bloomCount : '—'}
+              {writtenReflectionCount > 0 ? writtenReflectionCount : '—'}
             </Text>
             <Text style={[styles.statLabel, { color: theme.colors.text.muted }]}>
-              {bloomCount > 0 ? 'blooms ✦' : 'blooms'}
+              {writtenReflectionCount > 0 ? 'written notes' : 'written notes'}
             </Text>
           </View>
         </View>
@@ -247,7 +234,7 @@ const ReflectionGardenScreen: React.FC = () => {
           activeOpacity={0.7}
         >
           <Text style={[styles.infoLinkText, { color: theme.colors.interactive.active }]}>
-            Learn about your Tuba Tree →
+            About the Tuba Tree →
           </Text>
         </TouchableOpacity>
 
