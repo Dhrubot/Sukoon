@@ -7,14 +7,14 @@ export const mosqueModePlatformUi = {
   showsSilentModeControls: isMosqueModeAutoSilenceSupported,
   showsRestoreWindow: isMosqueModeAutoSilenceSupported,
   headerSubtitle: isMosqueModeAutoSilenceSupported
-    ? 'Automatically silence your phone when iqamah starts so you can focus entirely on your prayer.'
-    : 'Get a reminder before iqamah so you can silence your phone yourself before prayer begins.',
+    ? 'Guard the quiet of the masjid by entering a dedicated prayer mode before iqamah.'
+    : 'Get a calm reminder before iqamah so you can silence your phone yourself before prayer begins.',
   footerText: isMosqueModeAutoSilenceSupported
-    ? 'Your phone will go silent at iqamah time and restore automatically after the prayer ends.'
+    ? 'Sukoon handles the quiet around iqamah so the masjid stays calm and your attention stays on salah.'
     : 'Sukoon cannot change iPhone sound settings for you. It will remind you at the right time so you can silence your phone yourself.',
   optionsSectionLabel: isMosqueModeAutoSilenceSupported ? 'SILENT MODE OPTIONS' : 'REMINDER OPTIONS',
   toggleDescription: isMosqueModeAutoSilenceSupported
-    ? 'Automatically silence phone at iqamah time'
+    ? 'Automatically protect masjid quiet at iqamah time'
     : 'Receive reminders before iqamah so you can silence your phone manually',
   enabledMessage: isMosqueModeAutoSilenceSupported
     ? 'Your phone will automatically go silent at iqamah time for each prayer.'
@@ -26,9 +26,9 @@ export const mosqueModePlatformUi = {
     ? 'You will no longer receive automatic silent mode at iqamah time. You can re-enable this anytime.'
     : 'You will no longer receive mosque reminders before iqamah. You can re-enable them anytime.',
   promptDescription: isMosqueModeAutoSilenceSupported
-    ? 'Your phone will automatically go silent at iqamah time and restore after the selected duration.'
+    ? 'Sukoon will move your phone into quiet at iqamah and bring it back after the selected duration.'
     : 'Sukoon will remind you before iqamah so you can silence your phone yourself.',
-  promptConfirmText: isMosqueModeAutoSilenceSupported ? 'Yes, Enable' : 'Yes, Remind Me',
+  promptConfirmText: isMosqueModeAutoSilenceSupported ? 'Start Mosque Mode' : 'Yes, Remind Me',
   iqamahSubtitleOffset: isMosqueModeAutoSilenceSupported
     ? 'Set the iqamah start time after adhan'
     : 'Set when Sukoon should remind you before your mosque begins the prayer',
@@ -63,12 +63,11 @@ export const mosqueModePlatformUi = {
     ? `${prayerName} • Silent until ${timeLabel}`
     : `${prayerName} • Reminder scheduled for iqamah at ${timeLabel}`,
   homeTipText: isMosqueModeAutoSilenceSupported
-    ? 'Auto-silence your phone at iqamah so the masjid stays quiet.'
+    ? 'Prepare your phone for the masjid so iqamah begins in quiet.'
     : 'Get a calm reminder before iqamah so you can silence your phone yourself before entering the masjid.',
   promptNotificationBody: isMosqueModeAutoSilenceSupported
-    ? 'Heading to the mosque? Tap to enable silent mode.'
+    ? 'Heading to the masjid? Tap to begin Mosque Mode.'
     : 'Heading to the mosque? Tap to set a reminder before iqamah.',
   iosReminderBody: 'Silence your phone for prayer. Sukoon cannot enable Do Not Disturb for you.',
   iosIqamahBody: 'Iqamah is starting now. Please silence your phone for prayer.',
 };
-

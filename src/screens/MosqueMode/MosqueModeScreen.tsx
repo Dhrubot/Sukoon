@@ -42,6 +42,21 @@ const MosqueModeScreen: React.FC = () => {
             </Text>
           </View>
 
+          <View style={styles.section}>
+            <Text style={styles.sectionLabel}>JOURNEY</Text>
+            <View style={styles.journeyCard}>
+              <Text style={styles.journeyTitle}>Built for the masjid, not just the settings page</Text>
+              <Text style={styles.journeyText}>
+                Use Mosque Mode when you are heading out, settling before iqamah, and staying present through salah.
+              </Text>
+              <View style={styles.journeySteps}>
+                <Text style={styles.journeyStep}>1. Set your mosque's iqamah rhythm once.</Text>
+                <Text style={styles.journeyStep}>2. Let Sukoon guard the quiet before prayer begins.</Text>
+                <Text style={styles.journeyStep}>3. Leave Jumu'ah on a longer masjid rhythm below.</Text>
+              </View>
+            </View>
+          </View>
+
           <MosqueModeStatus />
 
           <View style={styles.section}>
@@ -57,13 +72,16 @@ const MosqueModeScreen: React.FC = () => {
               </View>
 
               <View style={styles.section}>
-                <Text style={styles.sectionLabel}>{mosqueModePlatformUi.optionsSectionLabel}</Text>
-                <MosqueModeOptions />
+                <Text style={styles.sectionLabel}>{"JUMU'AH SETTINGS"}</Text>
+                <Text style={styles.sectionHelper}>
+                  Keep Friday separate so khutbah and salah stay inside the same quiet window.
+                </Text>
+                <JummahMosqueConfig />
               </View>
 
               <View style={styles.section}>
-                <Text style={styles.sectionLabel}>{"JUMU'AH SETTINGS"}</Text>
-                <JummahMosqueConfig />
+                <Text style={styles.sectionLabel}>{mosqueModePlatformUi.optionsSectionLabel}</Text>
+                <MosqueModeOptions />
               </View>
             </>
           )}
@@ -121,6 +139,41 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   section: {
     marginTop: theme.spacing.xl,
     paddingHorizontal: theme.spacing.xl,
+  },
+  sectionHelper: {
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
+    color: theme.colors.text.muted,
+    marginBottom: theme.spacing.md,
+    lineHeight: 20,
+  },
+  journeyCard: {
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.xl,
+    backgroundColor: theme.colors.mosqueMode.card.bg,
+    borderWidth: 1,
+    borderColor: theme.colors.mosqueMode.card.border,
+    gap: theme.spacing.md,
+  },
+  journeyTitle: {
+    fontSize: theme.typography.fontSize.xl,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
+    color: theme.colors.text.primary,
+  },
+  journeyText: {
+    fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.body,
+    color: theme.colors.text.secondary,
+    lineHeight: 22,
+  },
+  journeySteps: {
+    gap: theme.spacing.sm,
+  },
+  journeyStep: {
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
+    color: theme.colors.text.primary,
+    lineHeight: 20,
   },
   footer: {
     paddingHorizontal: theme.spacing.xl,

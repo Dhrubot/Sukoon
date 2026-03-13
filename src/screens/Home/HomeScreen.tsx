@@ -898,7 +898,7 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
           {showMosqueModeTip && (
             <View style={styles.mosqueModeTipCard}>
               <Text style={styles.mosqueModeTipLabel}>HELPFUL SETUP</Text>
-              <Text style={styles.mosqueModeTipTitle}>Set up Mosque Mode</Text>
+              <Text style={styles.mosqueModeTipTitle}>Prepare for masjid prayer</Text>
               <Text style={styles.mosqueModeTipText}>
                 {mosqueModePlatformUi.homeTipText}
               </Text>
@@ -908,7 +908,7 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
                   onPress={handleOpenMosqueMode}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.mosqueModeTipButtonText}>Set Up Mosque Mode</Text>
+                  <Text style={styles.mosqueModeTipButtonText}>Open Mosque Mode</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.mosqueModeTipDismiss}
