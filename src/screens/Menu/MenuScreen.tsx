@@ -271,7 +271,7 @@ const MenuScreen: React.FC = () => {
     {
       icon: JourneyIcon,
       title: 'Prayer Insights',
-      subtitle: 'Private view of your consistency',
+      subtitle: 'Private reflection of your journey',
       screen: 'MyJourney',
       iconBg: withAlpha(theme.colors.interactive.active, 0.08),
     },
@@ -307,7 +307,7 @@ const MenuScreen: React.FC = () => {
       >
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Companion Tools</Text>
-          <Text style={styles.headerSubtitle}>Secondary devotions and private reflection around prayer</Text>
+          {/* <Text style={styles.headerSubtitle}>Secondary devotions and private reflection around prayer</Text> */}
         </View>
 
         <ScrollView
@@ -315,11 +315,38 @@ const MenuScreen: React.FC = () => {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
+
+            {/* ── Private reflection entry ── */}
+        <Text style={styles.sectionLabel}>PRIVATE REFLECTION</Text>
+        <TouchableOpacity
+          style={styles.gardenCard}
+          onPress={() => handleNavigate('ReflectionGarden')}
+          activeOpacity={0.8}
+        >
+          <View style={styles.gardenGlow} />
+          <View style={styles.gardenTop}>
+            <View style={styles.gardenIconLg}>
+              <GardenIcon color={theme.colors.interactive.active} size={26} />
+            </View>
+            <View style={styles.gardenText}>
+              <Text style={styles.gardenTitle}>Tuba Tree</Text>
+              <Text style={styles.gardenSub}>
+                {currentDawam > 0
+                  ? `${currentDawam} days of dawam recorded`
+                  : 'A private record of return and reflection'}
+              </Text>
+              <Text style={styles.gardenDesc}>
+                Watch Tuba tree grow
+              </Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+
         {/* ── Quick Access Grid ── */}
         <Text style={styles.sectionLabel}>DEVOTIONS</Text>
-        <Text style={styles.sectionIntro}>
+        {/* <Text style={styles.sectionIntro}>
           Keep these close, but secondary. They support prayer without competing with it.
-        </Text>
+        </Text> */}
         <View style={styles.quickGrid}>
           {quickAccessItems.map((item) => {
             const accent = getAccentColors(item.colorKey);
@@ -350,32 +377,6 @@ const MenuScreen: React.FC = () => {
             );
           })}
         </View>
-
-        {/* ── Private reflection entry ── */}
-        <Text style={styles.sectionLabel}>PRIVATE REFLECTION</Text>
-        <TouchableOpacity
-          style={styles.gardenCard}
-          onPress={() => handleNavigate('ReflectionGarden')}
-          activeOpacity={0.8}
-        >
-          <View style={styles.gardenGlow} />
-          <View style={styles.gardenTop}>
-            <View style={styles.gardenIconLg}>
-              <GardenIcon color={theme.colors.interactive.active} size={26} />
-            </View>
-            <View style={styles.gardenText}>
-              <Text style={styles.gardenTitle}>Tuba Tree</Text>
-              <Text style={styles.gardenSub}>
-                {currentDawam > 0
-                  ? `${currentDawam} days of dawam recorded quietly`
-                  : 'A private record of return and reflection'}
-              </Text>
-              <Text style={styles.gardenDesc}>
-                Visit your reflections without pulling them into the main prayer flow.
-              </Text>
-            </View>
-          </View>
-        </TouchableOpacity>
 
         {/* ── More Features List ── */}
         <Text style={styles.sectionLabel}>APP & SUPPORT</Text>

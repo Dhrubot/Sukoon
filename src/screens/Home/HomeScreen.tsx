@@ -935,7 +935,7 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
 
           {/* Today's Prayer Times */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{"Today's Salah"}</Text>
+            <Text style={styles.sectionTitle}>{"Today's Prayers"}</Text>
             <View style={styles.prayerListCard}>
               {todayPrayerTimes.map((prayer, index) => {
                 const record = todayPrayerRecords.find(

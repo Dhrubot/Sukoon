@@ -264,13 +264,13 @@ const SupportScreen: React.FC = () => {
 
   const renderDonateTab = () => (
     <ScrollView showsVerticalScrollIndicator={false}>
-      <View style={styles.donateHeader}>
+      {/* <View style={styles.donateHeader}>
         <Text style={styles.eyebrow}>Support</Text>
         <Text style={styles.donateTitle}>Help sustain Sukoon</Text>
         <Text style={styles.donateSubtitle}>
           If this app helps your prayer, you can help us maintain it carefully and continue improving it for the Ummah.
         </Text>
-      </View>
+      </View> */}
 
       {/* Donation Tiers */}
       <View style={styles.donationTiers}>
@@ -322,7 +322,7 @@ const SupportScreen: React.FC = () => {
             <Text style={styles.eyebrow}>Support</Text>
             <Text style={styles.title}>Support Sukoon</Text>
             <Text style={styles.subtitle}>
-              Contributions are optional. If Sukoon has become useful in your daily prayers, you can help sustain its upkeep.
+              Contributions are optional. If Sukoon has become useful in your daily prayers, you can help us maintain it and continue improving it for the Ummah.
             </Text>
           </View>
 
