@@ -42,20 +42,22 @@ const MosqueModeScreen: React.FC = () => {
             </Text>
           </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>JOURNEY</Text>
-            <View style={styles.journeyCard}>
-              <Text style={styles.journeyTitle}>Built for the masjid, not just the settings page</Text>
-              <Text style={styles.journeyText}>
-                Use Mosque Mode when you are heading out, settling before iqamah, and staying present through salah.
-              </Text>
-              <View style={styles.journeySteps}>
-                <Text style={styles.journeyStep}>1. Set your mosque's iqamah rhythm once.</Text>
-                <Text style={styles.journeyStep}>2. Let Sukoon guard the quiet before prayer begins.</Text>
-                <Text style={styles.journeyStep}>3. Leave Jumu'ah on a longer masjid rhythm below.</Text>
+          {!isEnabled && (
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>JOURNEY</Text>
+              <View style={styles.journeyCard}>
+                <Text style={styles.journeyTitle}>Built for the Masjid</Text>
+                <Text style={styles.journeyText}>
+                  Use Mosque Mode when you are heading out, settling before iqamah, and staying present through salah.
+                </Text>
+                <View style={styles.journeySteps}>
+                  <Text style={styles.journeyStep}>1. Set your mosque's iqamah times once.</Text>
+                  <Text style={styles.journeyStep}>2. Let Sukoon guard the quiet before prayer begins.</Text>
+                  <Text style={styles.journeyStep}>3. Leave Jumu'ah on a longer silence time.</Text>
+                </View>
               </View>
             </View>
-          </View>
+          )}
 
           <MosqueModeStatus />
 
