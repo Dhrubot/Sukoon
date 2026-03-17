@@ -358,6 +358,11 @@ export class PrayerTimeService {
           );
         }
 
+        const previousPrayer = prayerTimesList[prayerTimesList.length - 1];
+        if (previousPrayer && prayerDate.getTime() <= previousPrayer.time.getTime()) {
+          prayerDate = addDays(prayerDate, 1);
+        }
+
         const isNext = !nextPrayerFound && isAfter(prayerDate, now);
         if (isNext) nextPrayerFound = true;
 
@@ -454,13 +459,13 @@ export class PrayerTimeService {
 
       // Method parameters (angles) for different calculation methods
       const methodParams = {
-        MWL: { fajrAngle: 18, ishaAngle: 17 }, // Muslim World League
-        ISNA: { fajrAngle: 15, ishaAngle: 15 }, // Islamic Society of North America
-        Egypt: { fajrAngle: 19.5, ishaAngle: 17.5 }, // Egyptian General Authority of Survey
-        Makkah: { fajrAngle: 18.5, ishaAngle: 90 }, // Umm al-Qura, Makkah
-        Karachi: { fajrAngle: 18, ishaAngle: 18 }, // University of Islamic Sciences, Karachi
-        Tehran: { fajrAngle: 17.7, ishaAngle: 14 }, // Institute of Geophysics, Tehran
-        Jafari: { fajrAngle: 16, ishaAngle: 14 }, // Shia Ithna Ashari, Leva Research Institute
+        MWL: { fajrAngle: 18, ishaAngle: 17, ishaIntervalMinutes: null }, // Muslim World League
+        ISNA: { fajrAngle: 15, ishaAngle: 15, ishaIntervalMinutes: null }, // Islamic Society of North America
+        Egypt: { fajrAngle: 19.5, ishaAngle: 17.5, ishaIntervalMinutes: null }, // Egyptian General Authority of Survey
+        Makkah: { fajrAngle: 18.5, ishaAngle: null, ishaIntervalMinutes: 90 }, // Umm al-Qura, Makkah
+        Karachi: { fajrAngle: 18, ishaAngle: 18, ishaIntervalMinutes: null }, // University of Islamic Sciences, Karachi
+        Tehran: { fajrAngle: 17.7, ishaAngle: 14, ishaIntervalMinutes: null }, // Institute of Geophysics, Tehran
+        Jafari: { fajrAngle: 16, ishaAngle: 14, ishaIntervalMinutes: null }, // Shia Ithna Ashari, Leva Research Institute
       };
 
       // Select method parameters (default to MWL if method not found)
@@ -471,23 +476,25 @@ export class PrayerTimeService {
       // Zuhr time (local noon)
       const midDay = 12 + timeZoneOffset - longitude / 15 - equationOfTime / 60;
 
-      // Fajr time using angle
-      const fajrTime = this.getTimeByAngle(
-        params.fajrAngle,
-        declination,
-        latitude,
-        midDay,
-        true
-      );
-
-      // Sunrise time (angle = 0.833 degrees)
-      const sunriseTime = this.getTimeByAngle(
+      const directSunriseTime = this.getTimeByAngleOrNull(
         0.833,
         declination,
         latitude,
         midDay,
         true
       );
+      const directMaghribTime = this.getTimeByAngleOrNull(
+        0.833,
+        declination,
+        latitude,
+        midDay,
+        false
+      );
+
+      // When sunrise/sunset are astronomically unavailable, fall back to a 12h day
+      // centered on solar noon so downstream prayer times stay coherent.
+      const sunriseTime = directSunriseTime ?? midDay - 6;
+      const maghribTime = directMaghribTime ?? midDay + 6;
 
       // Dhuhr time (adjust midDay slightly)
       const dhuhrTime = midDay + 2 / 60; // Add 2 minutes
@@ -510,46 +517,68 @@ export class PrayerTimeService {
         false
       );
 
-      // Maghrib time (sunset, angle = 0.833 degrees)
-      const maghribTime = this.getTimeByAngle(
-        0.833,
-        declination,
-        latitude,
-        midDay,
-        false
-      );
-
-      // Isha time using angle
-      const ishaTime = this.getTimeByAngle(
-        params.ishaAngle,
-        declination,
-        latitude,
-        midDay,
-        false
-      );
-
       // Midnight (for Tahajjud) - calculated as middle point between Maghrib and Fajr
       const nextDay = new Date(date);
       nextDay.setDate(nextDay.getDate() + 1);
       const nextJulian = this.getJulianDate(nextDay);
       const nextSunPosition = this.getSunPosition(nextJulian);
-      const nextFajrTime = this.getTimeByAngle(
+      const nextMidDay =
+        12 +
+        timeZoneOffset -
+        longitude / 15 -
+        nextSunPosition.equationOfTime / 60;
+      const nextSunriseTime =
+        this.getTimeByAngleOrNull(
+          0.833,
+          nextSunPosition.declination,
+          latitude,
+          nextMidDay,
+          true
+        ) ?? nextMidDay - 6;
+
+      const nightDuration = this.getNightDurationHours(maghribTime, nextSunriseTime);
+      const directFajrTime = this.getTimeByAngleOrNull(
+        params.fajrAngle,
+        declination,
+        latitude,
+        midDay,
+        true
+      );
+      const fajrTime =
+        directFajrTime ??
+        this.normalizeTime(sunriseTime - nightDuration * this.getNightPortion(params.fajrAngle));
+
+      const directIshaTime =
+        params.ishaAngle === null
+          ? null
+          : this.getTimeByAngleOrNull(
+              params.ishaAngle,
+              declination,
+              latitude,
+              midDay,
+              false
+            );
+      const ishaTime =
+        params.ishaIntervalMinutes !== null
+          ? this.normalizeTime(maghribTime + params.ishaIntervalMinutes / 60)
+          : directIshaTime ??
+            this.normalizeTime(maghribTime + nightDuration * this.getNightPortion(params.ishaAngle!));
+
+      const nextDirectFajrTime = this.getTimeByAngleOrNull(
         params.fajrAngle,
         nextSunPosition.declination,
         latitude,
-        12 +
-          timeZoneOffset -
-          longitude / 15 -
-          nextSunPosition.equationOfTime / 60,
+        nextMidDay,
         true
       );
+      const nextFajrTime =
+        nextDirectFajrTime ??
+        this.normalizeTime(nextSunriseTime - nightDuration * this.getNightPortion(params.fajrAngle));
 
       // Adjust nextFajrTime if needed
-      const adjustedNextFajr =
-        nextFajrTime < 0 ? nextFajrTime + 24 : nextFajrTime;
+      const adjustedNextFajr = this.normalizeTime(nextFajrTime);
       const midnightTime = (maghribTime + adjustedNextFajr) / 2;
-      const normalizedMidnight =
-        midnightTime >= 24 ? midnightTime - 24 : midnightTime;
+      const normalizedMidnight = this.normalizeTime(midnightTime);
 
       // Format times as strings
       return {
@@ -724,6 +753,47 @@ export class PrayerTimeService {
     return time;
   }
 
+  private getTimeByAngleOrNull(
+    angle: number,
+    declination: number,
+    latitude: number,
+    midDay: number,
+    isBefore: boolean
+  ): number | null {
+    const latRad = (latitude * Math.PI) / 180;
+    const decRad = (declination * Math.PI) / 180;
+    const angleRad = (angle * Math.PI) / 180;
+
+    const num = Math.sin(angleRad) - Math.sin(latRad) * Math.sin(decRad);
+    const den = Math.cos(latRad) * Math.cos(decRad);
+    const cosAng = num / den;
+
+    if (!Number.isFinite(cosAng) || cosAng > 1 || cosAng < -1) {
+      return null;
+    }
+
+    const time = (Math.acos(cosAng) * 180) / Math.PI / 15;
+    return isBefore ? midDay - time : midDay + time;
+  }
+
+  private getNightPortion(angle: number): number {
+    return angle / 60;
+  }
+
+  private getNightDurationHours(maghribTime: number, nextSunriseTime: number): number {
+    const normalizedMaghrib = this.normalizeTime(maghribTime);
+    const normalizedNextSunrise = this.normalizeTime(nextSunriseTime);
+    const duration = normalizedNextSunrise - normalizedMaghrib;
+    return duration > 0 ? duration : duration + 24;
+  }
+
+  private normalizeTime(time: number): number {
+    let normalized = time;
+    while (normalized < 0) normalized += 24;
+    while (normalized >= 24) normalized -= 24;
+    return normalized;
+  }
+
   /**
    * Normalize angle between 0-360 degrees
    */
@@ -740,9 +810,7 @@ export class PrayerTimeService {
       return "00:00";
     }
 
-    // Normalize time to 0-24 range
-    while (time < 0) time += 24;
-    while (time >= 24) time -= 24;
+    time = this.normalizeTime(time);
 
     const hours = Math.floor(time);
     const minutes = Math.round((time - hours) * 60);
