@@ -119,7 +119,7 @@ const QuickLogSheet: React.FC<QuickLogSheetProps> = ({
             onPress={onOpenFlow}
             activeOpacity={0.7}
           >
-            <Text style={styles.secondaryButtonText}>Prepare quietly</Text>
+            <Text style={styles.secondaryButtonText}>Prepare for Prayer</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -183,11 +183,13 @@ const createStyles = (theme: AppTheme) =>
     secondaryButton: {
       paddingVertical: 12,
       alignItems: 'center',
+      backgroundColor: theme.colors.background.primary ,
+      borderRadius: 16,
     },
     secondaryButtonText: {
-      fontSize: theme.typography.fontSize.base,
+      fontSize: theme.typography.fontSize.lg,
       fontFamily: theme.typography.fontFamily.body,
-      color: theme.colors.text.muted,
+      color: theme.colors.text.primary,
     },
   });
 
