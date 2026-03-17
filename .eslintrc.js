@@ -1,5 +1,6 @@
 module.exports = {
   root: true,
+  ignorePatterns: ['.expo/', 'android/app/build/', 'coverage/', 'dist/', 'edge-api/dist/', 'ios/build/'],
   extends: [
     'eslint:recommended',
     'plugin:react/recommended',
@@ -12,7 +13,8 @@ module.exports = {
     ecmaFeatures: {
       jsx: true,
     },
-    project: './tsconfig.json',
+    project: './tsconfig.eslint.json',
+    tsconfigRootDir: __dirname,
     ecmaVersion: 'latest',
     sourceType: 'module',
   },
@@ -30,4 +32,23 @@ module.exports = {
       version: 'detect',
     },
   },
+  overrides: [
+    {
+      files: ['jest.setup.js', 'jest.afterEnv.js', '**/__tests__/**/*.{js,jsx,ts,tsx}', '**/*.{test,spec}.{js,jsx,ts,tsx}'],
+      env: {
+        jest: true,
+        node: true,
+      },
+      rules: {
+        '@typescript-eslint/no-explicit-any': 'off',
+        '@typescript-eslint/no-var-requires': 'off',
+      },
+    },
+    {
+      files: ['jest.setup.js'],
+      rules: {
+        'no-undef': 'off',
+      },
+    },
+  ],
 };

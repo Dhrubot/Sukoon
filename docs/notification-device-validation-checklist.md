@@ -2,6 +2,11 @@
 
 Use this checklist for the final physical-device notification validation pass.
 
+Audio behavior expected after the Expo 55 upgrade:
+- Android: short adhan uses the scheduled notification sound; full adhan can wake and play when the phone is locked or the app is closed.
+- iPhone: scheduled notifications stay on the short bundled sound; full adhan only continues when the app process is already alive in foreground or background.
+- `expo-audio` now owns the app-alive playback path on both platforms, so foreground/background-app-alive playback should honor silent mode and background audio configuration.
+
 Run these scenarios on:
 - 1 mid-range Android device
 - 1 iPhone
@@ -169,7 +174,33 @@ Expected:
 Expected trace:
 - `schedule_completed` with `exactAlarmStatus=denied` or similar
 
-### 9. Timezone change
+### 9. Android full adhan while locked
+Steps:
+1. Enable `Adhan Sound`.
+2. Enable `Full Adhan (Locked Screen)`.
+3. Schedule or trigger a near-term prayer reminder.
+4. Lock the phone before the reminder fires.
+
+Expected:
+- The short notification sound is not used for the main prayer reminder.
+- Full adhan playback starts from the Android native alarm/service path.
+- Opening the app afterward does not trigger a second overlapping adhan.
+
+Expected trace:
+- `schedule_completed` with an exact-alarm status value
+- one notification delivery path only
+
+### 10. Android full adhan with app terminated
+Steps:
+1. Keep `Full Adhan (Locked Screen)` enabled.
+2. Force stop or swipe away the app.
+3. Trigger a near-term prayer reminder.
+
+Expected:
+- Full adhan still plays.
+- No duplicate playback begins when the app is reopened.
+
+### 11. Timezone change
 Steps:
 1. Start from a scheduled state.
 2. Change timezone.
@@ -184,7 +215,7 @@ Expected trace:
 - `rescheduler_reconcile_triggered`
 - `schedule_completed`
 
-### 10. Manual location change
+### 12. Manual location change
 Steps:
 1. Start from a scheduled state.
 2. Change location in app.
@@ -254,7 +285,28 @@ Expected trace:
 - threshold-triggered reconcile or stale refresh detection
 - `reconcile_completed`
 
-### 6. Timezone change
+### 6. iOS full adhan with app alive in background
+Steps:
+1. Enable `Adhan Sound`.
+2. Put the app in the background without terminating it.
+3. Trigger a near-term prayer reminder.
+
+Expected:
+- The scheduled notification uses the short bundled iOS sound.
+- After tapping/opening back into the app-alive process, full adhan can continue from the runtime audio path.
+- No claim or behavior suggests terminated-state full adhan support.
+
+### 7. iOS terminated-state reminder
+Steps:
+1. Enable `Adhan Sound`.
+2. Fully terminate the app.
+3. Trigger a near-term prayer reminder.
+
+Expected:
+- Only the short bundled notification sound is heard.
+- Reopening the app does not retroactively start a full adhan unless the user explicitly triggers playback flow.
+
+### 8. Timezone change
 Expected:
 - One clean reconcile.
 - No duplicate reminders.
@@ -262,12 +314,12 @@ Expected:
 Expected trace:
 - `rescheduler_invalidation_detected` with `reason=timezone_change`
 
-### 7. Manual location change
+### 9. Manual location change
 Expected:
 - One clean reschedule.
 - Old reminder set replaced.
 
-### 8. iOS scheduled notification cap behavior
+### 10. iOS scheduled notification cap behavior
 Steps:
 1. Force reschedule.
 2. Inspect scheduled count.
@@ -302,4 +354,6 @@ Notification validation is good enough for production when:
 - no duplicate reminders appear after repeated app opens or settings changes
 - scheduled count remains bounded
 - Android exact-alarm state is visible and understandable
+- Android full adhan works while locked and after termination
+- iPhone full adhan behavior is correct only while the app process is alive
 - no silent failure pattern appears in trace logs

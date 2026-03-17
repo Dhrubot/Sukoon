@@ -1,3 +1,4 @@
+/* eslint-disable react-native/no-unused-styles */
 // src/screens/Settings/components/NotificationSection.tsx
 import React, { useEffect, useState } from 'react';
 import { Switch, View, Text, StyleSheet, Alert, Platform, Linking } from 'react-native';
@@ -57,6 +58,11 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
     }
     return subtitle;
   };
+
+  const adhanSubtitle =
+    Platform.OS === 'android'
+      ? 'Short call to prayer at prayer time. Enable full playback below for locked-screen adhan.'
+      : 'Short call to prayer on the lock screen. Full adhan continues after you open the app.';
 
   const handlePressRow = () => {
     if (permissionStatus === 'granted') {
@@ -119,7 +125,7 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
       <View style={styles.row}>
         <View style={styles.textContainer}>
           <Text style={styles.label}>Adhan Sound</Text>
-          <Text style={styles.subtitle}>Call to prayer at prayer time</Text>
+          <Text style={styles.subtitle}>{adhanSubtitle}</Text>
         </View>
         <Switch
           value={userSettings.notifications.adhanEnabled}
@@ -134,7 +140,7 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
         <View style={styles.row}>
           <View style={styles.textContainer}>
             <Text style={styles.label}>Full Adhan (Locked Screen)</Text>
-            <Text style={styles.subtitle}>Plays the complete call to prayer even when your phone is locked</Text>
+            <Text style={styles.subtitle}>Schedules the complete call to prayer when your phone is locked or the app is closed</Text>
           </View>
           <Switch
             value={!!userSettings.notifications.fullAdhanEnabled}
@@ -194,29 +200,29 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
 };
 
 const createStyles = (theme: AppTheme) => StyleSheet.create({
+  label: {
+    color: theme.colors.text.primary,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
+    fontSize: theme.typography.fontSize.md,
+    marginBottom: theme.spacing.xs,
+  },
   row: {
+    alignItems: 'center',
+    backgroundColor: theme.colors.settings.sectionBg,
+    borderBottomColor: theme.colors.border.primary,
+    borderBottomWidth: 1,
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: 12,
     paddingHorizontal: 16,
-    backgroundColor: theme.colors.settings.sectionBg,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border.primary,
+    paddingVertical: 12,
+  },
+  subtitle: {
+    color: theme.colors.text.secondary,
+    fontFamily: theme.typography.fontFamily.body,
+    fontSize: 11,
   },
   textContainer: {
     flex: 1,
     marginRight: 16,
-  },
-  label: {
-    fontSize: theme.typography.fontSize.md,
-    fontFamily: theme.typography.fontFamily.bodyMedium,
-    color: theme.colors.text.primary,
-    marginBottom: theme.spacing.xs,
-  },
-  subtitle: {
-    fontSize: 11,
-    fontFamily: theme.typography.fontFamily.body,
-    color: theme.colors.text.secondary,
   },
 });

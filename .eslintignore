@@ -1,0 +1,6 @@
+.expo/
+android/app/build/
+coverage/
+dist/
+edge-api/dist/
+ios/build/

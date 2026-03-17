@@ -3,7 +3,8 @@
 // orchestration produces valid notifications within iOS budget constraints.
 
 import { PrayerTime, UserSettings } from '../types';
-import { IOS_NOTIFICATION_CAP, NOTIFICATION_SCHEDULING_DAYS } from '../constants/NotificationConstants';
+import { CHANNELS, IOS_NOTIFICATION_CAP, SOUNDS } from '../constants/NotificationConstants';
+import { Platform } from 'react-native';
 
 // ── Track all scheduled notifications ────────────────────────────────────────
 const mockScheduledNotifications: Array<{
@@ -217,10 +218,20 @@ jest.mock('../utils/locationValidation', () => ({
 import NotificationService from '../services/NotificationService';
 
 describe('scheduleExtendedNotifications integration', () => {
+  const originalPlatform = Platform.OS;
+
   beforeEach(() => {
     jest.clearAllMocks();
     mockScheduledNotifications.length = 0;
     Object.keys(mockStorageData).forEach((k) => delete mockStorageData[k]);
+    mockTestSettings.notifications.fullAdhanEnabled = false;
+    mockTestSettings.notifications.adhanEnabled = true;
+    mockTestSettings.notifications.soundEnabled = true;
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: originalPlatform });
+  });
+
+  afterEach(() => {
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: originalPlatform });
   });
 
   it('schedules notifications within iOS cap (≤ 58)', async () => {
@@ -305,5 +316,51 @@ describe('scheduleExtendedNotifications integration', () => {
     await NotificationService.scheduleExtendedNotifications();
 
     expect(mockScheduledNotifications.length).toBe(0);
+  });
+
+  it('uses the Android native full adhan path when full adhan is enabled', async () => {
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'android' });
+    mockTestSettings.notifications.fullAdhanEnabled = true;
+
+    await NotificationService.scheduleExtendedNotifications();
+
+    const mainPrayerNotification = mockScheduledNotifications.find(
+      (notification) => notification.content?.data?.type === 'prayer-time'
+    );
+    const FullAdhanScheduler = require('../services/notifications/FullAdhanScheduler');
+
+    expect(mainPrayerNotification).toBeTruthy();
+    expect(mainPrayerNotification?.content.sound).toBeUndefined();
+    expect(mainPrayerNotification?.trigger).toMatchObject({ channelId: CHANNELS.ADHAN_SILENT });
+    expect(FullAdhanScheduler.scheduleFullAdhan).toHaveBeenCalled();
+  });
+
+  it('keeps iOS scheduled prayer notifications on the short bundled sound even when full adhan is enabled', async () => {
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'ios' });
+    mockTestSettings.notifications.fullAdhanEnabled = true;
+
+    await NotificationService.scheduleExtendedNotifications();
+
+    const mainPrayerNotification = mockScheduledNotifications.find(
+      (notification) => notification.content?.data?.type === 'prayer-time'
+    );
+    const FullAdhanScheduler = require('../services/notifications/FullAdhanScheduler');
+
+    expect(mainPrayerNotification?.content.sound).toBe(SOUNDS.IOS_SHORT);
+    expect(FullAdhanScheduler.scheduleFullAdhan).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the default notification sound when adhan audio is disabled', async () => {
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'android' });
+    mockTestSettings.notifications.adhanEnabled = false;
+
+    await NotificationService.scheduleExtendedNotifications();
+
+    const mainPrayerNotification = mockScheduledNotifications.find(
+      (notification) => notification.content?.data?.type === 'prayer-time'
+    );
+
+    expect(mainPrayerNotification?.content.sound).toBe('default');
+    expect(mainPrayerNotification?.trigger).toMatchObject({ channelId: CHANNELS.DEFAULT });
   });
 });

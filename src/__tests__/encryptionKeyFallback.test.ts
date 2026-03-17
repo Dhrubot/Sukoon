@@ -45,7 +45,7 @@ describe('Encryption key fallback chain', () => {
     expect(key.length).toBeGreaterThan(0);
   });
 
-  it('digestStringAsync should be called for device-specific derivation on fallback', async () => {
+  it('prefers MMKV fallback before device-derived hashing when SecureStore fails', async () => {
     // Re-mock after resetModules to ensure fresh state
     jest.resetModules();
 
@@ -61,11 +61,11 @@ describe('Encryption key fallback chain', () => {
 
     await initializeEncryptionKey();
 
-    // Verify that SHA-256 digest was called (device-specific key derivation)
-    expect(ExpoCryptoMock.digestStringAsync).toHaveBeenCalled();
+    // MMKV fallback now succeeds before the device-derived hash path is needed.
+    expect(ExpoCryptoMock.digestStringAsync).not.toHaveBeenCalled();
   });
 
-  it('exposes degraded security state when falling back from SecureStore', async () => {
+  it('exposes MMKV fallback security state when SecureStore fails but MMKV remains available', async () => {
     jest.resetModules();
 
     const SecureStoreMock = require('expo-secure-store');
@@ -79,7 +79,7 @@ describe('Encryption key fallback chain', () => {
 
     await initializeEncryptionKey();
 
-    expect(getEncryptionSecurityState()).toBe('device_derived');
+    expect(getEncryptionSecurityState()).toBe('mmkv_fallback');
   });
 
   it('getCachedEncryptionKey should never return a static fallback', () => {

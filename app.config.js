@@ -30,6 +30,7 @@ export default {
           "Sukoon needs your location to calculate accurate prayer times for your area.",
         NSUserNotificationsUsageDescription:
           "Sukoon needs notification permission to remind you of prayer times.",
+        UIBackgroundModes: ["audio"],
       },
       config: {
         googleMobileAds: {
@@ -87,9 +88,17 @@ export default {
       "./plugins/withAndroidWidget.js",
       "./plugins/withLiveActivity.js",
       "./plugins/withBootReceiver.js",
+      "expo-asset",
       "expo-font",
       "expo-location",
-      ["expo-audio", { microphonePermission: false }],
+      [
+        "expo-audio",
+        {
+          microphonePermission: false,
+          recordAudioAndroid: false,
+          enableBackgroundPlayback: true,
+        }
+      ],
       "expo-secure-store",
       "expo-background-task",
       [
@@ -116,13 +125,11 @@ export default {
         "expo-build-properties",
         {
           android: {
-            newArchEnabled: true,
-            compileSdkVersion: 35,
-            targetSdkVersion: 35,
+            compileSdkVersion: 36,
+            targetSdkVersion: 36,
             minSdkVersion: 24,
           },
           ios: {
-            newArchEnabled: true,
             deploymentTarget: "15.1",
             useFrameworks: "static",
           },

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Alert, Share, Platform } from 'react-native';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import * as DocumentPicker from 'expo-document-picker';
 import { useStore } from '../../../store/useStore';
 import StorageService from '../../../services/StorageService';

@@ -16,6 +16,7 @@ class AdhanPlayer {
     try {
       await setAudioModeAsync({
         playsInSilentMode: true,
+        shouldPlayInBackground: true,
       });
     } catch (e) {
       logger.warn('⚠️ Failed to set audio mode:', e);
@@ -30,6 +31,8 @@ class AdhanPlayer {
       this.stop(); // Stop any existing sound first
 
       this.onCompleteCallback = onComplete || null;
+      // Bundled static asset resolution still uses require() in React Native.
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const source = require('../../../assets/sounds/adhan_full.mp3');
       this.audioPlayer = createAudioPlayer(source);
       this.audioPlayer.play();
