@@ -13,7 +13,7 @@ export {
 export type { PrayerDefinition, PrayerCategory } from './prayerRegistry';
 
 // ─── Backward-compatible prayer constants (derived from registry) ─
-import { PRAYER_NAME_MAP, PRAYER_ICON_MAP } from './prayerRegistry';
+import { PRAYER_ICON_MAP } from './prayerRegistry';
 
 export const PRAYER_NAMES = {
     fajr: 'Fajr',

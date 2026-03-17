@@ -14,7 +14,6 @@ import {
   TouchableWithoutFeedback,
   Modal,
 } from 'react-native';
-import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import PrayerTimeService from '../../services/PrayerTimeService';
@@ -41,7 +40,6 @@ const PreAdhanSheet: React.FC<PreAdhanSheetProps> = ({
   onPraySunnah,
   onDismiss,
 }) => {
-  const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
@@ -125,18 +123,12 @@ const PreAdhanSheet: React.FC<PreAdhanSheetProps> = ({
 
           {/* Option B: Pray Sunnah/Nafl */}
           <TouchableOpacity
-            style={[
-              missedDisplayName ? styles.outlineButton : styles.primaryButton,
-            ]}
+            style={missedDisplayName ? styles.outlineButton : styles.primaryButton}
             onPress={onPraySunnah}
             activeOpacity={0.8}
           >
             <Text
-              style={[
-                missedDisplayName
-                  ? styles.outlineButtonText
-                  : styles.primaryButtonText,
-              ]}
+              style={missedDisplayName ? styles.outlineButtonText : styles.primaryButtonText}
             >
               Pray Sunnah / Nafl
             </Text>

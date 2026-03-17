@@ -3,6 +3,7 @@ import * as SecureStore from 'expo-secure-store';
 import * as ExpoCrypto from 'expo-crypto';
 import { Platform } from 'react-native';
 import * as Device from 'expo-device';
+import { createMMKV } from 'react-native-mmkv';
 import logger from './logger';
 
 const ENCRYPTION_KEY_STORAGE_KEY = 'sukoon_encryption_key';
@@ -79,7 +80,6 @@ export async function getOrCreateEncryptionKey(): Promise<string> {
     // This is less secure than Keychain/Keystore but far better than a
     // deterministic key derived from public device properties.
     try {
-      const { createMMKV } = require('react-native-mmkv');
       const fallbackStore = createMMKV({ id: 'sukoon-key-fallback' });
       const existing = fallbackStore.getString('fallback_enc_key');
       if (existing) {

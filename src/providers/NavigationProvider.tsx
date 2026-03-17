@@ -1,7 +1,7 @@
 // src/providers/NavigationProvider.tsx
 import React, { createRef, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Linking } from 'react-native';
-import { NavigationContainer, NavigationContainerRef, DefaultTheme } from '@react-navigation/native';
+import { NavigationContainer, NavigationContainerRef, DefaultTheme, ParamListBase } from '@react-navigation/native';
 import { useTheme } from './ThemeProvider';
 import NotificationService from '../services/NotificationService';
 import StorageService from '../services/StorageService';
@@ -18,7 +18,7 @@ import PerformanceService from '../services/PerformanceService';
 import logger from '../utils/logger';
 
 // Create navigation reference
-export const navigationRef = createRef<NavigationContainerRef<any>>();
+export const navigationRef = createRef<NavigationContainerRef<ParamListBase>>();
 
 interface NavigationProviderProps {
   children: React.ReactNode;

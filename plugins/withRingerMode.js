@@ -1,7 +1,6 @@
 const { 
   withAndroidManifest, 
   withMainApplication,
-  AndroidConfig,
   withDangerousMod 
 } = require('@expo/config-plugins');
 const path = require('path');

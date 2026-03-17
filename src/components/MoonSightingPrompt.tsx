@@ -16,7 +16,6 @@ import {
 } from 'react-native';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
-import { useTheme } from '../providers/ThemeProvider';
 import { useThemedStyles } from '../hooks/useThemedStyles';
 import { AppTheme } from '../theme';
 import { useStore } from '../store/useStore';
@@ -35,7 +34,6 @@ const MoonSightingPrompt: React.FC<MoonSightingPromptProps> = ({
   event,
   onDismiss,
 }) => {
-  const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const { updateUserSettings } = useStore();
 

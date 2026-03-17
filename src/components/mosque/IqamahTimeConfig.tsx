@@ -7,7 +7,6 @@ import {
   StyleSheet,
   Alert,
 } from 'react-native';
-import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import { useMosqueMode } from '../../hooks/useMosqueMode';
@@ -25,7 +24,6 @@ const OFFSET_OPTIONS = [3, 5, 7, 10, 12, 15, 20, 25, 30];
 type InputMode = 'offset' | 'exact';
 
 export const IqamahTimeConfig: React.FC = () => {
-  const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const { settings, setIqamahOffset } = useMosqueMode();
   const { todayPrayerTimes } = usePrayerTimes();

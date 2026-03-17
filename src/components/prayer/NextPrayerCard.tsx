@@ -4,7 +4,6 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { PrayerTime } from '../../types';
@@ -17,9 +16,6 @@ interface NextPrayerCardProps {
   prayer: PrayerTime;
   onPrepare: () => void;
 }
-
-const { width } = Dimensions.get('window');
-
 const NextPrayerCard: React.FC<NextPrayerCardProps> = ({ prayer, onPrepare }) => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);

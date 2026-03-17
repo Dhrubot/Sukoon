@@ -78,7 +78,6 @@ jest.mock('../utils/locationValidation', () => ({
 }));
 
 import NotificationService from '../services/NotificationService';
-import * as Notifications from 'expo-notifications';
 
 describe('cancelPrayerReminderFlow resilience', () => {
   beforeEach(() => {

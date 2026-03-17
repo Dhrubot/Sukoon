@@ -1,4 +1,5 @@
 import { Linking, Platform } from 'react-native';
+import { ErrorCode, Product, Purchase, PurchaseError } from 'react-native-iap';
 import IAPManager from './IAPManager';
 import StorageService from '../StorageService';
 import { SubscriptionPlan, PremiumFeatures } from '../../types';
@@ -11,7 +12,7 @@ const PRODUCTS = {
 };
 
 class SubscriptionService {
-  private products: any[] = [];
+  private products: Product[] = [];
   private currentSubscription: SubscriptionPlan | null = null;
 
   async initialize() {
@@ -45,7 +46,7 @@ class SubscriptionService {
   }
 
   // Called by IAPManager when a subscription purchase is detected
-  private async handlePurchase(purchase: any) {
+  private async handlePurchase(purchase: Purchase) {
     logger.log('Subscription purchase received:', purchase);
     const receipt = purchase.transactionReceipt;
 
@@ -58,7 +59,7 @@ class SubscriptionService {
     }
   }
 
-  private async validateAndSavePurchase(purchase: any) {
+  private async validateAndSavePurchase(purchase: Purchase) {
     // In production, validate receipt with your server
     // For now, we'll trust the purchase
     
@@ -68,8 +69,8 @@ class SubscriptionService {
       startDate: new Date(purchase.transactionDate),
       expiryDate: this.calculateExpiryDate(purchase.productId, purchase.transactionDate),
       isActive: true,
-      transactionId: purchase.transactionId,
-      originalTransactionId: purchase.originalTransactionIdentifier,
+      transactionId: purchase.transactionId ?? purchase.productId,
+      originalTransactionId: purchase.originalTransactionIdentifierIOS,
     };
 
     // Save subscription
@@ -117,11 +118,11 @@ class SubscriptionService {
           break;
       }
 
-      const purchase = await IAPManager.requestPurchase(productId, false);
+      const purchase = await IAPManager.requestPurchase(productId);
 
       return purchase;
-    } catch (error: any) {
-      if (error.code === 'E_USER_CANCELLED') {
+    } catch (error) {
+      if ((error as PurchaseError).code === ErrorCode.E_USER_CANCELLED) {
         logger.log('User cancelled purchase');
       } else {
         logger.error('Purchase error:', error);
@@ -147,7 +148,7 @@ class SubscriptionService {
     }
   }
 
-  private isPurchaseValid(purchase: any): boolean {
+  private isPurchaseValid(purchase: Purchase): boolean {
     // For lifetime, always valid
     if (purchase.productId === PRODUCTS.LIFETIME) {
       return true;
@@ -221,7 +222,7 @@ class SubscriptionService {
     return this.currentSubscription;
   }
 
-  getProducts() {
+  getProducts(): Product[] {
     return this.products;
   }
 

@@ -6,9 +6,8 @@
  */
 const { withDangerousMod } = require('@expo/config-plugins');
 const { basename, resolve } = require('path');
-const { copyFileSync, existsSync, mkdirSync, unlinkSync } = require('fs');
+const { existsSync, unlinkSync } = require('fs');
 
-const IOS_EXTENSIONS = ['.caf', '.mp3', '.wav', '.aiff'];
 const ANDROID_EXTENSIONS = ['.ogg', '.mp3', '.wav'];
 
 function withPlatformSounds(config) {

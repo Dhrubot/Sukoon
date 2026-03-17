@@ -36,7 +36,13 @@ import { NotificationDebugScreen } from '../Debug/NotificationDebugScreen';
 
 type SettingsModalKey = 'calculation' | 'hijri' | 'notification' | 'location' | null;
 
-const SettingsScreen = ({ navigation }: any) => {
+interface SettingsScreenProps {
+  navigation: {
+    navigate: (screen: string) => void;
+  };
+}
+
+const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const ambientColors = [theme.colors.ambient.top, theme.colors.ambient.bottom] as const;

@@ -5,8 +5,6 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
   Animated,
 } from 'react-native';
 import * as Haptics from 'expo-haptics';

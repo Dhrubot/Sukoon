@@ -11,7 +11,6 @@ import {
   TouchableWithoutFeedback,
   Modal,
 } from 'react-native';
-import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import PrayerTimeService from '../../services/PrayerTimeService';
@@ -34,7 +33,6 @@ const QadaSheet: React.FC<QadaSheetProps> = ({
   onPrayQada,
   onDismiss,
 }) => {
-  const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;

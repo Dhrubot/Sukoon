@@ -238,7 +238,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
 
   const formatQuietTime = (time: string) => {
     const [hStr, mStr] = time.split(':');
-    let h = parseInt(hStr, 10) || 0;
+    const h = parseInt(hStr, 10) || 0;
     const m = parseInt(mStr, 10) || 0;
     const period = h >= 12 ? 'PM' : 'AM';
     let h12 = h % 12;

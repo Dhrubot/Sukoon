@@ -132,7 +132,7 @@ class TreeGrowthStateService {
   // ── MIGRATION ─────────────────────────────────────────────────────
   // Future schema migrations go here.
 
-  private migrate(old: any): TreeGrowthState {
+  private migrate(old: { version?: unknown }): TreeGrowthState {
     // v1 is the only version for now — just return defaults if schema is unknown
     if (__DEV__) {
       logger.warn(`[TreeGrowthState] Unknown version ${old.version}, resetting to defaults`);

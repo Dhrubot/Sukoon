@@ -1,3 +1,4 @@
+import { ErrorCode, Product, Purchase, PurchaseError } from 'react-native-iap';
 import IAPManager from './IAPManager';
 import StorageService from '../StorageService';
 import { Donation } from '../../types';
@@ -48,7 +49,7 @@ export const DONATION_TIERS = [
 ];
 
 class DonationService {
-  private donationProducts: any[] = [];
+  private donationProducts: Product[] = [];
 
   async initialize() {
     try {
@@ -68,11 +69,11 @@ class DonationService {
     }
   }
 
-  private async processDonation(purchase: any) {
+  private async processDonation(purchase: Purchase) {
     try {
       // Record donation
       const donation: Donation = {
-        id: purchase.transactionId,
+        id: purchase.transactionId ?? `${purchase.productId}-${purchase.transactionDate}`,
         amount: this.getAmountForProduct(purchase.productId),
         currency: 'USD',
         date: new Date(purchase.transactionDate),
@@ -106,10 +107,10 @@ class DonationService {
       }
 
       // All tiers go through IAP (store policy compliance)
-      await IAPManager.requestPurchase(tier.productId, true);
+      await IAPManager.requestPurchase(tier.productId);
       return true;
-    } catch (error: any) {
-      if (error.code === 'E_USER_CANCELLED') {
+    } catch (error) {
+      if ((error as PurchaseError).code === ErrorCode.E_USER_CANCELLED) {
         logger.log('User cancelled donation');
       } else {
         logger.error('Donation error:', error);
@@ -185,7 +186,7 @@ class DonationService {
     }
   }
 
-  getDonationProducts() {
+  getDonationProducts(): Product[] {
     return this.donationProducts;
   }
 

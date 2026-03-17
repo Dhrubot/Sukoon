@@ -1,5 +1,5 @@
 import { NavigatorScreenParams } from '@react-navigation/native';
-import { PrayerTime, PrayerName, ExtendedPrayerName } from './index';
+import { PrayerName, ExtendedPrayerName } from './index';
 
 // Serializable version of PrayerTime for React Navigation params
 // (React Navigation warns about non-serializable values like Date objects)
@@ -36,7 +36,9 @@ export type AppStackParamList = {
 
 // Type declaration to make the types available to the React Navigation library
 declare global {
+  /* eslint-disable @typescript-eslint/no-namespace */
   namespace ReactNavigation {
     interface RootParamList extends RootStackParamList {}
   }
+  /* eslint-enable @typescript-eslint/no-namespace */
 }

@@ -34,7 +34,7 @@ interface PrayerSettingsSectionProps {
 
 export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
   userSettings,
-  setUserSettings,
+  setUserSettings: _setUserSettings,
   onCalculationMethodPress,
   calculationMethods,
   
@@ -45,7 +45,7 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
   prayerTimesLoading = false,
   hasValidLocation = false,
   onTestCalculations,
-  onPreviewMethod,
+  onPreviewMethod: _onPreviewMethod,
   onRefreshPrayerTimes, // 🆕 NEW
 }) => {
   const { theme } = useTheme();

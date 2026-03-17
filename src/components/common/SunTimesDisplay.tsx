@@ -2,7 +2,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { format } from 'date-fns';
-import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import { Icon } from './Icon';
@@ -17,7 +16,6 @@ export const SunTimesDisplay: React.FC<SunTimesDisplayProps> = ({
   sunrise, 
   sunset 
 }) => {
-  const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
 
   if (!sunrise || !sunset) return null;

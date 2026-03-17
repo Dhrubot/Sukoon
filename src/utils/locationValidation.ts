@@ -5,7 +5,7 @@ import { Coordinates } from '../types';
  * Returns true if the coordinates object is valid and usable for prayer time calculations.
  */
 export function isValidCoordinates(
-  coordinates: any
+  coordinates: unknown
 ): coordinates is Coordinates {
   if (!coordinates) return false;
   if (typeof coordinates !== 'object') return false;

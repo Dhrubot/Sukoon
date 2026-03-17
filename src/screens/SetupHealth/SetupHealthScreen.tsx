@@ -16,7 +16,9 @@ import PerformanceService from '../../services/PerformanceService';
 
 type SetupHealthScreenProps = {
   onDone?: () => void;
-  navigation?: any;
+  navigation?: {
+    goBack?: () => void;
+  };
 };
 
 const SetupHealthScreen: React.FC<SetupHealthScreenProps> = ({ onDone, navigation }) => {

@@ -84,7 +84,7 @@ const TARGET_OPTIONS = [33, 99, 100, 500, 1000];
 const TasbihScreen: React.FC = () => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
-  const navigation = useNavigation();
+  useNavigation();
 
   const [selectedPreset, setSelectedPreset] = useState<TasbihPreset>(TASBIH_PRESETS[0]);
   const [target, setTarget] = useState(TASBIH_PRESETS[0].defaultTarget);

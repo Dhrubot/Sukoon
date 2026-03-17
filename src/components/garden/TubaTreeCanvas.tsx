@@ -59,7 +59,6 @@ import {
   swayMultiplier,
   rootWidthScale,
   trunkTaperSegments,
-  BRANCH_TAPER,
 } from '../../constants/tubaTree';
 
 const AnimatedG = Animated.createAnimatedComponent(G);

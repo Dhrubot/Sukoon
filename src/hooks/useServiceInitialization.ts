@@ -28,7 +28,7 @@ import StorageService from '../services/StorageService';
 const COLD_START_GUARD_MS = 30_000;
 
 export const useServiceInitialization = () => {
-  const { todayPrayerTimes, nextPrayer, isLoading, hasValidLocation } =
+  const { todayPrayerTimes, isLoading, hasValidLocation } =
     usePrayerTimes();
 
   const { userSettings, setLocation, updateUserSettings } = useStore();

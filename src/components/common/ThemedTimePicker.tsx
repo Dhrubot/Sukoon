@@ -11,7 +11,6 @@ import {
   StyleSheet,
   Modal,
   Animated,
-  Dimensions,
   PanResponder,
   Platform,
   FlatList,
@@ -25,7 +24,6 @@ import { AppTheme } from '../../theme';
 import * as Haptics from 'expo-haptics';
 import { withAlpha } from '../../utils/color';
 
-const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const SHEET_HEIGHT = 380;
 const WHEEL_ITEM_HEIGHT = 44;
 const WHEEL_VISIBLE_ITEMS = 5;
@@ -41,7 +39,7 @@ const MINUTES_5 = Array.from({ length: 12 }, (_, i) => i * 5);
 
 function parse24h(value: string): { hour12: number; minute: number; period: 'AM' | 'PM' } {
   const [hStr, mStr] = value.split(':');
-  let h = parseInt(hStr, 10) || 0;
+  const h = parseInt(hStr, 10) || 0;
   const m = parseInt(mStr, 10) || 0;
   const period: 'AM' | 'PM' = h >= 12 ? 'PM' : 'AM';
   let hour12 = h % 12;
@@ -169,7 +167,7 @@ function AndroidWheelPicker<T extends string | number>({
   );
 
   const getItemLayout = useCallback(
-    (_: any, index: number) => ({
+    (_data: ArrayLike<T | null> | null | undefined, index: number) => ({
       length: WHEEL_ITEM_HEIGHT,
       offset: WHEEL_ITEM_HEIGHT * index,
       index,
@@ -223,7 +221,6 @@ const ThemedTimePicker: React.FC<ThemedTimePickerProps> = ({
 
   // Colors used by native Picker on both platforms
   const pickerTextColor = theme.colors.text.primary;
-  const pickerBgColor = theme.colors.card.background;
 
   const parsed = parse24h(value);
   const [hour, setHour] = useState(parsed.hour12);
@@ -368,7 +365,7 @@ const ThemedTimePicker: React.FC<ThemedTimePickerProps> = ({
                   itemStyle={[styles.pickerItem, { color: pickerTextColor }]}
                   dropdownIconColor={pickerTextColor}
                   selectionColor={withAlpha(theme.colors.primary.DEFAULT, 0.19)}
-                  // @ts-ignore — themeVariant is typed on PickerIOS but forwarded by cross-platform Picker
+                  // @ts-expect-error Picker forwards themeVariant on iOS.
                   themeVariant={themeMode}
                 >
                   {HOURS_12.map((h) => (
@@ -388,7 +385,7 @@ const ThemedTimePicker: React.FC<ThemedTimePickerProps> = ({
                   itemStyle={[styles.pickerItem, { color: pickerTextColor }]}
                   dropdownIconColor={pickerTextColor}
                   selectionColor={withAlpha(theme.colors.primary.DEFAULT, 0.19)}
-                  // @ts-ignore
+                  // @ts-expect-error Picker forwards themeVariant on iOS.
                   themeVariant={themeMode}
                 >
                   {minuteOptions.map((m) => (
@@ -406,7 +403,7 @@ const ThemedTimePicker: React.FC<ThemedTimePickerProps> = ({
                   itemStyle={[styles.pickerItem, { color: pickerTextColor }]}
                   dropdownIconColor={pickerTextColor}
                   selectionColor={withAlpha(theme.colors.primary.DEFAULT, 0.19)}
-                  // @ts-ignore
+                  // @ts-expect-error Picker forwards themeVariant on iOS.
                   themeVariant={themeMode}
                 >
                   <Picker.Item label="AM" value="AM" />

@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
-import { useTheme } from '../providers/ThemeProvider';
 import { useThemedStyles } from '../hooks/useThemedStyles';
 import { AppTheme } from '../theme';
 

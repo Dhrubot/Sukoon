@@ -3,7 +3,7 @@
 // returns 5 fard prayers with valid Date objects for known coordinates.
 
 import PrayerTimeService from '../services/PrayerTimeService';
-import { Coordinates, CalculationMethod } from '../types';
+import { Coordinates } from '../types';
 
 // Mock the fetch call so we don't hit the real API
 const MOCK_API_RESPONSE = {

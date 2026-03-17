@@ -1,7 +1,6 @@
 // src/components/settings/SettingSection.tsx
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 
@@ -11,7 +10,6 @@ interface SettingSectionProps {
 }
 
 export const SettingSection: React.FC<SettingSectionProps> = ({ title, children }) => {
-  const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   
   return (

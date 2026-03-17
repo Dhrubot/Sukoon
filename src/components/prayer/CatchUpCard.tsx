@@ -3,7 +3,6 @@
 // Collapses individual "Make Up" cards into a single actionable entry point.
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import PrayerTimeService from '../../services/PrayerTimeService';
@@ -15,7 +14,6 @@ interface CatchUpCardProps {
 }
 
 const CatchUpCard: React.FC<CatchUpCardProps> = ({ missedPrayers, onCatchUp }) => {
-  const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
 
   if (missedPrayers.length < 3) return null;

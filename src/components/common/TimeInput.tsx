@@ -24,7 +24,7 @@ interface TimeInputProps {
  */
 export function formatTime(value: string): string {
   const [hStr, mStr] = value.split(':');
-  let h = parseInt(hStr, 10) || 0;
+  const h = parseInt(hStr, 10) || 0;
   const m = parseInt(mStr, 10) || 0;
   const period = h >= 12 ? 'PM' : 'AM';
   let hour12 = h % 12;

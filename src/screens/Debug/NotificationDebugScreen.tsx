@@ -18,12 +18,15 @@ import { usePrayerTimes } from '../../providers/PrayerTimesProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import { CHANNELS, SOUNDS } from '../../constants/NotificationConstants';
-import { scheduleFullAdhan, stopFullAdhan } from '../../services/notifications/FullAdhanScheduler';
+import { scheduleFullAdhan } from '../../services/notifications/FullAdhanScheduler';
 import NotificationLedger, { LedgerHealth } from '../../services/NotificationLedger';
+
+type NotificationDebugInfo = Awaited<ReturnType<typeof NotificationService.getDebugInfo>>;
+type UpcomingNotification = NotificationDebugInfo['upcomingNotifications'][number];
 
 export const NotificationDebugScreen = () => {
   const styles = useThemedStyles(createStyles);
-  const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [debugInfo, setDebugInfo] = useState<NotificationDebugInfo | null>(null);
   const [permissionStatus, setPermissionStatus] = useState<string>('unknown');
   const [scheduledCount, setScheduledCount] = useState(0);
   const [isAdhanPlaying, setIsAdhanPlaying] = useState(false);
@@ -278,11 +281,11 @@ export const NotificationDebugScreen = () => {
           {debugInfo.upcomingNotifications && debugInfo.upcomingNotifications.length > 0 && (
             <>
               <Text style={styles.subsectionTitle}>Next 3 Notifications:</Text>
-              {debugInfo.upcomingNotifications.slice(0, 3).map((notif: any, idx: number) => (
+              {debugInfo.upcomingNotifications.slice(0, 3).map((notif: UpcomingNotification, idx: number) => (
                 <View key={idx} style={styles.notificationCard}>
-                  <Text style={styles.notifText}>Prayer: {notif.prayer || 'N/A'}</Text>
-                  <Text style={styles.notifText}>Type: {notif.type}</Text>
-                  <Text style={styles.notifText}>Time: {notif.trigger}</Text>
+                  <Text style={styles.notifText}>Prayer: {String(notif.prayer ?? 'N/A')}</Text>
+                  <Text style={styles.notifText}>Type: {String(notif.type ?? 'Unknown')}</Text>
+                  <Text style={styles.notifText}>Time: {String(notif.trigger)}</Text>
                 </View>
               ))}
             </>

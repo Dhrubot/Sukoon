@@ -21,7 +21,6 @@
     "android",
     "coverage",
     "dist",
-    "edge-api",
     "ios",
     "node_modules"
   ]

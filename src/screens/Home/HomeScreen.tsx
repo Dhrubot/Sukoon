@@ -7,7 +7,6 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
-  Dimensions,
   ColorValue,
   ActivityIndicator,
   NativeScrollEvent,
@@ -18,6 +17,7 @@ import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context"
 import { LinearGradient } from "expo-linear-gradient";
 import { format, addMinutes } from "date-fns";
 import { useShallow } from "zustand/react/shallow";
+import { RouteProp, useRoute, CompositeNavigationProp } from "@react-navigation/native";
 
 // Store and Services
 import { useStore } from "../../store/useStore";
@@ -48,10 +48,9 @@ import { LocationModal } from "../../components/LocationModal";
 // Types
 import { PrayerTime, PrayerRecord, OptionalPrayerTime, PrayerName } from "../../types";
 
-import { isRamadan, getRamadanDay, isEidDay, getEidName, isTashreeqDays, getTashreeqDayLabel } from "../../utils/ramadan";
+import { isRamadan, getRamadanDay, getEidName, getTashreeqDayLabel } from "../../utils/ramadan";
 import { getMoonSightingEvent, getDeferredMoonSightingEvent, getHijriNudgeEvent, getAutoDeduceEndOfMonthEvent, MoonSightingEvent, HijriNudgeEvent, AutoDeduceEvent } from "../../utils/moonSighting";
 import * as Haptics from "expo-haptics";
-import { useRoute, CompositeNavigationProp } from "@react-navigation/native";
 import { BottomTabNavigationProp } from "@react-navigation/bottom-tabs";
 import { StackNavigationProp } from "@react-navigation/stack";
 import { TabParamList, RootStackParamList } from "../../types/navigation";
@@ -65,8 +64,6 @@ import { withAlpha } from "../../utils/color";
 import { mosqueModePlatformUi } from "../../utils/mosqueModePlatform";
 
 import { HERO_ADVANCE_MINUTES } from "../../constants/NotificationConstants";
-
-const { width } = Dimensions.get("window");
 const MOSQUE_MODE_TIP_SEEN_KEY = 'mosque_mode_tip_seen';
 
 type HomeScreenNavigationProp = CompositeNavigationProp<
@@ -140,7 +137,7 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
 
   // Quick-log state
   const [quickLogPrayer, setQuickLogPrayer] = useState<PrayerTime | null>(null);
-  const route = useRoute<any>();
+  const route = useRoute<RouteProp<TabParamList, 'Home'>>();
   const addPrayerRecord = useStore((state) => state.addPrayerRecord);
 
   // Handle notification tap → auto-show QuickLogSheet
@@ -403,9 +400,6 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
   const getBackgroundGradient = (): readonly [ColorValue, ColorValue] => {
     return [theme.colors.background.primary, theme.colors.background.secondary];
   };
-
-
-  const completedToday = todayPrayerRecords.filter(r => r.status === 'prayed').length;
 
   // Prayer-aware hero: if the user already prayed the current fiqh-window prayer,
   // advance the hero to the next unprayed prayer. Returns null when all are prayed.

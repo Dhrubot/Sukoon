@@ -6,7 +6,6 @@ import {
   StyleSheet,
   TouchableOpacity,
   Animated,
-  Dimensions,
   ScrollView,
   KeyboardAvoidingView,
   Platform,
@@ -48,8 +47,6 @@ import ReminderStateService from "../../services/ReminderStateService";
 import TreeGrowthStateService from "../../services/TreeGrowthStateService";
 import { getLocalDateKey } from "../../utils/dateHelpers";
 
-const { width, height } = Dimensions.get("window");
-
 type FlowStep =
   | "transition"
   | "breathing"
@@ -70,8 +67,7 @@ const MindfulnessFlow: React.FC = () => {
   // 🎯 NEW: Access centralized prayer times for validation
   const { 
     todayPrayerTimes, 
-    nextPrayer, 
-    hasValidLocation 
+    nextPrayer
   } = usePrayerTimes();
 
   // P0-G: Access sunrise/midnight for fiqh-aware prayer deadlines
@@ -105,7 +101,6 @@ const MindfulnessFlow: React.FC = () => {
   const [isBreathingActive, setIsBreathingActive] = useState(true);
   const [hasValidated, setHasValidated] = useState(false);
   const [savedRecordId, setSavedRecordId] = useState<string | null>(null);
-  const [prayerStartTime, setPrayerStartTime] = useState<Date | null>(null);
 
   // Phase 6: Randomly selected khushu line for praying screen (picked once per session)
   const [khushuLine] = useState(() => getRandomKhushuQuote());
@@ -385,7 +380,6 @@ const MindfulnessFlow: React.FC = () => {
     }
 
     setSavedRecordId(recordId);
-    setPrayerStartTime(new Date());
 
     // Transition to a short handoff that encourages putting the phone away
     Animated.timing(fadeAnim, {

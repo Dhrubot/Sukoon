@@ -5,8 +5,6 @@ import {
   MindfulnessSession,
   DailyStats,
   Achievement,
-  Location,
-  CalculationMethod,
   SubscriptionPlan,
   PremiumFeatures,
   TemporaryPremium,
@@ -22,6 +20,8 @@ import AnalyticsService from './AnalyticsService';
 import { getLocalDateKey } from '../utils/dateHelpers';
 import logger from '../utils/logger';
 import { ONE_DAY_MS } from '../constants/time';
+
+type FamilyData = Record<string, unknown>;
 
 class StorageService {
   // Encrypted storage for PII: user_settings, user_id, subscription,
@@ -1122,12 +1122,12 @@ class StorageService {
   }
 
   // Family sharing data
-  getFamilyData(): any | null {
+  getFamilyData(): FamilyData | null {
     const data = this.storage.getString("family_data");
-    return data ? JSON.parse(data) : null;
+    return data ? (JSON.parse(data) as FamilyData) : null;
   }
 
-  saveFamilyData(familyData: any): void {
+  saveFamilyData(familyData: FamilyData): void {
     this.storage.set("family_data", JSON.stringify(familyData));
   }
 

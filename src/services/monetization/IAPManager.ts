@@ -1,17 +1,18 @@
-import { Platform } from 'react-native';
+import { EmitterSubscription, Platform } from 'react-native';
 import * as InAppPurchases from 'react-native-iap';
+import { Purchase, Product, Subscription, PurchaseError } from 'react-native-iap';
 import logger from '../../utils/logger';
 
 // Product ID prefixes for routing
 const DONATION_PREFIX = 'com.talukders.sukoon.donate.';
 const SUBSCRIPTION_PREFIX = 'com.talukders.sukoon.premium.';
 
-type PurchaseHandler = (purchase: any) => Promise<void>;
+type PurchaseHandler = (purchase: Purchase) => Promise<void>;
 
 class IAPManager {
   private _initialized = false;
-  private purchaseUpdateSubscription: any = null;
-  private purchaseErrorSubscription: any = null;
+  private purchaseUpdateSubscription: EmitterSubscription | null = null;
+  private purchaseErrorSubscription: EmitterSubscription | null = null;
   private donationHandler: PurchaseHandler | null = null;
   private subscriptionHandler: PurchaseHandler | null = null;
 
@@ -57,7 +58,7 @@ class IAPManager {
     );
 
     this.purchaseErrorSubscription = InAppPurchases.purchaseErrorListener(
-      (error) => {
+      (error: PurchaseError) => {
         logger.error('IAPManager: Purchase error:', error);
       }
     );
@@ -71,15 +72,15 @@ class IAPManager {
     this.subscriptionHandler = handler;
   }
 
-  async getProducts(skus: string[]) {
+  async getProducts(skus: string[]): Promise<Product[]> {
     return InAppPurchases.getProducts({ skus });
   }
 
-  async getSubscriptions(skus: string[]) {
+  async getSubscriptions(skus: string[]): Promise<Subscription[]> {
     return InAppPurchases.getSubscriptions({ skus });
   }
 
-  async requestPurchase(productId: string, isConsumable: boolean = false) {
+  async requestPurchase(productId: string) {
     if (Platform.OS === 'ios') {
       return InAppPurchases.requestPurchase({
         sku: productId,
@@ -92,11 +93,11 @@ class IAPManager {
     }
   }
 
-  async finishTransaction(purchase: any, isConsumable: boolean) {
+  async finishTransaction(purchase: Purchase, isConsumable: boolean) {
     return InAppPurchases.finishTransaction({ purchase, isConsumable });
   }
 
-  async getAvailablePurchases() {
+  async getAvailablePurchases(): Promise<Purchase[]> {
     return InAppPurchases.getAvailablePurchases();
   }
 

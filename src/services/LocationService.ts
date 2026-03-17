@@ -127,15 +127,19 @@ class LocationService {
       }
 
       return enrichedLocation;
-    } catch (error: any) {
+    } catch (error) {
       logger.error('❌ Error getting current location:', error);
-      
+
       // 🎯 ENHANCED: Specific error messages
-      if (error.code === 'E_LOCATION_SERVICES_DISABLED') {
+      const errorCode = typeof error === 'object' && error !== null && 'code' in error
+        ? String((error as { code: unknown }).code)
+        : null;
+
+      if (errorCode === 'E_LOCATION_SERVICES_DISABLED') {
         throw new Error('Location services are disabled. Please enable them in your device settings.');
-      } else if (error.code === 'E_LOCATION_TIMEOUT') {
+      } else if (errorCode === 'E_LOCATION_TIMEOUT') {
         throw new Error('Location request timed out. Please try again.');
-      } else if (error.code === 'E_LOCATION_UNAVAILABLE') {
+      } else if (errorCode === 'E_LOCATION_UNAVAILABLE') {
         throw new Error('Location is currently unavailable. Please try again later.');
       }
       
