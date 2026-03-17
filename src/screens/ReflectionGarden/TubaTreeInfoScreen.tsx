@@ -1,213 +1,220 @@
+// src/screens/ReflectionGarden/TubaTreeInfoScreen.tsx
+
 import React from 'react';
-import { View, Text, ScrollView, StyleSheet } from 'react-native';
+import {
+  View,
+  Text,
+  ScrollView,
+  StyleSheet,
+  Platform,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { LinearGradient } from 'expo-linear-gradient';
-import Svg, { Circle, Path, Ellipse } from 'react-native-svg';
 import { useTheme } from '../../providers/ThemeProvider';
+import { withAlpha } from '../../utils/color';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
-import { withAlpha } from '../../utils/color';
-
-const TreeIllustration: React.FC<{ trunk: string; leaf: string; accent: string }> = ({
-  trunk,
-  leaf,
-  accent,
-}) => (
-  <Svg width="100%" height={220} viewBox="0 0 220 220" fill="none">
-    <Path
-      d="M108 205C108 165 108 138 110 118C112 98 116 77 126 48"
-      stroke={trunk}
-      strokeWidth={10}
-      strokeLinecap="round"
-    />
-    <Path d="M112 122C90 110 73 95 61 77" stroke={trunk} strokeWidth={5} strokeLinecap="round" />
-    <Path d="M112 128C136 114 154 98 167 79" stroke={trunk} strokeWidth={5} strokeLinecap="round" />
-    <Path d="M116 102C95 88 84 67 80 45" stroke={trunk} strokeWidth={4.5} strokeLinecap="round" />
-    <Path d="M120 98C141 84 153 63 157 40" stroke={trunk} strokeWidth={4.5} strokeLinecap="round" />
-    <Path d="M116 142C90 138 66 130 46 114" stroke={trunk} strokeWidth={4.5} strokeLinecap="round" />
-    <Path d="M118 146C145 143 170 133 188 117" stroke={trunk} strokeWidth={4.5} strokeLinecap="round" />
-    {[
-      [60, 75],
-      [82, 43],
-      [45, 112],
-      [166, 78],
-      [156, 38],
-      [188, 112],
-      [114, 30],
-      [104, 70],
-      [132, 68],
-    ].map(([cx, cy], index) => (
-      <Ellipse
-        key={`${cx}-${cy}-${index}`}
-        cx={cx}
-        cy={cy}
-        rx={8}
-        ry={12}
-        fill={leaf}
-        transform={`rotate(${index % 2 === 0 ? -18 : 16} ${cx} ${cy})`}
-      />
-    ))}
-    <Circle cx={110} cy={116} r={3} fill={accent} opacity={0.35} />
-  </Svg>
-);
-
-const BranchIllustration: React.FC<{ colors: string[]; trunk: string }> = ({ colors, trunk }) => (
-  <Svg width="100%" height={180} viewBox="0 0 220 180" fill="none">
-    <Path d="M110 168C110 130 110 101 113 76C116 52 122 35 130 18" stroke={trunk} strokeWidth={9} strokeLinecap="round" />
-    {[
-      { d: 'M112 88C92 76 75 63 63 48', color: colors[0] },
-      { d: 'M114 98C84 102 59 102 34 92', color: colors[1] },
-      { d: 'M116 82C140 70 156 56 169 39', color: colors[2] },
-      { d: 'M116 108C144 111 167 104 189 92', color: colors[3] },
-      { d: 'M118 62C111 41 107 25 107 10', color: colors[4] },
-    ].map((branch) => (
-      <Path
-        key={branch.d}
-        d={branch.d}
-        stroke={trunk}
-        strokeWidth={4.5}
-        strokeLinecap="round"
-      />
-    ))}
-    {[
-      { cx: 64, cy: 48, color: colors[0] },
-      { cx: 34, cy: 92, color: colors[1] },
-      { cx: 169, cy: 39, color: colors[2] },
-      { cx: 189, cy: 92, color: colors[3] },
-      { cx: 107, cy: 10, color: colors[4] },
-    ].map((leaf, index) => (
-      <Ellipse
-        key={`${leaf.cx}-${leaf.cy}-${index}`}
-        cx={leaf.cx}
-        cy={leaf.cy}
-        rx={7}
-        ry={11}
-        fill={leaf.color}
-        transform={`rotate(${index < 2 ? -16 : 18} ${leaf.cx} ${leaf.cy})`}
-      />
-    ))}
-  </Svg>
-);
-
-const LeafIllustration: React.FC<{ leaf: string; accent: string }> = ({ leaf, accent }) => (
-  <Svg width="100%" height={120} viewBox="0 0 220 120" fill="none">
-    <Ellipse cx={90} cy={58} rx={16} ry={24} fill={leaf} transform="rotate(-18 90 58)" />
-    <Ellipse cx={130} cy={58} rx={16} ry={24} fill={leaf} transform="rotate(18 130 58)" opacity={0.92} />
-    <Path d="M110 32C108 55 108 72 110 92" stroke={accent} strokeWidth={2.5} strokeLinecap="round" opacity={0.35} />
-    <Circle cx={110} cy={60} r={3} fill={accent} opacity={0.28} />
-  </Svg>
-);
 
 const TubaTreeInfoScreen: React.FC = () => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
-  const ambientColors = [theme.colors.ambient.top, theme.colors.ambient.bottom] as const;
+
   const prayerColors = [
-    theme.colors.prayer.fajr,
-    theme.colors.prayer.dhuhr,
-    theme.colors.prayer.asr,
-    theme.colors.prayer.maghrib,
-    theme.colors.prayer.isha,
+    theme.colors.prayer?.fajr || '#7986CB',
+    theme.colors.prayer?.dhuhr || '#FFD54F',
+    theme.colors.prayer?.asr || '#FFB74D',
+    theme.colors.prayer?.maghrib || '#CE93D8',
+    theme.colors.prayer?.isha || '#5C6BC0',
   ];
+
+  const dawamColor =
+    theme.colors.garden?.dawamPillText || theme.colors.primary.DEFAULT;
 
   return (
     <SafeAreaView style={styles.container}>
-      <LinearGradient colors={ambientColors} style={styles.gradient}>
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={styles.content}
-        >
-          <View style={styles.hero}>
-            <Text style={styles.heroTitle}>Your Tuba Tree</Text>
-            <Text style={styles.heroArabic}>طُوبَىٰ</Text>
-            <Text style={styles.heroSubtitle}>
-              Each prayer you reflect on nourishes a leaf.
-              {'\n'}
-              Over time, the tree becomes a quieter witness to your return.
-            </Text>
-            <TreeIllustration
-              trunk={theme.colors.garden.trunk}
-              leaf={theme.colors.interactive.active}
-              accent={theme.colors.primary.DEFAULT}
-            />
-          </View>
+      <ScrollView showsVerticalScrollIndicator={false} bounces>
+        <View style={styles.hero}>
+          <Text style={styles.heroTitle}>Your Tuba Tree</Text>
+          <Text style={[styles.heroArabic, { color: dawamColor }]}>طُوبَىٰ</Text>
+          <Text style={styles.heroSubtitle}>
+            Every prayer with presence leaves a trace.{'\n'}
+            Every day of return deepens the roots.
+          </Text>
+        </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>What Tuba means here</Text>
-            <Text style={styles.bodyText}>
-              Tuba is used in Sukoon as a private metaphor for prayer, sincerity, and return. It is not a score and it is not a reward ladder. It is simply a gentle way to see that your prayers are leaving a trace.
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>What is Tuba?</Text>
+          <Text style={styles.bodyText}>
+            In Islamic tradition, Tuba (طوبى) is a tree in Jannah mentioned by the
+            Prophet ﷺ. A rider could travel for a hundred years in its shade and
+            never leave it. Its branches extend over the walls of Paradise, and
+            from it flow rivers of honey, milk, and pure water.
+          </Text>
+          <View
+            style={[
+              styles.quoteCard,
+              {
+                borderColor: withAlpha(theme.colors.interactive.active, 0.19),
+              },
+            ]}
+          >
+            <Text
+              style={[
+                styles.quoteText,
+                { color: theme.colors.text.secondary },
+              ]}
+            >
+              "Tuba is a tree in Paradise. Its extent is a journey of a hundred
+              years. The garments of the people of Paradise emerge from its
+              sheaths."
+            </Text>
+            <Text
+              style={[styles.quoteSource, { color: theme.colors.text.muted }]}
+            >
+              - Narrated by Ibn Hibban
             </Text>
           </View>
+          <Text style={styles.bodyText}>
+            Your Tuba Tree in Sukoon is a private metaphor for prayer and return.
+            It is not a score. It becomes fuller through sincere reflection,
+            quiet honesty, and showing up again.
+          </Text>
+        </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>How it works</Text>
-            <View style={styles.stepCard}>
-              <Text style={styles.stepTitle}>1. Pray and leave a quiet reflection</Text>
-              <Text style={styles.stepText}>
-                When you complete a prayer flow and leave a note or mood check-in, Sukoon records that moment privately.
-              </Text>
-            </View>
-            <View style={styles.stepCard}>
-              <Text style={styles.stepTitle}>2. Each prayer nourishes its own branch</Text>
-              <Text style={styles.stepText}>
-                Fajr, Dhuhr, Asr, Maghrib, and Isha each feed a different branch so your tree reflects the shape of your real prayer life.
-              </Text>
-            </View>
-            <View style={styles.stepCard}>
-              <Text style={styles.stepTitle}>3. The tree grows quieter, fuller, and more rooted</Text>
-              <Text style={styles.stepText}>
-                With time, the tree becomes denser and more settled. Growth is there to honor return, not to rank worship.
-              </Text>
-            </View>
-          </View>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>How Your Tree Grows</Text>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Five prayer branches</Text>
-            <Text style={styles.bodyText}>
-              Each branch corresponds to one of the five daily prayers. Their colors mirror the feel of each prayer time.
-            </Text>
-            <View style={styles.illustrationCard}>
-              <BranchIllustration
-                colors={prayerColors}
-                trunk={theme.colors.garden.trunk}
-              />
+          {[
+            {
+              n: '1',
+              title: 'Pray with reflection',
+              body: 'During any prayer, complete the mindfulness flow, breathe, reflect, and leave a quiet note. That moment nourishes a leaf on your tree.',
+            },
+            {
+              n: '2',
+              title: 'Each prayer returns to its branch',
+              body: 'The tree has 5 branches, one for each fard prayer. Your Fajr reflections nourish the Fajr branch, Dhuhr the Dhuhr branch, and so on.',
+            },
+            {
+              n: '3',
+              title: 'Each prayer nourishes a leaf',
+              body: 'All leaves belong to the same tree family. The tree is not trying to rank your worship, only to preserve a quiet trace that you returned.',
+            },
+            {
+              n: '4',
+              title: 'Consistency deepens the tree',
+              body: 'Your dawam (دوام), returning again and again, makes the canopy fuller and the roots steadier over time. Breaks do not erase the tree.',
+            },
+          ].map((step) => (
+            <View key={step.n} style={styles.growthStep}>
+              <View
+                style={[
+                  styles.stepDot,
+                  { backgroundColor: theme.colors.interactive.active },
+                ]}
+              >
+                <Text style={styles.stepNumber}>{step.n}</Text>
+              </View>
+              <View style={styles.stepContent}>
+                <Text style={styles.stepTitle}>{step.title}</Text>
+                <Text style={styles.stepBody}>{step.body}</Text>
+              </View>
             </View>
-            <View style={styles.branchList}>
-              {['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].map((prayer, index) => (
-                <View key={prayer} style={styles.branchRow}>
+          ))}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Prayer Branches</Text>
+          <Text style={styles.bodyText}>
+            Each of the 5 branches represents a fard prayer. The color flows
+            from the trunk&apos;s earthy brown into the prayer&apos;s signature
+            color.
+          </Text>
+          <View style={styles.branchColorList}>
+            {['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].map((prayer, i) => (
+              <View key={prayer} style={styles.branchColorItem}>
+                <View
+                  style={[
+                    styles.branchColorDot,
+                    { backgroundColor: prayerColors[i] },
+                  ]}
+                />
+                <Text
+                  style={[
+                    styles.branchColorName,
+                    { color: theme.colors.text.primary },
+                  ]}
+                >
+                  {prayer}
+                </Text>
+                <View
+                  style={[
+                    styles.branchColorBar,
+                    { backgroundColor: withAlpha(prayerColors[i], 0.15) },
+                  ]}
+                >
                   <View
                     style={[
-                      styles.branchDot,
-                      { backgroundColor: prayerColors[index] },
+                      styles.branchColorFill,
+                      { backgroundColor: prayerColors[i], width: `${40 + i * 12}%` },
                     ]}
                   />
-                  <Text style={styles.branchName}>{prayer}</Text>
                 </View>
-              ))}
-            </View>
+              </View>
+            ))}
           </View>
+        </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>What a leaf represents</Text>
-            <Text style={styles.bodyText}>
-              Every leaf belongs to the same tree family. Some prayers feel calm, some feel rushed, some feel heavy. Sukoon keeps that state as a private reflection, not as a better-or-worse grade.
-            </Text>
-            <View style={styles.illustrationCard}>
-              <LeafIllustration
-                leaf={theme.colors.interactive.active}
-                accent={theme.colors.primary.DEFAULT}
-              />
-            </View>
-          </View>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Ramadan Mode 🌙</Text>
+          <Text style={styles.bodyText}>
+            During the blessed month, your tree transforms. Branch colors shift
+            toward gold, extra stars fill the night sky, and the crescent moon
+            gains a warm halo. The stage label shows which day of Ramadan
+            you&apos;re on.
+          </Text>
+          <Text style={styles.bodyText}>
+            This happens automatically, no settings to change. Your tree feels
+            the baraka of the month just as you do.
+          </Text>
+        </View>
 
-          <View style={styles.noteCard}>
-            <Text style={styles.noteTitle}>A private sign of return</Text>
-            <Text style={styles.noteText}>
-              If you pause for a while, nothing is lost. When you return, the tree simply begins receiving your prayers again. That is the spirit Sukoon is trying to protect.
-            </Text>
-          </View>
-        </ScrollView>
-      </LinearGradient>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Read Your Leaves</Text>
+          <Text style={styles.bodyText}>
+            Tap any leaf on your tree to see its details, which prayer it came
+            from, when you prayed, your mood level, and whether you wrote a
+            reflection. Each leaf is a private trace of a moment you turned back
+            to Allah.
+          </Text>
+        </View>
+
+        <View
+          style={[
+            styles.closingCard,
+            {
+              backgroundColor: theme.colors.card.background,
+              borderColor: theme.colors.border.secondary,
+            },
+          ]}
+        >
+          <Text style={[styles.closingArabic, { color: dawamColor }]}>
+            طُوبَىٰ لَهُمْ وَحُسْنُ مَآبٍ
+          </Text>
+          <Text
+            style={[
+              styles.closingTranslation,
+              { color: theme.colors.text.secondary },
+            ]}
+          >
+            "Tuba (blessedness) is for them, and a beautiful place of return."
+          </Text>
+          <Text style={[styles.closingRef, { color: theme.colors.text.muted }]}>
+            - Quran 13:29
+          </Text>
+        </View>
+
+        <View style={{ height: 40 }} />
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -218,44 +225,42 @@ const createStyles = (theme: AppTheme) =>
       flex: 1,
       backgroundColor: theme.colors.background.primary,
     },
-    gradient: {
-      flex: 1,
-    },
-    content: {
-      paddingHorizontal: theme.spacing.xl,
-      paddingTop: theme.spacing.lg,
-      paddingBottom: theme.spacing['4xl'],
-    },
+
     hero: {
       alignItems: 'center',
-      marginBottom: theme.spacing.xl,
+      paddingTop: theme.spacing.lg,
+      paddingBottom: theme.spacing['2xl'],
+      paddingHorizontal: theme.spacing.xl,
     },
     heroTitle: {
-      fontSize: 24,
-      fontFamily: theme.typography.fontFamily.bodySemibold,
+      fontSize: 28,
+      fontFamily: theme.typography.fontFamily.headingRegular,
+      fontWeight: '300',
       color: theme.colors.text.primary,
-      marginBottom: theme.spacing.sm,
+      marginBottom: 4,
     },
     heroArabic: {
-      fontSize: 30,
-      fontFamily: theme.typography.fontFamily.arabicBold,
-      color: theme.colors.interactive.active,
+      fontSize: 36,
+      fontFamily:
+        Platform.OS === 'ios' ? 'Amiri' : theme.typography.fontFamily.body,
       marginBottom: theme.spacing.md,
     },
     heroSubtitle: {
       fontSize: theme.typography.fontSize.base,
       fontFamily: theme.typography.fontFamily.body,
-      color: theme.colors.text.secondary,
+      color: theme.colors.text.muted,
       textAlign: 'center',
-      lineHeight: 24,
-      marginBottom: theme.spacing.lg,
+      lineHeight: 22,
+      fontStyle: 'italic',
     },
+
     section: {
-      marginBottom: theme.spacing.xl,
+      paddingHorizontal: theme.spacing.xl,
+      marginBottom: theme.spacing['2xl'],
     },
     sectionTitle: {
       fontSize: theme.typography.fontSize.xl,
-      fontFamily: theme.typography.fontFamily.bodySemibold,
+      fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.text.primary,
       marginBottom: theme.spacing.md,
     },
@@ -263,74 +268,106 @@ const createStyles = (theme: AppTheme) =>
       fontSize: theme.typography.fontSize.base,
       fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.secondary,
-      lineHeight: 24,
-    },
-    stepCard: {
-      backgroundColor: theme.colors.card.background,
-      borderRadius: theme.borderRadius.lg,
-      borderWidth: 1,
-      borderColor: theme.colors.border.secondary,
-      padding: theme.spacing.lg,
+      lineHeight: 23,
       marginBottom: theme.spacing.md,
     },
-    stepTitle: {
-      fontSize: theme.typography.fontSize.lg,
-      fontFamily: theme.typography.fontFamily.bodySemibold,
-      color: theme.colors.text.primary,
-      marginBottom: theme.spacing.xs,
+
+    quoteCard: {
+      borderLeftWidth: 3,
+      paddingLeft: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      marginVertical: theme.spacing.md,
     },
-    stepText: {
+    quoteText: {
       fontSize: theme.typography.fontSize.base,
       fontFamily: theme.typography.fontFamily.body,
-      color: theme.colors.text.secondary,
+      fontStyle: 'italic',
       lineHeight: 22,
     },
-    illustrationCard: {
-      backgroundColor: withAlpha(theme.colors.card.background, 0.72),
-      borderRadius: theme.borderRadius.lg,
-      borderWidth: 1,
-      borderColor: theme.colors.border.secondary,
-      paddingHorizontal: theme.spacing.md,
-      paddingVertical: theme.spacing.sm,
-      marginTop: theme.spacing.lg,
+    quoteSource: {
+      fontSize: theme.typography.fontSize.sm,
+      fontFamily: theme.typography.fontFamily.body,
+      marginTop: theme.spacing.xs,
     },
-    branchList: {
-      gap: theme.spacing.sm,
-      marginTop: theme.spacing.lg,
-    },
-    branchRow: {
+
+    growthStep: {
       flexDirection: 'row',
+      marginBottom: theme.spacing.lg,
+      gap: theme.spacing.md,
+    },
+    stepDot: {
+      width: 28,
+      height: 28,
+      borderRadius: 14,
       alignItems: 'center',
-      gap: theme.spacing.sm,
+      justifyContent: 'center',
+      marginTop: 2,
     },
-    branchDot: {
-      width: 10,
-      height: 10,
-      borderRadius: 5,
+    stepNumber: {
+      fontSize: 13,
+      fontFamily: theme.typography.fontFamily.bodyMedium,
+      color: '#fff',
     },
-    branchName: {
-      fontSize: theme.typography.fontSize.base,
+    stepContent: { flex: 1 },
+    stepTitle: {
+      fontSize: theme.typography.fontSize.md,
       fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.text.primary,
+      marginBottom: 4,
     },
-    noteCard: {
-      backgroundColor: theme.colors.card.background,
-      borderRadius: theme.borderRadius.lg,
-      borderWidth: 1,
-      borderColor: theme.colors.border.secondary,
-      padding: theme.spacing.xl,
-    },
-    noteTitle: {
-      fontSize: theme.typography.fontSize.lg,
-      fontFamily: theme.typography.fontFamily.bodySemibold,
-      color: theme.colors.text.primary,
-      marginBottom: theme.spacing.sm,
-    },
-    noteText: {
-      fontSize: theme.typography.fontSize.base,
+    stepBody: {
+      fontSize: theme.typography.fontSize.sm + 1,
       fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.secondary,
-      lineHeight: 24,
+      lineHeight: 21,
+    },
+
+    branchColorList: { gap: 10 },
+    branchColorItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    branchColorDot: { width: 12, height: 12, borderRadius: 6 },
+    branchColorName: {
+      width: 60,
+      fontSize: theme.typography.fontSize.sm + 1,
+      fontFamily: theme.typography.fontFamily.bodyMedium,
+    },
+    branchColorBar: {
+      flex: 1,
+      height: 6,
+      borderRadius: 3,
+      overflow: 'hidden',
+    },
+    branchColorFill: { height: '100%', borderRadius: 3 },
+
+    closingCard: {
+      marginHorizontal: theme.spacing.xl,
+      borderRadius: theme.borderRadius.lg,
+      borderWidth: 1,
+      alignItems: 'center',
+      paddingVertical: theme.spacing['2xl'],
+      paddingHorizontal: theme.spacing.xl,
+    },
+    closingArabic: {
+      fontSize: 26,
+      fontFamily:
+        Platform.OS === 'ios' ? 'Amiri' : theme.typography.fontFamily.body,
+      marginBottom: theme.spacing.sm,
+      textAlign: 'center',
+    },
+    closingTranslation: {
+      fontSize: theme.typography.fontSize.base,
+      fontFamily: theme.typography.fontFamily.body,
+      fontStyle: 'italic',
+      textAlign: 'center',
+      lineHeight: 22,
+    },
+    closingRef: {
+      fontSize: theme.typography.fontSize.sm,
+      fontFamily: theme.typography.fontFamily.body,
+      marginTop: theme.spacing.xs,
     },
   });
 
