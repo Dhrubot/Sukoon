@@ -80,7 +80,6 @@ export default {
       "@react-native-firebase/perf",
 
       "./plugins/withModularHeaders.js",
-      "./plugins/withAndroidIapFlavor.js",
       "./plugins/withNodePath.js",
       "./plugins/withRingerMode.js",
       "./plugins/withFullAdhan.js",
@@ -101,6 +100,7 @@ export default {
       ],
       "expo-secure-store",
       "expo-background-task",
+      "expo-iap",
       [
         "expo-notifications",
         {
@@ -128,10 +128,12 @@ export default {
             compileSdkVersion: 36,
             targetSdkVersion: 36,
             minSdkVersion: 24,
+            kotlinVersion: "2.0.21",
           },
           ios: {
             deploymentTarget: "15.1",
             useFrameworks: "static",
+            buildReactNativeFromSource: false,
           },
         },
       ],

@@ -1,5 +1,12 @@
 import { Linking, Platform } from 'react-native';
-import { ErrorCode, Product, Purchase, PurchaseError } from 'react-native-iap';
+import {
+  ActiveSubscription,
+  ErrorCode,
+  Product,
+  ProductSubscription,
+  Purchase,
+  PurchaseError,
+} from 'expo-iap';
 import IAPManager from './IAPManager';
 import StorageService from '../StorageService';
 import { SubscriptionPlan, PremiumFeatures } from '../../types';
@@ -12,7 +19,7 @@ const PRODUCTS = {
 };
 
 class SubscriptionService {
-  private products: Product[] = [];
+  private products: Array<Product | ProductSubscription> = [];
   private currentSubscription: SubscriptionPlan | null = null;
 
   async initialize() {
@@ -35,11 +42,13 @@ class SubscriptionService {
 
   private async loadProducts() {
     try {
-      const products = await IAPManager.getProducts(
-        Object.values(PRODUCTS),
-      );
-      this.products = products;
-      logger.log('Subscription products loaded:', products);
+      const [subscriptionProducts, lifetimeProducts] = await Promise.all([
+        IAPManager.getSubscriptions([PRODUCTS.MONTHLY, PRODUCTS.YEARLY]),
+        IAPManager.getProducts([PRODUCTS.LIFETIME]),
+      ]);
+
+      this.products = [...subscriptionProducts, ...lifetimeProducts];
+      logger.log('Subscription products loaded:', this.products);
     } catch (error) {
       logger.error('Failed to load subscription products:', error);
     }
@@ -48,21 +57,26 @@ class SubscriptionService {
   // Called by IAPManager when a subscription purchase is detected
   private async handlePurchase(purchase: Purchase) {
     logger.log('Subscription purchase received:', purchase);
-    const receipt = purchase.transactionReceipt;
-
-    if (receipt) {
-      // Validate receipt (in production, do this server-side)
-      await this.validateAndSavePurchase(purchase);
-
-      // Acknowledge purchase (non-consumable)
-      await IAPManager.finishTransaction(purchase, false);
+    if (purchase.purchaseState !== 'purchased') {
+      logger.log('Ignoring non-finalized subscription purchase state:', purchase.purchaseState);
+      return;
     }
+
+    // Validate receipt (in production, do this server-side)
+    await this.validateAndSavePurchase(purchase);
+
+    // Acknowledge purchase (non-consumable)
+    await IAPManager.finishTransaction(purchase, false);
   }
 
   private async validateAndSavePurchase(purchase: Purchase) {
     // In production, validate receipt with your server
     // For now, we'll trust the purchase
-    
+    const originalTransactionId =
+      'originalTransactionIdentifierIOS' in purchase
+        ? purchase.originalTransactionIdentifierIOS ?? undefined
+        : undefined;
+
     const plan: SubscriptionPlan = {
       id: purchase.productId,
       type: this.getPlanType(purchase.productId),
@@ -70,7 +84,7 @@ class SubscriptionService {
       expiryDate: this.calculateExpiryDate(purchase.productId, purchase.transactionDate),
       isActive: true,
       transactionId: purchase.transactionId ?? purchase.productId,
-      originalTransactionId: purchase.originalTransactionIdentifierIOS,
+      originalTransactionId,
     };
 
     // Save subscription
@@ -118,11 +132,13 @@ class SubscriptionService {
           break;
       }
 
-      const purchase = await IAPManager.requestPurchase(productId);
+      if (planType === 'lifetime') {
+        return IAPManager.requestPurchase(productId, 'in-app');
+      }
 
-      return purchase;
+      return IAPManager.requestPurchase(productId, 'subs');
     } catch (error) {
-      if ((error as PurchaseError).code === ErrorCode.E_USER_CANCELLED) {
+      if ((error as PurchaseError).code === ErrorCode.UserCancelled) {
         logger.log('User cancelled purchase');
       } else {
         logger.error('Purchase error:', error);
@@ -133,22 +149,60 @@ class SubscriptionService {
 
   async restorePurchases() {
     try {
-      const purchases = await IAPManager.getAvailablePurchases();
-      
-      if (purchases && purchases.length > 0) {
-        // Find the most recent valid purchase
-        const validPurchase = purchases.find(p => this.isPurchaseValid(p));
-        
-        if (validPurchase) {
-          await this.validateAndSavePurchase(validPurchase);
-        }
+      const [purchases, activeSubscriptions] = await Promise.all([
+        IAPManager.getAvailablePurchases(),
+        IAPManager.getActiveSubscriptions([PRODUCTS.MONTHLY, PRODUCTS.YEARLY]),
+      ]);
+
+      const lifetimePurchase = purchases.find(
+        (purchase) => purchase.productId === PRODUCTS.LIFETIME
+      );
+
+      if (lifetimePurchase) {
+        await this.validateAndSavePurchase(lifetimePurchase);
+        return;
+      }
+
+      const validSubscription = activeSubscriptions.find((purchase) =>
+        this.isActiveSubscriptionPurchase(purchase)
+      );
+
+      if (validSubscription) {
+        await this.saveActiveSubscription(validSubscription);
       }
     } catch (error) {
       logger.error('Failed to restore purchases:', error);
     }
   }
 
+  private isActiveSubscriptionPurchase(purchase: ActiveSubscription): boolean {
+    return (
+      (purchase.productId === PRODUCTS.MONTHLY || purchase.productId === PRODUCTS.YEARLY) &&
+      purchase.isActive
+    );
+  }
+
+  private async saveActiveSubscription(purchase: ActiveSubscription) {
+    const plan: SubscriptionPlan = {
+      id: purchase.productId,
+      type: this.getPlanType(purchase.productId),
+      startDate: new Date(purchase.transactionDate),
+      expiryDate: purchase.expirationDateIOS ? new Date(purchase.expirationDateIOS) : null,
+      isActive: purchase.isActive,
+      transactionId: purchase.transactionId,
+      originalTransactionId: purchase.transactionId,
+    };
+
+    StorageService.saveSubscription(plan);
+    this.currentSubscription = plan;
+    this.enablePremiumFeatures();
+  }
+
   private isPurchaseValid(purchase: Purchase): boolean {
+    if (purchase.purchaseState !== 'purchased') {
+      return false;
+    }
+
     // For lifetime, always valid
     if (purchase.productId === PRODUCTS.LIFETIME) {
       return true;
@@ -222,7 +276,7 @@ class SubscriptionService {
     return this.currentSubscription;
   }
 
-  getProducts(): Product[] {
+  getProducts(): Array<Product | ProductSubscription> {
     return this.products;
   }
 

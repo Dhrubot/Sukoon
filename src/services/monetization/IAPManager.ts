@@ -1,6 +1,5 @@
-import { EmitterSubscription, Platform } from 'react-native';
-import * as InAppPurchases from 'react-native-iap';
-import { Purchase, Product, Subscription, PurchaseError } from 'react-native-iap';
+import * as InAppPurchases from 'expo-iap';
+import { ActiveSubscription, Product, ProductSubscription, Purchase } from 'expo-iap';
 import logger from '../../utils/logger';
 
 // Product ID prefixes for routing
@@ -11,8 +10,8 @@ type PurchaseHandler = (purchase: Purchase) => Promise<void>;
 
 class IAPManager {
   private _initialized = false;
-  private purchaseUpdateSubscription: EmitterSubscription | null = null;
-  private purchaseErrorSubscription: EmitterSubscription | null = null;
+  private purchaseUpdateSubscription: { remove: () => void } | null = null;
+  private purchaseErrorSubscription: { remove: () => void } | null = null;
   private donationHandler: PurchaseHandler | null = null;
   private subscriptionHandler: PurchaseHandler | null = null;
 
@@ -22,11 +21,6 @@ class IAPManager {
     try {
       const result = await InAppPurchases.initConnection();
       logger.log('IAP connection initialized:', result);
-
-      if (Platform.OS === 'android') {
-        await InAppPurchases.flushFailedPurchasesCachedAsPendingAndroid();
-        logger.log('Flushed pending Android purchases');
-      }
 
       this.setupListeners();
       this._initialized = true;
@@ -58,7 +52,7 @@ class IAPManager {
     );
 
     this.purchaseErrorSubscription = InAppPurchases.purchaseErrorListener(
-      (error: PurchaseError) => {
+      (error) => {
         logger.error('IAPManager: Purchase error:', error);
       }
     );
@@ -73,24 +67,34 @@ class IAPManager {
   }
 
   async getProducts(skus: string[]): Promise<Product[]> {
-    return InAppPurchases.getProducts({ skus });
+    return InAppPurchases.fetchProducts({ skus, type: 'in-app' }) as Promise<Product[]>;
   }
 
-  async getSubscriptions(skus: string[]): Promise<Subscription[]> {
-    return InAppPurchases.getSubscriptions({ skus });
+  async getSubscriptions(skus: string[]): Promise<ProductSubscription[]> {
+    return InAppPurchases.fetchProducts({ skus, type: 'subs' }) as Promise<ProductSubscription[]>;
   }
 
-  async requestPurchase(productId: string) {
-    if (Platform.OS === 'ios') {
-      return InAppPurchases.requestPurchase({
-        sku: productId,
-        andDangerouslyFinishTransactionAutomaticallyIOS: false,
-      });
-    } else {
-      return InAppPurchases.requestPurchase({
-        skus: [productId],
-      });
-    }
+  async requestPurchase(
+    productId: string,
+    type: 'in-app' | 'subs' = 'in-app',
+    subscriptionOfferToken?: string
+  ) {
+    const googleRequest = type === 'subs' && subscriptionOfferToken
+      ? {
+          skus: [productId],
+          subscriptionOffers: [{ sku: productId, offerToken: subscriptionOfferToken }],
+        }
+      : {
+          skus: [productId],
+        };
+
+    return InAppPurchases.requestPurchase({
+      request: {
+        apple: { sku: productId },
+        google: googleRequest,
+      },
+      type,
+    });
   }
 
   async finishTransaction(purchase: Purchase, isConsumable: boolean) {
@@ -99,6 +103,10 @@ class IAPManager {
 
   async getAvailablePurchases(): Promise<Purchase[]> {
     return InAppPurchases.getAvailablePurchases();
+  }
+
+  async getActiveSubscriptions(subscriptionIds?: string[]): Promise<ActiveSubscription[]> {
+    return InAppPurchases.getActiveSubscriptions(subscriptionIds);
   }
 
   isInitialized(): boolean {
@@ -112,7 +120,7 @@ class IAPManager {
     if (this.purchaseErrorSubscription) {
       this.purchaseErrorSubscription.remove();
     }
-    InAppPurchases.endConnection();
+    void InAppPurchases.endConnection();
     this._initialized = false;
     this.donationHandler = null;
     this.subscriptionHandler = null;

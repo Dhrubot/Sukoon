@@ -1,4 +1,4 @@
-import { ErrorCode, Product, Purchase, PurchaseError } from 'react-native-iap';
+import { ErrorCode, Product, Purchase, PurchaseError } from 'expo-iap';
 import IAPManager from './IAPManager';
 import StorageService from '../StorageService';
 import { Donation } from '../../types';
@@ -110,7 +110,7 @@ class DonationService {
       await IAPManager.requestPurchase(tier.productId);
       return true;
     } catch (error) {
-      if ((error as PurchaseError).code === ErrorCode.E_USER_CANCELLED) {
+      if ((error as PurchaseError).code === ErrorCode.UserCancelled) {
         logger.log('User cancelled donation');
       } else {
         logger.error('Donation error:', error);
