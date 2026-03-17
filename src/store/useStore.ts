@@ -7,7 +7,6 @@ import {
   PrayerRecord, 
   Location,
   DailyStats,
-  Achievement,
   MindfulnessSession
 } from '../types';
 import StorageService from '../services/StorageService';
@@ -56,12 +55,6 @@ interface AppState {
   setEngagementDawam: (dawam: number) => void;
   todayStats: DailyStats | null;
   setTodayStats: (stats: DailyStats | null) => void;
-  
-  // Achievements
-  achievements: Achievement[];
-  setAchievements: (achievements: Achievement[]) => void;
-  celebratingAchievement: Achievement | null;
-  setCelebratingAchievement: (achievement: Achievement | null) => void;
   
   // Shared clock — single 60s tick updated by PrayerTimesProvider
   currentTime: Date;
@@ -175,12 +168,6 @@ export const useStore = create<AppState>((set) => ({
   todayStats: null,
   setTodayStats: (stats) => set({ todayStats: stats }),
   
-  // Achievements
-  achievements: [],
-  setAchievements: (achievements) => set({ achievements }),
-  celebratingAchievement: null,
-  setCelebratingAchievement: (achievement) => set({ celebratingAchievement: achievement }),
-  
   // Shared clock
   currentTime: new Date(),
   setCurrentTime: (time) => set({ currentTime: time }),
@@ -256,18 +243,6 @@ export const useStats = () => useStore(
     setEngagementDawam: state.setEngagementDawam,
     todayStats: state.todayStats,
     setTodayStats: state.setTodayStats,
-  }))
-);
-
-/**
- * Hook for achievements
- */
-export const useAchievements = () => useStore(
-  useShallow((state) => ({
-    achievements: state.achievements,
-    setAchievements: state.setAchievements,
-    celebratingAchievement: state.celebratingAchievement,
-    setCelebratingAchievement: state.setCelebratingAchievement,
   }))
 );
 

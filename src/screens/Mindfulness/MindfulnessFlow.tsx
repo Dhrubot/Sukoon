@@ -41,7 +41,6 @@ import { usePrayerTimes } from "../../providers/PrayerTimesProvider";
 // Types
 import { PrayerTime, PrayerName, MindfulnessSession, PrayerRecord } from "../../types";
 import { RootStackParamList } from "../../types/navigation";
-import AchievementService from "../../services/AchievementService";
 import AnalyticsService from "../../services/AnalyticsService";
 import WidgetService from "../../services/WidgetService";
 import NotificationService from "../../services/NotificationService";
@@ -603,9 +602,6 @@ const MindfulnessFlow: React.FC = () => {
       const dateStr = getLocalDateKey();
       StorageService.saveReflectionText(dateStr, prayer.name, reflectionText.trim());
     }
-
-
-    await AchievementService.checkAchievements();
 
     // Dismiss keyboard before transitioning (prevents iOS KeyboardAvoidingView interference)
     Keyboard.dismiss();

@@ -233,11 +233,11 @@ class StorageService {
         adhanEnabled: true,
         soundEnabled: true,
         vibrationEnabled: true,
-        beforePrayer: 5,
-        reminderText: "Time for {prayer} prayer 🕌",
-        postPrayerCheck: false, // DEPRECATED
+        beforePrayer: 10,
+        reminderText: "Time for {prayer} prayer",
+        postPrayerCheck: true, // Legacy fallback path for balanced reminder style
         liveActivityEnabled: false,
-        intensity: 'gentle',
+        intensity: 'balanced',
       },
       prayerNotifications: {
         Fajr: true,
@@ -255,16 +255,16 @@ class StorageService {
   // Default Prayer Habit Builder settings
   private getDefaultHabitBuilderSettings(): HabitBuilderSettings {
     return {
-      enabled: true, // Keep the feature available, but start with a calmer baseline
+      enabled: true, // Balanced support by default
       persistentReminders: {
         enabled: true,
         firstCheckDelay: 20,
-        interval: 20,
-        maxReminders: 2,
+        interval: 15,
+        maxReminders: 1,
       },
       gracePeriodWarning: {
         enabled: false,
-        minutesBeforeNext: 10,
+        minutesBeforeNext: 15,
       },
       snooze: {
         allowedIntervals: [5, 10, 15, 30], // Available snooze options
@@ -568,7 +568,6 @@ class StorageService {
       userSettings: this.getUserSettings(),
       currentDawam: this.getCurrentDawam(),
       longestDawam: this.getLongestDawam(),
-      achievements: this.getAchievements(),
       prayers: [] as { date: string; records: PrayerRecord[] }[],
       dailyStats: [] as DailyStats[],
     };
@@ -833,7 +832,7 @@ class StorageService {
     this.publicStorage.set("consecutive_isha_count", count);
   }
 
-  // Save prayer record with achievement tracking
+  // Save prayer record with prayer tracking
   // P0-D FIX: Made idempotent — only increments counters when a NEW prayer
   // completion is recorded (no existing 'prayed' record for this date+prayer).
   savePrayerRecordWithTracking(record: PrayerRecord): void {

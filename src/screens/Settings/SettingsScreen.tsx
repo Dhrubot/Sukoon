@@ -232,6 +232,7 @@ const SettingsScreen = ({ navigation }: any) => {
         {/* 7. About */}
         <AboutSection
           onPrivacyPolicy={() => handlePrivacyPolicy(navigation)}
+          onSupport={() => navigation.navigate('Support')}
           onShowDebugInfo={__DEV__ ? showDebugInfo : undefined}
         />
 

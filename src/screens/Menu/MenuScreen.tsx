@@ -138,19 +138,6 @@ const SettingsIcon: React.FC<{ color: string; size: number }> = ({ color, size }
   </Svg>
 );
 
-// Support / heart icon
-const SupportIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"
-      stroke={color}
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
-
 // Chevron right icon
 const ChevronIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -290,13 +277,6 @@ const MenuScreen: React.FC = () => {
       screen: 'Settings',
       iconBg: theme.colors.card.hover,
     },
-    {
-      icon: SupportIcon,
-      title: 'Support Sukoon',
-      subtitle: 'Contribute to upkeep and development',
-      screen: 'Support',
-      iconBg: '#fb718518',
-    },
   ];
 
   return (
@@ -336,7 +316,7 @@ const MenuScreen: React.FC = () => {
                   : 'A private record of return and reflection'}
               </Text>
               <Text style={styles.gardenDesc}>
-                Watch Tuba tree grow
+                Each prayer you reflect on nourishes a leaf
               </Text>
             </View>
           </View>
@@ -379,7 +359,7 @@ const MenuScreen: React.FC = () => {
         </View>
 
         {/* ── More Features List ── */}
-        <Text style={styles.sectionLabel}>APP & SUPPORT</Text>
+        <Text style={styles.sectionLabel}>APP</Text>
         <View style={styles.featuresList}>
           {moreFeatures.map((item, index) => (
             <TouchableOpacity

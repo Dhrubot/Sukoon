@@ -35,7 +35,7 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
     <View style={styles.modalOverlay}>
       <View style={styles.modalContent}>
         <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>Notification Settings</Text>
+          <Text style={styles.modalTitle}>Reminder Settings</Text>
           <TouchableOpacity onPress={onClose}>
             <Text style={styles.modalClose}>Done</Text>
           </TouchableOpacity>

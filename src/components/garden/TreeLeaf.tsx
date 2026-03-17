@@ -30,24 +30,18 @@ import Animated, {
   useAnimatedProps,
   withDelay,
   withTiming,
-  withRepeat,
-  withSequence,
   Easing,
 } from 'react-native-reanimated';
 import { TreeLeafData } from '../../types/tubaTree';
 import {
   LEAF_SIZES,
-  BLOOM_SPARKLE,
   LEAF_ENTRY,
-  BLOOM_PULSE,
   LEAF_DETAIL,
-  leafSizeMultiplier,
   ageSizeMultiplier,
   ageAdjustedColor,
 } from '../../constants/tubaTree';
 
 const AnimatedEllipse = Animated.createAnimatedComponent(Ellipse);
-const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 interface TreeLeafProps {
   leaf: TreeLeafData;
@@ -62,14 +56,13 @@ interface TreeLeafProps {
 const TreeLeaf: React.FC<TreeLeafProps> = ({
   leaf,
   color,
-  bloomGlowColor,
   branchIndex,
   leafIndex,
   growthG,
   onPress,
 }) => {
-  const baseSize = LEAF_SIZES[leaf.growthStage];
-  const sizeScale = leafSizeMultiplier(growthG);
+  const baseSize = LEAF_SIZES.sprout;
+  const sizeScale = 0.92 + growthG * 0.08;
   const ageScale = ageSizeMultiplier(leaf.ageFraction);
   const size = { rx: baseSize.rx * sizeScale * ageScale, ry: baseSize.ry * sizeScale * ageScale };
 
@@ -106,38 +99,6 @@ const TreeLeaf: React.FC<TreeLeafProps> = ({
     opacity: leaf.opacity * entryProgress.value,
   }));
 
-  // ── Bloom pulse ────────────────────────────────────────────────
-  // FIX: Was `useSharedValue(BLOOM_PULSE.maxOpacity | BLOOM_PULSE.minOpacity)`
-  //      Bitwise OR on floats: 0.95 | 0.45 = 0. Must be plain number.
-  const bloomOpacity = useSharedValue(BLOOM_PULSE.maxOpacity as number);
-
-  useEffect(() => {
-    if (!leaf.isBloom) return;
-
-    const pulseDelay = entryDelay + LEAF_ENTRY.duration;
-    const halfDuration = BLOOM_PULSE.duration / 2;
-    const easing = Easing.inOut(Easing.sin);
-
-    bloomOpacity.value = withDelay(
-      pulseDelay,
-      withRepeat(
-        withSequence(
-          withTiming(BLOOM_PULSE.minOpacity, { duration: halfDuration, easing }),
-          withTiming(BLOOM_PULSE.maxOpacity, { duration: halfDuration, easing }),
-        ),
-        -1,
-        false,
-      ),
-    );
-  }, [leaf.isBloom]);
-
-  const bloomAnimatedProps = useAnimatedProps(() => ({
-    opacity: bloomOpacity.value,
-  }));
-
-  const sparkleOffsetX = -size.rx * BLOOM_SPARKLE.offsetRatio;
-  const sparkleOffsetY = -size.ry * BLOOM_SPARKLE.offsetRatio;
-
   const handlePress = () => {
     onPress?.(leaf);
   };
@@ -170,18 +131,6 @@ const TreeLeaf: React.FC<TreeLeafProps> = ({
         fill={leafColor}
         animatedProps={leafAnimatedProps}
       />
-
-      {/* Gold bloom sparkle */}
-      {leaf.isBloom && (
-        <AnimatedCircle
-          cx={sparkleOffsetX}
-          cy={sparkleOffsetY}
-          r={BLOOM_SPARKLE.radius * 1.2}
-          fill={bloomGlowColor}
-          animatedProps={bloomAnimatedProps}
-        />
-      )}
-
       {/* Reflection text indicator */}
       {leaf.hasText && (
         <Circle

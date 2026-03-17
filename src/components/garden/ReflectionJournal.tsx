@@ -22,12 +22,6 @@ const MOOD_LABELS: Record<number, string> = {
   5: 'Deep khushoo',
 };
 
-const moodToStage = (mood: number): string => {
-  if (mood <= 2) return 'seed';
-  if (mood === 3) return 'sprout';
-  return 'bloom';
-};
-
 const PREVIEW_COUNT = 3;
 
 const ReflectionEntryCard: React.FC<{
@@ -39,7 +33,6 @@ const ReflectionEntryCard: React.FC<{
   const styles = useThemedStyles(createStyles);
   const prayerColorKey = entry.prayer.toLowerCase() as keyof typeof theme.colors.prayer;
   const accentColor = theme.colors.prayer?.[prayerColorKey] || theme.colors.primary.DEFAULT;
-  const stage = moodToStage(entry.mood);
 
   return (
     <View
@@ -70,31 +63,20 @@ const ReflectionEntryCard: React.FC<{
           style={[
             styles.chip,
             {
-              backgroundColor:
-                stage === 'bloom'
-                  ? withAlpha(theme.colors.garden.bloomGlow, 0.09)
-                  : theme.colors.card.hover || withAlpha(accentColor, 0.07),
+              backgroundColor: theme.colors.card.hover || withAlpha(accentColor, 0.07),
             },
           ]}
         >
           <View
             style={[
               styles.chipDot,
-              {
-                backgroundColor: stage === 'bloom'
-                  ? theme.colors.garden.bloomGlow
-                  : accentColor,
-              },
+              { backgroundColor: accentColor },
             ]}
           />
           <Text
             style={[
               styles.chipText,
-              {
-                color: stage === 'bloom'
-                  ? theme.colors.garden.bloomGlow
-                  : theme.colors.text.secondary,
-              },
+              { color: theme.colors.text.secondary },
             ]}
           >
             {MOOD_LABELS[entry.mood] || 'Noted'}

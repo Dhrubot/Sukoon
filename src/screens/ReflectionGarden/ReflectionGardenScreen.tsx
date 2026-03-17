@@ -87,7 +87,7 @@ const ReflectionGardenScreen: React.FC = () => {
   }, [plants]);
 
   const writtenReflectionCount = useMemo(
-    () => recentReflections.filter((reflection) => reflection.text?.trim().length > 0).length,
+    () => recentReflections.filter((reflection) => (reflection.text?.trim().length ?? 0) > 0).length,
     [recentReflections],
   );
 
