@@ -100,15 +100,17 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     gap: theme.spacing.sm,
   },
   settingLabel: {
-    fontSize: theme.typography.fontSize.lg,
+    fontSize: theme.typography.fontSize.md,
     fontFamily: theme.typography.fontFamily.bodyMedium,
   },
   settingSubtext: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: 11,
+    fontFamily: theme.typography.fontFamily.body,
     marginTop: theme.spacing.xs,
   },
   settingValue: {
-    fontSize: theme.typography.fontSize.base,
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
     marginRight: theme.spacing.sm,
   },
   chevron: {

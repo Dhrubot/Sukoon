@@ -209,13 +209,14 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginRight: 16,
   },
   label: {
-    fontSize: theme.typography.fontSize.lg,
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.xs,
   },
   subtitle: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: 11,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
   },
 });
-

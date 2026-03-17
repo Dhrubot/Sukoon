@@ -400,7 +400,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderTopColor: theme.colors.border.primary,
   },
   juristicLabel: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: theme.typography.fontSize.md,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     marginBottom: theme.spacing.sm,

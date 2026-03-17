@@ -349,7 +349,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     textTransform: 'uppercase',
   },
   title: {
-    fontSize: 22,
+    fontSize: theme.typography.fontSize.md,
     fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
   },
