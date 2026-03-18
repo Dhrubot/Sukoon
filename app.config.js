@@ -132,8 +132,6 @@ export default {
           },
           ios: {
             deploymentTarget: "15.1",
-            useFrameworks: "static",
-            buildReactNativeFromSource: false,
           },
         },
       ],

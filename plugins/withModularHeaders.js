@@ -1,20 +1,17 @@
 const { withPodfile } = require('@expo/config-plugins');
 
-const withModularHeaders = (config) => {
-  return withPodfile(config, (config) => {
+const withModularHeaders = (config) =>
+  withPodfile(config, (config) => {
     const podfileContent = config.modResults.contents;
-    
-    // Check if use_modular_headers! is already added
+
     if (!podfileContent.includes('use_modular_headers!')) {
-      // Add use_modular_headers! after the install! line
       config.modResults.contents = podfileContent.replace(
-        /install! 'cocoapods',[\s\S]*?:deterministic_uuids => false/,
-        (match) => `${match}\n\nuse_modular_headers!`
+        /prepare_react_native_project!\n/,
+        (match) => `${match}\nuse_modular_headers!\n\n`
       );
     }
-    
+
     return config;
   });
-};
 
 module.exports = withModularHeaders;

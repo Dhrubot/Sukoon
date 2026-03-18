@@ -16,6 +16,7 @@ import { GrowthStage } from '../types/garden';
 import { BranchDefinition, Point, TreeStage } from '../types/tubaTree';
 
 export const TREE_VIEWBOX = { width: 320, height: 300 } as const;
+export const TREE_CANVAS_HEIGHT = 320;
 
 export const TRUNK = {
   start: { x: 160, y: 280 } as Point,
@@ -67,8 +68,8 @@ export const BRANCH_DEFINITIONS: BranchDefinition[] = [
     curve: { start: { x: 160, y: 172 }, control: { x: 142, y: 129 }, end: { x: 108, y: 78 } },
     baseAngle: -16,
     weight: 0.42,
-    minStage: 'growing',
-    minLeaves: 6,
+    minStage: 'flourishing',
+    minLeaves: 12,
   },
   {
     id: 'dhuhr-primary',
@@ -85,8 +86,8 @@ export const BRANCH_DEFINITIONS: BranchDefinition[] = [
     curve: { start: { x: 160, y: 171 }, control: { x: 178, y: 128 }, end: { x: 212, y: 80 } },
     baseAngle: 16,
     weight: 0.42,
-    minStage: 'growing',
-    minLeaves: 6,
+    minStage: 'flourishing',
+    minLeaves: 12,
   },
   {
     id: 'asr-primary',
@@ -94,8 +95,8 @@ export const BRANCH_DEFINITIONS: BranchDefinition[] = [
     curve: { start: { x: 160, y: 214 }, control: { x: 202, y: 196 }, end: { x: 272, y: 172 } },
     baseAngle: 52,
     weight: 0.56,
-    minStage: 'sapling',
-    minLeaves: 2,
+    minStage: 'seedling',
+    minLeaves: 0,
   },
   {
     id: 'asr-secondary',
@@ -103,8 +104,8 @@ export const BRANCH_DEFINITIONS: BranchDefinition[] = [
     curve: { start: { x: 160, y: 196 }, control: { x: 198, y: 167 }, end: { x: 238, y: 132 } },
     baseAngle: 30,
     weight: 0.44,
-    minStage: 'growing',
-    minLeaves: 6,
+    minStage: 'flourishing',
+    minLeaves: 12,
   },
   {
     id: 'maghrib-primary',
@@ -112,8 +113,8 @@ export const BRANCH_DEFINITIONS: BranchDefinition[] = [
     curve: { start: { x: 160, y: 214 }, control: { x: 118, y: 196 }, end: { x: 48, y: 172 } },
     baseAngle: -52,
     weight: 0.56,
-    minStage: 'sapling',
-    minLeaves: 2,
+    minStage: 'seedling',
+    minLeaves: 0,
   },
   {
     id: 'maghrib-secondary',
@@ -121,8 +122,8 @@ export const BRANCH_DEFINITIONS: BranchDefinition[] = [
     curve: { start: { x: 160, y: 196 }, control: { x: 122, y: 168 }, end: { x: 82, y: 134 } },
     baseAngle: -30,
     weight: 0.44,
-    minStage: 'growing',
-    minLeaves: 6,
+    minStage: 'flourishing',
+    minLeaves: 12,
   },
   {
     id: 'isha-primary',
@@ -170,7 +171,7 @@ export const LEAF_SIZES: Record<GrowthStage, { rx: number; ry: number }> = {
   bloom:  { rx: 6.5, ry: 10.0 },  // was 5.5, 8
 };
 export const LEAF_OPACITY: Record<GrowthStage, { base: number; variance: number }> = {
-  seed: { base: 0.55, variance: 0.10 }, sprout: { base: 0.70, variance: 0.10 }, bloom: { base: 0.85, variance: 0.08 },
+  seed: { base: 0.52, variance: 0.08 }, sprout: { base: 0.64, variance: 0.08 }, bloom: { base: 0.76, variance: 0.06 },
 };
 export const BLOOM_SPARKLE = { radius: 2, offsetRatio: 0.7 } as const;
 export const BRANCH_STYLE = { minStrokeWidth: 2.5, maxStrokeWidth: 5.5, fullThicknessAt: 10 } as const;
@@ -209,7 +210,7 @@ export const LEAF_DISTRIBUTION = {
 export const GROUND_COLORS = {
   dark: {
     // transparent → faint earth → screen bg
-    colors: ['transparent', 'rgba(30,32,22,0.45)', 'rgba(24,29,56,0.82)', '#181D38'],
+    colors: ['transparent', 'rgba(30,32,22,0.34)', 'rgba(24,29,56,0.70)', '#181D38'],
     locations: [0, 0.28, 0.65, 1],
   },
   light: {
@@ -224,14 +225,14 @@ export const GROUND_COLORS = {
   },
   midnight: {
     // transparent → near-black earth → screen bg
-    colors: ['transparent', 'rgba(16,18,12,0.50)', 'rgba(9,13,24,0.85)', '#090d18'],
+    colors: ['transparent', 'rgba(16,18,12,0.40)', 'rgba(9,13,24,0.74)', '#090d18'],
     locations: [0, 0.28, 0.65, 1],
   },
 } as const;
 
 // Increase ratio slightly so the fade starts higher up the canvas —
 // this gives more "ground merge" room without eating into the tree.
-export const GROUND_HEIGHT_RATIO = 0.28;
+export const GROUND_HEIGHT_RATIO = 0.24;
 
 // ═══════════════════════════════════════════════════════════════════
 // SKY ELEMENTS
@@ -242,8 +243,6 @@ export const STARS = [
   { x: 147, y: 15, size: 2, animDelay: 1.5 }, { x: 282, y: 60, size: 2, animDelay: 0.4 },
   { x: 19, y: 54, size: 1.5, animDelay: 2.0 }, { x: 90, y: 90, size: 2, animDelay: 0.7 },
 ] as const;
-
-export const TREE_CANVAS_HEIGHT = 296;
 
 // ═══════════════════════════════════════════════════════════════════
 // ANIMATION CONSTANTS
@@ -373,7 +372,7 @@ export const SUB_BRANCH = {
   controlSpreadFactor: 0.4,
 } as const;
 
-export const SUB_BRANCH_STAGES: Record<string, number> = { flourishing: 1, ancient: 2, ancientFull: 3 };
+export const SUB_BRANCH_STAGES: Record<string, number> = { growing: 1, flourishing: 1, ancient: 2, ancientFull: 3 };
 // ancientFull threshold: 1000+ lifetime reflections triggers 3rd sub-branch
 export const ANCIENT_FULL_THRESHOLD = 1000;
 
@@ -458,6 +457,170 @@ export const TRUNK_HEIGHT = {
   range: 0.88,
   exp: 0.7,
 } as const;
+
+export const TREE_STAGE_VISUALS = {
+  seedling: {
+    minTrunkScale: 0.20,
+    stemScaleCap: 0.27,
+    trunkBoost: 0.03,
+    branchPrimaryScale: 0.92,
+    branchSecondaryScale: 0.52,
+    branchOriginPull: 0.86,
+    branchOriginY: 246,
+    branchSpreadScale: 0.18,
+    leaderSpreadBonus: 0.04,
+    canopyRadiusX: 64,
+    canopyRadiusY: 54,
+    canopyCenterYOffset: 6,
+    canopyGrace: 1.03,
+    canopySoftness: 0.42,
+    leafOffsetScale: 0.20,
+    spraySpread: 0.20,
+    corridorStrength: 0.06,
+    gapWidthBoost: 0.01,
+    branchRiseBoost: 0,
+    mainLeafStartT: 0.70,
+    subLeafStartT: 0.22,
+    juvenileNodeStep: 5,
+    juvenileNodeSpread: 6,
+    juvenileBaseLength: 14,
+    juvenileLengthGain: 9,
+  },
+  sapling: {
+    minTrunkScale: 0.31,
+    stemScaleCap: 0.41,
+    trunkBoost: 0.08,
+    branchPrimaryScale: 0.94,
+    branchSecondaryScale: 0.56,
+    branchOriginPull: 0.58,
+    branchOriginY: 232,
+    branchSpreadScale: 0.40,
+    leaderSpreadBonus: 0.08,
+    canopyRadiusX: 92,
+    canopyRadiusY: 86,
+    canopyCenterYOffset: 12,
+    canopyGrace: 1.04,
+    canopySoftness: 0.44,
+    leafOffsetScale: 0.72,
+    spraySpread: 0.60,
+    corridorStrength: 0.12,
+    gapWidthBoost: 0.02,
+    branchRiseBoost: 2,
+    mainLeafStartT: 0.22,
+    subLeafStartT: 0.20,
+    juvenileNodeStep: 7,
+    juvenileNodeSpread: 8,
+    juvenileBaseLength: 24,
+    juvenileLengthGain: 16,
+  },
+  growing: {
+    minTrunkScale: 0.56,
+    stemScaleCap: 1,
+    trunkBoost: 0,
+    branchPrimaryScale: 0.98,
+    branchSecondaryScale: 0.70,
+    branchOriginPull: 0.16,
+    branchOriginY: 206,
+    branchSpreadScale: 0.86,
+    leaderSpreadBonus: 0.04,
+    canopyRadiusX: 140,
+    canopyRadiusY: 134,
+    canopyCenterYOffset: 28,
+    canopyGrace: 1.05,
+    canopySoftness: 0.45,
+    leafOffsetScale: 1.10,
+    spraySpread: 1.04,
+    corridorStrength: 0.22,
+    gapWidthBoost: 0.04,
+    branchRiseBoost: 3,
+    mainLeafStartT: 0.10,
+    subLeafStartT: 0.18,
+    juvenileNodeStep: 0,
+    juvenileNodeSpread: 0,
+    juvenileBaseLength: 0,
+    juvenileLengthGain: 0,
+  },
+  flourishing: {
+    minTrunkScale: 0.72,
+    stemScaleCap: 1,
+    trunkBoost: 0,
+    branchPrimaryScale: 1.0,
+    branchSecondaryScale: 0.82,
+    branchOriginPull: 0.05,
+    branchOriginY: 198,
+    branchSpreadScale: 0.98,
+    leaderSpreadBonus: 0.02,
+    canopyRadiusX: 144,
+    canopyRadiusY: 138,
+    canopyCenterYOffset: 31,
+    canopyGrace: 1.07,
+    canopySoftness: 0.46,
+    leafOffsetScale: 0.94,
+    spraySpread: 0.94,
+    corridorStrength: 0.42,
+    gapWidthBoost: 0.06,
+    branchRiseBoost: 7,
+    mainLeafStartT: 0.10,
+    subLeafStartT: 0.18,
+    juvenileNodeStep: 0,
+    juvenileNodeSpread: 0,
+    juvenileBaseLength: 0,
+    juvenileLengthGain: 0,
+  },
+  ancient: {
+    minTrunkScale: 0.86,
+    stemScaleCap: 1,
+    trunkBoost: 0,
+    branchPrimaryScale: 1.03,
+    branchSecondaryScale: 0.86,
+    branchOriginPull: 0.02,
+    branchOriginY: 194,
+    branchSpreadScale: 1.0,
+    leaderSpreadBonus: 0.02,
+    canopyRadiusX: 148,
+    canopyRadiusY: 154,
+    canopyCenterYOffset: 28,
+    canopyGrace: 1.07,
+    canopySoftness: 0.42,
+    leafOffsetScale: 0.98,
+    spraySpread: 1.0,
+    corridorStrength: 0.54,
+    gapWidthBoost: 0.08,
+    branchRiseBoost: 12,
+    mainLeafStartT: 0.10,
+    subLeafStartT: 0.18,
+    juvenileNodeStep: 0,
+    juvenileNodeSpread: 0,
+    juvenileBaseLength: 0,
+    juvenileLengthGain: 0,
+  },
+} as const satisfies Record<TreeStage, {
+  minTrunkScale: number;
+  stemScaleCap: number;
+  trunkBoost: number;
+  branchPrimaryScale: number;
+  branchSecondaryScale: number;
+  branchOriginPull: number;
+  branchOriginY: number;
+  branchSpreadScale: number;
+  leaderSpreadBonus: number;
+  canopyRadiusX: number;
+  canopyRadiusY: number;
+  canopyCenterYOffset: number;
+  canopyGrace: number;
+  canopySoftness: number;
+  leafOffsetScale: number;
+  spraySpread: number;
+  corridorStrength: number;
+  gapWidthBoost: number;
+  branchRiseBoost: number;
+  mainLeafStartT: number;
+  subLeafStartT: number;
+  juvenileNodeStep: number;
+  juvenileNodeSpread: number;
+  juvenileBaseLength: number;
+  juvenileLengthGain: number;
+}>;
 
 export function trunkScaleFromG(g: number): number {
   return TRUNK_HEIGHT.floor + TRUNK_HEIGHT.range * Math.pow(Math.max(0, g), TRUNK_HEIGHT.exp);
@@ -631,15 +794,33 @@ export const CANOPY = {
   softness: 0.48,
 } as const;
 
-export function clampToCanopy(x: number, y: number, trunkTopY: number): { x: number; y: number } {
+interface CanopyOverrides {
+  radiusX?: number;
+  radiusY?: number;
+  centerYOffset?: number;
+  grace?: number;
+  softness?: number;
+}
+
+export function clampToCanopy(
+  x: number,
+  y: number,
+  trunkTopY: number,
+  overrides?: CanopyOverrides,
+): { x: number; y: number } {
+  const radiusX = overrides?.radiusX ?? CANOPY.radiusX;
+  const radiusY = overrides?.radiusY ?? CANOPY.radiusY;
+  const centerYOffset = overrides?.centerYOffset ?? CANOPY.centerYOffset;
+  const grace = overrides?.grace ?? CANOPY.grace;
+  const softness = overrides?.softness ?? CANOPY.softness;
   const cx = CANOPY.centerX;
-  const cy = trunkTopY + CANOPY.centerYOffset;
-  const dx = (x - cx) / CANOPY.radiusX;
-  const dy = (y - cy) / CANOPY.radiusY;
+  const cy = trunkTopY + centerYOffset;
+  const dx = (x - cx) / radiusX;
+  const dy = (y - cy) / radiusY;
   const dist = Math.sqrt(dx * dx + dy * dy);
-  if (dist <= CANOPY.grace) return { x, y };
-  const overshoot = dist - CANOPY.grace;
-  const clampedDist = CANOPY.grace + overshoot * CANOPY.softness;
+  if (dist <= grace) return { x, y };
+  const overshoot = dist - grace;
+  const clampedDist = grace + overshoot * softness;
   const scale = clampedDist / dist;
   return {
     x: cx + (x - cx) * scale,
@@ -651,10 +832,43 @@ export function clampToCanopy(x: number, y: number, trunkTopY: number): { x: num
 // ageFraction: 0 = newest (tip), 1 = oldest (base).
 // Old leaves at branch base grow big and dominant; new buds at tip are small.
 export const LEAF_AGE_SIZE = {
-  oldestScale: 1.35,     // base leaves 35% larger
-  newestScale: 0.75,     // tip leaves 25% smaller
+  oldestScale: 1.42,     // base leaves larger, fuller inner crown
+  newestScale: 0.68,     // tip leaves tighter, more delicate
   midpoint: 0.5,         // crossover at ageFraction 0.5
 } as const;
+
+export const TREE_PRAYER_COLORS = {
+  dark: {
+    fajr: '#97a7e3',
+    dhuhr: '#89bea1',
+    asr: '#bcc46a',
+    maghrib: '#c18ca7',
+    isha: '#6474b3',
+  },
+  light: {
+    fajr: '#6579c1',
+    dhuhr: '#5d9f7b',
+    asr: '#a5a54a',
+    maghrib: '#aa7791',
+    isha: '#4a609b',
+  },
+  midnight: {
+    fajr: '#9ba9e6',
+    dhuhr: '#8ab9a0',
+    asr: '#c0c76d',
+    maghrib: '#c58da8',
+    isha: '#6678b8',
+  },
+} as const;
+
+export function resolveTreePrayerColor(
+  mode: keyof typeof TREE_PRAYER_COLORS,
+  prayer: string,
+): string {
+  const palette = TREE_PRAYER_COLORS[mode] || TREE_PRAYER_COLORS.dark;
+  const key = prayer.toLowerCase() as keyof typeof palette;
+  return palette[key] || palette.isha;
+}
 
 export function ageSizeMultiplier(ageFraction: number): number {
   const { oldestScale, newestScale, midpoint } = LEAF_AGE_SIZE;

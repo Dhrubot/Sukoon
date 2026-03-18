@@ -26,6 +26,7 @@ import ReflectionJournal from '../../components/garden/ReflectionJournal';
 import DawamBadge from '../../components/garden/DawamBadge';
 import LeafDetailSheet from '../../components/garden/LeafDetailSheet';
 import { FARD_PRAYERS } from '../../constants/prayerRegistry';
+import { resolveTreePrayerColor } from '../../constants/tubaTree';
 
 const ReflectionGardenScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -180,8 +181,10 @@ const ReflectionGardenScreen: React.FC = () => {
         {/* Prayer color legend */}
         <View style={styles.legendRow}>
           {FARD_PRAYERS.map((prayer) => {
-            const colorKey = prayer.key as keyof typeof theme.colors.prayer;
-            const color = theme.colors.prayer?.[colorKey] || theme.colors.primary.DEFAULT;
+            const color = resolveTreePrayerColor(
+              theme.mode as 'dark' | 'light' | 'midnight',
+              prayer.key,
+            );
             return (
               <View key={prayer.key} style={styles.legendChip}>
                 <View style={[styles.legendDot, { backgroundColor: color }]} />

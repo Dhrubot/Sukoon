@@ -34,6 +34,7 @@ export interface BezierCurve {
 
 export type LeafTone = 'fresh' | 'aged';
 export type LeafHueVariant = 'base' | 'sage' | 'olive' | 'amber';
+export type LeafRenderKind = 'leaf' | 'bud' | 'cluster' | 'cotyledon' | 'paired';
 
 // ─── Branch Definition (from constants) ────────────────────────────
 
@@ -81,6 +82,8 @@ export interface TreeLeafData {
   tone: LeafTone;
   /** Subtle palette variation for canopy richness */
   hueVariant: LeafHueVariant;
+  /** Visual treatment for early-stage reflection units */
+  renderKind: LeafRenderKind;
   /** Prayer name (for detail overlay) */
   prayer: string;
   /** Date string YYYY-MM-DD (for detail overlay) */

@@ -16,6 +16,7 @@ import logger from '../utils/logger';
 import { GardenPlant, GrowthStage } from '../types/garden';
 import {
   BranchDefinition,
+  LeafRenderKind,
   LeafHueVariant,
   LeafTone,
   TreeData,
@@ -28,6 +29,7 @@ import { TreeGrowthState } from '../types/treeGrowthState';
 import {
   BRANCH_DEFINITIONS,
   TRUNK,
+  STAGE_THRESHOLDS,
   TRUNK_TOP_PADDING,
   LEAF_OPACITY,
   LEAF_JITTER,
@@ -48,6 +50,7 @@ import {
   trunkScaleForY,
   trunkScaleFromG,
   trunkBaseWidthFromG,
+  TREE_STAGE_VISUALS,
   maxBranchWidth,
   clampToCanopy,
   ageAdjustedOpacity,
@@ -64,6 +67,13 @@ interface CurveMaterialization {
   curve: BranchDefinition['curve'];
 }
 
+interface ResolvedBranchGeometry {
+  curve: BranchDefinition['curve'];
+  renderedCurve: BranchDefinition['curve'];
+  lengthScale: number;
+  strokeWidth: number;
+}
+
 interface CrownProfile {
   inputA: number;
   inputB: number;
@@ -76,6 +86,7 @@ interface CrownProfile {
 class TubaTreeService {
   buildTreeData(growthState: TreeGrowthState, recentPlants: GardenPlant[]): TreeData {
     const { g, stage } = growthState;
+    const stageProfile = TREE_STAGE_VISUALS[stage];
     const plantsByPrayer = this.groupByPrayer(recentPlants);
     const branchPlans = this.planPrimaryBranches(growthState, plantsByPrayer);
     const trunkCurve = this.materializeTrunkCurve(growthState, g, stage);
@@ -96,9 +107,12 @@ class TubaTreeService {
     const dataScale = trunkScaleForY(targetY);
 
     // Seedling: cap trunk height so it stays a short stub
-    const effectiveScale = stage === 'seedling'
-      ? Math.min(gScale + 0.20, 0.35)
-      : Math.max(gScale, dataScale);
+    const effectiveScale = stageIndex(stage) <= stageIndex('sapling')
+      ? Math.min(
+          Math.max(gScale + stageProfile.trunkBoost, stageProfile.minTrunkScale),
+          stageProfile.stemScaleCap,
+        )
+      : Math.max(gScale, dataScale, stageProfile.minTrunkScale);
 
     const currentTrunkTopY = trunkTopY(effectiveScale);
 
@@ -116,7 +130,7 @@ class TubaTreeService {
     // ── BUILD BRANCHES ───────────────────────────────────────────
     let globalLeafStartIndex = 0;
 
-    const branches: TreeBranch[] = branchPlans.map((plan) => {
+    const rawBranches: TreeBranch[] = branchPlans.map((plan) => {
       const branch = this.buildBranch(
         plan.def,
         plan.recentPlants,
@@ -132,6 +146,9 @@ class TubaTreeService {
       globalLeafStartIndex += Math.min(plan.lifetimeCount, MAX_LEAVES_PER_BRANCH) + subLeafCount;
       return branch;
     });
+    const branches = stage === 'seedling'
+      ? this.resolveSeedlingLeafSeparation(rawBranches)
+      : rawBranches;
 
     const bloomCount = recentPlants.filter(
       (p) => p.growthStage === 'bloom' && p.mood >= 4,
@@ -183,20 +200,22 @@ class TubaTreeService {
     plantsByPrayer: Record<string, GardenPlant[]>,
   ): PrimaryBranchPlan[] {
     const plans: PrimaryBranchPlan[] = [];
-    const orderedPrayers = Array.from(new Set(BRANCH_DEFINITIONS.map((def) => def.prayer)));
+    const orderedPrayers: PrayerName[] = ['Maghrib', 'Fajr', 'Isha', 'Dhuhr', 'Asr'];
 
     for (const prayer of orderedPrayers) {
       const totalCount = growthState.branchLifetimeLeaves[prayer] || 0;
-      if (totalCount <= 0) continue;
+      const prayerDefs = BRANCH_DEFINITIONS.filter((def) => def.prayer === prayer);
+      const primaryDef = prayerDefs.find((def) => this.isPrimaryDefinition(def));
+      if (totalCount <= 0 || !primaryDef) continue;
 
-      const defs = BRANCH_DEFINITIONS
-        .filter((def) => def.prayer === prayer)
+      const defs = prayerDefs
         .filter((def) =>
-          stageIndex(growthState.stage) >= stageIndex(def.minStage) && totalCount >= def.minLeaves,
+          stageIndex(growthState.stage) >= stageIndex(def.minStage)
+            && (totalCount >= def.minLeaves || this.isPrimaryDefinition(def)),
         );
+      if (defs.length === 0) continue;
 
-      const visibleDefs = (defs.length > 0 ? defs : BRANCH_DEFINITIONS.filter((def) => def.prayer === prayer))
-        .slice(0, Math.min(totalCount, defs.length > 0 ? defs.length : 1));
+      const visibleDefs = defs.slice(0, Math.max(1, Math.min(Math.max(totalCount, 1), defs.length)));
 
       const lifetimeCounts = this.allocatePositiveCounts(
         totalCount,
@@ -219,6 +238,10 @@ class TubaTreeService {
     }
 
     return plans;
+  }
+
+  private isPrimaryDefinition(def: BranchDefinition): boolean {
+    return def.id.endsWith('primary');
   }
 
   private allocatePositiveCounts(total: number, weights: number[]): number[] {
@@ -292,6 +315,7 @@ class TubaTreeService {
   }
 
   private buildCrownProfile(signature: number, mode: 'main' | 'sub'): CrownProfile {
+    const stageProfile = TREE_STAGE_VISUALS[this.currentStage];
     if (mode === 'main') {
       const inputA = 0.34 + signature * 0.08;
       const inputB = 0.72 + signature * 0.05;
@@ -304,7 +328,7 @@ class TubaTreeService {
         outputA,
         outputB,
         gapCenter: (outputA + outputB) * 0.5,
-        gapWidth: 0.13 + signature * 0.03,
+        gapWidth: 0.13 + signature * 0.03 + stageProfile.gapWidthBoost,
       };
     }
 
@@ -319,9 +343,11 @@ class TubaTreeService {
       outputA,
       outputB,
       gapCenter: (outputA + outputB) * 0.5,
-      gapWidth: 0.11 + signature * 0.02,
+      gapWidth: 0.11 + signature * 0.02 + stageProfile.gapWidthBoost * 0.7,
     };
   }
+
+  private currentStage: TreeStage = 'seedling';
 
   private mapClusteredProgress(linear: number, profile: CrownProfile): number {
     const easeOut = (t: number) => 1 - Math.pow(1 - t, 1.55);
@@ -352,25 +378,28 @@ class TubaTreeService {
     globalLeafStartIndex: number,
     totalLifetimeReflections: number,
   ): TreeBranch {
+    this.currentStage = stage;
     const { prayer } = def;
-    const { curve } = this.materializeBranchCurve(def, lifetimeCount, g, stage);
+    const { curve } = this.materializeBranchCurve(def, lifetimeCount, g, stage, totalLifetimeReflections);
+    const branchStageScale = this.resolveStageBranchScale(def, stage);
+    const isPrimary = this.isPrimaryDefinition(def);
+    const showEarlyStem = stageIndex(stage) <= stageIndex('sapling') && isPrimary;
     // Use lifetime count for geometry (never regresses)
     const geometryCount = Math.min(lifetimeCount, MAX_LEAVES_PER_BRANCH);
 
-    // Seedling: every branch with lifetime leaves is "visible"
-    const branchVisible = stage === 'seedling'
-      ? lifetimeCount > 0
-      : curve.start.y >= currentTrunkTopY;
+    const branchVisible = showEarlyStem
+      ? true
+      : lifetimeCount > 0 && curve.start.y >= currentTrunkTopY;
 
     let lengthScale: number;
     let strokeWidth: number;
 
-    if (!branchVisible || geometryCount === 0) {
+    if (!branchVisible) {
       lengthScale = 0;
       strokeWidth = 0;
-    } else if (stage === 'seedling') {
-      lengthScale = 0;
-      strokeWidth = 0;
+    } else if (geometryCount === 0 && showEarlyStem) {
+      lengthScale = stage === 'seedling' ? 0.20 : 0.28;
+      strokeWidth = stage === 'seedling' ? 1.0 : 1.25;
     } else {
       if (geometryCount === 1) {
         lengthScale = 0.50;
@@ -385,7 +414,14 @@ class TubaTreeService {
       }
       // Da Vinci constraint: branch never thicker than its allotment
       strokeWidth = Math.min(strokeWidth, branchWidthCap);
+      lengthScale = Math.max(0.18, Math.min(1, lengthScale * branchStageScale));
+      strokeWidth *= 0.9 + branchStageScale * 0.1;
+      if (stage === 'seedling') {
+        lengthScale = Math.min(lengthScale, def.prayer === 'Isha' ? 0.38 : 0.32);
+      }
     }
+
+    const branchGeometry = this.resolveBranchGeometry(curve, lengthScale, strokeWidth);
 
     // ── MERGE RECENT + ARCHIVED LEAVES ───────────────────────────
     // recentPlants provide the detail (mood, date, growthStage).
@@ -400,9 +436,9 @@ class TubaTreeService {
       geometryCount,
       { ...def, curve },
       stage,
-      g,
       currentTrunkTopY,
       globalLeafStartIndex,
+      branchGeometry,
     );
 
     // ── OVERFLOW LEAVES → SUB-BRANCHES ──────────────────────────
@@ -412,7 +448,7 @@ class TubaTreeService {
 
     const subBranches = branchVisible
       ? this.computeSubBranches(
-          prayer, { ...def, curve }, lengthScale, strokeWidth, stage, g, currentTrunkTopY,
+          prayer, { ...def, curve }, branchGeometry, stage, currentTrunkTopY,
           overflowTotal, overflowRecent,
           globalLeafStartIndex + leaves.length,
           totalLifetimeReflections,
@@ -422,12 +458,30 @@ class TubaTreeService {
     return {
       id: def.id,
       prayer,
-      curve,
-      lengthScale,
-      strokeWidth,
+      curve: branchGeometry.curve,
+      lengthScale: branchGeometry.lengthScale,
+      strokeWidth: branchGeometry.strokeWidth,
       baseAngle: def.baseAngle,
       leaves,
       subBranches,
+    };
+  }
+
+  private resolveBranchGeometry(
+    curve: BranchDefinition['curve'],
+    lengthScale: number,
+    strokeWidth: number,
+  ): ResolvedBranchGeometry {
+    const scaled = scaledBezier(curve.start, curve.control, curve.end, lengthScale);
+    return {
+      curve,
+      renderedCurve: {
+        start: curve.start,
+        control: scaled.control,
+        end: scaled.end,
+      },
+      lengthScale,
+      strokeWidth,
     };
   }
 
@@ -436,7 +490,34 @@ class TubaTreeService {
     lifetimeCount: number,
     g: number,
     stage: TreeStage,
+    totalLifetimeReflections: number,
   ): CurveMaterialization {
+    if (stage === 'seedling' || stage === 'sapling') {
+      return this.materializeJuvenileBranchCurve(def, lifetimeCount, stage);
+    }
+
+    const mature = this.materializeMatureBranchCurve(def, lifetimeCount, g, stage);
+    if (stage !== 'growing') {
+      return mature;
+    }
+
+    const stageProgress = this.resolveStageProgress(stage, totalLifetimeReflections);
+    const juvenile = this.materializeJuvenileBranchCurve(def, Math.max(1, lifetimeCount), 'sapling');
+    const primaryBlendFloor = def.weight < 0.5 ? 0.34 : 0.20;
+    const blend = Math.max(primaryBlendFloor, Math.min(1, primaryBlendFloor + stageProgress * 0.8));
+
+    return {
+      curve: this.blendCurve(juvenile.curve, mature.curve, blend),
+    };
+  }
+
+  private materializeMatureBranchCurve(
+    def: BranchDefinition,
+    lifetimeCount: number,
+    g: number,
+    stage: TreeStage,
+  ): CurveMaterialization {
+    const stageProfile = TREE_STAGE_VISUALS[stage];
     const curve = def.curve;
     const maturity = Math.min(1, lifetimeCount / Math.max(6, def.minLeaves + 6));
     const stageFactor = Math.max(0, stageIndex(stage)) / 4;
@@ -446,22 +527,150 @@ class TubaTreeService {
     const secondaryFactor = def.weight < 0.5 ? 1 : 0.55;
     const angleSign = def.baseAngle === 0 ? centered || 1 : Math.sign(def.baseAngle);
     const ancientLift = stage === 'ancient' ? 7 + g * 8 : 0;
-    const upwardLift = (6 + 10 * secondaryFactor) * growthFactor + ancientLift * 0.45;
+    const upwardLift = (6 + 10 * secondaryFactor) * growthFactor + ancientLift * 0.45 + stageProfile.branchRiseBoost;
     const controlLateral = (4 + 8 * secondaryFactor) * angleSign * growthFactor + centered * 4;
     const endLateral = (8 + 16 * secondaryFactor) * angleSign * growthFactor + centered * 8;
     const endRise = upwardLift + Math.abs(centered) * 5 * growthFactor + ancientLift;
+    const topNarrowing = stage === 'ancient' && def.prayer === 'Isha' ? 0.76 : 1;
+    const lateralScale = def.weight < 0.5 ? 0.88 : 1;
+    const spreadBonus = def.prayer === 'Isha'
+      ? stageProfile.leaderSpreadBonus
+      : (def.prayer === 'Fajr' || def.prayer === 'Dhuhr')
+        ? stageProfile.leaderSpreadBonus * 0.55
+        : 0;
+    const spreadScale = stageProfile.branchSpreadScale + spreadBonus;
+    const origin = {
+      x: 160 + centered * (stageProfile.branchOriginPull > 0.5 ? 1.2 : 0.6),
+      y: stageProfile.branchOriginY,
+    };
+    const start = {
+      x: curve.start.x + (origin.x - curve.start.x) * stageProfile.branchOriginPull,
+      y: curve.start.y + (origin.y - curve.start.y) * stageProfile.branchOriginPull,
+    };
+    const controlBase = {
+      x: start.x + (curve.control.x - curve.start.x) * spreadScale,
+      y: start.y + (curve.control.y - curve.start.y) * spreadScale,
+    };
+    const endBase = {
+      x: start.x + (curve.end.x - curve.start.x) * spreadScale,
+      y: start.y + (curve.end.y - curve.start.y) * spreadScale,
+    };
 
     return {
       curve: {
-        start: curve.start,
+        start,
         control: {
-          x: curve.control.x + controlLateral,
-          y: curve.control.y - upwardLift * 0.5 - ancientLift * 0.2,
+          x: controlBase.x + controlLateral * lateralScale,
+          y: controlBase.y - upwardLift * 0.5 - ancientLift * 0.2,
         },
         end: {
-          x: curve.end.x + endLateral,
-          y: curve.end.y - endRise,
+          x: endBase.x + endLateral * lateralScale * topNarrowing,
+          y: endBase.y - endRise,
         },
+      },
+    };
+  }
+
+  private resolveStageProgress(stage: TreeStage, totalLifetimeReflections: number): number {
+    const threshold = STAGE_THRESHOLDS.find((candidate) => candidate.stage === stage);
+    if (!threshold) return 1;
+    if (!Number.isFinite(threshold.max)) return 1;
+    const range = Math.max(1, threshold.max - threshold.min);
+    const linear = Math.max(0, Math.min(1, (totalLifetimeReflections - threshold.min) / range));
+    return Math.pow(linear, 0.82);
+  }
+
+  private blendCurve(
+    from: BranchDefinition['curve'],
+    to: BranchDefinition['curve'],
+    t: number,
+  ): BranchDefinition['curve'] {
+    const mix = (a: number, b: number) => a + (b - a) * t;
+    return {
+      start: {
+        x: mix(from.start.x, to.start.x),
+        y: mix(from.start.y, to.start.y),
+      },
+      control: {
+        x: mix(from.control.x, to.control.x),
+        y: mix(from.control.y, to.control.y),
+      },
+      end: {
+        x: mix(from.end.x, to.end.x),
+        y: mix(from.end.y, to.end.y),
+      },
+    };
+  }
+
+  private materializeJuvenileBranchCurve(
+    def: BranchDefinition,
+    lifetimeCount: number,
+    stage: TreeStage,
+  ): CurveMaterialization {
+    const stageProfile = TREE_STAGE_VISUALS[stage];
+    const rankMap: Record<PrayerName, number> = {
+      Maghrib: -2,
+      Fajr: -1,
+      Isha: 0,
+      Dhuhr: 1,
+      Asr: 2,
+    };
+    const rank = rankMap[def.prayer] ?? 0;
+    const isLeader = def.prayer === 'Isha';
+    const isShoulder = def.prayer === 'Fajr' || def.prayer === 'Dhuhr';
+    const growthFactor = Math.min(1, lifetimeCount / (stage === 'seedling' ? 3 : 8));
+    const nodeBand = isLeader ? 0 : isShoulder ? 1 : 2;
+    const emergenceSpread = stage === 'seedling' ? 0.12 : 0.16;
+    const peelSpread = stage === 'seedling'
+      ? isLeader
+        ? 0.05
+        : isShoulder
+          ? 0.48
+          : 0.68
+      : isLeader
+        ? 0.10
+        : isShoulder
+          ? 0.86
+          : 1.08;
+    const baseX = 160 + rank * stageProfile.juvenileNodeSpread * emergenceSpread;
+    const baseY = stageProfile.branchOriginY + nodeBand * stageProfile.juvenileNodeStep;
+    const angleDeg = stage === 'seedling'
+      ? isLeader
+        ? 1
+        : isShoulder
+          ? rank * 10
+          : rank * 12
+      : isLeader
+        ? 3
+        : isShoulder
+          ? rank * 16
+          : rank * 20;
+    const angleRad = (angleDeg * Math.PI) / 180;
+    const lengthBase = stageProfile.juvenileBaseLength
+      * (isLeader ? 1.14 : isShoulder ? 0.94 : 0.82);
+    const length = lengthBase + stageProfile.juvenileLengthGain * growthFactor;
+    const emergenceRise = (stage === 'seedling' ? 4.8 : 7.2)
+      + growthFactor * (stage === 'seedling' ? 2.0 : 3.0)
+      + (isLeader ? 1.4 : 0);
+    const peelLength = Math.max(6, length - emergenceRise);
+    const peelX = 160 + rank * stageProfile.juvenileNodeSpread * peelSpread;
+    const end = {
+      x: peelX + Math.sin(angleRad) * peelLength,
+      y: baseY - emergenceRise - Math.cos(angleRad) * peelLength,
+    };
+    const control = {
+      x: baseX + rank * stageProfile.juvenileNodeSpread * (stage === 'seedling' ? 0.22 : 0.30),
+      y: baseY - emergenceRise,
+    };
+
+    return {
+      curve: {
+        start: {
+          x: baseX,
+          y: baseY,
+        },
+        control,
+        end,
       },
     };
   }
@@ -471,6 +680,7 @@ class TubaTreeService {
     g: number,
     stage: TreeStage,
   ): BranchDefinition['curve'] {
+    const stageProfile = TREE_STAGE_VISUALS[stage];
     const leftMass = (growthState.branchLifetimeLeaves.Fajr || 0) + (growthState.branchLifetimeLeaves.Maghrib || 0) * 0.92;
     const rightMass = (growthState.branchLifetimeLeaves.Dhuhr || 0) + (growthState.branchLifetimeLeaves.Asr || 0) * 0.92;
     const centerMass = growthState.branchLifetimeLeaves.Isha || 0;
@@ -481,18 +691,41 @@ class TubaTreeService {
     const endShift = asymmetry * (5 + 8 * ageFactor);
     const crownNudge = centerMass > Math.max(leftMass, rightMass) ? 0 : asymmetry * 1.2;
     const ancientLift = stage === 'ancient' ? 8 + g * 10 : 0;
+    const stageLift = stageProfile.branchRiseBoost * 0.6;
 
     return {
       start: TRUNK.start,
       control: {
         x: TRUNK.control.x + controlShift,
-        y: TRUNK.control.y - g * 2 - ancientLift * 0.35,
+        y: TRUNK.control.y - g * 2 - ancientLift * 0.35 - stageLift * 0.4,
       },
       end: {
         x: TRUNK.end.x + endShift + crownNudge,
-        y: TRUNK.end.y - g * 3 - ancientLift,
+        y: TRUNK.end.y - g * 3 - ancientLift - stageLift,
       },
     };
+  }
+
+  private resolveStageBranchScale(def: BranchDefinition, stage: TreeStage): number {
+    const profile = TREE_STAGE_VISUALS[stage];
+    const isSecondary = def.weight < 0.5;
+    const base = isSecondary ? profile.branchSecondaryScale : profile.branchPrimaryScale;
+
+    if (stage === 'seedling') {
+      if (def.prayer === 'Isha') return base * (isSecondary ? 0.76 : 1.0);
+      if (def.prayer === 'Fajr' || def.prayer === 'Dhuhr') return base * (isSecondary ? 0.70 : 0.92);
+      return base * (isSecondary ? 0.62 : 0.84);
+    }
+
+    if (stage === 'sapling') {
+      if (def.prayer === 'Isha') return base * (isSecondary ? 0.92 : 1.05);
+      if (def.prayer === 'Fajr' || def.prayer === 'Dhuhr') return base * (isSecondary ? 0.84 : 0.94);
+      return base * (isSecondary ? 0.74 : 0.82);
+    }
+
+    if (def.prayer === 'Isha') return base * (isSecondary ? 1.04 : 1.10);
+    if (def.prayer === 'Fajr' || def.prayer === 'Dhuhr') return base * (isSecondary ? 0.98 : 1.0);
+    return base * (isSecondary ? 0.92 : 0.88);
   }
 
   private resolveLeafTone(
@@ -525,6 +758,143 @@ class TubaTreeService {
     return 'amber';
   }
 
+  private resolveLeafRenderKind(
+    stage: TreeStage,
+    def: BranchDefinition,
+    totalCount: number,
+    index: number,
+  ): LeafRenderKind {
+    if (stage === 'seedling') {
+      if (index === 0) return 'leaf';
+      if (index === 1) return 'leaf';
+      if (index === 2 || index === 3) return 'paired';
+      return index % 2 === 0 ? 'cluster' : 'bud';
+    }
+
+    if (stage === 'sapling') {
+      const isLeader = def.prayer === 'Isha';
+      const isShoulder = def.prayer === 'Fajr' || def.prayer === 'Dhuhr';
+      const leafQuota = isLeader
+        ? Math.max(5, Math.round(totalCount * 0.38))
+        : isShoulder
+          ? Math.max(4, Math.round(totalCount * 0.33))
+          : Math.max(3, Math.round(totalCount * 0.28));
+      const pairedQuota = isLeader
+        ? Math.max(4, Math.round(totalCount * 0.32))
+        : isShoulder
+          ? Math.max(3, Math.round(totalCount * 0.36))
+          : Math.max(2, Math.round(totalCount * 0.36));
+
+      if (index >= totalCount - leafQuota) return 'leaf';
+      if (index >= totalCount - leafQuota - pairedQuota) {
+        return index % 2 === 0 ? 'paired' : 'cluster';
+      }
+      return index % 3 === 0 ? 'cluster' : 'bud';
+    }
+
+    return 'leaf';
+  }
+
+  private resolveEarlyGrowthStage(
+    renderKind: LeafRenderKind,
+    plant: GardenPlant | null | undefined,
+  ): GrowthStage {
+    if (renderKind === 'bud') return 'seed';
+    if (renderKind === 'paired' || renderKind === 'cotyledon') return 'sprout';
+    return plant?.growthStage ?? 'sprout';
+  }
+
+  private getPrayerLaneVector(
+    prayer: PrayerName,
+  ): { x: number; y: number } {
+    return ({
+      Maghrib: { x: -0.88, y: 0.34 },
+      Fajr: { x: -0.68, y: -0.74 },
+      Isha: { x: 0, y: -1 },
+      Dhuhr: { x: 0.68, y: -0.74 },
+      Asr: { x: 0.88, y: 0.34 },
+    } as const)[prayer];
+  }
+
+  private getSeedlingLaneOffset(
+    prayer: PrayerName,
+    localIndex: number,
+    totalCount: number,
+    renderKind: LeafRenderKind,
+  ): { x: number; y: number } {
+    const lane = this.getPrayerLaneVector(prayer);
+    const normal = { x: -lane.y, y: lane.x };
+    const baseAlong = [0.22, 1.46, 2.54, 3.36, 4.10, 4.72, 5.28, 5.78];
+    const baseAcross = [0, 0.42, -0.22, 0.30, -0.20, 0.16, -0.14, 0.12];
+    const slot = Math.min(localIndex, baseAlong.length - 1);
+    const hierarchyScale = renderKind === 'leaf'
+      ? 1.08
+      : renderKind === 'paired'
+        ? 0.95
+        : renderKind === 'cluster'
+          ? 0.84
+          : 0.78;
+    const occupancyLift = 0.98 + Math.min(0.10, totalCount * 0.018);
+    const laneBase = ({
+      Maghrib: { x: -0.46, y: 0.46 },
+      Fajr: { x: -0.34, y: -0.24 },
+      Isha: { x: 0, y: -0.46 },
+      Dhuhr: { x: 0.34, y: -0.24 },
+      Asr: { x: 0.46, y: 0.46 },
+    } as const)[prayer];
+
+    return {
+      x: laneBase.x
+        + lane.x * baseAlong[slot] * hierarchyScale * occupancyLift
+        + normal.x * baseAcross[slot] * hierarchyScale,
+      y: laneBase.y
+        + lane.y * baseAlong[slot] * hierarchyScale * occupancyLift
+        + normal.y * baseAcross[slot] * hierarchyScale,
+    };
+  }
+
+  private getSeedlingLaneT(localIndex: number): number {
+    const slotTs = [0.90, 0.922, 0.938, 0.950, 0.960, 0.968, 0.974, 0.979];
+    return slotTs[Math.min(localIndex, slotTs.length - 1)];
+  }
+
+  private resolveSeedlingLeafSeparation(branches: TreeBranch[]): TreeBranch[] {
+    const minDistance = 4.3;
+    const centerX = 160;
+    const centerY = 242;
+
+    const clonedBranches = branches.map((branch) => ({
+      ...branch,
+      leaves: branch.leaves.map((leaf) => ({ ...leaf })),
+      subBranches: branch.subBranches.map((subBranch) => ({
+        ...subBranch,
+        leaves: subBranch.leaves.map((leaf) => ({ ...leaf })),
+      })),
+    }));
+
+    const orderedLeaves = clonedBranches
+      .flatMap((branch) => branch.leaves)
+      .sort((a, b) => b.ageFraction - a.ageFraction);
+
+    for (let i = 0; i < orderedLeaves.length; i += 1) {
+      const leaf = orderedLeaves[i];
+      for (let j = 0; j < i; j += 1) {
+        const other = orderedLeaves[j];
+        const dx = leaf.x - other.x;
+        const dy = leaf.y - other.y;
+        const distance = Math.hypot(dx, dy);
+        if (distance >= minDistance || distance === 0) continue;
+
+        const lane = this.getPrayerLaneVector(leaf.prayer as PrayerName);
+        const push = minDistance - distance;
+        leaf.x += lane.x * push * 0.74 + (leaf.x >= centerX ? 0.08 : -0.08) * push;
+        leaf.y += lane.y * push * 0.56 + (leaf.y <= centerY ? -0.04 : 0.04) * push;
+      }
+    }
+
+    return clonedBranches;
+  }
+
   private positionLeaves(
     prayer: PrayerName,
     recentPlants: GardenPlant[],
@@ -532,11 +902,13 @@ class TubaTreeService {
     totalCount: number,
     def: typeof BRANCH_DEFINITIONS[number],
     stage: TreeStage,
-    g: number,
     currentTrunkTopY: number,
     globalLeafStartIndex: number,
+    branchGeometry: ResolvedBranchGeometry,
   ): TreeLeafData[] {
     if (totalCount === 0) return [];
+    const stageProfile = TREE_STAGE_VISUALS[stage];
+    const { renderedCurve } = branchGeometry;
 
     const n = totalCount;
 
@@ -544,39 +916,53 @@ class TubaTreeService {
     // SEEDLING MODE — preserved from v5, with isArchived + ageFraction
     // ═══════════════════════════════════════════════════════════════
     if (stage === 'seedling') {
-      const ddx = def.curve.control.x - def.curve.start.x;
-      const ddy = def.curve.control.y - def.curve.start.y;
-      const dlen = Math.sqrt(ddx * ddx + ddy * ddy) || 1;
-      const dirX = ddx / dlen;
-      const dirY = ddy / dlen;
-
       const seedlingLeaves: TreeLeafData[] = [];
-      const seedlingN = Math.min(n, 4);
+      const seedlingN = n;
 
       for (let localIndex = 0; localIndex < seedlingN; localIndex++) {
-        const globalIdx = globalLeafStartIndex + localIndex;
         const plant = recentPlants[localIndex];
         const isArchived = !plant;
         const hash = leafHash(prayer, plant?.date ?? `archived-${localIndex}`, localIndex);
+        const t = this.getSeedlingLaneT(localIndex);
+        const pos = quadBezierPoint(
+          renderedCurve.start,
+          renderedCurve.control,
+          renderedCurve.end,
+          t,
+        );
+        const perp = quadBezierPerpendicular(
+          renderedCurve.start,
+          renderedCurve.control,
+          renderedCurve.end,
+          t,
+        );
+        const renderKind = this.resolveLeafRenderKind(stage, def, totalCount, localIndex);
+        const slotOffset = this.getSeedlingLaneOffset(def.prayer, localIndex, seedlingN, renderKind);
+        const branchOffset = renderKind === 'leaf'
+          ? 0.16
+          : renderKind === 'paired'
+            ? 0.12
+            : renderKind === 'cluster'
+              ? 0.08
+              : 0.05;
+        const x = pos.x + perp.x * branchOffset + slotOffset.x;
+        const y = pos.y + perp.y * branchOffset + slotOffset.y;
 
-        const pairIndex = Math.floor(globalIdx / 2);
-        const stubLen = Math.max(8, 14 - pairIndex * 3);
-        const jitter = (hash % 3) - 1;
-
-        const x = TRUNK.start.x + dirX * stubLen + jitter;
-        const y = currentTrunkTopY + dirY * stubLen + jitter;
-
-        const angleDeg = (Math.atan2(dirY, dirX) * 180) / Math.PI;
-        const rotation = angleDeg + 90 + ((hash % 20) - 10);
-
-        const growthStage: GrowthStage = plant?.growthStage ?? 'sprout';
+        const angleDeg = quadBezierTangentAngle(
+          renderedCurve.start,
+          renderedCurve.control,
+          renderedCurve.end,
+          t,
+        );
+        const rotation = angleDeg + 90 + ((hash % 12) - 6);
+        const growthStage = this.resolveEarlyGrowthStage(renderKind, plant);
         const opacityConfig = LEAF_OPACITY[growthStage];
         const baseOpacity = isArchived ? opacityConfig.base * 0.85 : opacityConfig.base;
         const ageFraction = seedlingN > 1 ? 1 - (localIndex / (seedlingN - 1)) : 0;
 
         seedlingLeaves.push({
           id: `${prayer}-${plant?.date ?? `arch-${localIndex}`}-${localIndex}`,
-          t: 0,
+          t,
           x,
           y,
           rotation,
@@ -588,6 +974,7 @@ class TubaTreeService {
           ageFraction,
           tone: 'fresh',
           hueVariant: 'base',
+          renderKind,
           prayer,
           date: plant?.date ?? '',
           mood: plant?.mood ?? 3,
@@ -599,22 +986,6 @@ class TubaTreeService {
     // ═══════════════════════════════════════════════════════════════
     // NORMAL BRANCH MODE — phyllotaxis + canopy + age coloring
     // ═══════════════════════════════════════════════════════════════
-
-    // Compute branch lengthScale from geometry count (same logic as buildBranch)
-    let lengthScale: number;
-    if (n === 1) {
-      lengthScale = 0.50;
-    } else if (n === 2) {
-      lengthScale = 0.58;
-    } else {
-      const ratio = (n - 3) / (MAX_LEAVES_PER_BRANCH - 3);
-      lengthScale = Math.min(0.35 + ratio * 0.65, 1.0);
-    }
-
-    if (lengthScale <= 0) return [];
-
-    const { curve } = def;
-    const scaled = scaledBezier(curve.start, curve.control, curve.end, lengthScale);
     const leaves: TreeLeafData[] = [];
     const branchSignature = (leafHash(def.id, prayer, n) % 100) / 100;
     const crownProfile = this.buildCrownProfile(branchSignature, 'main');
@@ -625,6 +996,7 @@ class TubaTreeService {
       const isArchived = index < archivedCount;
       const recentIdx = index - archivedCount;
       const plant = isArchived ? null : (recentPlants[recentIdx] ?? null);
+      const renderKind = this.resolveLeafRenderKind(stage, def, n, index);
 
       // ── T-POSITION ──────────────────────────────────────────
       let t: number;
@@ -638,35 +1010,94 @@ class TubaTreeService {
 
         t = index === n - 1
           ? LEAF_DISTRIBUTION.mainTipT
-          : LEAF_DISTRIBUTION.floorT
-            + (LEAF_DISTRIBUTION.mainTipT - LEAF_DISTRIBUTION.floorT) * clustered;
+          : stageProfile.mainLeafStartT
+            + (LEAF_DISTRIBUTION.mainTipT - stageProfile.mainLeafStartT) * clustered;
       }
 
-      const pos = quadBezierPoint(curve.start, scaled.control, scaled.end, t);
-      const perp = quadBezierPerpendicular(curve.start, scaled.control, scaled.end, t);
+      const pos = quadBezierPoint(
+        renderedCurve.start,
+        renderedCurve.control,
+        renderedCurve.end,
+        t,
+      );
+      const perp = quadBezierPerpendicular(
+        renderedCurve.start,
+        renderedCurve.control,
+        renderedCurve.end,
+        t,
+      );
 
       // ── PHYLLOTAXIS: alternating sides + tightening offset ──
       const hash = leafHash(prayer, plant?.date ?? `arch-${index}`, index);
       const phyllSign = (index % 2 === 0) ? 1 : -1;
       const offsetMag = PHYLLOTAXIS.alternateOffset * (1 - t * PHYLLOTAXIS.spiralTightening);
+      const sprayPhase = (index % 4) - 1.5;
       const clusterSpread = 1 + Math.sin((index / Math.max(1, n - 1)) * Math.PI * 2 + branchSignature * Math.PI) * 0.14;
       const corridorProximity = Math.max(
         0,
         1 - Math.abs((t - crownProfile.gapCenter) / Math.max(0.001, crownProfile.gapWidth)),
       );
       const jitterFrac = ((hash % 100) / 100) * 0.3;
-      const corridorTightening = 1 - corridorProximity * 0.42;
+      const corridorTightening = 1 - corridorProximity * stageProfile.corridorStrength;
+      const earlyTightening = stage === 'sapling'
+        ? renderKind === 'bud'
+          ? 1.02
+          : renderKind === 'paired' || renderKind === 'cluster'
+            ? 1.18
+            : 1.24
+        : 1;
       const perpMagnitude = (offsetMag + jitterFrac)
         * LEAF_JITTER.maxOffset
         * clusterSpread
+        * stageProfile.leafOffsetScale
         * corridorTightening
+        * (1 + (sprayPhase / 3) * stageProfile.spraySpread * 0.16)
+        * earlyTightening
         * phyllSign;
 
       let x = pos.x + perp.x * perpMagnitude;
-      let y = pos.y + perp.y * perpMagnitude;
+      let y = pos.y + perp.y * perpMagnitude - (stage === 'sapling' ? 0.55 : 0);
+      if (stage === 'sapling') {
+        const lane = this.getPrayerLaneVector(def.prayer);
+        const laneProgress = n === 1 ? 1 : index / (n - 1);
+        const liftBand = renderKind === 'leaf'
+          ? 1.10
+          : renderKind === 'paired' || renderKind === 'cluster'
+            ? 0.82
+            : 0.42;
+        const laneSpread = renderKind === 'leaf'
+          ? 1.14
+          : renderKind === 'paired' || renderKind === 'cluster'
+            ? 0.92
+            : 0.66;
+        x += sprayPhase * 0.16 + ((index % 3) - 1) * 0.12
+          + lane.x * (0.30 + laneProgress * 2.35) * laneSpread;
+        y += lane.y * (0.22 + laneProgress * 2.04) * laneSpread
+          - liftBand
+          + (index % 2 === 0 ? 0.12 : -0.05)
+          - index * 0.012;
+      } else if (stage === 'growing') {
+        const lane = this.getPrayerLaneVector(def.prayer);
+        const shoulderBoost = def.prayer === 'Fajr' || def.prayer === 'Dhuhr'
+          ? 1.16
+          : def.prayer === 'Maghrib' || def.prayer === 'Asr'
+            ? 1.08
+            : 1;
+        x += sprayPhase * 0.18 * shoulderBoost
+          + lane.x * (def.prayer === 'Isha' ? 0.14 : 0.26)
+          + (def.prayer === 'Fajr' || def.prayer === 'Isha' ? -0.05 : def.prayer === 'Dhuhr' ? 0.05 : 0);
+        y += lane.y * (def.prayer === 'Isha' ? 0.10 : 0.18)
+          - (renderKind === 'leaf' ? 0.18 : 0.06) * shoulderBoost;
+      }
 
       // ── CANOPY CLAMP ────────────────────────────────────────
-      const clamped = clampToCanopy(x, y, currentTrunkTopY);
+      const clamped = clampToCanopy(x, y, currentTrunkTopY, {
+        radiusX: stageProfile.canopyRadiusX,
+        radiusY: stageProfile.canopyRadiusY,
+        centerYOffset: stageProfile.canopyCenterYOffset,
+        grace: stageProfile.canopyGrace,
+        softness: stageProfile.canopySoftness,
+      });
       x = clamped.x;
       y = clamped.y;
 
@@ -675,19 +1106,35 @@ class TubaTreeService {
       const tipTilt = (t - 0.3) * 12;
       const phyllRot = phyllSign * PHYLLOTAXIS.baseRotationSpread * (1 - t * 0.5);
       const rotJitter = ((hash % 60 - 30) / 30) * 14;
-      const rotation = outwardLean + tipTilt + phyllRot + rotJitter;
+      const rotation = outwardLean
+        + tipTilt
+        + phyllRot
+        + rotJitter
+        + sprayPhase * stageProfile.spraySpread * 1.8
+        + (stage === 'sapling' && renderKind === 'paired' ? phyllSign * 5 : 0);
 
       // ── GROWTH STAGE + OPACITY ──────────────────────────────
-      const growthStage: GrowthStage = plant?.growthStage ?? 'sprout';
+      const growthStage = stage === 'sapling'
+        ? this.resolveEarlyGrowthStage(renderKind, plant)
+        : (plant?.growthStage ?? 'sprout');
+      const ageFraction = n > 1 ? 1 - (index / (n - 1)) : 0;
       const opacityConfig = LEAF_OPACITY[growthStage];
       const opacityVariance = ((hash % 50 - 25) / 25) * opacityConfig.variance;
       const rawOpacity = isArchived
-        ? opacityConfig.base * 0.85
-        : Math.max(0.4, Math.min(1, opacityConfig.base + opacityVariance - corridorProximity * 0.06));
+        ? opacityConfig.base * 0.82
+        : Math.max(
+            stage === 'growing' ? 0.42 : 0.36,
+            Math.min(
+              1,
+              opacityConfig.base
+                + opacityVariance
+                - corridorProximity * (stage === 'growing' ? 0.015 : 0.06)
+                - (ageFraction > 0.42 ? 0.04 : 0),
+            ),
+          );
 
       // ── AGE FRACTION ────────────────────────────────────────
       // 0 = newest (tip), 1 = oldest (base)
-      const ageFraction = n > 1 ? 1 - (index / (n - 1)) : 0;
       const opacity = ageAdjustedOpacity(rawOpacity, ageFraction);
 
       const isBloom = !isArchived && (plant?.mood ?? 0) >= 4 && growthStage === 'bloom';
@@ -707,6 +1154,7 @@ class TubaTreeService {
         ageFraction,
         tone,
         hueVariant,
+        renderKind,
         prayer,
         date: plant?.date ?? '',
         mood: plant?.mood ?? 3,
@@ -719,10 +1167,8 @@ class TubaTreeService {
   private computeSubBranches(
     prayer: PrayerName,
     def: typeof BRANCH_DEFINITIONS[number],
-    parentLengthScale: number,
-    parentStrokeWidth: number,
+    branchGeometry: ResolvedBranchGeometry,
     stage: TreeStage,
-    g: number,
     currentTrunkTopY: number,
     overflowTotal: number,
     overflowRecent: GardenPlant[],
@@ -734,13 +1180,12 @@ class TubaTreeService {
       ? 'ancientFull'
       : stage;
     const maxSubs = SUB_BRANCH_STAGES[effectiveStage] ?? 0;
-    if (maxSubs === 0 || parentLengthScale < 0.4) return [];
+    if (maxSubs === 0 || branchGeometry.lengthScale < 0.4) return [];
     const actualSubCount = Math.min(maxSubs, overflowTotal);
     if (actualSubCount === 0) return [];
 
     const results: SubBranch[] = [];
-    const { curve } = def;
-    const scaled = scaledBezier(curve.start, curve.control, curve.end, parentLengthScale);
+    const parentCurve = branchGeometry.renderedCurve;
     const subCounts = this.allocatePositiveCounts(
       overflowTotal,
       SUB_BRANCH.forkT.slice(0, actualSubCount).map((forkT) => 1 - forkT + 0.2),
@@ -756,12 +1201,27 @@ class TubaTreeService {
       const branchSignature = (leafHash(def.id, `${prayer}-sub`, i) % 100) / 100;
       const centeredSignature = (branchSignature - 0.5) * 2;
 
-      const forkPoint = quadBezierPoint(curve.start, scaled.control, scaled.end, forkT);
-      const perp = quadBezierPerpendicular(curve.start, scaled.control, scaled.end, forkT);
-      const tangent = quadBezierTangentAngle(curve.start, scaled.control, scaled.end, forkT);
+      const forkPoint = quadBezierPoint(
+        parentCurve.start,
+        parentCurve.control,
+        parentCurve.end,
+        forkT,
+      );
+      const perp = quadBezierPerpendicular(
+        parentCurve.start,
+        parentCurve.control,
+        parentCurve.end,
+        forkT,
+      );
+      const tangent = quadBezierTangentAngle(
+        parentCurve.start,
+        parentCurve.control,
+        parentCurve.end,
+        forkT,
+      );
 
       const spread = (SUB_BRANCH.spread + centeredSignature * 8) * direction;
-      const subLength = SUB_BRANCH.lengthRatio * parentLengthScale * (76 + branchSignature * 18);
+      const subLength = SUB_BRANCH.lengthRatio * branchGeometry.lengthScale * (76 + branchSignature * 18);
       const tangentRad = (tangent * Math.PI) / 180;
 
       const endX = forkPoint.x + Math.cos(tangentRad) * subLength + perp.x * spread;
@@ -792,7 +1252,7 @@ class TubaTreeService {
 
       const subLeaves = this.positionSubBranchLeaves(
         prayer, subCurve, subLeafCount, subRecentSlice, subArchivedCount,
-        def.baseAngle, direction, g, currentTrunkTopY,
+        def.baseAngle, direction, currentTrunkTopY,
         subLeafGlobalStart + overflowOffset,
       );
 
@@ -801,7 +1261,7 @@ class TubaTreeService {
 
       results.push({
         curve: subCurve,
-        strokeWidth: parentStrokeWidth * SUB_BRANCH.strokeRatio,
+        strokeWidth: branchGeometry.strokeWidth * SUB_BRANCH.strokeRatio,
         opacity: SUB_BRANCH.opacity,
         leaves: subLeaves,
       });
@@ -819,11 +1279,11 @@ class TubaTreeService {
     archivedCount: number,
     parentBaseAngle: number,
     direction: number,
-    g: number,
     currentTrunkTopY: number,
     globalStartIndex: number,
   ): TreeLeafData[] {
     if (totalCount === 0) return [];
+    const stageProfile = TREE_STAGE_VISUALS[this.currentStage];
 
     const n = totalCount;
     const leaves: TreeLeafData[] = [];
@@ -844,7 +1304,8 @@ class TubaTreeService {
         const clustered = this.mapClusteredProgress(linear, crownProfile);
         t = index === n - 1
           ? LEAF_DISTRIBUTION.subTipT
-          : 0.18 + (LEAF_DISTRIBUTION.subTipT - 0.18) * clustered;
+          : stageProfile.subLeafStartT
+            + (LEAF_DISTRIBUTION.subTipT - stageProfile.subLeafStartT) * clustered;
       }
 
       const pos = quadBezierPoint(curve.start, curve.control, curve.end, t);
@@ -854,6 +1315,7 @@ class TubaTreeService {
       const hash = leafHash(prayer, plant?.date ?? `sub-${index}`, globalStartIndex + index);
       const phyllSign = (index % 2 === 0) ? 1 : -1;
       const offsetMag = PHYLLOTAXIS.alternateOffset * 0.6 * (1 - t * 0.5);
+      const sprayPhase = (index % 3) - 1;
       const clusterSpread = 1 + Math.sin((index / Math.max(1, n - 1)) * Math.PI * 2 + branchSignature * Math.PI) * 0.10;
       const corridorProximity = Math.max(
         0,
@@ -864,14 +1326,22 @@ class TubaTreeService {
         * LEAF_JITTER.maxOffset
         * 0.7
         * clusterSpread
-        * (1 - corridorProximity * 0.34)
+        * stageProfile.leafOffsetScale
+        * (1 - corridorProximity * stageProfile.corridorStrength * 0.8)
+        * (1 + sprayPhase * stageProfile.spraySpread * 0.08)
         * phyllSign;
 
       let x = pos.x + perp.x * perpMag;
       let y = pos.y + perp.y * perpMag;
 
       // ── CANOPY CLAMP ──────────────────────────────────────
-      const clamped = clampToCanopy(x, y, currentTrunkTopY);
+      const clamped = clampToCanopy(x, y, currentTrunkTopY, {
+        radiusX: stageProfile.canopyRadiusX,
+        radiusY: stageProfile.canopyRadiusY,
+        centerYOffset: stageProfile.canopyCenterYOffset,
+        grace: stageProfile.canopyGrace,
+        softness: stageProfile.canopySoftness,
+      });
       x = clamped.x;
       y = clamped.y;
 
@@ -880,7 +1350,7 @@ class TubaTreeService {
       const tipTilt = (t - 0.3) * 8;
       const phyllRot = phyllSign * 15 * (1 - t * 0.5);
       const rotJitter = ((hash % 40 - 20) / 20) * 10;
-      const rotation = outwardLean + tipTilt + phyllRot + rotJitter;
+      const rotation = outwardLean + tipTilt + phyllRot + rotJitter + sprayPhase * stageProfile.spraySpread * 1.6;
 
       // ── GROWTH STAGE + OPACITY ────────────────────────────
       const growthStage: GrowthStage = plant?.growthStage ?? 'sprout';
@@ -913,6 +1383,7 @@ class TubaTreeService {
         ageFraction: adjustedAge,
         tone,
         hueVariant,
+        renderKind: 'leaf',
         prayer,
         date: plant?.date ?? '',
         mood: plant?.mood ?? 3,
