@@ -8,6 +8,13 @@ import logger from '../../utils/logger';
 
 const { AdhanModule } = NativeModules;
 
+export type ExactAlarmStatus =
+  | 'granted'
+  | 'fallback'
+  | 'unsupported'
+  | 'unavailable'
+  | 'unknown';
+
 // Request code strategy: base 5000 + (dayOffset * 5) + prayerIndex
 // Supports up to 7 days of scheduling (5000..5034)
 const REQUEST_CODE_BASE = 5000;
@@ -113,5 +120,26 @@ export async function cancelFullAdhan(
     logger.log(`🗑️ Full Adhan cancelled for ${prayerName} (rc=${requestCode})`);
   } catch (error) {
     logger.error(`❌ Failed to cancel full Adhan for ${prayerName}:`, error);
+  }
+}
+
+export async function getExactAlarmStatus(): Promise<ExactAlarmStatus> {
+  if (Platform.OS !== 'android') return 'unsupported';
+  if (!AdhanModule?.getExactAlarmStatus) return 'unavailable';
+
+  try {
+    const status = await AdhanModule.getExactAlarmStatus();
+    if (
+      status === 'granted' ||
+      status === 'fallback' ||
+      status === 'unsupported' ||
+      status === 'unavailable'
+    ) {
+      return status;
+    }
+    return 'unknown';
+  } catch (error) {
+    logger.error('❌ Failed to read exact alarm status:', error);
+    return 'unknown';
   }
 }

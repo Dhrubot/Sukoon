@@ -2,8 +2,7 @@
 import React, { createContext, useState, useContext, useEffect, ReactNode } from 'react';
 import { StatusBar, Appearance } from 'react-native';
 import { AppTheme, ThemeMode, createTheme } from '../theme';
-import StorageService from '../services/StorageService';
-import logger from '../utils/logger';
+import { useStore } from '../store/useStore';
 
 interface ThemeContextType {
   theme: AppTheme;
@@ -19,6 +18,7 @@ interface ThemeProviderProps {
 }
 
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
+  const storedTheme = useStore((state) => state.userSettings?.theme);
   const [themeMode, setThemeModeState] = useState<ThemeMode>(() => {
     const os = Appearance.getColorScheme();
     return os === 'light' ? 'light' : 'midnight';
@@ -27,11 +27,6 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     const os = Appearance.getColorScheme();
     return createTheme(os === 'light' ? 'light' : 'midnight');
   });
-
-  // Load saved theme preference on mount
-  useEffect(() => {
-    loadThemePreference();
-  }, []);
 
   // Update theme when mode changes
   useEffect(() => {
@@ -43,39 +38,23 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       themeMode === 'light' ? 'dark-content' : 'light-content',
       true
     );
-    
-    // Save theme preference
-    saveThemePreference(themeMode);
   }, [themeMode]);
 
-  const loadThemePreference = () => {
-    try {
-      const settings = StorageService.getUserSettings();
-      const savedTheme = settings?.theme;
-      if (savedTheme === 'light' || savedTheme === 'dark' || savedTheme === 'midnight') {
-        setThemeModeState(savedTheme);
-      }
-    } catch (error) {
-      logger.error('Error loading theme preference:', error);
+  useEffect(() => {
+    if (storedTheme === 'light' || storedTheme === 'dark' || storedTheme === 'midnight') {
+      setThemeModeState(storedTheme);
     }
-  };
+  }, [storedTheme]);
 
-  const saveThemePreference = (mode: ThemeMode) => {
-    try {
-      const settings = StorageService.getUserSettings();
-      if (settings) {
-        StorageService.setUserSettings({
-          ...settings,
-          theme: mode,
-        });
-      }
-    } catch (error) {
-      logger.error('Error saving theme preference:', error);
-    }
+  const persistThemeMode = (mode: ThemeMode) => {
+    const { userSettings, updateUserSettings } = useStore.getState();
+    if (!userSettings || userSettings.theme === mode) return;
+    updateUserSettings({ theme: mode });
   };
 
   const setThemeMode = (mode: ThemeMode) => {
     setThemeModeState(mode);
+    persistThemeMode(mode);
   };
 
   const toggleTheme = () => {
@@ -85,7 +64,9 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         light: 'midnight',
         midnight: 'dark',
       };
-      return cycle[prev];
+      const next = cycle[prev];
+      persistThemeMode(next);
+      return next;
     });
   };
 

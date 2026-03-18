@@ -1,6 +1,6 @@
 // src/components/settings/SegmentedControl.tsx
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, StyleProp, StyleSheet, ViewStyle } from 'react-native';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 
@@ -14,7 +14,7 @@ interface SegmentedControlProps {
   options: SegmentedControlOption[];
   selectedValue: string;
   onValueChange: (value: string) => void;
-  style?: any;
+  style?: StyleProp<ViewStyle>;
 }
 
 export const SegmentedControl: React.FC<SegmentedControlProps> = ({

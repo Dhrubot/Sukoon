@@ -3,7 +3,8 @@
 // orchestration produces valid notifications within iOS budget constraints.
 
 import { PrayerTime, UserSettings } from '../types';
-import { IOS_NOTIFICATION_CAP, NOTIFICATION_SCHEDULING_DAYS } from '../constants/NotificationConstants';
+import { CHANNELS, IOS_NOTIFICATION_CAP, SOUNDS } from '../constants/NotificationConstants';
+import { Platform } from 'react-native';
 
 // ── Track all scheduled notifications ────────────────────────────────────────
 const mockScheduledNotifications: Array<{
@@ -15,9 +16,23 @@ const mockScheduledNotifications: Array<{
 // ── Mock expo-notifications ──────────────────────────────────────────────────
 jest.mock('expo-notifications', () => ({
   getPermissionsAsync: jest.fn(() => Promise.resolve({ status: 'granted' })),
-  getAllScheduledNotificationsAsync: jest.fn(() => Promise.resolve([])),
+  getAllScheduledNotificationsAsync: jest.fn(() =>
+    Promise.resolve(
+      mockScheduledNotifications.map((notification) => ({
+        identifier: notification.identifier,
+        content: notification.content,
+        trigger: notification.trigger,
+      }))
+    )
+  ),
   cancelAllScheduledNotificationsAsync: jest.fn(() => Promise.resolve()),
-  cancelScheduledNotificationAsync: jest.fn(() => Promise.resolve()),
+  cancelScheduledNotificationAsync: jest.fn((identifier: string) => {
+    const index = mockScheduledNotifications.findIndex((notification) => notification.identifier === identifier);
+    if (index >= 0) {
+      mockScheduledNotifications.splice(index, 1);
+    }
+    return Promise.resolve();
+  }),
   scheduleNotificationAsync: jest.fn((input: any) => {
     const id = input.identifier || `notif-${mockScheduledNotifications.length}`;
     mockScheduledNotifications.push({
@@ -165,6 +180,7 @@ jest.mock('../services/notifications/FullAdhanScheduler', () => ({
   scheduleFullAdhan: jest.fn(() => Promise.resolve()),
   cancelAllFullAdhans: jest.fn(() => Promise.resolve()),
   stopFullAdhan: jest.fn(),
+  getExactAlarmStatus: jest.fn(() => Promise.resolve('granted')),
 }));
 
 jest.mock('../services/notifications/HabitBuilderNotifications', () => ({
@@ -202,10 +218,20 @@ jest.mock('../utils/locationValidation', () => ({
 import NotificationService from '../services/NotificationService';
 
 describe('scheduleExtendedNotifications integration', () => {
+  const originalPlatform = Platform.OS;
+
   beforeEach(() => {
     jest.clearAllMocks();
     mockScheduledNotifications.length = 0;
     Object.keys(mockStorageData).forEach((k) => delete mockStorageData[k]);
+    mockTestSettings.notifications.fullAdhanEnabled = false;
+    mockTestSettings.notifications.adhanEnabled = true;
+    mockTestSettings.notifications.soundEnabled = true;
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: originalPlatform });
+  });
+
+  afterEach(() => {
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: originalPlatform });
   });
 
   it('schedules notifications within iOS cap (≤ 58)', async () => {
@@ -221,6 +247,17 @@ describe('scheduleExtendedNotifications integration', () => {
     const ids = mockScheduledNotifications.map((n) => n.identifier);
     const uniqueIds = new Set(ids);
     expect(uniqueIds.size).toBe(ids.length);
+  });
+
+  it('reconcileScheduling is idempotent across repeated settings-change calls', async () => {
+    await NotificationService.reconcileScheduling('settings_change');
+    const firstPassIdentifiers = new Set(mockScheduledNotifications.map((n) => n.identifier));
+
+    await NotificationService.reconcileScheduling('settings_change');
+    const secondPassIdentifiers = mockScheduledNotifications.map((n) => n.identifier);
+
+    expect(new Set(secondPassIdentifiers)).toEqual(firstPassIdentifiers);
+    expect(secondPassIdentifiers).toHaveLength(firstPassIdentifiers.size);
   });
 
   it('schedules Tier 1 (Adhan) for future prayers across all scheduling days', async () => {
@@ -279,5 +316,51 @@ describe('scheduleExtendedNotifications integration', () => {
     await NotificationService.scheduleExtendedNotifications();
 
     expect(mockScheduledNotifications.length).toBe(0);
+  });
+
+  it('uses the Android native full adhan path when full adhan is enabled', async () => {
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'android' });
+    mockTestSettings.notifications.fullAdhanEnabled = true;
+
+    await NotificationService.scheduleExtendedNotifications();
+
+    const mainPrayerNotification = mockScheduledNotifications.find(
+      (notification) => notification.content?.data?.type === 'prayer-time'
+    );
+    const FullAdhanScheduler = require('../services/notifications/FullAdhanScheduler');
+
+    expect(mainPrayerNotification).toBeTruthy();
+    expect(mainPrayerNotification?.content.sound).toBeUndefined();
+    expect(mainPrayerNotification?.trigger).toMatchObject({ channelId: CHANNELS.ADHAN_SILENT });
+    expect(FullAdhanScheduler.scheduleFullAdhan).toHaveBeenCalled();
+  });
+
+  it('keeps iOS scheduled prayer notifications on the short bundled sound even when full adhan is enabled', async () => {
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'ios' });
+    mockTestSettings.notifications.fullAdhanEnabled = true;
+
+    await NotificationService.scheduleExtendedNotifications();
+
+    const mainPrayerNotification = mockScheduledNotifications.find(
+      (notification) => notification.content?.data?.type === 'prayer-time'
+    );
+    const FullAdhanScheduler = require('../services/notifications/FullAdhanScheduler');
+
+    expect(mainPrayerNotification?.content.sound).toBe(SOUNDS.IOS_SHORT);
+    expect(FullAdhanScheduler.scheduleFullAdhan).not.toHaveBeenCalled();
+  });
+
+  it('falls back to the default notification sound when adhan audio is disabled', async () => {
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'android' });
+    mockTestSettings.notifications.adhanEnabled = false;
+
+    await NotificationService.scheduleExtendedNotifications();
+
+    const mainPrayerNotification = mockScheduledNotifications.find(
+      (notification) => notification.content?.data?.type === 'prayer-time'
+    );
+
+    expect(mainPrayerNotification?.content.sound).toBe('default');
+    expect(mainPrayerNotification?.trigger).toMatchObject({ channelId: CHANNELS.DEFAULT });
   });
 });

@@ -2,7 +2,7 @@
 
 ## Services
 
-- **SubscriptionService.ts** — Monthly/yearly/lifetime premium subscriptions via `react-native-iap`
+- **SubscriptionService.ts** — Monthly/yearly/lifetime premium subscriptions via `expo-iap`
 - **DonationService.ts** — One-time donation tiers (coffee, meal, generous, custom)
 - **AdService.ts** — Rewarded halal-only ads for temporary 24h premium access
 

@@ -1,9 +1,8 @@
-import StorageService from '../services/StorageService';
 import { UserSettings } from '../types';
 
 /**
- * Unified settings sync — writes to both MMKV (StorageService) and Zustand store
- * with deep merge for nested objects.
+ * Unified settings sync — delegates to Zustand's updateUserSettings which
+ * performs a deep merge and writes through to StorageService automatically.
  *
  * Usage:
  *   const { updateUserSettings } = useStore();
@@ -13,8 +12,7 @@ export function syncUserSettings(
   updates: Partial<UserSettings>,
   zustandUpdate: (updates: Partial<UserSettings>) => void
 ): void {
-  // Both StorageService.updateUserSettings and Zustand's updateUserSettings
-  // now perform deep merges (fixed in Phase 1), so we just call both.
-  StorageService.updateUserSettings(updates);
+  // Zustand's updateUserSettings does deep merge + write-through to StorageService.
+  // No need to call StorageService directly (its updateUserSettings is now private).
   zustandUpdate(updates);
 }

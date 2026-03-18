@@ -1,12 +1,15 @@
 // src/providers/NavigationProvider.tsx
 import React, { createRef, useCallback, useEffect, useMemo, useRef } from 'react';
 import { Linking } from 'react-native';
-import { NavigationContainer, NavigationContainerRef, DefaultTheme } from '@react-navigation/native';
+import { NavigationContainer, NavigationContainerRef, DefaultTheme, ParamListBase } from '@react-navigation/native';
 import { useTheme } from './ThemeProvider';
 import NotificationService from '../services/NotificationService';
 import StorageService from '../services/StorageService';
 import ReminderStateService from '../services/ReminderStateService';
 import { PrayerName, PrayerRecord } from '../types';
+
+const VALID_PRAYER_NAMES = new Set<string>(['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha']);
+const VALID_DEEP_LINK_ACTIONS = new Set<string>(['prepare', 'prayed']);
 import { useStore } from '../store/useStore';
 import { getLocalDateKey } from '../utils/dateHelpers';
 import WidgetService from '../services/WidgetService';
@@ -15,7 +18,7 @@ import PerformanceService from '../services/PerformanceService';
 import logger from '../utils/logger';
 
 // Create navigation reference
-export const navigationRef = createRef<NavigationContainerRef<any>>();
+export const navigationRef = createRef<NavigationContainerRef<ParamListBase>>();
 
 interface NavigationProviderProps {
   children: React.ReactNode;
@@ -116,19 +119,27 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
       }
     };
 
-    // Register the handler with NotificationService
     NotificationService.registerNavigationHandler(handleNotificationNavigation);
-    logger.log("Navigation handler registered");
 
     // Deep-link handler for Live Activity actions (sukoon://prepare?prayer=X, sukoon://prayed?prayer=X)
     const handleDeepLink = (event: { url: string }) => {
       try {
         const url = new URL(event.url);
         if (url.protocol !== 'sukoon:') return;
-        const prayer = url.searchParams.get('prayer') as PrayerName | null;
-        if (!prayer) return;
 
-        const action = url.hostname; // 'prepare' or 'prayed'
+        const action = url.hostname;
+        if (!VALID_DEEP_LINK_ACTIONS.has(action)) {
+          logger.warn('Unknown deep link action:', action);
+          return;
+        }
+
+        const prayerParam = url.searchParams.get('prayer');
+        if (!prayerParam || !VALID_PRAYER_NAMES.has(prayerParam)) {
+          logger.warn('Invalid prayer name in deep link:', prayerParam);
+          return;
+        }
+        const prayer = prayerParam as PrayerName;
+
         if (action === 'prepare') {
           handleNotificationNavigation(prayer, 'prepare');
         } else if (action === 'prayed') {
@@ -147,6 +158,7 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
     });
 
     return () => {
+      NotificationService.registerNavigationHandler(null);
       linkingSub.remove();
     };
   }, []);
@@ -157,6 +169,9 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
     if (currentRoute?.name) {
       AnalyticsService.logScreenView(currentRoute.name);
     }
+    NotificationService.consumeInitialNotificationResponse().catch((error) => {
+      logger.warn('Failed to consume initial notification response:', error);
+    });
   }, []);
 
   const onNavigationStateChange = useCallback(async () => {

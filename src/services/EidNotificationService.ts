@@ -9,7 +9,6 @@ import {
   getCachedHijriDate,
   isRamadan,
   getRamadanDay,
-  isTashreeqDays,
 } from '../utils/ramadan';
 import StorageService from './StorageService';
 import logger from '../utils/logger';

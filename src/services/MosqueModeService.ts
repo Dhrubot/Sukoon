@@ -6,8 +6,9 @@ import { format, addMinutes } from 'date-fns';
 import StorageService from './StorageService';
 import RingerControlService from './RingerControlService';
 import type { RingerMode } from './RingerControlService';
-import { PrayerName, PrayerTime } from '../types';
+import type { MosqueModeSettings, PrayerName, PrayerTime } from '../types';
 import logger from '../utils/logger';
+import { mosqueModePlatformUi } from '../utils/mosqueModePlatform';
 
 // Storage keys for mosque mode state
 const STORAGE_KEYS = {
@@ -15,6 +16,13 @@ const STORAGE_KEYS = {
   ACTIVE_MOSQUE_MODE: 'mosque_mode_active',
   LAST_MOSQUE_PRAYER: 'mosque_mode_last_prayer',
 };
+
+interface MosqueModeNotificationData {
+  type?: string;
+  mode?: RingerMode;
+  previousMode?: RingerMode;
+  prayer?: PrayerName;
+}
 
 class MosqueModeService {
   private async isIosBudgetExhausted(): Promise<boolean> {
@@ -102,7 +110,7 @@ class MosqueModeService {
 
       // Platform-specific implementation
       if (Platform.OS === 'android') {
-        await this.scheduleAndroidSilentMode(prayer, iqamahTime, restoreTime, settings);
+        await this.scheduleAndroidSilentMode(prayer, iqamahTime, restoreTime, settings.mosqueMode);
       } else if (Platform.OS === 'ios') {
         await this.scheduleIOSReminder(prayer, iqamahTime);
       }
@@ -183,7 +191,7 @@ class MosqueModeService {
     prayer: PrayerTime,
     iqamahTime: Date,
     restoreTime: Date,
-    settings: any
+    settings: MosqueModeSettings
   ): Promise<void> {
     // Save current ringer mode so we can restore it later
     const currentMode = await RingerControlService.getRingerMode();
@@ -191,12 +199,12 @@ class MosqueModeService {
       StorageService.setValue(STORAGE_KEYS.PREVIOUS_RINGER_MODE, currentMode);
     }
 
-    const targetMode: RingerMode = settings.mosqueMode.useVibrateInsteadOfSilent ? 'VIBRATE' : 'SILENT';
+    const targetMode: RingerMode = settings.useVibrateInsteadOfSilent ? 'VIBRATE' : 'SILENT';
     const restoreMode: RingerMode = (currentMode || 'NORMAL') as RingerMode;
     const requestCodeBase = this.getRequestCodeBase(prayer.name, iqamahTime);
 
     const enableAtMs = iqamahTime.getTime();
-    const restoreAtMs = settings.mosqueMode.autoRestore ? restoreTime.getTime() : 0;
+    const restoreAtMs = settings.autoRestore ? restoreTime.getTime() : 0;
 
     const scheduled = await RingerControlService.scheduleMosqueMode(
       enableAtMs,
@@ -243,7 +251,7 @@ class MosqueModeService {
       identifier: enableId,
     });
 
-    if (settings.mosqueMode.autoRestore) {
+    if (settings.autoRestore) {
       const restoreId = `mosque-restore-${prayer.name}-${format(iqamahTime, 'yyyy-MM-dd')}`;
 
       try {
@@ -301,7 +309,7 @@ class MosqueModeService {
       await Notifications.scheduleNotificationAsync({
         content: {
           title: `${prayer.name} Iqamah in 2 minutes`,
-          body: 'Silence your phone — swipe down from top-right to enable Do Not Disturb.',
+          body: mosqueModePlatformUi.iosReminderBody,
           data: {
             type: 'mosque_mode_reminder',
             prayer: prayer.name,
@@ -327,7 +335,7 @@ class MosqueModeService {
       await Notifications.scheduleNotificationAsync({
         content: {
           title: `${prayer.name} Iqamah Now`,
-          body: 'Please silence your phone for prayer.',
+          body: mosqueModePlatformUi.iosIqamahBody,
           data: {
             type: 'mosque_mode_iqamah',
             prayer: prayer.name,
@@ -347,7 +355,7 @@ class MosqueModeService {
   /**
    * Handle notification response (when user taps on mosque mode notification)
    */
-  async handleNotificationResponse(data: any): Promise<void> {
+  async handleNotificationResponse(data: MosqueModeNotificationData): Promise<void> {
     try {
       const { type, mode, previousMode, prayer } = data;
 
@@ -452,7 +460,7 @@ class MosqueModeService {
       await Notifications.scheduleNotificationAsync({
         content: {
           title: `${prayer.name} Iqamah in ${minsUntilIqamah} min`,
-          body: 'Heading to the mosque? Tap to enable silent mode.',
+          body: mosqueModePlatformUi.promptNotificationBody,
           data: {
             type: 'mosque_mode_prompt',
             prayer: prayer.name,
@@ -485,7 +493,7 @@ class MosqueModeService {
 
       if (Platform.OS === 'android') {
         const restoreTime = addMinutes(iqamahTime, settings.mosqueMode.silentDuration);
-        await this.scheduleAndroidSilentMode(prayer, iqamahTime, restoreTime, settings);
+        await this.scheduleAndroidSilentMode(prayer, iqamahTime, restoreTime, settings.mosqueMode);
       } else if (Platform.OS === 'ios') {
         await this.scheduleIOSReminder(prayer, iqamahTime);
       }

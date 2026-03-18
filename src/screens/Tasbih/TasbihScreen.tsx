@@ -17,6 +17,7 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
+import { withAlpha } from '../../utils/color';
 
 interface TasbihPreset {
   id: string;
@@ -83,7 +84,7 @@ const TARGET_OPTIONS = [33, 99, 100, 500, 1000];
 const TasbihScreen: React.FC = () => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
-  const navigation = useNavigation();
+  useNavigation();
 
   const [selectedPreset, setSelectedPreset] = useState<TasbihPreset>(TASBIH_PRESETS[0]);
   const [target, setTarget] = useState(TASBIH_PRESETS[0].defaultTarget);
@@ -228,7 +229,7 @@ const TasbihScreen: React.FC = () => {
                 height: `${progress * 100}%`,
                 backgroundColor: isComplete
                   ? theme.colors.primary.DEFAULT
-                  : theme.colors.primary.DEFAULT + '40',
+                  : withAlpha(theme.colors.primary.DEFAULT, 0.25),
               },
             ]}
           />

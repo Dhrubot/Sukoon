@@ -9,7 +9,6 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
-import { useTheme } from '../../../providers/ThemeProvider';
 import { useThemedStyles } from '../../../hooks/useThemedStyles';
 import { AppTheme } from '../../../theme';
 import { getCachedHijriDate, getRawCachedHijriDate } from '../../../utils/ramadan';
@@ -27,7 +26,6 @@ export const HijriAdjustmentModal: React.FC<HijriAdjustmentModalProps> = ({
   currentAdjustment,
   onAdjustmentChange,
 }) => {
-  const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
 
   const rawHijri = getRawCachedHijriDate();

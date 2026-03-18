@@ -16,7 +16,7 @@ import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import { VERSES } from '../../constants';
-import { HADITH_COLLECTION, Hadith } from '../../constants/hadithCollection';
+import { HADITH_COLLECTION } from '../../constants/hadithCollection';
 import { isRamadan } from '../../utils/ramadan';
 import logger from '../../utils/logger';
 
@@ -49,6 +49,7 @@ const QuranIcon: React.FC<{ color: string; size: number }> = ({ color, size }) =
 );
 
 const verses = VERSES;
+type VerseEntry = (typeof verses)[number];
 
 interface DailyContent {
   arabic: string;
@@ -77,7 +78,6 @@ const DailyVerse = forwardRef<DailyVerseRef, DailyVerseProps>(({ modalOnly }, re
     reference: verses[0].reference,
     isHadith: false,
   });
-  const [showTranslation, setShowTranslation] = useState(true);
   const [sheetVisible, setSheetVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
@@ -127,7 +127,7 @@ const DailyVerse = forwardRef<DailyVerseRef, DailyVerseProps>(({ modalOnly }, re
 
     // During Ramadan, bias toward Ramadan-themed verses (always Quran)
     if (isRamadan()) {
-      const ramadanVerses = verses.filter((v: any) => v.theme === 'ramadan');
+      const ramadanVerses = verses.filter((v: VerseEntry) => v.theme === 'ramadan');
       if (ramadanVerses.length > 0) {
         const idx = dayOfYear % ramadanVerses.length;
         const v = ramadanVerses[idx];
@@ -149,7 +149,6 @@ const DailyVerse = forwardRef<DailyVerseRef, DailyVerseProps>(({ modalOnly }, re
   }, []);
 
   const handleShare = async () => {
-    const label = content.isHadith ? 'Hadith' : 'Verse';
     const narratorLine = content.narrator ? `\nNarrated by ${content.narrator}` : '';
     try {
       await Share.share({
@@ -324,7 +323,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   title: {
     fontSize: theme.typography.fontSize['2xl'],
     fontFamily: theme.typography.fontFamily.headingMedium,
-    color: theme.colors.text.primary,
+    color: theme.colors.text.secondary,
   },
   shareButton: {
     fontSize: theme.typography.fontSize.md,

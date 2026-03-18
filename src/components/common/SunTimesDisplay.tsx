@@ -2,7 +2,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { format } from 'date-fns';
-import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import { Icon } from './Icon';
@@ -17,7 +16,6 @@ export const SunTimesDisplay: React.FC<SunTimesDisplayProps> = ({
   sunrise, 
   sunset 
 }) => {
-  const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
 
   if (!sunrise || !sunset) return null;
@@ -71,13 +69,14 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   label: {
     fontSize: theme.typography.fontSize.sm,
-    fontFamily: theme.typography.fontFamily.bodyMedium,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
   },
   time: {
-    fontSize: theme.typography.fontSize.lg,
-    fontFamily: theme.typography.fontFamily.bodyBold,
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.primary,
+    fontVariant: ['tabular-nums'],
   },
 });
 

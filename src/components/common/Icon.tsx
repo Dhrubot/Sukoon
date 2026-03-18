@@ -1,13 +1,18 @@
 // src/components/common/Icon.tsx
 import React from 'react';
-import { Image, ImageSourcePropType, StyleSheet, View } from 'react-native';
+import { Image, ImageSourcePropType, ImageStyle, StyleProp, StyleSheet, View, ViewStyle } from 'react-native';
 import { SvgProps } from 'react-native-svg';
 
+type ColorOverrideSvgProps = SvgProps & {
+  fillColor?: string;
+  strokeColor?: string;
+};
+
 interface IconProps {
-  source: ImageSourcePropType | React.FC<SvgProps>;
+  source: ImageSourcePropType | React.FC<ColorOverrideSvgProps>;
   size?: number;
   color?: string;
-  style?: any;
+  style?: StyleProp<ViewStyle | ImageStyle>;
 }
 
 /**
@@ -24,7 +29,7 @@ export const Icon: React.FC<IconProps> = ({
 }) => {
   // Check if source is a React component (SVG)
   if (typeof source === 'function') {
-    const SvgComponent = source as React.FC<SvgProps>;
+    const SvgComponent = source as React.FC<ColorOverrideSvgProps>;
     return (
       <View style={[{ width: size, height: size }, style]}>
         <SvgComponent 
@@ -33,7 +38,6 @@ export const Icon: React.FC<IconProps> = ({
           fill={color}
           stroke={color}
           color={color}
-          // @ts-ignore - These props override hardcoded SVG colors
           fillColor={color}
           strokeColor={color}
         />
@@ -47,7 +51,8 @@ export const Icon: React.FC<IconProps> = ({
       source={source as ImageSourcePropType}
       style={[
         styles.image,
-        { width: size, height: size, tintColor: color },
+        { width: size, height: size },
+        color ? { tintColor: color } : null,
         style
       ]}
       resizeMode="contain"

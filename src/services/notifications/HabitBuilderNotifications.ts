@@ -63,7 +63,7 @@ export function getTier2Messages(urgency: 'first' | 'middle' | 'final'): string[
 }
 
 /**
- * TIER 2: Schedule persistent "Have you prayed?" reminders.
+ * Schedule follow-up prayer check-ins.
  */
 export async function scheduleTier2PersistentReminders(
   prayer: PrayerTime,
@@ -120,7 +120,7 @@ export async function scheduleTier2PersistentReminders(
 
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: `${prayerDisplayName} Prayer`,
+        title: `${prayerDisplayName} prayer reminder`,
         body: message,
         data: {
           prayerId,
@@ -150,7 +150,7 @@ export async function scheduleTier2PersistentReminders(
 }
 
 /**
- * TIER 3: Schedule grace period warning before next prayer.
+ * Schedule a final prayer-window reminder before the next prayer.
  */
 export async function scheduleTier3GracePeriodWarning(
   prayer: PrayerTime,
@@ -196,8 +196,8 @@ export async function scheduleTier3GracePeriodWarning(
 
   await Notifications.scheduleNotificationAsync({
     content: {
-      title: `⚠️ ${prayerDisplayName} Grace Period Ending`,
-      body: `${deadlineLabel} ${deadline && deadline < nextPrayer.time ? 'is' : 'prayer starts'} in ${minutesBeforeNext} minutes. Don't miss ${prayerDisplayName}!`,
+      title: `${prayerDisplayName} window ending soon`,
+      body: `${deadlineLabel} ${deadline && deadline < nextPrayer.time ? 'is' : 'begins'} in ${minutesBeforeNext} minutes. Return to ${prayerDisplayName} if you can.`,
       data: {
         prayerId,
         prayer: prayer.name,

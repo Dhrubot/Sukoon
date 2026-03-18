@@ -4,16 +4,10 @@
 // ║  TREE SKY — v4                                                 ║
 // ╠══════════════════════════════════════════════════════════════════╣
 // ║                                                                ║
-// ║  MOON: Unicode ☽ crescent matching hero StarField.             ║
+// ║  MOON: Unicode crescent matching hero StarField.               ║
 // ║                                                                ║
 // ║  RAMADAN GLOW: Multi-layer radial glow instead of flat circle. ║
-// ║  Three concentric layers with gaussian-like opacity falloff:   ║
-// ║    Inner:  r=14, opacity=0.30 (bright core)                    ║
-// ║    Middle: r=26, opacity=0.15 (warm spread)                    ║
-// ║    Outer:  r=40, opacity=0.06 (soft edge)                      ║
-// ║  This creates a natural light-diffusion effect like actual     ║
-// ║  moonlight glow through atmosphere.                            ║
-// ║                                                                ║
+// ║  Three concentric layers with gaussian-like opacity falloff.   ║
 // ╚══════════════════════════════════════════════════════════════════╝
 
 import React, { useEffect } from 'react';
@@ -42,8 +36,6 @@ interface TreeSkyProps {
   isRamadan?: boolean;
   moonHaloColor?: string;
 }
-
-// ─── Animated Star ─────────────────────────────────────────────────
 
 interface AnimatedStarProps {
   x: number;
@@ -117,15 +109,10 @@ const AnimatedStar: React.FC<AnimatedStarProps> = React.memo(
   },
 );
 
-// ─── Ramadan Moon Glow ─────────────────────────────────────────────
-// Multi-layer radial glow that simulates light diffusion.
-// Three concentric circles with decreasing opacity create a natural
-// "bloom" effect, like moonlight through thin clouds.
-
 const GLOW_LAYERS = [
-  { radius: 40, opacity: 0.06 },  // outer — barely there, atmospheric
-  { radius: 26, opacity: 0.15 },  // middle — warm spread
-  { radius: 14, opacity: 0.30 },  // inner — bright core around crescent
+  { radius: 40, opacity: 0.06 },
+  { radius: 26, opacity: 0.15 },
+  { radius: 14, opacity: 0.30 },
 ] as const;
 
 interface MoonGlowProps {
@@ -134,9 +121,9 @@ interface MoonGlowProps {
 
 const MoonGlow: React.FC<MoonGlowProps> = React.memo(({ color }) => (
   <View style={styles.glowContainer}>
-    {GLOW_LAYERS.map((layer, i) => (
+    {GLOW_LAYERS.map((layer, index) => (
       <View
-        key={`glow-${i}`}
+        key={`glow-${index}`}
         style={[
           styles.glowLayer,
           {
@@ -151,8 +138,6 @@ const MoonGlow: React.FC<MoonGlowProps> = React.memo(({ color }) => (
     ))}
   </View>
 ));
-
-// ─── Animated Crescent Moon ────────────────────────────────────────
 
 interface AnimatedMoonProps {
   color: string;
@@ -197,19 +182,12 @@ const AnimatedMoon: React.FC<AnimatedMoonProps> = React.memo(
 
     return (
       <Animated.View style={[styles.moonContainer, animatedStyle]}>
-        {/* Ramadan glow — multi-layer radial bloom */}
-        {showHalo && haloColor && (
-          <MoonGlow color={haloColor} />
-        )}
-
-        {/* Unicode crescent — matches hero StarField */}
+        {showHalo && haloColor && <MoonGlow color={haloColor} />}
         <Text style={[styles.crescentText, { color }]}>☽</Text>
       </Animated.View>
     );
   },
 );
-
-// ─── Main Component ────────────────────────────────────────────────
 
 const TreeSky: React.FC<TreeSkyProps> = ({
   theme,
@@ -225,9 +203,9 @@ const TreeSky: React.FC<TreeSkyProps> = ({
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
-      {allStars.map((star, i) => (
+      {allStars.map((star, index) => (
         <AnimatedStar
-          key={`star-${i}`}
+          key={`star-${index}`}
           x={star.x}
           y={star.y}
           size={star.size}
@@ -258,17 +236,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Glow container — centers all layers behind the crescent
   glowContainer: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Each glow layer is absolutely positioned and centered
   glowLayer: {
     position: 'absolute',
   },
-  // Unicode crescent
   crescentText: {
     fontSize: MOON.size,
     lineHeight: MOON.size + 4,

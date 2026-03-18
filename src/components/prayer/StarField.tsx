@@ -86,9 +86,10 @@ const AnimatedStar: React.FC<{ config: StarConfig }> = ({ config }) => {
 const CrescentMoon: React.FC = () => {
   const translateY = useRef(new Animated.Value(0)).current;
   const rotate = useRef(new Animated.Value(0)).current;
+  const moonLoopRef = useRef<Animated.CompositeAnimation | null>(null);
 
   useEffect(() => {
-    Animated.loop(
+    moonLoopRef.current = Animated.loop(
       Animated.sequence([
         Animated.parallel([
           Animated.timing(translateY, {
@@ -115,8 +116,14 @@ const CrescentMoon: React.FC = () => {
           }),
         ]),
       ])
-    ).start();
-  }, []);
+    );
+    moonLoopRef.current.start();
+
+    return () => {
+      moonLoopRef.current?.stop();
+      moonLoopRef.current = null;
+    };
+  }, [rotate, translateY]);
 
   const rotateInterp = rotate.interpolate({
     inputRange: [0, 1],

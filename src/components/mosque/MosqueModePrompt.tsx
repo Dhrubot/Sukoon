@@ -14,6 +14,7 @@ import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import { useMosqueMode } from '../../hooks/useMosqueMode';
 import { PrayerTime } from '../../types';
+import { mosqueModePlatformUi } from '../../utils/mosqueModePlatform';
 
 interface MosqueModePromptProps {
   visible: boolean;
@@ -49,7 +50,7 @@ export const MosqueModePrompt: React.FC<MosqueModePromptProps> = ({
           <View style={styles.header}>
             <Text style={styles.emoji}>🕌</Text>
             <Text style={[styles.title, { color: theme.colors.text.primary }]}>
-              Heading to the mosque?
+              Heading to the masjid?
             </Text>
           </View>
 
@@ -66,8 +67,8 @@ export const MosqueModePrompt: React.FC<MosqueModePromptProps> = ({
           {/* Description */}
           <Text style={[styles.description, { color: theme.colors.text.secondary }]}>
             {Platform.OS === 'android'
-              ? `Your phone will automatically go silent at iqamah time and restore after ${settings?.silentDuration ?? 10} minutes.`
-              : 'You will receive a reminder to enable Do Not Disturb at iqamah time.'}
+              ? `Sukoon will hold your phone in quiet at iqamah time and restore it after ${settings?.silentDuration ?? 10} minutes.`
+              : mosqueModePlatformUi.promptDescription}
           </Text>
 
           {/* Buttons */}
@@ -78,7 +79,7 @@ export const MosqueModePrompt: React.FC<MosqueModePromptProps> = ({
               activeOpacity={0.7}
             >
               <Text style={[styles.buttonText, styles.cancelText, { color: theme.colors.text.secondary }]}>
-                Not Today
+                Not this prayer
               </Text>
             </TouchableOpacity>
 
@@ -88,14 +89,14 @@ export const MosqueModePrompt: React.FC<MosqueModePromptProps> = ({
               activeOpacity={0.8}
             >
               <Text style={[styles.buttonText, styles.confirmText]}>
-                Yes, Enable
+                {mosqueModePlatformUi.promptConfirmText}
               </Text>
             </TouchableOpacity>
           </View>
 
           {/* Footer tip */}
           <Text style={[styles.footerText, { color: theme.colors.text.muted }]}>
-            You can disable this prompt in Settings
+            You can turn this prompt off in Settings
           </Text>
         </View>
       </View>

@@ -7,7 +7,6 @@ import {
   StyleSheet,
   Alert,
 } from 'react-native';
-import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import { useMosqueMode } from '../../hooks/useMosqueMode';
@@ -15,6 +14,7 @@ import { usePrayerTimes } from '../../providers/PrayerTimesProvider';
 import { PrayerName } from '../../types';
 import { FARD_PRAYER_NAMES_LIST } from '../../constants/prayerRegistry';
 import TimeInput, { formatTime } from '../common/TimeInput';
+import { mosqueModePlatformUi } from '../../utils/mosqueModePlatform';
 
 const PRAYER_NAMES = FARD_PRAYER_NAMES_LIST as unknown as PrayerName[];
 
@@ -24,7 +24,6 @@ const OFFSET_OPTIONS = [3, 5, 7, 10, 12, 15, 20, 25, 30];
 type InputMode = 'offset' | 'exact';
 
 export const IqamahTimeConfig: React.FC = () => {
-  const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const { settings, setIqamahOffset } = useMosqueMode();
   const { todayPrayerTimes } = usePrayerTimes();
@@ -139,8 +138,8 @@ export const IqamahTimeConfig: React.FC = () => {
         <Text style={styles.title}>Iqamah Times</Text>
         <Text style={styles.subtitle}>
           {inputMode === 'offset'
-            ? 'Set the Iqamah start time after Adhan'
-            : 'Set the exact Iqamah time for each prayer'}
+            ? mosqueModePlatformUi.iqamahSubtitleOffset
+            : mosqueModePlatformUi.iqamahSubtitleExact}
         </Text>
       </View>
 
@@ -185,12 +184,7 @@ export const IqamahTimeConfig: React.FC = () => {
         onPress={() => {
           Alert.alert(
             'ℹ️ About Iqamah Times',
-            'These times tell the app when your mosque actually starts the prayer.\n\n' +
-            'For example:\n' +
-            '• If Fajr adhan is 5:10 AM\n' +
-            '• And your mosque starts at 5:20 AM\n' +
-            '• Set the offset to 10 minutes\n\n' +
-            'Your phone will go silent at 5:20 AM when iqamah starts.',
+            mosqueModePlatformUi.iqamahHelpText,
             [{ text: 'Got it!' }]
           );
         }}

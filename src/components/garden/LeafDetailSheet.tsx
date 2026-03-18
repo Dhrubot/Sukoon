@@ -31,10 +31,6 @@ const MOOD_LABELS: Record<number, string> = {
   5: 'Deep khushoo',
 };
 
-const MOOD_ICONS: Record<number, string> = {
-  1: '😔', 2: '😐', 3: '😊', 4: '😇', 5: '🤲',
-};
-
 const LeafDetailSheet: React.FC<LeafDetailSheetProps> = ({ detail, onDismiss }) => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
@@ -103,23 +99,22 @@ const LeafDetailSheet: React.FC<LeafDetailSheetProps> = ({ detail, onDismiss }) 
 
           {/* Mood */}
           <View style={styles.moodRow}>
-            <Text style={styles.moodIcon}>{MOOD_ICONS[detail.mood] || '🤲'}</Text>
             <Text style={[styles.moodLabel, { color: theme.colors.text.secondary }]}>
-              {MOOD_LABELS[detail.mood] || 'Prayer'}
+              State: {MOOD_LABELS[detail.mood] || 'Prayer'}
             </Text>
           </View>
 
-          {/* Growth + text indicator */}
+          {/* Note indicator */}
           <View style={styles.metaRow}>
             <View style={[styles.metaChip, { backgroundColor: theme.colors.card.hover }]}>
               <Text style={[styles.metaText, { color: theme.colors.text.muted }]}>
-                {detail.growthStage === 'bloom' ? '✦ Bloom' : detail.growthStage === 'sprout' ? '🌿 Sprout' : '🌱 Seed'}
+                Private reflection
               </Text>
             </View>
             {detail.hasText && (
               <View style={[styles.metaChip, { backgroundColor: theme.colors.card.hover }]}>
                 <Text style={[styles.metaText, { color: theme.colors.text.muted }]}>
-                  📝 Reflection
+                  Written note
                 </Text>
               </View>
             )}
@@ -190,9 +185,6 @@ const createStyles = (theme: AppTheme) =>
       flexDirection: 'row',
       alignItems: 'center',
       gap: 6,
-    },
-    moodIcon: {
-      fontSize: 16,
     },
     moodLabel: {
       fontSize: theme.typography.fontSize.base,

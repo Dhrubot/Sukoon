@@ -58,7 +58,7 @@ const PrayerDotGrid: React.FC<PrayerDotGridProps> = ({ data, labels = DAY_LABELS
         })}
       </Svg>
       <View style={styles.labelRow}>
-        {labels.map((label, i) => (
+        {labels.map((label) => (
           <Text key={label} style={[styles.label, { color: theme.colors.text.muted, width: COL_WIDTH }]}>
             {label}
           </Text>

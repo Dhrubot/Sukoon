@@ -23,7 +23,7 @@ const OptionalPrayersSection: React.FC<OptionalPrayersSectionProps> = ({ onPrepa
     ? 'Eid Mubarak — may Allah accept your worship'
     : isRamadan()
       ? 'Blessed nights of Ramadan'
-      : 'Earn extra reward with voluntary prayers';
+      : 'A quiet space for Sunnah and voluntary prayer';
 
   return (
     <View style={styles.section}>
@@ -59,7 +59,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   sectionTitle: {
     fontSize: theme.typography.fontSize.xl,
     fontFamily: theme.typography.fontFamily.bodyMedium,
-    color: theme.colors.text.primary,
+    color: theme.colors.text.secondary,
     marginBottom: 4,
   },
   sectionSubtitle: {

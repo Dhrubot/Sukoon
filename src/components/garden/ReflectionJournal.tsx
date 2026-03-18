@@ -1,10 +1,6 @@
 // src/components/garden/ReflectionJournal.tsx
 //
-// Updated: Replaced emoji with prayer-colored dot + growth stage indicator.
-// Each entry now shows:
-//   [colored dot] Prayer Name · relative date
-//   Mood chip (seed/sprout/bloom with color)
-//   Reflection text or "Reflected ✓"
+// Private journal view for short prayer notes and mood check-ins.
 
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, ScrollView, SafeAreaView } from 'react-native';
@@ -12,6 +8,7 @@ import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import { ReflectionEntry } from '../../types/garden';
+import { withAlpha } from '../../utils/color';
 
 interface ReflectionJournalProps {
   reflections: ReflectionEntry[];
@@ -25,19 +22,6 @@ const MOOD_LABELS: Record<number, string> = {
   5: 'Deep khushoo',
 };
 
-const GROWTH_LABELS: Record<string, string> = {
-  seed: 'Seed',
-  sprout: 'Sprout',
-  bloom: 'Bloom',
-};
-
-/** Derive growth stage from mood (same logic as service) */
-const moodToStage = (mood: number): string => {
-  if (mood <= 2) return 'seed';
-  if (mood === 3) return 'sprout';
-  return 'bloom';
-};
-
 const PREVIEW_COUNT = 3;
 
 const ReflectionEntryCard: React.FC<{
@@ -49,8 +33,6 @@ const ReflectionEntryCard: React.FC<{
   const styles = useThemedStyles(createStyles);
   const prayerColorKey = entry.prayer.toLowerCase() as keyof typeof theme.colors.prayer;
   const accentColor = theme.colors.prayer?.[prayerColorKey] || theme.colors.primary.DEFAULT;
-  const stage = moodToStage(entry.mood);
-  const isBloom = stage === 'bloom';
 
   return (
     <View
@@ -75,50 +57,29 @@ const ReflectionEntryCard: React.FC<{
         </Text>
       </View>
 
-      {/* Mood + growth stage chips */}
+      {/* Mood + note chips */}
       <View style={styles.chipRow}>
         <View
           style={[
             styles.chip,
             {
-              backgroundColor: isBloom
-                ? theme.colors.garden.bloomGlow + '18'
-                : theme.colors.card.hover || accentColor + '12',
+              backgroundColor: theme.colors.card.hover || withAlpha(accentColor, 0.07),
             },
           ]}
         >
           <View
             style={[
               styles.chipDot,
-              {
-                backgroundColor: isBloom
-                  ? theme.colors.garden.bloomGlow
-                  : accentColor,
-              },
+              { backgroundColor: accentColor },
             ]}
           />
           <Text
             style={[
               styles.chipText,
-              {
-                color: isBloom
-                  ? theme.colors.garden.bloomGlow
-                  : theme.colors.text.secondary,
-              },
+              { color: theme.colors.text.secondary },
             ]}
           >
-            {MOOD_LABELS[entry.mood] || 'Reflected'}
-          </Text>
-        </View>
-
-        <View
-          style={[
-            styles.chip,
-            { backgroundColor: theme.colors.card.hover || accentColor + '08' },
-          ]}
-        >
-          <Text style={[styles.chipText, { color: theme.colors.text.muted }]}>
-            {isBloom ? '✦ ' : ''}{GROWTH_LABELS[stage] || 'Seed'}
+            {MOOD_LABELS[entry.mood] || 'Noted'}
           </Text>
         </View>
 
@@ -130,7 +91,7 @@ const ReflectionEntryCard: React.FC<{
             ]}
           >
             <Text style={[styles.chipText, { color: theme.colors.text.muted }]}>
-              📝
+              Written note
             </Text>
           </View>
         )}
@@ -146,7 +107,7 @@ const ReflectionEntryCard: React.FC<{
         </Text>
       ) : (
         <Text style={[styles.entryFallback, { color: theme.colors.text.muted }]}>
-          Reflected ✓
+          Prayer recorded
         </Text>
       )}
     </View>
@@ -166,7 +127,7 @@ const ReflectionJournal: React.FC<ReflectionJournalProps> = ({ reflections }) =>
   return (
     <View style={styles.container}>
       <Text style={[styles.title, { color: theme.colors.text.primary }]}>
-        Recent Reflections
+        Recent Notes
       </Text>
 
       {previews.map((entry, index) => (
@@ -180,7 +141,7 @@ const ReflectionJournal: React.FC<ReflectionJournalProps> = ({ reflections }) =>
           activeOpacity={0.7}
         >
           <Text style={[styles.viewAllText, { color: theme.colors.interactive.active }]}>
-            View All {reflections.length} Reflections
+            Open full journal
           </Text>
         </TouchableOpacity>
       )}
@@ -195,7 +156,7 @@ const ReflectionJournal: React.FC<ReflectionJournalProps> = ({ reflections }) =>
         <SafeAreaView style={[styles.sheetContainer, { backgroundColor: theme.colors.background.primary }]}>
           <View style={styles.sheetHeader}>
             <Text style={[styles.sheetTitle, { color: theme.colors.text.primary }]}>
-              Reflection Journal
+              Private Journal
             </Text>
             <TouchableOpacity onPress={() => setShowSheet(false)} hitSlop={12}>
               <Text style={[styles.sheetClose, { color: theme.colors.text.muted }]}>✕</Text>

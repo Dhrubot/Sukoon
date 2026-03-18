@@ -136,7 +136,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flex: 1,
   },
   locationText: {
-    fontSize: theme.typography.fontSize.lg,
+    fontSize: theme.typography.fontSize.md,
     color: theme.colors.settings.labelPrimary,
     fontFamily: theme.typography.fontFamily.bodyMedium,
   },

@@ -5,7 +5,6 @@ const {
   withEntitlementsPlist,
   withXcodeProject,
   withDangerousMod,
-  withInfoPlist,
 } = require('@expo/config-plugins');
 const path = require('path');
 const fs = require('fs');
@@ -361,30 +360,30 @@ struct MediumWidgetView: View {
             // Verse (from RN data, with fallback)
             VStack(spacing: 3) {
                 if !data.dailyVerse.isEmpty {
-                    Text("\\u{201C}\(data.dailyVerse)\\u{201D}")
+                    Text("“\\(data.dailyVerse)”")
                         .font(.system(size: 12, weight: .regular))
                         .foregroundColor(.secondary)
                         .lineLimit(2)
                         .multilineTextAlignment(.center)
 
                     HStack(spacing: 4) {
-                        Text("\u2014 \(data.dailyVerseRef)")
+                        Text("— \\(data.dailyVerseRef)")
                             .font(.system(size: 10, weight: .medium))
                             .foregroundColor(Color.secondary.opacity(0.6))
                         if !data.hijriDate.isEmpty {
-                            Text("\u00B7 \(data.hijriDate)")
+                            Text("· \\(data.hijriDate)")
                                 .font(.system(size: 10, weight: .medium))
                                 .foregroundColor(Color.secondary.opacity(0.6))
                         }
                     }
                 } else {
-                    Text("\\u{201C}In the remembrance of Allah do hearts find rest\\u{201D}")
+                    Text("“In the remembrance of Allah do hearts find rest”")
                         .font(.system(size: 12, weight: .regular))
                         .foregroundColor(.secondary)
                         .lineLimit(2)
                         .multilineTextAlignment(.center)
 
-                    Text("\u2014 13:28")
+                    Text("— 13:28")
                         .font(.system(size: 10, weight: .medium))
                         .foregroundColor(Color.secondary.opacity(0.6))
                 }
@@ -419,7 +418,7 @@ struct AccessoryInlineView: View {
     var body: some View {
         HStack(spacing: 4) {
             Image(systemName: "moon.stars.fill")
-            Text(data.nextPrayerName.isEmpty ? "\u2014" : "\(data.nextPrayerName) \u00B7 \(DateHelper.formatTime(data.nextPrayerTime))")
+            Text(data.nextPrayerName.isEmpty ? "—" : "\\(data.nextPrayerName) · \\(DateHelper.formatTime(data.nextPrayerTime))")
         }
     }
 }
@@ -438,7 +437,7 @@ struct AccessoryCircularView: View {
         Gauge(value: progress) {
             Image(systemName: "moon.stars.fill")
         } currentValueLabel: {
-            Text("\(data.completedCount)")
+            Text("\\(data.completedCount)")
                 .font(.system(size: 20, weight: .bold, design: .rounded))
         }
         .gaugeStyle(.accessoryCircular)

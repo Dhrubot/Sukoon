@@ -1,219 +1,256 @@
-// src/components/LocationModal.tsx
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
-  Modal,
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
+  Animated,
+  Dimensions,
   KeyboardAvoidingView,
+  Modal,
   Platform,
   StyleSheet,
+  Text,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  View,
 } from 'react-native';
+
 import { useLocationSetup } from '../hooks/useLocationSetup';
-import { useTheme } from '../providers/ThemeProvider';
 import { useThemedStyles } from '../hooks/useThemedStyles';
+import { Location } from '../types';
 import { AppTheme } from '../theme';
+import { StructuredLocationSearch } from './location/StructuredLocationSearch';
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface LocationModalProps {
   visible: boolean;
   onClose: () => void;
+  title?: string;
+  subtitle?: string;
+  submitLabel?: string;
+  dismissLabel?: string;
+  onLocationResolved?: (location: Location) => void | Promise<void>;
 }
 
-export const LocationModal: React.FC<LocationModalProps> = ({ visible, onClose }) => {
-  const { theme } = useTheme();
+export const LocationModal: React.FC<LocationModalProps> = ({
+  visible,
+  onClose,
+  title = 'Set Your Location',
+  subtitle = 'Select your country, then choose your city for accurate prayer times.',
+  submitLabel = 'Set Location',
+  dismissLabel = 'Cancel',
+  onLocationResolved,
+}) => {
   const styles = useThemedStyles(createStyles);
+  const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
+  const backdropAnim = useRef(new Animated.Value(0)).current;
   const {
-    formData,
     error,
     isLoading,
     handleManualLocation,
-    updateFormData,
+    updateCity,
+    updateCountry,
+    selectCountry,
+    selectSearchResult,
     resetForm,
+    structuredSearch,
   } = useLocationSetup();
 
-  const handleSubmit = async () => {
-    const success = await handleManualLocation();
-    if (success) {
-      resetForm();
-      onClose();
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          friction: 8,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+        Animated.timing(backdropAnim, {
+          toValue: 1,
+          duration: 250,
+          useNativeDriver: true,
+        }),
+      ]).start();
+      return;
     }
-  };
 
-  const handleClose = () => {
+    Animated.parallel([
+      Animated.timing(slideAnim, {
+        toValue: SCREEN_HEIGHT,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(backdropAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      resetForm();
+    });
+  }, [visible]);
+
+  const handleDismiss = () => {
     resetForm();
     onClose();
+  };
+
+  const handleSubmit = async () => {
+    const location = await handleManualLocation();
+    if (!location) return;
+
+    if (onLocationResolved) {
+      await onLocationResolved(location);
+    }
+
+    handleDismiss();
   };
 
   return (
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
-      onRequestClose={handleClose}
+      animationType="none"
+      statusBarTranslucent
+      onRequestClose={handleDismiss}
     >
       <View style={styles.modalContainer}>
+        <TouchableWithoutFeedback onPress={handleDismiss}>
+          <Animated.View style={[styles.backdrop, { opacity: backdropAnim }]} />
+        </TouchableWithoutFeedback>
+
         <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           style={styles.keyboardView}
         >
-          <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Set Your Location</Text>
-            <Text style={styles.modalSubtitle}>
-              We need your location to calculate accurate prayer times
-            </Text>
+          <Animated.View
+            style={[
+              styles.sheet,
+              { transform: [{ translateY: slideAnim }] },
+            ]}
+          >
+            <View style={styles.handle} />
+            <Text style={styles.title}>{title}</Text>
+            <Text style={styles.subtitle}>{subtitle}</Text>
 
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>City</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your city"
-                placeholderTextColor={theme.colors.text.muted}
-                selectionColor={theme.colors.primary.DEFAULT}
-                value={formData.city}
-                onChangeText={(text) => updateFormData('city', text)}
-                autoCapitalize="words"
-              />
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Country</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter your country"
-                placeholderTextColor={theme.colors.text.muted}
-                selectionColor={theme.colors.primary.DEFAULT}
-                value={formData.country}
-                onChangeText={(text) => updateFormData('country', text)}
-                autoCapitalize="words"
-              />
-            </View>
-
-            <View style={styles.inputContainer}>
-              <Text style={styles.label}>Postal Code (Optional)</Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Enter postal code"
-                placeholderTextColor={theme.colors.text.muted}
-                selectionColor={theme.colors.primary.DEFAULT}
-                value={formData.postalCode}
-                onChangeText={(text) => updateFormData('postalCode', text)}
-                autoCapitalize="characters"
-              />
-            </View>
+            <StructuredLocationSearch
+              cityQuery={structuredSearch.cityQuery}
+              countryQuery={structuredSearch.countryQuery}
+              countryOptions={structuredSearch.countryOptions}
+              selectedCountry={structuredSearch.selectedCountry}
+              searchResults={structuredSearch.searchResults}
+              suggestedResults={structuredSearch.suggestedResults}
+              selectedSearchResult={structuredSearch.selectedSearchResult}
+              isSearching={structuredSearch.isSearching}
+              searchError={structuredSearch.searchError}
+              disabled={isLoading}
+              onCityQueryChange={updateCity}
+              onCountryQueryChange={updateCountry}
+              onCountrySelect={selectCountry}
+              onSearchResultSelect={selectSearchResult}
+            />
 
             {error ? (
               <Text style={styles.errorText}>{error}</Text>
             ) : null}
 
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity
-                style={[styles.button, styles.submitButton]}
-                onPress={handleSubmit}
-                disabled={isLoading}
-              >
-                <Text style={styles.buttonText}>
-                  {isLoading ? 'Setting Location...' : 'Set Location'}
-                </Text>
-              </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+              style={[
+                styles.primaryButton,
+                (isLoading || !structuredSearch.selectedSearchResult) && styles.primaryButtonDisabled,
+              ]}
+              onPress={handleSubmit}
+              disabled={isLoading || !structuredSearch.selectedSearchResult}
+              activeOpacity={0.85}
+            >
+              <Text style={styles.primaryButtonText}>
+                {isLoading ? 'Setting Location...' : submitLabel}
+              </Text>
+            </TouchableOpacity>
 
-            <Text style={styles.noteText}>
-              Note: Enter either a city or postal code. Country is required for better accuracy.
-            </Text>
-          </View>
+            <TouchableOpacity
+              style={styles.secondaryButton}
+              onPress={handleDismiss}
+              disabled={isLoading}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.secondaryButtonText}>{dismissLabel}</Text>
+            </TouchableOpacity>
+          </Animated.View>
         </KeyboardAvoidingView>
       </View>
     </Modal>
   );
 };
 
-const createStyles = (theme: AppTheme) => StyleSheet.create({
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: theme.colors.settings.modalOverlay,
-    padding: theme.spacing.xl,
-  },
-  keyboardView: {
-    width: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalContent: {
-    backgroundColor: theme.colors.card.background,
-    borderRadius: theme.borderRadius.md,
-    padding: theme.spacing.xl,
-    width: '90%',
-    maxWidth: 500,
-    borderWidth: 1,
-    borderColor: theme.colors.border.primary,
-    shadowColor: theme.colors.achievement.shadow,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.4,
-    shadowRadius: 3.84,
-    elevation: 5,
-  },
-  modalTitle: {
-    fontSize: theme.typography.fontSize['2xl'],
-    fontFamily: theme.typography.fontFamily.heading,
-    marginBottom: theme.spacing.sm,
-    color: theme.colors.primary.DEFAULT,
-    textAlign: 'center',
-  },
-  modalSubtitle: {
-    fontSize: theme.typography.fontSize.md,
-    color: theme.colors.text.secondary,
-    marginBottom: theme.spacing.xl,
-    textAlign: 'center',
-  },
-  inputContainer: {
-    marginBottom: theme.spacing.lg,
-  },
-  label: {
-    fontSize: theme.typography.fontSize.lg,
-    marginBottom: theme.spacing.xs,
-    color: theme.colors.text.primary,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: theme.colors.border.primary,
-    borderRadius: theme.borderRadius.sm,
-    padding: theme.spacing.sm,
-    fontSize: theme.typography.fontSize.lg,
-    backgroundColor: theme.colors.background.secondary,
-    color: theme.colors.text.primary,
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: theme.spacing.sm,
-  },
-  button: {
-    borderRadius: theme.borderRadius.sm,
-    padding: theme.spacing.md,
-    minWidth: 120,
-    alignItems: 'center',
-  },
-  submitButton: {
-    backgroundColor: theme.colors.primary.DEFAULT,
-  },
-  buttonText: {
-    color: theme.colors.primary.contrast,
-    fontSize: theme.typography.fontSize.lg,
-    fontFamily: theme.typography.fontFamily.bodySemibold,
-  },
-  errorText: {
-    color: theme.colors.status.error,
-    marginBottom: theme.spacing.sm,
-    textAlign: 'center',
-  },
-  noteText: {
-    fontSize: theme.typography.fontSize.sm,
-    color: theme.colors.text.muted,
-    marginTop: theme.spacing.lg,
-    textAlign: 'center',
-    fontStyle: 'italic',
-  },
-});
+const createStyles = (theme: AppTheme) =>
+  StyleSheet.create({
+    modalContainer: {
+      flex: 1,
+      justifyContent: 'flex-end',
+    },
+    backdrop: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: theme.colors.background.overlay,
+    },
+    keyboardView: {
+      justifyContent: 'flex-end',
+    },
+    sheet: {
+      backgroundColor: theme.colors.card.background,
+      borderTopLeftRadius: theme.borderRadius.xl,
+      borderTopRightRadius: theme.borderRadius.xl,
+      paddingHorizontal: theme.spacing.xl,
+      paddingTop: theme.spacing.md,
+      paddingBottom: theme.spacing.xl,
+      gap: theme.spacing.md,
+    },
+    handle: {
+      width: 40,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: theme.colors.border.primary,
+      alignSelf: 'center',
+    },
+    title: {
+      fontSize: theme.typography.fontSize['2xl'],
+      fontFamily: theme.typography.fontFamily.heading,
+      color: theme.colors.text.primary,
+      textAlign: 'center',
+    },
+    subtitle: {
+      fontSize: theme.typography.fontSize.base,
+      fontFamily: theme.typography.fontFamily.body,
+      color: theme.colors.text.secondary,
+      textAlign: 'center',
+      lineHeight: 22,
+    },
+    errorText: {
+      color: theme.colors.status.error,
+      textAlign: 'center',
+      fontSize: theme.typography.fontSize.sm,
+      fontFamily: theme.typography.fontFamily.body,
+    },
+    primaryButton: {
+      backgroundColor: theme.colors.primary.DEFAULT,
+      borderRadius: 16,
+      paddingVertical: 16,
+      alignItems: 'center',
+      marginTop: theme.spacing.xs,
+    },
+    primaryButtonDisabled: {
+      opacity: 0.65,
+    },
+    primaryButtonText: {
+      color: theme.colors.primary.contrast,
+      fontSize: theme.typography.fontSize.lg,
+      fontFamily: theme.typography.fontFamily.bodySemibold,
+    },
+    secondaryButton: {
+      paddingVertical: theme.spacing.sm,
+      alignItems: 'center',
+    },
+    secondaryButtonText: {
+      color: theme.colors.text.muted,
+      fontSize: theme.typography.fontSize.base,
+      fontFamily: theme.typography.fontFamily.body,
+    },
+  });

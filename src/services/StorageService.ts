@@ -5,8 +5,6 @@ import {
   MindfulnessSession,
   DailyStats,
   Achievement,
-  Location,
-  CalculationMethod,
   SubscriptionPlan,
   PremiumFeatures,
   TemporaryPremium,
@@ -21,6 +19,9 @@ import { PRAYER_NAMES as PrayerName } from "../constants";
 import AnalyticsService from './AnalyticsService';
 import { getLocalDateKey } from '../utils/dateHelpers';
 import logger from '../utils/logger';
+import { ONE_DAY_MS } from '../constants/time';
+
+type FamilyData = Record<string, unknown>;
 
 class StorageService {
   // Encrypted storage for PII: user_settings, user_id, subscription,
@@ -32,6 +33,7 @@ class StorageService {
   private _cachedUserSettings: UserSettings | null = null;
   private _splitMigrationDone = false;
   private _initialized = false;
+  private _pendingWrites: Array<{ key: string; value: string }> = [];
 
   constructor() {
     // Unencrypted public storage is safe to create immediately (no key needed)
@@ -51,13 +53,40 @@ class StorageService {
     if (this._initialized) return;
     this.storage = createStorage({ id: "prayer-buddy-storage" });
     this._initialized = true;
+
+    // Replay any writes that arrived before MMKV was ready
+    if (this._pendingWrites.length > 0) {
+      logger.log(`🔄 Replaying ${this._pendingWrites.length} queued write(s) to MMKV`);
+      for (const { key, value } of this._pendingWrites) {
+        this.storage.set(key, value);
+      }
+      this._pendingWrites = [];
+    }
+
+    // Diagnostic: check if we can actually read existing data
+    const keyCount = this.storage.getAllKeys().length;
+    const hasSettings = this.storage.getString('user_settings') !== undefined;
+    logger.log(`🔍 [InitDiag] Encrypted storage: ${keyCount} key(s), user_settings=${hasSettings ? 'FOUND' : 'MISSING'}`);
+    if (keyCount === 0) {
+      logger.warn('🔍 [InitDiag] Zero keys in encrypted storage — either fresh install or encryption key mismatch (data loss!)');
+    }
+
     logger.log('✅ StorageService initialized with secure encryption');
   }
 
-  private _ensureInitialized(): void {
-    if (__DEV__ && !this._initialized) {
-      logger.warn('⚠️ StorageService.storage accessed before initialize()');
+  isInitialized(): boolean {
+    return this._initialized;
+  }
+
+  private _preInitAccessLogged = false;
+  /** Returns true if storage is ready, false if still using MemoryStorage placeholder. */
+  private _ensureInitialized(): boolean {
+    if (this._initialized) return true;
+    if (!this._preInitAccessLogged) {
+      this._preInitAccessLogged = true;
+      logger.warn('⚠️ StorageService.storage accessed before initialize() — reads will return empty data');
     }
+    return false;
   }
 
   // One-time migration: move non-PII keys from encrypted → unencrypted storage
@@ -140,12 +169,20 @@ class StorageService {
   }
 
   setUserSettings(settings: UserSettings): void {
-    this._ensureInitialized();
+    const ready = this._ensureInitialized();
     this._cachedUserSettings = settings;
-    this.storage.set("user_settings", JSON.stringify(settings));
+    const serialized = JSON.stringify(settings);
+    if (ready) {
+      this.storage.set("user_settings", serialized);
+    } else {
+      // Queue the write for replay after initialize() completes
+      this._pendingWrites.push({ key: "user_settings", value: serialized });
+    }
   }
 
-  updateUserSettings(updates: Partial<UserSettings>): void {
+  // Private: All external callers must go through useStore's updateUserSettings
+  // to ensure Zustand and StorageService stay in sync via write-through.
+  private updateUserSettings(updates: Partial<UserSettings>): void {
     const current = this.getUserSettings();
     if (!current) {
       this.setUserSettings(updates as UserSettings);
@@ -182,6 +219,7 @@ class StorageService {
         country: "Unknown",
       },
       calculationMethod: "MWL",
+      calculationMethodManuallySelected: false,
       asrJuristic: "Standard",
       adjustments: {
         Fajr: 0,
@@ -196,9 +234,10 @@ class StorageService {
         soundEnabled: true,
         vibrationEnabled: true,
         beforePrayer: 10,
-        reminderText: "Time for {prayer} prayer 🕌",
-        postPrayerCheck: false, // DEPRECATED
+        reminderText: "Time for {prayer} prayer",
+        postPrayerCheck: true, // Legacy fallback path for balanced reminder style
         liveActivityEnabled: false,
+        intensity: 'balanced',
       },
       prayerNotifications: {
         Fajr: true,
@@ -216,16 +255,16 @@ class StorageService {
   // Default Prayer Habit Builder settings
   private getDefaultHabitBuilderSettings(): HabitBuilderSettings {
     return {
-      enabled: true, // Enable by default for better user engagement
+      enabled: true, // Balanced support by default
       persistentReminders: {
         enabled: true,
-        firstCheckDelay: 15, // 15 min after prayer time
-        interval: 15, // Every 15 minutes
-        maxReminders: 3, // Up to 3 reminders
+        firstCheckDelay: 20,
+        interval: 15,
+        maxReminders: 1,
       },
       gracePeriodWarning: {
-        enabled: true,
-        minutesBeforeNext: 15, // Warn 15 min before next prayer
+        enabled: false,
+        minutesBeforeNext: 15,
       },
       snooze: {
         allowedIntervals: [5, 10, 15, 30], // Available snooze options
@@ -372,7 +411,7 @@ class StorageService {
   // "abstinence violation effect" where partial progress feels like failure.
   updateDawam(): void {
     const today = getLocalDateKey();
-    const yesterday = getLocalDateKey(new Date(Date.now() - 86400000));
+    const yesterday = getLocalDateKey(new Date(Date.now() - ONE_DAY_MS));
 
     const todayStats = this.getDailyStats(today);
     const yesterdayStats = this.getDailyStats(yesterday);
@@ -529,7 +568,6 @@ class StorageService {
       userSettings: this.getUserSettings(),
       currentDawam: this.getCurrentDawam(),
       longestDawam: this.getLongestDawam(),
-      achievements: this.getAchievements(),
       prayers: [] as { date: string; records: PrayerRecord[] }[],
       dailyStats: [] as DailyStats[],
     };
@@ -562,6 +600,57 @@ class StorageService {
     }
 
     return JSON.stringify(exportData, null, 2);
+  }
+
+  // Import prayer data from a JSON string (produced by exportPrayerData)
+  importPrayerData(jsonString: string): { imported: number; skipped: number } {
+    const data = JSON.parse(jsonString);
+
+    // Validate basic structure
+    if (!data.exportDate || !data.prayers) {
+      throw new Error('Invalid export file — missing required fields');
+    }
+
+    let imported = 0;
+    let skipped = 0;
+
+    // Import prayer records (merge — don't overwrite existing 'prayed' records)
+    if (Array.isArray(data.prayers)) {
+      for (const day of data.prayers) {
+        if (!day.date || !Array.isArray(day.records)) continue;
+        for (const record of day.records) {
+          if (!record.prayer || !record.date) continue;
+          const existing = this.getPrayerRecord(record.date, record.prayer);
+          if (existing?.status === 'prayed') {
+            skipped++;
+            continue;
+          }
+          this.savePrayerRecord(record);
+          imported++;
+        }
+      }
+    }
+
+    // Recalculate daily stats for all imported dates
+    const importedDates = new Set<string>();
+    if (Array.isArray(data.prayers)) {
+      for (const day of data.prayers) {
+        if (day.date) importedDates.add(day.date);
+      }
+    }
+    for (const date of importedDates) {
+      this.updateDailyStats(date);
+    }
+
+    // Import dawam if higher than current
+    if (typeof data.currentDawam === 'number' && data.currentDawam > this.getCurrentDawam()) {
+      this.setDawam(data.currentDawam);
+    }
+    if (typeof data.longestDawam === 'number' && data.longestDawam > this.getLongestDawam()) {
+      this.publicStorage.set('longest_dawam', data.longestDawam);
+    }
+
+    return { imported, skipped };
   }
 
   // Calculate prayer consistency percentage for a period
@@ -743,7 +832,7 @@ class StorageService {
     this.publicStorage.set("consecutive_isha_count", count);
   }
 
-  // Save prayer record with achievement tracking
+  // Save prayer record with prayer tracking
   // P0-D FIX: Made idempotent — only increments counters when a NEW prayer
   // completion is recorded (no existing 'prayed' record for this date+prayer).
   savePrayerRecordWithTracking(record: PrayerRecord): void {
@@ -945,6 +1034,25 @@ class StorageService {
     this.storage.remove(key);
   }
 
+  getPublicJson<T>(key: string): T | null {
+    const data = this.publicStorage.getString(key);
+    if (!data) return null;
+
+    try {
+      return JSON.parse(data) as T;
+    } catch {
+      return null;
+    }
+  }
+
+  setPublicJson(key: string, value: unknown): void {
+    this.publicStorage.set(key, JSON.stringify(value));
+  }
+
+  deletePublicValue(key: string): void {
+    this.publicStorage.remove(key);
+  }
+
   getPremiumFeatures(): PremiumFeatures {
     const data = this.storage.getString("premium_features");
     if (data) {
@@ -1014,12 +1122,12 @@ class StorageService {
   }
 
   // Family sharing data
-  getFamilyData(): any | null {
+  getFamilyData(): FamilyData | null {
     const data = this.storage.getString("family_data");
-    return data ? JSON.parse(data) : null;
+    return data ? (JSON.parse(data) as FamilyData) : null;
   }
 
-  saveFamilyData(familyData: any): void {
+  saveFamilyData(familyData: FamilyData): void {
     this.storage.set("family_data", JSON.stringify(familyData));
   }
 

@@ -2,6 +2,10 @@
 // Accurate Hijri date via Aladhan API with offline fallback.
 
 import StorageService from '../services/StorageService';
+import { fetchHijriDateFromEdge } from '../services/api/EdgeApiClient';
+import { cacheHijriDate } from './ramadan';
+import logger from './logger';
+import { fetchWithTimeout } from './networkRequest';
 
 const HIJRI_MONTHS = [
   'Muharram', 'Safar', 'Rabi al-Awwal', 'Rabi al-Thani',
@@ -19,6 +23,8 @@ interface HijriResult {
 // Simple daily cache to avoid repeated API calls
 let cachedDate: string | null = null;
 let cachedResult: HijriResult | null = null;
+let lastHijriSource: 'edge' | 'direct' | 'algorithmic_fallback' | 'memory_cache' | null = null;
+const HIJRI_API_TIMEOUT_MS = 8000;
 
 // Hijri month lengths: odd = 30, even = 29
 const hijriMonthLen = (m: number): number => m % 2 === 1 ? 30 : 29;
@@ -49,24 +55,53 @@ function applyAdjustment(h: HijriResult, offset: -1 | 0 | 1): HijriResult {
  */
 async function fetchHijriFromAPI(date: Date): Promise<HijriResult | null> {
   try {
-    const dd = String(date.getDate()).padStart(2, '0');
-    const mm = String(date.getMonth() + 1).padStart(2, '0');
-    const yyyy = date.getFullYear();
-    const url = `https://api.aladhan.com/v1/gToH/${dd}-${mm}-${yyyy}`;
+    try {
+      const edgeHijri = await fetchHijriDateFromEdge(date);
+      lastHijriSource = 'edge';
+      logger.log('🌐 Hijri date source: edge');
+      cacheHijriDate(
+        {
+          day: String(edgeHijri.day),
+          month: {
+            number: edgeHijri.month,
+            en: edgeHijri.monthName,
+            ar: edgeHijri.monthNameAr ?? '',
+          },
+          year: String(edgeHijri.year),
+        },
+        date
+      );
 
-    const response = await fetch(url, { method: 'GET' });
-    if (!response.ok) return null;
+      return {
+        day: edgeHijri.day,
+        month: edgeHijri.month,
+        monthName: edgeHijri.monthName || HIJRI_MONTHS[edgeHijri.month - 1] || '',
+        year: edgeHijri.year,
+      };
+    } catch {
+      const dd = String(date.getDate()).padStart(2, '0');
+      const mm = String(date.getMonth() + 1).padStart(2, '0');
+      const yyyy = date.getFullYear();
+      const url = `https://api.aladhan.com/v1/gToH/${dd}-${mm}-${yyyy}`;
 
-    const json = await response.json();
-    const hijri = json?.data?.hijri;
-    if (!hijri) return null;
+      const response = await fetchWithTimeout(url, { method: 'GET' }, HIJRI_API_TIMEOUT_MS);
+      if (!response.ok) return null;
 
-    return {
-      day: parseInt(hijri.day, 10),
-      month: parseInt(hijri.month.number, 10),
-      monthName: hijri.month.en || HIJRI_MONTHS[parseInt(hijri.month.number, 10) - 1] || '',
-      year: parseInt(hijri.year, 10),
-    };
+      const json = await response.json();
+      const hijri = json?.data?.hijri;
+      if (!hijri) return null;
+
+      lastHijriSource = 'direct';
+      logger.log('🌐 Hijri date source: direct_fallback');
+      cacheHijriDate(hijri, date);
+
+      return {
+        day: parseInt(hijri.day, 10),
+        month: parseInt(hijri.month.number, 10),
+        monthName: hijri.month.en || HIJRI_MONTHS[parseInt(hijri.month.number, 10) - 1] || '',
+        year: parseInt(hijri.year, 10),
+      };
+    }
   } catch {
     return null;
   }
@@ -125,6 +160,7 @@ export async function getHijriDate(date: Date = new Date()): Promise<HijriResult
   const dateKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
 
   if (cachedDate === dateKey && cachedResult) {
+    lastHijriSource = 'memory_cache';
     return applyAdjustment(cachedResult, readHijriAdjustment());
   }
 
@@ -139,7 +175,13 @@ export async function getHijriDate(date: Date = new Date()): Promise<HijriResult
   const fallback = toHijriFallback(date);
   cachedDate = dateKey;
   cachedResult = fallback;
+  lastHijriSource = 'algorithmic_fallback';
+  logger.log('🌐 Hijri date source: algorithmic_fallback');
   return applyAdjustment(fallback, readHijriAdjustment());
+}
+
+export function getLastHijriSource(): string | null {
+  return lastHijriSource;
 }
 
 /**

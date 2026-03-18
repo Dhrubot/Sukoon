@@ -5,7 +5,7 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
 import { CHANNELS, IOS_NOTIFICATION_CAP, NOTIFICATION_LOWER_TIER_DAYS } from '../constants/NotificationConstants';
-import { getCachedHijriDate, isRamadan, getRamadanDay } from '../utils/ramadan';
+import { getCachedHijriDate, isRamadan } from '../utils/ramadan';
 import StorageService from './StorageService';
 import logger from '../utils/logger';
 import { getLocalDateKey } from '../utils/dateHelpers';

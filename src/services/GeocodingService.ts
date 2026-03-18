@@ -1,8 +1,16 @@
 import { Coordinates, Location } from '../types';
 import logger from '../utils/logger';
+import { fetchWithTimeout, describeNetworkError } from '../utils/networkRequest';
+import {
+  geocodeAddressFromEdge,
+  reverseGeocodeFromEdge,
+  searchCitiesFromEdge,
+} from './api/EdgeApiClient';
+import { findCountryOptionByCode, findCountryOptionByName } from '../constants/countries';
 
 const NOMINATIM_API_BASE = 'https://nominatim.openstreetmap.org';
 const USER_AGENT = 'Sukoon'; // Nominatim requires a user agent
+const GEOCODING_TIMEOUT_MS = 8000;
 
 interface NominatimResponse {
   lat: string;
@@ -24,12 +32,84 @@ interface NominatimResponse {
 class GeocodingService {
   private static instance: GeocodingService;
   private cachedLocations: Map<string, Location> = new Map();
+  private cachedSearchResults: Map<string, LocationSearchResult[]> = new Map();
+  private lastSource: 'edge' | 'direct' | 'cache' | null = null;
   
   static getInstance(): GeocodingService {
     if (!GeocodingService.instance) {
       GeocodingService.instance = new GeocodingService();
     }
     return GeocodingService.instance;
+  }
+
+  getLastSource(): 'edge' | 'direct' | 'cache' | null {
+    return this.lastSource;
+  }
+
+  async searchCitiesDetailed(
+    query: string,
+    countryCode?: string,
+    limit = 5
+  ): Promise<LocationSearchResponse> {
+    const trimmedQuery = query.trim();
+    const normalizedCountryCode = countryCode?.trim().toUpperCase() || '';
+    if (trimmedQuery.length < 2) {
+      return {
+        results: [],
+        suggestedResults: [],
+        searchSource: 'city_index',
+        hasCountryCoverage: Boolean(normalizedCountryCode),
+      };
+    }
+
+    const cacheKey = `${trimmedQuery}-${normalizedCountryCode}-${limit}`.toLowerCase();
+    if (this.cachedSearchResults.has(cacheKey)) {
+      this.lastSource = 'cache';
+      return {
+        results: this.cachedSearchResults.get(cacheKey)!,
+        suggestedResults: [],
+        searchSource: 'cache',
+        hasCountryCoverage: Boolean(normalizedCountryCode),
+      };
+    }
+
+    try {
+      const response = await searchCitiesFromEdge(trimmedQuery, normalizedCountryCode, limit);
+      const filterResultsToCountry = (results: LocationSearchResult[]) =>
+        normalizedCountryCode.length === 2
+          ? results.filter((result) => {
+              const matchingCountry =
+                findCountryOptionByName(result.country) ||
+                findCountryOptionByCode(result.country);
+              return matchingCountry?.code === normalizedCountryCode;
+            })
+          : results;
+
+      const filteredResults = filterResultsToCountry(response.results);
+      const filteredSuggestedResults = filterResultsToCountry(response.suggestedResults);
+
+      this.cachedSearchResults.set(cacheKey, filteredResults);
+      this.lastSource = 'edge';
+      return {
+        results: filteredResults,
+        suggestedResults: filteredSuggestedResults,
+        searchSource: response.searchSource,
+        hasCountryCoverage: response.hasCountryCoverage,
+      };
+    } catch (error) {
+      logger.warn('City search unavailable from edge:', describeNetworkError(error));
+      return {
+        results: [],
+        suggestedResults: [],
+        searchSource: 'unavailable',
+        hasCountryCoverage: false,
+      };
+    }
+  }
+
+  async searchCities(query: string, countryCode?: string, limit = 5): Promise<LocationSearchResult[]> {
+    const response = await this.searchCitiesDetailed(query, countryCode, limit);
+    return response.results;
   }
 
   /**
@@ -39,11 +119,27 @@ class GeocodingService {
    */
   async geocodeAddress(query: string, countryCode?: string): Promise<Location | null> {
     try {
+      const normalizedCountryFilter =
+        countryCode && countryCode.trim().length === 2 ? countryCode.trim().toUpperCase() : undefined;
+
       // Check cache first
-      const cacheKey = `${query}-${countryCode || ''}`.toLowerCase();
+      const cacheKey = `${query}-${normalizedCountryFilter || ''}`.toLowerCase();
       if (this.cachedLocations.has(cacheKey)) {
-        logger.log('Returning cached location for:', query);
+        logger.log('Returning cached location for geocoding request');
+        this.lastSource = 'cache';
         return this.cachedLocations.get(cacheKey)!;
+      }
+
+      try {
+        const edgeLocation = await geocodeAddressFromEdge(query, normalizedCountryFilter);
+        if (edgeLocation) {
+          this.cachedLocations.set(cacheKey, edgeLocation);
+          this.lastSource = 'edge';
+          logger.log('🌐 Geocoding source: edge');
+          return edgeLocation;
+        }
+      } catch (edgeError) {
+        logger.warn('Edge geocoding unavailable, falling back to direct provider:', describeNetworkError(edgeError));
       }
 
       // Prepare query parameters
@@ -55,19 +151,19 @@ class GeocodingService {
       });
 
       // Add country code if provided
-      if (countryCode) {
-        params.append('countrycodes', countryCode);
+      if (normalizedCountryFilter) {
+        params.append('countrycodes', normalizedCountryFilter.toLowerCase());
       }
 
       // Call Nominatim API
-      logger.log(`Geocoding "${query}" using Nominatim...`);
+      logger.log('Geocoding location query via Nominatim');
       const url = `${NOMINATIM_API_BASE}/search?${params.toString()}`;
       
-      const response = await fetch(url, {
+      const response = await fetchWithTimeout(url, {
         headers: {
           'User-Agent': USER_AGENT,
         },
-      });
+      }, GEOCODING_TIMEOUT_MS);
 
       if (!response.ok) {
         throw new Error(`Nominatim API responded with status: ${response.status}`);
@@ -76,7 +172,7 @@ class GeocodingService {
       const data = await response.json() as NominatimResponse[];
       
       if (!data || data.length === 0) {
-        logger.warn(`No location found for query: ${query}`);
+        logger.warn('No location found for geocoding query');
         return null;
       }
 
@@ -102,11 +198,13 @@ class GeocodingService {
       
       // Cache the result
       this.cachedLocations.set(cacheKey, location);
+      this.lastSource = 'direct';
+      logger.log('🌐 Geocoding source: direct_fallback');
       
-      logger.log(`Geocoded "${query}" to:`, location);
+      logger.log(`Geocoded location to ${city || 'Unknown city'}, ${country || 'Unknown country'}`);
       return location;
     } catch (error) {
-      logger.error('Error geocoding address:', error);
+      logger.error('Error geocoding address:', describeNetworkError(error));
       return null;
     }
   }
@@ -132,18 +230,31 @@ class GeocodingService {
       // Check cache first
       const cacheKey = `${latitude}-${longitude}`.toLowerCase();
       if (this.cachedLocations.has(cacheKey)) {
+        this.lastSource = 'cache';
         return this.cachedLocations.get(cacheKey)!;
       }
 
+      try {
+        const edgeLocation = await reverseGeocodeFromEdge(coordinates);
+        if (edgeLocation) {
+          this.cachedLocations.set(cacheKey, edgeLocation);
+          this.lastSource = 'edge';
+          logger.log('🌐 Reverse geocoding source: edge');
+          return edgeLocation;
+        }
+      } catch (edgeError) {
+        logger.warn('Edge reverse geocoding unavailable, falling back to direct provider:', describeNetworkError(edgeError));
+      }
+
       // Call Nominatim API for reverse geocoding
-      logger.log(`Reverse geocoding coordinates: ${latitude}, ${longitude}`);
+      logger.log('Reverse geocoding device coordinates');
       const url = `${NOMINATIM_API_BASE}/reverse?lat=${latitude}&lon=${longitude}&format=json&addressdetails=1`;
       
-      const response = await fetch(url, {
+      const response = await fetchWithTimeout(url, {
         headers: {
           'User-Agent': USER_AGENT,
         },
-      });
+      }, GEOCODING_TIMEOUT_MS);
 
       if (!response.ok) {
         throw new Error(`Nominatim API responded with status: ${response.status}`);
@@ -152,7 +263,7 @@ class GeocodingService {
       const result = await response.json() as NominatimResponse;
       
       if (!result) {
-        logger.warn(`No address found for coordinates: ${latitude}, ${longitude}`);
+        logger.warn('No address found for reverse geocoding request');
         return null;
       }
 
@@ -176,10 +287,12 @@ class GeocodingService {
       
       // Cache the result
       this.cachedLocations.set(cacheKey, location);
+      this.lastSource = 'direct';
+      logger.log('🌐 Reverse geocoding source: direct_fallback');
       
       return location;
     } catch (error) {
-      logger.error('Error reverse geocoding:', error);
+      logger.error('Error reverse geocoding:', describeNetworkError(error));
       return null;
     }
   }
@@ -189,7 +302,19 @@ class GeocodingService {
    */
   clearCache(): void {
     this.cachedLocations.clear();
+    this.cachedSearchResults.clear();
   }
+}
+
+export interface LocationSearchResult extends Location {
+  admin1?: string;
+}
+
+export interface LocationSearchResponse {
+  results: LocationSearchResult[];
+  suggestedResults: LocationSearchResult[];
+  searchSource?: string;
+  hasCountryCoverage?: boolean;
 }
 
 export default GeocodingService.getInstance();

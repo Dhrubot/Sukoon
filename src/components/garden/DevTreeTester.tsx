@@ -108,6 +108,7 @@ interface DevTreeTesterProps {
 const DevTreeTester: React.FC<DevTreeTesterProps> = ({ onClose }) => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
+  const activeStageColor = theme.mode === 'light' ? '#98d5c7' : '#2eaaa1';
 
   const [activePresetIndex, setActivePresetIndex] = useState(0);
   const [plants, setPlants] = useState<GardenPlant[]>(() => {
@@ -159,8 +160,8 @@ const DevTreeTester: React.FC<DevTreeTesterProps> = ({ onClose }) => {
               style={[
                 styles.stageButton,
                 index === activePresetIndex && {
-                  backgroundColor: theme.colors.primary.DEFAULT,
-                  borderColor: theme.colors.primary.DEFAULT,
+                  backgroundColor: activeStageColor,
+                  borderColor: activeStageColor,
                 },
               ]}
               onPress={() => selectStage(index)}

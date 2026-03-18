@@ -12,10 +12,13 @@ import NotificationService from '../../services/NotificationService';
 import LocationService from '../../services/LocationService';
 import RingerControlService from '../../services/RingerControlService';
 import MosqueModeService from '../../services/MosqueModeService';
+import PerformanceService from '../../services/PerformanceService';
 
 type SetupHealthScreenProps = {
   onDone?: () => void;
-  navigation?: any;
+  navigation?: {
+    goBack?: () => void;
+  };
 };
 
 const SetupHealthScreen: React.FC<SetupHealthScreenProps> = ({ onDone, navigation }) => {
@@ -30,6 +33,7 @@ const SetupHealthScreen: React.FC<SetupHealthScreenProps> = ({ onDone, navigatio
   const [lastReschedule, setLastReschedule] = useState<string | null>(null);
   const [canModifyDnd, setCanModifyDnd] = useState<boolean | null>(null);
   const [isAdhanPlaying, setIsAdhanPlaying] = useState(false);
+  const [launchSummary, setLaunchSummary] = useState(() => PerformanceService.getLatestLaunchSummary());
 
   const calculationMethodLabel = useMemo(() => userSettings?.calculationMethod || 'Unknown', [userSettings?.calculationMethod]);
 
@@ -63,6 +67,8 @@ const SetupHealthScreen: React.FC<SetupHealthScreenProps> = ({ onDone, navigatio
     } else {
       setCanModifyDnd(null);
     }
+
+    setLaunchSummary(PerformanceService.getLatestLaunchSummary());
   }, []);
 
   useEffect(() => {
@@ -115,6 +121,22 @@ const SetupHealthScreen: React.FC<SetupHealthScreenProps> = ({ onDone, navigatio
         <View style={styles.header}>
           {/* <Text style={[styles.title, { color: theme.colors.text.primary }]}>Setup & Health</Text> */}
           <Text style={[styles.subtitle, { color: theme.colors.text.secondary }]}>Verify everything is working</Text>
+        </View>
+
+        <View style={[styles.card, { backgroundColor: theme.colors.card.background, borderColor: theme.colors.border.primary }]}>
+          <Text style={[styles.cardTitle, { color: theme.colors.text.primary }]}>Startup Performance</Text>
+          {launchSummary ? (
+            launchSummary.marks
+              .slice()
+              .sort((left, right) => left.sinceLaunchMs - right.sinceLaunchMs)
+              .map((mark) => (
+                <Text key={mark.name} style={[styles.rowText, { color: theme.colors.text.secondary }]}>
+                  {mark.name}: {mark.sinceLaunchMs}ms
+                </Text>
+              ))
+          ) : (
+            <Text style={[styles.rowText, { color: theme.colors.text.secondary }]}>No launch summary captured yet</Text>
+          )}
         </View>
 
         <View style={[styles.card, { backgroundColor: theme.colors.card.background, borderColor: theme.colors.border.primary }]}>

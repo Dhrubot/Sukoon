@@ -5,11 +5,11 @@ import {
   Text,
   TouchableOpacity,
   StyleSheet,
-  Switch,
 } from 'react-native';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
+import { withAlpha } from '../../utils/color';
 
 interface SettingRowProps {
   label: string;
@@ -48,7 +48,7 @@ export const SettingRow: React.FC<SettingRowProps> = ({
       {icon && (
         <View style={[
           styles.iconWrap,
-          iconColor ? { backgroundColor: iconColor + '1A' } : { backgroundColor: theme.colors.primary.DEFAULT + '1A' },
+          { backgroundColor: withAlpha(iconColor || theme.colors.primary.DEFAULT, 0.1) },
         ]}>
           {icon}
         </View>
@@ -99,15 +99,17 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     gap: theme.spacing.sm,
   },
   settingLabel: {
-    fontSize: theme.typography.fontSize.lg,
+    fontSize: theme.typography.fontSize.md,
     fontFamily: theme.typography.fontFamily.bodyMedium,
   },
   settingSubtext: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: 11,
+    fontFamily: theme.typography.fontFamily.body,
     marginTop: theme.spacing.xs,
   },
   settingValue: {
-    fontSize: theme.typography.fontSize.base,
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
     marginRight: theme.spacing.sm,
   },
   chevron: {

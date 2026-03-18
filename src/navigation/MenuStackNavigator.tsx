@@ -74,12 +74,12 @@ export const MenuStackNavigator: React.FC = () => {
       <Stack.Screen
         name="MyJourney"
         component={StatsScreen}
-        options={{ title: 'My Journey' }}
+        options={{ title: 'Prayer Insights' }}
       />
       <Stack.Screen
         name="ReflectionGarden"
         component={ReflectionGardenScreen}
-        options={{ title: 'My Garden' }}
+        options={{ title: 'Tuba Tree' }}
       />
       <Stack.Screen
         name="TubaTreeInfo"

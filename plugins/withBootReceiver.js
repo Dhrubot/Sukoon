@@ -260,8 +260,31 @@ function withBootReceiverManifest(config) {
   });
 }
 
+function withWorkManagerDependency(config) {
+  return withDangerousMod(config, [
+    'android',
+    async (cfg) => {
+      const buildGradlePath = path.join(
+        cfg.modRequest.platformProjectRoot, 'app', 'build.gradle'
+      );
+      if (fs.existsSync(buildGradlePath)) {
+        let buildGradle = fs.readFileSync(buildGradlePath, 'utf-8');
+        if (!buildGradle.includes('androidx.work:work-runtime')) {
+          buildGradle = buildGradle.replace(
+            /dependencies\s*\{/,
+            'dependencies {\n    implementation "androidx.work:work-runtime:2.9.1"\n    // Guava needed on compile classpath for WorkManager\'s ListenableFuture\n    implementation "com.google.guava:guava:33.0.0-android"'
+          );
+        }
+        fs.writeFileSync(buildGradlePath, buildGradle);
+      }
+      return cfg;
+    },
+  ]);
+}
+
 module.exports = function withBootReceiver(config) {
   config = withBootReceiverJava(config);
   config = withBootReceiverManifest(config);
+  config = withWorkManagerDependency(config);
   return config;
 };

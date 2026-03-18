@@ -7,7 +7,6 @@ import {
   PrayerRecord, 
   Location,
   DailyStats,
-  Achievement,
   MindfulnessSession
 } from '../types';
 import StorageService from '../services/StorageService';
@@ -57,12 +56,6 @@ interface AppState {
   todayStats: DailyStats | null;
   setTodayStats: (stats: DailyStats | null) => void;
   
-  // Achievements
-  achievements: Achievement[];
-  setAchievements: (achievements: Achievement[]) => void;
-  celebratingAchievement: Achievement | null;
-  setCelebratingAchievement: (achievement: Achievement | null) => void;
-  
   // Shared clock — single 60s tick updated by PrayerTimesProvider
   currentTime: Date;
   setCurrentTime: (time: Date) => void;
@@ -83,14 +76,17 @@ export const useStore = create<AppState>((set) => ({
   userSettings: null,
   setUserSettings: (settings) => {
     StorageService.setUserSettings(settings);
-    set({ userSettings: settings });
+    set({
+      userSettings: settings,
+      location: settings.location,
+    });
   },
   updateUserSettings: (updates) => 
     set((state) => {
       if (!state.userSettings) return { userSettings: null };
 
       // Recursive deep merge capped at maxDepth to avoid infinite loops
-      const deepMerge = (target: any, source: any, depth: number = 0): any => {
+      const deepMerge = (target: Record<string, unknown>, source: Record<string, unknown>, depth: number = 0): Record<string, unknown> => {
         if (depth > 3) return source; // safety cap
         const result = { ...target };
         for (const key of Object.keys(source)) {
@@ -105,7 +101,7 @@ export const useStore = create<AppState>((set) => ({
             tgtVal !== null &&
             !Array.isArray(tgtVal)
           ) {
-            result[key] = deepMerge(tgtVal, srcVal, depth + 1);
+            result[key] = deepMerge(tgtVal as Record<string, unknown>, srcVal as Record<string, unknown>, depth + 1);
           } else {
             result[key] = srcVal;
           }
@@ -113,21 +109,20 @@ export const useStore = create<AppState>((set) => ({
         return result;
       };
 
-      const updated = deepMerge(state.userSettings, updates);
+      const updated = deepMerge(
+        state.userSettings as unknown as Record<string, unknown>,
+        updates as unknown as Record<string, unknown>
+      ) as unknown as UserSettings;
       StorageService.setUserSettings(updated);
-      return { userSettings: updated };
+      return {
+        userSettings: updated,
+        location: updated.location,
+      };
     }),
   
-  // Location — write-through to StorageService
+  // Location — in-memory only. Persist through setUserSettings/updateUserSettings.
   location: null,
-  setLocation: (location) => {
-    // Persist location inside userSettings
-    const settings = StorageService.getUserSettings();
-    if (settings) {
-      StorageService.setUserSettings({ ...settings, location });
-    }
-    set({ location });
-  },
+  setLocation: (location) => set({ location }),
   
   // Prayer times
   todayPrayerTimes: [],
@@ -172,12 +167,6 @@ export const useStore = create<AppState>((set) => ({
   },
   todayStats: null,
   setTodayStats: (stats) => set({ todayStats: stats }),
-  
-  // Achievements
-  achievements: [],
-  setAchievements: (achievements) => set({ achievements }),
-  celebratingAchievement: null,
-  setCelebratingAchievement: (achievement) => set({ celebratingAchievement: achievement }),
   
   // Shared clock
   currentTime: new Date(),
@@ -254,18 +243,6 @@ export const useStats = () => useStore(
     setEngagementDawam: state.setEngagementDawam,
     todayStats: state.todayStats,
     setTodayStats: state.setTodayStats,
-  }))
-);
-
-/**
- * Hook for achievements
- */
-export const useAchievements = () => useStore(
-  useShallow((state) => ({
-    achievements: state.achievements,
-    setAchievements: state.setAchievements,
-    celebratingAchievement: state.celebratingAchievement,
-    setCelebratingAchievement: state.setCelebratingAchievement,
   }))
 );
 

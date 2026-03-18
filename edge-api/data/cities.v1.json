@@ -1,0 +1,2086 @@
+[
+  {
+    "name": "Dhaka",
+    "country": "Bangladesh",
+    "countryCode": "BD",
+    "admin1": "Dhaka Division",
+    "latitude": 23.8103,
+    "longitude": 90.4125,
+    "population": 10200000,
+    "aliases": [
+      "dacca"
+    ]
+  },
+  {
+    "name": "Chattogram",
+    "country": "Bangladesh",
+    "countryCode": "BD",
+    "admin1": "Chattogram Division",
+    "latitude": 22.3569,
+    "longitude": 91.7832,
+    "population": 2581643,
+    "aliases": [
+      "chittagong"
+    ]
+  },
+  {
+    "name": "Sylhet",
+    "country": "Bangladesh",
+    "countryCode": "BD",
+    "admin1": "Sylhet Division",
+    "latitude": 24.8949,
+    "longitude": 91.8687,
+    "population": 526412
+  },
+  {
+    "name": "Khulna",
+    "country": "Bangladesh",
+    "countryCode": "BD",
+    "admin1": "Khulna Division",
+    "latitude": 22.8456,
+    "longitude": 89.5403,
+    "population": 663342
+  },
+  {
+    "name": "Rajshahi",
+    "country": "Bangladesh",
+    "countryCode": "BD",
+    "admin1": "Rajshahi Division",
+    "latitude": 24.3745,
+    "longitude": 88.6042,
+    "population": 763952
+  },
+  {
+    "name": "Mymensingh",
+    "country": "Bangladesh",
+    "countryCode": "BD",
+    "admin1": "Mymensingh Division",
+    "latitude": 24.7471,
+    "longitude": 90.4203,
+    "population": 576927
+  },
+  {
+    "name": "Karachi",
+    "country": "Pakistan",
+    "countryCode": "PK",
+    "admin1": "Sindh",
+    "latitude": 24.8607,
+    "longitude": 67.0011,
+    "population": 14910352
+  },
+  {
+    "name": "Lahore",
+    "country": "Pakistan",
+    "countryCode": "PK",
+    "admin1": "Punjab",
+    "latitude": 31.5204,
+    "longitude": 74.3587,
+    "population": 11126285
+  },
+  {
+    "name": "Islamabad",
+    "country": "Pakistan",
+    "countryCode": "PK",
+    "admin1": "Islamabad Capital Territory",
+    "latitude": 33.6844,
+    "longitude": 73.0479,
+    "population": 1095064
+  },
+  {
+    "name": "Rawalpindi",
+    "country": "Pakistan",
+    "countryCode": "PK",
+    "admin1": "Punjab",
+    "latitude": 33.5651,
+    "longitude": 73.0169,
+    "population": 2098231
+  },
+  {
+    "name": "Peshawar",
+    "country": "Pakistan",
+    "countryCode": "PK",
+    "admin1": "Khyber Pakhtunkhwa",
+    "latitude": 34.0151,
+    "longitude": 71.5249,
+    "population": 1970042
+  },
+  {
+    "name": "Multan",
+    "country": "Pakistan",
+    "countryCode": "PK",
+    "admin1": "Punjab",
+    "latitude": 30.1575,
+    "longitude": 71.5249,
+    "population": 1871843
+  },
+  {
+    "name": "Delhi",
+    "country": "India",
+    "countryCode": "IN",
+    "admin1": "Delhi",
+    "latitude": 28.6139,
+    "longitude": 77.209,
+    "population": 16787941,
+    "aliases": [
+      "new delhi"
+    ]
+  },
+  {
+    "name": "Mumbai",
+    "country": "India",
+    "countryCode": "IN",
+    "admin1": "Maharashtra",
+    "latitude": 19.076,
+    "longitude": 72.8777,
+    "population": 12478447,
+    "aliases": [
+      "bombay"
+    ]
+  },
+  {
+    "name": "Kolkata",
+    "country": "India",
+    "countryCode": "IN",
+    "admin1": "West Bengal",
+    "latitude": 22.5726,
+    "longitude": 88.3639,
+    "population": 14900000,
+    "aliases": [
+      "calcutta"
+    ]
+  },
+  {
+    "name": "Chennai",
+    "country": "India",
+    "countryCode": "IN",
+    "admin1": "Tamil Nadu",
+    "latitude": 13.0827,
+    "longitude": 80.2707,
+    "population": 7088000,
+    "aliases": [
+      "madras"
+    ]
+  },
+  {
+    "name": "Bengaluru",
+    "country": "India",
+    "countryCode": "IN",
+    "admin1": "Karnataka",
+    "latitude": 12.9716,
+    "longitude": 77.5946,
+    "population": 8443675,
+    "aliases": [
+      "bangalore"
+    ]
+  },
+  {
+    "name": "Hyderabad",
+    "country": "India",
+    "countryCode": "IN",
+    "admin1": "Telangana",
+    "latitude": 17.385,
+    "longitude": 78.4867,
+    "population": 6809970
+  },
+  {
+    "name": "Ahmedabad",
+    "country": "India",
+    "countryCode": "IN",
+    "admin1": "Gujarat",
+    "latitude": 23.0225,
+    "longitude": 72.5714,
+    "population": 5577940
+  },
+  {
+    "name": "Lucknow",
+    "country": "India",
+    "countryCode": "IN",
+    "admin1": "Uttar Pradesh",
+    "latitude": 26.8467,
+    "longitude": 80.9462,
+    "population": 2815601
+  },
+  {
+    "name": "Kochi",
+    "country": "India",
+    "countryCode": "IN",
+    "admin1": "Kerala",
+    "latitude": 9.9312,
+    "longitude": 76.2673,
+    "population": 677381,
+    "aliases": [
+      "cochin"
+    ]
+  },
+  {
+    "name": "Jakarta",
+    "country": "Indonesia",
+    "countryCode": "ID",
+    "admin1": "Jakarta",
+    "latitude": -6.2088,
+    "longitude": 106.8456,
+    "population": 10562088
+  },
+  {
+    "name": "Surabaya",
+    "country": "Indonesia",
+    "countryCode": "ID",
+    "admin1": "East Java",
+    "latitude": -7.2575,
+    "longitude": 112.7521,
+    "population": 2874314
+  },
+  {
+    "name": "Bandung",
+    "country": "Indonesia",
+    "countryCode": "ID",
+    "admin1": "West Java",
+    "latitude": -6.9175,
+    "longitude": 107.6191,
+    "population": 2394873
+  },
+  {
+    "name": "Medan",
+    "country": "Indonesia",
+    "countryCode": "ID",
+    "admin1": "North Sumatra",
+    "latitude": 3.5952,
+    "longitude": 98.6722,
+    "population": 2435252
+  },
+  {
+    "name": "Yogyakarta",
+    "country": "Indonesia",
+    "countryCode": "ID",
+    "admin1": "Special Region of Yogyakarta",
+    "latitude": -7.7956,
+    "longitude": 110.3695,
+    "population": 422732,
+    "aliases": [
+      "jogja"
+    ]
+  },
+  {
+    "name": "Kuala Lumpur",
+    "country": "Malaysia",
+    "countryCode": "MY",
+    "admin1": "Kuala Lumpur",
+    "latitude": 3.139,
+    "longitude": 101.6869,
+    "population": 1800000,
+    "aliases": [
+      "kl"
+    ]
+  },
+  {
+    "name": "George Town",
+    "country": "Malaysia",
+    "countryCode": "MY",
+    "admin1": "Penang",
+    "latitude": 5.4141,
+    "longitude": 100.3288,
+    "population": 708127,
+    "aliases": [
+      "penang"
+    ]
+  },
+  {
+    "name": "Johor Bahru",
+    "country": "Malaysia",
+    "countryCode": "MY",
+    "admin1": "Johor",
+    "latitude": 1.4927,
+    "longitude": 103.7414,
+    "population": 858118,
+    "aliases": [
+      "jb"
+    ]
+  },
+  {
+    "name": "Shah Alam",
+    "country": "Malaysia",
+    "countryCode": "MY",
+    "admin1": "Selangor",
+    "latitude": 3.0738,
+    "longitude": 101.5183,
+    "population": 641819
+  },
+  {
+    "name": "Singapore",
+    "country": "Singapore",
+    "countryCode": "SG",
+    "admin1": "Singapore",
+    "latitude": 1.3521,
+    "longitude": 103.8198,
+    "population": 5638700
+  },
+  {
+    "name": "Dubai",
+    "country": "United Arab Emirates",
+    "countryCode": "AE",
+    "admin1": "Dubai",
+    "latitude": 25.2048,
+    "longitude": 55.2708,
+    "population": 3560000
+  },
+  {
+    "name": "Abu Dhabi",
+    "country": "United Arab Emirates",
+    "countryCode": "AE",
+    "admin1": "Abu Dhabi",
+    "latitude": 24.4539,
+    "longitude": 54.3773,
+    "population": 1483000
+  },
+  {
+    "name": "Sharjah",
+    "country": "United Arab Emirates",
+    "countryCode": "AE",
+    "admin1": "Sharjah",
+    "latitude": 25.3463,
+    "longitude": 55.4209,
+    "population": 1800000
+  },
+  {
+    "name": "Doha",
+    "country": "Qatar",
+    "countryCode": "QA",
+    "admin1": "Doha",
+    "latitude": 25.2854,
+    "longitude": 51.531,
+    "population": 1186023
+  },
+  {
+    "name": "Kuwait City",
+    "country": "Kuwait",
+    "countryCode": "KW",
+    "admin1": "Al Asimah",
+    "latitude": 29.3759,
+    "longitude": 47.9774,
+    "population": 2989000
+  },
+  {
+    "name": "Manama",
+    "country": "Bahrain",
+    "countryCode": "BH",
+    "admin1": "Capital Governorate",
+    "latitude": 26.2285,
+    "longitude": 50.586,
+    "population": 157474
+  },
+  {
+    "name": "Muscat",
+    "country": "Oman",
+    "countryCode": "OM",
+    "admin1": "Muscat",
+    "latitude": 23.588,
+    "longitude": 58.3829,
+    "population": 1421409
+  },
+  {
+    "name": "Riyadh",
+    "country": "Saudi Arabia",
+    "countryCode": "SA",
+    "admin1": "Riyadh Province",
+    "latitude": 24.7136,
+    "longitude": 46.6753,
+    "population": 7676654
+  },
+  {
+    "name": "Jeddah",
+    "country": "Saudi Arabia",
+    "countryCode": "SA",
+    "admin1": "Makkah Province",
+    "latitude": 21.4858,
+    "longitude": 39.1925,
+    "population": 4697000,
+    "aliases": [
+      "jedda",
+      "jiddah"
+    ]
+  },
+  {
+    "name": "Makkah",
+    "country": "Saudi Arabia",
+    "countryCode": "SA",
+    "admin1": "Makkah Province",
+    "latitude": 21.3891,
+    "longitude": 39.8579,
+    "population": 2042000,
+    "aliases": [
+      "mecca"
+    ]
+  },
+  {
+    "name": "Madinah",
+    "country": "Saudi Arabia",
+    "countryCode": "SA",
+    "admin1": "Madinah Province",
+    "latitude": 24.5247,
+    "longitude": 39.5692,
+    "population": 1411800,
+    "aliases": [
+      "medina"
+    ]
+  },
+  {
+    "name": "Dammam",
+    "country": "Saudi Arabia",
+    "countryCode": "SA",
+    "admin1": "Eastern Province",
+    "latitude": 26.4207,
+    "longitude": 50.0888,
+    "population": 1252523
+  },
+  {
+    "name": "Amman",
+    "country": "Jordan",
+    "countryCode": "JO",
+    "admin1": "Amman Governorate",
+    "latitude": 31.9539,
+    "longitude": 35.9106,
+    "population": 4007526
+  },
+  {
+    "name": "Beirut",
+    "country": "Lebanon",
+    "countryCode": "LB",
+    "admin1": "Beirut Governorate",
+    "latitude": 33.8938,
+    "longitude": 35.5018,
+    "population": 361366
+  },
+  {
+    "name": "Jerusalem",
+    "country": "Palestine",
+    "countryCode": "PS",
+    "admin1": "Jerusalem",
+    "latitude": 31.7683,
+    "longitude": 35.2137,
+    "population": 936425,
+    "aliases": [
+      "al quds"
+    ]
+  },
+  {
+    "name": "Ramallah",
+    "country": "Palestine",
+    "countryCode": "PS",
+    "admin1": "Ramallah and al-Bireh",
+    "latitude": 31.9038,
+    "longitude": 35.2034,
+    "population": 38998
+  },
+  {
+    "name": "Gaza",
+    "country": "Palestine",
+    "countryCode": "PS",
+    "admin1": "Gaza",
+    "latitude": 31.5017,
+    "longitude": 34.4668,
+    "population": 778187,
+    "aliases": [
+      "gaza city"
+    ]
+  },
+  {
+    "name": "Cairo",
+    "country": "Egypt",
+    "countryCode": "EG",
+    "admin1": "Cairo Governorate",
+    "latitude": 30.0444,
+    "longitude": 31.2357,
+    "population": 9915000
+  },
+  {
+    "name": "Alexandria",
+    "country": "Egypt",
+    "countryCode": "EG",
+    "admin1": "Alexandria Governorate",
+    "latitude": 31.2001,
+    "longitude": 29.9187,
+    "population": 5200000
+  },
+  {
+    "name": "Giza",
+    "country": "Egypt",
+    "countryCode": "EG",
+    "admin1": "Giza Governorate",
+    "latitude": 30.0131,
+    "longitude": 31.2089,
+    "population": 4239988
+  },
+  {
+    "name": "Istanbul",
+    "country": "Turkey",
+    "countryCode": "TR",
+    "admin1": "Istanbul",
+    "latitude": 41.0082,
+    "longitude": 28.9784,
+    "population": 15636243,
+    "aliases": [
+      "constantinople"
+    ]
+  },
+  {
+    "name": "Ankara",
+    "country": "Turkey",
+    "countryCode": "TR",
+    "admin1": "Ankara",
+    "latitude": 39.9334,
+    "longitude": 32.8597,
+    "population": 5663322
+  },
+  {
+    "name": "Izmir",
+    "country": "Turkey",
+    "countryCode": "TR",
+    "admin1": "Izmir",
+    "latitude": 38.4237,
+    "longitude": 27.1428,
+    "population": 4320519
+  },
+  {
+    "name": "Bursa",
+    "country": "Turkey",
+    "countryCode": "TR",
+    "admin1": "Bursa",
+    "latitude": 40.1885,
+    "longitude": 29.061,
+    "population": 3056120
+  },
+  {
+    "name": "Baghdad",
+    "country": "Iraq",
+    "countryCode": "IQ",
+    "admin1": "Baghdad Governorate",
+    "latitude": 33.3152,
+    "longitude": 44.3661,
+    "population": 7180889
+  },
+  {
+    "name": "Basra",
+    "country": "Iraq",
+    "countryCode": "IQ",
+    "admin1": "Basra Governorate",
+    "latitude": 30.5085,
+    "longitude": 47.7804,
+    "population": 2600000
+  },
+  {
+    "name": "Erbil",
+    "country": "Iraq",
+    "countryCode": "IQ",
+    "admin1": "Erbil Governorate",
+    "latitude": 36.1911,
+    "longitude": 44.0092,
+    "population": 1612000,
+    "aliases": [
+      "arbil"
+    ]
+  },
+  {
+    "name": "Tehran",
+    "country": "Iran",
+    "countryCode": "IR",
+    "admin1": "Tehran Province",
+    "latitude": 35.6892,
+    "longitude": 51.389,
+    "population": 8846782
+  },
+  {
+    "name": "Mashhad",
+    "country": "Iran",
+    "countryCode": "IR",
+    "admin1": "Razavi Khorasan",
+    "latitude": 36.2605,
+    "longitude": 59.6168,
+    "population": 3001184
+  },
+  {
+    "name": "Isfahan",
+    "country": "Iran",
+    "countryCode": "IR",
+    "admin1": "Isfahan Province",
+    "latitude": 32.6546,
+    "longitude": 51.668,
+    "population": 1961260,
+    "aliases": [
+      "esfahan"
+    ]
+  },
+  {
+    "name": "Shiraz",
+    "country": "Iran",
+    "countryCode": "IR",
+    "admin1": "Fars",
+    "latitude": 29.5918,
+    "longitude": 52.5837,
+    "population": 1565572
+  },
+  {
+    "name": "Kabul",
+    "country": "Afghanistan",
+    "countryCode": "AF",
+    "admin1": "Kabul Province",
+    "latitude": 34.5553,
+    "longitude": 69.2075,
+    "population": 4601789
+  },
+  {
+    "name": "Herat",
+    "country": "Afghanistan",
+    "countryCode": "AF",
+    "admin1": "Herat Province",
+    "latitude": 34.3529,
+    "longitude": 62.204,
+    "population": 592902
+  },
+  {
+    "name": "Kandahar",
+    "country": "Afghanistan",
+    "countryCode": "AF",
+    "admin1": "Kandahar Province",
+    "latitude": 31.6289,
+    "longitude": 65.7372,
+    "population": 614254
+  },
+  {
+    "name": "Tashkent",
+    "country": "Uzbekistan",
+    "countryCode": "UZ",
+    "admin1": "Tashkent",
+    "latitude": 41.2995,
+    "longitude": 69.2401,
+    "population": 2571668
+  },
+  {
+    "name": "Almaty",
+    "country": "Kazakhstan",
+    "countryCode": "KZ",
+    "admin1": "Almaty",
+    "latitude": 43.2389,
+    "longitude": 76.8897,
+    "population": 1977800
+  },
+  {
+    "name": "Bishkek",
+    "country": "Kyrgyzstan",
+    "countryCode": "KG",
+    "admin1": "Bishkek",
+    "latitude": 42.8746,
+    "longitude": 74.5698,
+    "population": 1074075
+  },
+  {
+    "name": "Baku",
+    "country": "Azerbaijan",
+    "countryCode": "AZ",
+    "admin1": "Baku",
+    "latitude": 40.4093,
+    "longitude": 49.8671,
+    "population": 2303100
+  },
+  {
+    "name": "Casablanca",
+    "country": "Morocco",
+    "countryCode": "MA",
+    "admin1": "Casablanca-Settat",
+    "latitude": 33.5731,
+    "longitude": -7.5898,
+    "population": 3359818
+  },
+  {
+    "name": "Rabat",
+    "country": "Morocco",
+    "countryCode": "MA",
+    "admin1": "Rabat-Sale-Kenitra",
+    "latitude": 34.0209,
+    "longitude": -6.8416,
+    "population": 577827
+  },
+  {
+    "name": "Marrakesh",
+    "country": "Morocco",
+    "countryCode": "MA",
+    "admin1": "Marrakesh-Safi",
+    "latitude": 31.6295,
+    "longitude": -7.9811,
+    "population": 928850,
+    "aliases": [
+      "marrakech"
+    ]
+  },
+  {
+    "name": "Fes",
+    "country": "Morocco",
+    "countryCode": "MA",
+    "admin1": "Fes-Meknes",
+    "latitude": 34.0331,
+    "longitude": -5.0003,
+    "population": 1112072,
+    "aliases": [
+      "fez"
+    ]
+  },
+  {
+    "name": "Algiers",
+    "country": "Algeria",
+    "countryCode": "DZ",
+    "admin1": "Algiers Province",
+    "latitude": 36.7538,
+    "longitude": 3.0588,
+    "population": 3915811
+  },
+  {
+    "name": "Oran",
+    "country": "Algeria",
+    "countryCode": "DZ",
+    "admin1": "Oran Province",
+    "latitude": 35.6971,
+    "longitude": -0.6308,
+    "population": 803329
+  },
+  {
+    "name": "Tunis",
+    "country": "Tunisia",
+    "countryCode": "TN",
+    "admin1": "Tunis Governorate",
+    "latitude": 36.8065,
+    "longitude": 10.1815,
+    "population": 1056247
+  },
+  {
+    "name": "Tripoli",
+    "country": "Libya",
+    "countryCode": "LY",
+    "admin1": "Tripoli District",
+    "latitude": 32.8872,
+    "longitude": 13.1913,
+    "population": 1150989
+  },
+  {
+    "name": "Khartoum",
+    "country": "Sudan",
+    "countryCode": "SD",
+    "admin1": "Khartoum State",
+    "latitude": 15.5007,
+    "longitude": 32.5599,
+    "population": 5274321
+  },
+  {
+    "name": "Lagos",
+    "country": "Nigeria",
+    "countryCode": "NG",
+    "admin1": "Lagos State",
+    "latitude": 6.5244,
+    "longitude": 3.3792,
+    "population": 15388000
+  },
+  {
+    "name": "Abuja",
+    "country": "Nigeria",
+    "countryCode": "NG",
+    "admin1": "Federal Capital Territory",
+    "latitude": 9.0765,
+    "longitude": 7.3986,
+    "population": 1235880
+  },
+  {
+    "name": "Kano",
+    "country": "Nigeria",
+    "countryCode": "NG",
+    "admin1": "Kano State",
+    "latitude": 12.0022,
+    "longitude": 8.592,
+    "population": 3626068
+  },
+  {
+    "name": "Accra",
+    "country": "Ghana",
+    "countryCode": "GH",
+    "admin1": "Greater Accra Region",
+    "latitude": 5.6037,
+    "longitude": -0.187,
+    "population": 2388000
+  },
+  {
+    "name": "Nairobi",
+    "country": "Kenya",
+    "countryCode": "KE",
+    "admin1": "Nairobi County",
+    "latitude": -1.2921,
+    "longitude": 36.8219,
+    "population": 4397073
+  },
+  {
+    "name": "Mombasa",
+    "country": "Kenya",
+    "countryCode": "KE",
+    "admin1": "Mombasa County",
+    "latitude": -4.0435,
+    "longitude": 39.6682,
+    "population": 1208333
+  },
+  {
+    "name": "Dar es Salaam",
+    "country": "Tanzania",
+    "countryCode": "TZ",
+    "admin1": "Dar es Salaam Region",
+    "latitude": -6.7924,
+    "longitude": 39.2083,
+    "population": 6701000,
+    "aliases": [
+      "dar"
+    ]
+  },
+  {
+    "name": "Addis Ababa",
+    "country": "Ethiopia",
+    "countryCode": "ET",
+    "admin1": "Addis Ababa",
+    "latitude": 8.9806,
+    "longitude": 38.7578,
+    "population": 5730344
+  },
+  {
+    "name": "Mogadishu",
+    "country": "Somalia",
+    "countryCode": "SO",
+    "admin1": "Banaadir",
+    "latitude": 2.0469,
+    "longitude": 45.3182,
+    "population": 2587183
+  },
+  {
+    "name": "Kampala",
+    "country": "Uganda",
+    "countryCode": "UG",
+    "admin1": "Central Region",
+    "latitude": 0.3476,
+    "longitude": 32.5825,
+    "population": 1680600
+  },
+  {
+    "name": "Johannesburg",
+    "country": "South Africa",
+    "countryCode": "ZA",
+    "admin1": "Gauteng",
+    "latitude": -26.2041,
+    "longitude": 28.0473,
+    "population": 5635127
+  },
+  {
+    "name": "Cape Town",
+    "country": "South Africa",
+    "countryCode": "ZA",
+    "admin1": "Western Cape",
+    "latitude": -33.9249,
+    "longitude": 18.4241,
+    "population": 4770000
+  },
+  {
+    "name": "London",
+    "country": "United Kingdom",
+    "countryCode": "GB",
+    "admin1": "England",
+    "latitude": 51.5074,
+    "longitude": -0.1278,
+    "population": 9648110
+  },
+  {
+    "name": "Birmingham",
+    "country": "United Kingdom",
+    "countryCode": "GB",
+    "admin1": "England",
+    "latitude": 52.4862,
+    "longitude": -1.8904,
+    "population": 1141816
+  },
+  {
+    "name": "Manchester",
+    "country": "United Kingdom",
+    "countryCode": "GB",
+    "admin1": "England",
+    "latitude": 53.4808,
+    "longitude": -2.2426,
+    "population": 568996
+  },
+  {
+    "name": "Leicester",
+    "country": "United Kingdom",
+    "countryCode": "GB",
+    "admin1": "England",
+    "latitude": 52.6369,
+    "longitude": -1.1398,
+    "population": 368600
+  },
+  {
+    "name": "Paris",
+    "country": "France",
+    "countryCode": "FR",
+    "admin1": "Ile-de-France",
+    "latitude": 48.8566,
+    "longitude": 2.3522,
+    "population": 2161000
+  },
+  {
+    "name": "Brussels",
+    "country": "Belgium",
+    "countryCode": "BE",
+    "admin1": "Brussels-Capital Region",
+    "latitude": 50.8503,
+    "longitude": 4.3517,
+    "population": 185103
+  },
+  {
+    "name": "Amsterdam",
+    "country": "Netherlands",
+    "countryCode": "NL",
+    "admin1": "North Holland",
+    "latitude": 52.3676,
+    "longitude": 4.9041,
+    "population": 921468
+  },
+  {
+    "name": "Rotterdam",
+    "country": "Netherlands",
+    "countryCode": "NL",
+    "admin1": "South Holland",
+    "latitude": 51.9244,
+    "longitude": 4.4777,
+    "population": 663900
+  },
+  {
+    "name": "Berlin",
+    "country": "Germany",
+    "countryCode": "DE",
+    "admin1": "Berlin",
+    "latitude": 52.52,
+    "longitude": 13.405,
+    "population": 3576873
+  },
+  {
+    "name": "Frankfurt",
+    "country": "Germany",
+    "countryCode": "DE",
+    "admin1": "Hesse",
+    "latitude": 50.1109,
+    "longitude": 8.6821,
+    "population": 773068,
+    "aliases": [
+      "frankfurt am main"
+    ]
+  },
+  {
+    "name": "Rome",
+    "country": "Italy",
+    "countryCode": "IT",
+    "admin1": "Lazio",
+    "latitude": 41.9028,
+    "longitude": 12.4964,
+    "population": 2748109
+  },
+  {
+    "name": "Milan",
+    "country": "Italy",
+    "countryCode": "IT",
+    "admin1": "Lombardy",
+    "latitude": 45.4642,
+    "longitude": 9.19,
+    "population": 1351562
+  },
+  {
+    "name": "Madrid",
+    "country": "Spain",
+    "countryCode": "ES",
+    "admin1": "Community of Madrid",
+    "latitude": 40.4168,
+    "longitude": -3.7038,
+    "population": 3223334
+  },
+  {
+    "name": "Barcelona",
+    "country": "Spain",
+    "countryCode": "ES",
+    "admin1": "Catalonia",
+    "latitude": 41.3874,
+    "longitude": 2.1686,
+    "population": 1620343
+  },
+  {
+    "name": "Vienna",
+    "country": "Austria",
+    "countryCode": "AT",
+    "admin1": "Vienna",
+    "latitude": 48.2082,
+    "longitude": 16.3738,
+    "population": 2000000
+  },
+  {
+    "name": "Zurich",
+    "country": "Switzerland",
+    "countryCode": "CH",
+    "admin1": "Zurich",
+    "latitude": 47.3769,
+    "longitude": 8.5417,
+    "population": 443037,
+    "aliases": [
+      "zuerich"
+    ]
+  },
+  {
+    "name": "Geneva",
+    "country": "Switzerland",
+    "countryCode": "CH",
+    "admin1": "Geneva",
+    "latitude": 46.2044,
+    "longitude": 6.1432,
+    "population": 203856
+  },
+  {
+    "name": "Stockholm",
+    "country": "Sweden",
+    "countryCode": "SE",
+    "admin1": "Stockholm County",
+    "latitude": 59.3293,
+    "longitude": 18.0686,
+    "population": 984748
+  },
+  {
+    "name": "Oslo",
+    "country": "Norway",
+    "countryCode": "NO",
+    "admin1": "Oslo",
+    "latitude": 59.9139,
+    "longitude": 10.7522,
+    "population": 717710
+  },
+  {
+    "name": "Copenhagen",
+    "country": "Denmark",
+    "countryCode": "DK",
+    "admin1": "Capital Region",
+    "latitude": 55.6761,
+    "longitude": 12.5683,
+    "population": 653664
+  },
+  {
+    "name": "Moscow",
+    "country": "Russia",
+    "countryCode": "RU",
+    "admin1": "Moscow",
+    "latitude": 55.7558,
+    "longitude": 37.6173,
+    "population": 13149803
+  },
+  {
+    "name": "Saint Petersburg",
+    "country": "Russia",
+    "countryCode": "RU",
+    "admin1": "Saint Petersburg",
+    "latitude": 59.9311,
+    "longitude": 30.3609,
+    "population": 5601911,
+    "aliases": [
+      "st petersburg",
+      "st. petersburg"
+    ]
+  },
+  {
+    "name": "Toronto",
+    "country": "Canada",
+    "countryCode": "CA",
+    "admin1": "Ontario",
+    "latitude": 43.6532,
+    "longitude": -79.3832,
+    "population": 2794356
+  },
+  {
+    "name": "Montreal",
+    "country": "Canada",
+    "countryCode": "CA",
+    "admin1": "Quebec",
+    "latitude": 45.5017,
+    "longitude": -73.5673,
+    "population": 1762949
+  },
+  {
+    "name": "Vancouver",
+    "country": "Canada",
+    "countryCode": "CA",
+    "admin1": "British Columbia",
+    "latitude": 49.2827,
+    "longitude": -123.1207,
+    "population": 662248
+  },
+  {
+    "name": "New York",
+    "country": "United States",
+    "countryCode": "US",
+    "admin1": "New York",
+    "latitude": 40.7128,
+    "longitude": -74.006,
+    "population": 8336817,
+    "aliases": [
+      "nyc",
+      "new york city"
+    ]
+  },
+  {
+    "name": "Los Angeles",
+    "country": "United States",
+    "countryCode": "US",
+    "admin1": "California",
+    "latitude": 34.0522,
+    "longitude": -118.2437,
+    "population": 3820914,
+    "aliases": [
+      "la"
+    ]
+  },
+  {
+    "name": "Chicago",
+    "country": "United States",
+    "countryCode": "US",
+    "admin1": "Illinois",
+    "latitude": 41.8781,
+    "longitude": -87.6298,
+    "population": 2664452
+  },
+  {
+    "name": "Houston",
+    "country": "United States",
+    "countryCode": "US",
+    "admin1": "Texas",
+    "latitude": 29.7604,
+    "longitude": -95.3698,
+    "population": 2304580
+  },
+  {
+    "name": "Dallas",
+    "country": "United States",
+    "countryCode": "US",
+    "admin1": "Texas",
+    "latitude": 32.7767,
+    "longitude": -96.797,
+    "population": 1304379
+  },
+  {
+    "name": "Washington",
+    "country": "United States",
+    "countryCode": "US",
+    "admin1": "District of Columbia",
+    "latitude": 38.9072,
+    "longitude": -77.0369,
+    "population": 678972,
+    "aliases": [
+      "washington dc",
+      "dc"
+    ]
+  },
+  {
+    "name": "San Francisco",
+    "country": "United States",
+    "countryCode": "US",
+    "admin1": "California",
+    "latitude": 37.7749,
+    "longitude": -122.4194,
+    "population": 808988,
+    "aliases": [
+      "sf"
+    ]
+  },
+  {
+    "name": "Seattle",
+    "country": "United States",
+    "countryCode": "US",
+    "admin1": "Washington",
+    "latitude": 47.6062,
+    "longitude": -122.3321,
+    "population": 755078
+  },
+  {
+    "name": "Atlanta",
+    "country": "United States",
+    "countryCode": "US",
+    "admin1": "Georgia",
+    "latitude": 33.749,
+    "longitude": -84.388,
+    "population": 510823
+  },
+  {
+    "name": "Miami",
+    "country": "United States",
+    "countryCode": "US",
+    "admin1": "Florida",
+    "latitude": 25.7617,
+    "longitude": -80.1918,
+    "population": 455924
+  },
+  {
+    "name": "Detroit",
+    "country": "United States",
+    "countryCode": "US",
+    "admin1": "Michigan",
+    "latitude": 42.3314,
+    "longitude": -83.0458,
+    "population": 633218
+  },
+  {
+    "name": "Sydney",
+    "country": "Australia",
+    "countryCode": "AU",
+    "admin1": "New South Wales",
+    "latitude": -33.8688,
+    "longitude": 151.2093,
+    "population": 5312163
+  },
+  {
+    "name": "Melbourne",
+    "country": "Australia",
+    "countryCode": "AU",
+    "admin1": "Victoria",
+    "latitude": -37.8136,
+    "longitude": 144.9631,
+    "population": 5078193
+  },
+  {
+    "name": "Perth",
+    "country": "Australia",
+    "countryCode": "AU",
+    "admin1": "Western Australia",
+    "latitude": -31.9505,
+    "longitude": 115.8605,
+    "population": 2141834
+  },
+  {
+    "name": "Auckland",
+    "country": "New Zealand",
+    "countryCode": "NZ",
+    "admin1": "Auckland",
+    "latitude": -36.8509,
+    "longitude": 174.7645,
+    "population": 1695200
+  },
+  {
+    "name": "São Paulo",
+    "country": "Brazil",
+    "countryCode": "BR",
+    "admin1": "São Paulo",
+    "latitude": -23.5505,
+    "longitude": -46.6333,
+    "population": 11451245,
+    "aliases": [
+      "sao paulo"
+    ]
+  },
+  {
+    "name": "Rio de Janeiro",
+    "country": "Brazil",
+    "countryCode": "BR",
+    "admin1": "Rio de Janeiro",
+    "latitude": -22.9068,
+    "longitude": -43.1729,
+    "population": 6211223,
+    "aliases": [
+      "rio"
+    ]
+  },
+  {
+    "name": "Brasília",
+    "country": "Brazil",
+    "countryCode": "BR",
+    "admin1": "Federal District",
+    "latitude": -15.7939,
+    "longitude": -47.8828,
+    "population": 2817381,
+    "aliases": [
+      "brasilia"
+    ]
+  },
+  {
+    "name": "Salvador",
+    "country": "Brazil",
+    "countryCode": "BR",
+    "admin1": "Bahia",
+    "latitude": -12.9777,
+    "longitude": -38.5016,
+    "population": 2417678
+  },
+  {
+    "name": "Curitiba",
+    "country": "Brazil",
+    "countryCode": "BR",
+    "admin1": "Paraná",
+    "latitude": -25.4284,
+    "longitude": -49.2733,
+    "population": 1773733,
+    "aliases": [
+      "curitiba"
+    ]
+  },
+  {
+    "name": "Tokyo",
+    "country": "Japan",
+    "countryCode": "JP",
+    "admin1": "Tokyo",
+    "latitude": 35.6762,
+    "longitude": 139.6503,
+    "population": 13960000
+  },
+  {
+    "name": "Osaka",
+    "country": "Japan",
+    "countryCode": "JP",
+    "admin1": "Osaka",
+    "latitude": 34.6937,
+    "longitude": 135.5023,
+    "population": 2750000
+  },
+  {
+    "name": "Yokohama",
+    "country": "Japan",
+    "countryCode": "JP",
+    "admin1": "Kanagawa",
+    "latitude": 35.4437,
+    "longitude": 139.638,
+    "population": 3777491
+  },
+  {
+    "name": "Nagoya",
+    "country": "Japan",
+    "countryCode": "JP",
+    "admin1": "Aichi",
+    "latitude": 35.1815,
+    "longitude": 136.9066,
+    "population": 2325000
+  },
+  {
+    "name": "Sapporo",
+    "country": "Japan",
+    "countryCode": "JP",
+    "admin1": "Hokkaido",
+    "latitude": 43.0618,
+    "longitude": 141.3545,
+    "population": 1952000
+  },
+  {
+    "name": "Manila",
+    "country": "Philippines",
+    "countryCode": "PH",
+    "admin1": "Metro Manila",
+    "latitude": 14.5995,
+    "longitude": 120.9842,
+    "population": 1846513
+  },
+  {
+    "name": "Quezon City",
+    "country": "Philippines",
+    "countryCode": "PH",
+    "admin1": "Metro Manila",
+    "latitude": 14.676,
+    "longitude": 121.0437,
+    "population": 2960048,
+    "aliases": [
+      "quezon"
+    ]
+  },
+  {
+    "name": "Davao",
+    "country": "Philippines",
+    "countryCode": "PH",
+    "admin1": "Davao del Sur",
+    "latitude": 7.1907,
+    "longitude": 125.4553,
+    "population": 1776949,
+    "aliases": [
+      "davao city"
+    ]
+  },
+  {
+    "name": "Cebu City",
+    "country": "Philippines",
+    "countryCode": "PH",
+    "admin1": "Cebu",
+    "latitude": 10.3157,
+    "longitude": 123.8854,
+    "population": 964169,
+    "aliases": [
+      "cebu"
+    ]
+  },
+  {
+    "name": "Zamboanga",
+    "country": "Philippines",
+    "countryCode": "PH",
+    "admin1": "Zamboanga Peninsula",
+    "latitude": 6.9214,
+    "longitude": 122.079,
+    "population": 977234,
+    "aliases": [
+      "zamboanga city"
+    ]
+  },
+  {
+    "name": "Bangkok",
+    "country": "Thailand",
+    "countryCode": "TH",
+    "admin1": "Bangkok",
+    "latitude": 13.7563,
+    "longitude": 100.5018,
+    "population": 10539000
+  },
+  {
+    "name": "Chiang Mai",
+    "country": "Thailand",
+    "countryCode": "TH",
+    "admin1": "Chiang Mai",
+    "latitude": 18.7883,
+    "longitude": 98.9853,
+    "population": 1272402
+  },
+  {
+    "name": "Hat Yai",
+    "country": "Thailand",
+    "countryCode": "TH",
+    "admin1": "Songkhla",
+    "latitude": 7.0084,
+    "longitude": 100.4747,
+    "population": 414000
+  },
+  {
+    "name": "Phuket",
+    "country": "Thailand",
+    "countryCode": "TH",
+    "admin1": "Phuket",
+    "latitude": 7.8804,
+    "longitude": 98.3923,
+    "population": 790308
+  },
+  {
+    "name": "Pattani",
+    "country": "Thailand",
+    "countryCode": "TH",
+    "admin1": "Pattani",
+    "latitude": 6.8695,
+    "longitude": 101.2505,
+    "population": 72813
+  },
+  {
+    "name": "Kathmandu",
+    "country": "Nepal",
+    "countryCode": "NP",
+    "admin1": "Bagmati",
+    "latitude": 27.7172,
+    "longitude": 85.324,
+    "population": 1442271
+  },
+  {
+    "name": "Biratnagar",
+    "country": "Nepal",
+    "countryCode": "NP",
+    "admin1": "Koshi",
+    "latitude": 26.4525,
+    "longitude": 87.2718,
+    "population": 242548
+  },
+  {
+    "name": "Colombo",
+    "country": "Sri Lanka",
+    "countryCode": "LK",
+    "admin1": "Western Province",
+    "latitude": 6.9271,
+    "longitude": 79.8612,
+    "population": 752993
+  },
+  {
+    "name": "Kandy",
+    "country": "Sri Lanka",
+    "countryCode": "LK",
+    "admin1": "Central Province",
+    "latitude": 7.2906,
+    "longitude": 80.6337,
+    "population": 125400
+  },
+  {
+    "name": "Galle",
+    "country": "Sri Lanka",
+    "countryCode": "LK",
+    "admin1": "Southern Province",
+    "latitude": 6.0535,
+    "longitude": 80.221,
+    "population": 93118
+  },
+  {
+    "name": "Sana'a",
+    "country": "Yemen",
+    "countryCode": "YE",
+    "admin1": "Sana'a",
+    "latitude": 15.3694,
+    "longitude": 44.191,
+    "population": 2936248,
+    "aliases": [
+      "sanaa"
+    ]
+  },
+  {
+    "name": "Aden",
+    "country": "Yemen",
+    "countryCode": "YE",
+    "admin1": "Aden",
+    "latitude": 12.7855,
+    "longitude": 45.0187,
+    "population": 1000000
+  },
+  {
+    "name": "Damascus",
+    "country": "Syria",
+    "countryCode": "SY",
+    "admin1": "Damascus",
+    "latitude": 33.5138,
+    "longitude": 36.2765,
+    "population": 1711000
+  },
+  {
+    "name": "Aleppo",
+    "country": "Syria",
+    "countryCode": "SY",
+    "admin1": "Aleppo",
+    "latitude": 36.2021,
+    "longitude": 37.1343,
+    "population": 2098000
+  },
+  {
+    "name": "Mexico City",
+    "country": "Mexico",
+    "countryCode": "MX",
+    "admin1": "Mexico City",
+    "latitude": 19.4326,
+    "longitude": -99.1332,
+    "population": 9209944,
+    "aliases": [
+      "cdmx"
+    ]
+  },
+  {
+    "name": "Guadalajara",
+    "country": "Mexico",
+    "countryCode": "MX",
+    "admin1": "Jalisco",
+    "latitude": 20.6597,
+    "longitude": -103.3496,
+    "population": 1495182
+  },
+  {
+    "name": "Monterrey",
+    "country": "Mexico",
+    "countryCode": "MX",
+    "admin1": "Nuevo León",
+    "latitude": 25.6866,
+    "longitude": -100.3161,
+    "population": 1142994
+  },
+  {
+    "name": "Buenos Aires",
+    "country": "Argentina",
+    "countryCode": "AR",
+    "admin1": "Buenos Aires",
+    "latitude": -34.6037,
+    "longitude": -58.3816,
+    "population": 3120612
+  },
+  {
+    "name": "Córdoba",
+    "country": "Argentina",
+    "countryCode": "AR",
+    "admin1": "Córdoba",
+    "latitude": -31.4201,
+    "longitude": -64.1888,
+    "population": 1565112,
+    "aliases": [
+      "cordoba"
+    ]
+  },
+  {
+    "name": "Marseille",
+    "country": "France",
+    "countryCode": "FR",
+    "admin1": "Provence-Alpes-Côte d'Azur",
+    "latitude": 43.2965,
+    "longitude": 5.3698,
+    "population": 873076
+  },
+  {
+    "name": "Lyon",
+    "country": "France",
+    "countryCode": "FR",
+    "admin1": "Auvergne-Rhône-Alpes",
+    "latitude": 45.764,
+    "longitude": 4.8357,
+    "population": 522228
+  },
+  {
+    "name": "Lille",
+    "country": "France",
+    "countryCode": "FR",
+    "admin1": "Hauts-de-France",
+    "latitude": 50.6292,
+    "longitude": 3.0573,
+    "population": 236710
+  },
+  {
+    "name": "Toulouse",
+    "country": "France",
+    "countryCode": "FR",
+    "admin1": "Occitanie",
+    "latitude": 43.6047,
+    "longitude": 1.4442,
+    "population": 504078
+  },
+  {
+    "name": "Hamburg",
+    "country": "Germany",
+    "countryCode": "DE",
+    "admin1": "Hamburg",
+    "latitude": 53.5511,
+    "longitude": 9.9937,
+    "population": 1917085
+  },
+  {
+    "name": "Cologne",
+    "country": "Germany",
+    "countryCode": "DE",
+    "admin1": "North Rhine-Westphalia",
+    "latitude": 50.9375,
+    "longitude": 6.9603,
+    "population": 1083498,
+    "aliases": [
+      "koln",
+      "köln"
+    ]
+  },
+  {
+    "name": "Munich",
+    "country": "Germany",
+    "countryCode": "DE",
+    "admin1": "Bavaria",
+    "latitude": 48.1351,
+    "longitude": 11.582,
+    "population": 1584428
+  },
+  {
+    "name": "Calgary",
+    "country": "Canada",
+    "countryCode": "CA",
+    "admin1": "Alberta",
+    "latitude": 51.0447,
+    "longitude": -114.0719,
+    "population": 1306784
+  },
+  {
+    "name": "Ottawa",
+    "country": "Canada",
+    "countryCode": "CA",
+    "admin1": "Ontario",
+    "latitude": 45.4215,
+    "longitude": -75.6972,
+    "population": 1017449
+  },
+  {
+    "name": "Brisbane",
+    "country": "Australia",
+    "countryCode": "AU",
+    "admin1": "Queensland",
+    "latitude": -27.4698,
+    "longitude": 153.0251,
+    "population": 2560720
+  },
+  {
+    "name": "Wellington",
+    "country": "New Zealand",
+    "countryCode": "NZ",
+    "admin1": "Wellington",
+    "latitude": -41.2866,
+    "longitude": 174.7756,
+    "population": 215100
+  },
+  {
+    "name": "Cumilla",
+    "country": "Bangladesh",
+    "countryCode": "BD",
+    "admin1": "Chattogram Division",
+    "latitude": 23.4607,
+    "longitude": 91.1809,
+    "population": 389411,
+    "aliases": [
+      "comilla"
+    ]
+  },
+  {
+    "name": "Barishal",
+    "country": "Bangladesh",
+    "countryCode": "BD",
+    "admin1": "Barishal Division",
+    "latitude": 22.701,
+    "longitude": 90.3535,
+    "population": 328278,
+    "aliases": [
+      "barisal"
+    ]
+  },
+  {
+    "name": "Rangpur",
+    "country": "Bangladesh",
+    "countryCode": "BD",
+    "admin1": "Rangpur Division",
+    "latitude": 25.7439,
+    "longitude": 89.2752,
+    "population": 307053
+  },
+  {
+    "name": "Gazipur",
+    "country": "Bangladesh",
+    "countryCode": "BD",
+    "admin1": "Dhaka Division",
+    "latitude": 23.9999,
+    "longitude": 90.4203,
+    "population": 1441301
+  },
+  {
+    "name": "Narayanganj",
+    "country": "Bangladesh",
+    "countryCode": "BD",
+    "admin1": "Dhaka Division",
+    "latitude": 23.6238,
+    "longitude": 90.5,
+    "population": 967951
+  },
+  {
+    "name": "Faisalabad",
+    "country": "Pakistan",
+    "countryCode": "PK",
+    "admin1": "Punjab",
+    "latitude": 31.4504,
+    "longitude": 73.135,
+    "population": 3204726
+  },
+  {
+    "name": "Gujranwala",
+    "country": "Pakistan",
+    "countryCode": "PK",
+    "admin1": "Punjab",
+    "latitude": 32.1877,
+    "longitude": 74.1945,
+    "population": 2027001
+  },
+  {
+    "name": "Quetta",
+    "country": "Pakistan",
+    "countryCode": "PK",
+    "admin1": "Balochistan",
+    "latitude": 30.1798,
+    "longitude": 66.975,
+    "population": 1001205
+  },
+  {
+    "name": "Hyderabad",
+    "country": "Pakistan",
+    "countryCode": "PK",
+    "admin1": "Sindh",
+    "latitude": 25.396,
+    "longitude": 68.3578,
+    "population": 1732693
+  },
+  {
+    "name": "Sialkot",
+    "country": "Pakistan",
+    "countryCode": "PK",
+    "admin1": "Punjab",
+    "latitude": 32.4945,
+    "longitude": 74.5229,
+    "population": 655852
+  },
+  {
+    "name": "Pune",
+    "country": "India",
+    "countryCode": "IN",
+    "admin1": "Maharashtra",
+    "latitude": 18.5204,
+    "longitude": 73.8567,
+    "population": 3124458
+  },
+  {
+    "name": "Jaipur",
+    "country": "India",
+    "countryCode": "IN",
+    "admin1": "Rajasthan",
+    "latitude": 26.9124,
+    "longitude": 75.7873,
+    "population": 3046163
+  },
+  {
+    "name": "Patna",
+    "country": "India",
+    "countryCode": "IN",
+    "admin1": "Bihar",
+    "latitude": 25.5941,
+    "longitude": 85.1376,
+    "population": 2046652
+  },
+  {
+    "name": "Kozhikode",
+    "country": "India",
+    "countryCode": "IN",
+    "admin1": "Kerala",
+    "latitude": 11.2588,
+    "longitude": 75.7804,
+    "population": 609224,
+    "aliases": [
+      "calicut"
+    ]
+  },
+  {
+    "name": "Srinagar",
+    "country": "India",
+    "countryCode": "IN",
+    "admin1": "Jammu and Kashmir",
+    "latitude": 34.0837,
+    "longitude": 74.7973,
+    "population": 1180570
+  },
+  {
+    "name": "Surat",
+    "country": "India",
+    "countryCode": "IN",
+    "admin1": "Gujarat",
+    "latitude": 21.1702,
+    "longitude": 72.8311,
+    "population": 4467797
+  },
+  {
+    "name": "Bekasi",
+    "country": "Indonesia",
+    "countryCode": "ID",
+    "admin1": "West Java",
+    "latitude": -6.2383,
+    "longitude": 106.9756,
+    "population": 2543676
+  },
+  {
+    "name": "Depok",
+    "country": "Indonesia",
+    "countryCode": "ID",
+    "admin1": "West Java",
+    "latitude": -6.4025,
+    "longitude": 106.7942,
+    "population": 2056961
+  },
+  {
+    "name": "Semarang",
+    "country": "Indonesia",
+    "countryCode": "ID",
+    "admin1": "Central Java",
+    "latitude": -6.9667,
+    "longitude": 110.4167,
+    "population": 1653524
+  },
+  {
+    "name": "Makassar",
+    "country": "Indonesia",
+    "countryCode": "ID",
+    "admin1": "South Sulawesi",
+    "latitude": -5.1477,
+    "longitude": 119.4327,
+    "population": 1423877
+  },
+  {
+    "name": "Klang",
+    "country": "Malaysia",
+    "countryCode": "MY",
+    "admin1": "Selangor",
+    "latitude": 3.0438,
+    "longitude": 101.445,
+    "population": 879867
+  },
+  {
+    "name": "Ipoh",
+    "country": "Malaysia",
+    "countryCode": "MY",
+    "admin1": "Perak",
+    "latitude": 4.5975,
+    "longitude": 101.0901,
+    "population": 866772
+  },
+  {
+    "name": "Kota Bharu",
+    "country": "Malaysia",
+    "countryCode": "MY",
+    "admin1": "Kelantan",
+    "latitude": 6.1254,
+    "longitude": 102.2381,
+    "population": 491237
+  },
+  {
+    "name": "Kota Kinabalu",
+    "country": "Malaysia",
+    "countryCode": "MY",
+    "admin1": "Sabah",
+    "latitude": 5.9804,
+    "longitude": 116.0735,
+    "population": 500421
+  },
+  {
+    "name": "Al Ain",
+    "country": "United Arab Emirates",
+    "countryCode": "AE",
+    "admin1": "Abu Dhabi",
+    "latitude": 24.1302,
+    "longitude": 55.8023,
+    "population": 846747
+  },
+  {
+    "name": "Ajman",
+    "country": "United Arab Emirates",
+    "countryCode": "AE",
+    "admin1": "Ajman",
+    "latitude": 25.4052,
+    "longitude": 55.5136,
+    "population": 490035
+  },
+  {
+    "name": "Taif",
+    "country": "Saudi Arabia",
+    "countryCode": "SA",
+    "admin1": "Makkah Province",
+    "latitude": 21.2854,
+    "longitude": 40.4267,
+    "population": 689000
+  },
+  {
+    "name": "Tabuk",
+    "country": "Saudi Arabia",
+    "countryCode": "SA",
+    "admin1": "Tabuk Province",
+    "latitude": 28.3998,
+    "longitude": 36.57,
+    "population": 667000
+  },
+  {
+    "name": "Abha",
+    "country": "Saudi Arabia",
+    "countryCode": "SA",
+    "admin1": "Asir Province",
+    "latitude": 18.2164,
+    "longitude": 42.5053,
+    "population": 366551
+  },
+  {
+    "name": "Bradford",
+    "country": "United Kingdom",
+    "countryCode": "GB",
+    "admin1": "England",
+    "latitude": 53.795,
+    "longitude": -1.7594,
+    "population": 546412
+  },
+  {
+    "name": "Glasgow",
+    "country": "United Kingdom",
+    "countryCode": "GB",
+    "admin1": "Scotland",
+    "latitude": 55.8642,
+    "longitude": -4.2518,
+    "population": 635640
+  },
+  {
+    "name": "Leeds",
+    "country": "United Kingdom",
+    "countryCode": "GB",
+    "admin1": "England",
+    "latitude": 53.8008,
+    "longitude": -1.5491,
+    "population": 811956
+  },
+  {
+    "name": "Mississauga",
+    "country": "Canada",
+    "countryCode": "CA",
+    "admin1": "Ontario",
+    "latitude": 43.589,
+    "longitude": -79.6441,
+    "population": 717961
+  },
+  {
+    "name": "Edmonton",
+    "country": "Canada",
+    "countryCode": "CA",
+    "admin1": "Alberta",
+    "latitude": 53.5461,
+    "longitude": -113.4938,
+    "population": 1010899
+  },
+  {
+    "name": "Winnipeg",
+    "country": "Canada",
+    "countryCode": "CA",
+    "admin1": "Manitoba",
+    "latitude": 49.8954,
+    "longitude": -97.1385,
+    "population": 749607
+  },
+  {
+    "name": "Philadelphia",
+    "country": "United States",
+    "countryCode": "US",
+    "admin1": "Pennsylvania",
+    "latitude": 39.9526,
+    "longitude": -75.1652,
+    "population": 1567442
+  },
+  {
+    "name": "Phoenix",
+    "country": "United States",
+    "countryCode": "US",
+    "admin1": "Arizona",
+    "latitude": 33.4484,
+    "longitude": -112.074,
+    "population": 1608139
+  },
+  {
+    "name": "Boston",
+    "country": "United States",
+    "countryCode": "US",
+    "admin1": "Massachusetts",
+    "latitude": 42.3601,
+    "longitude": -71.0589,
+    "population": 675647
+  },
+  {
+    "name": "Minneapolis",
+    "country": "United States",
+    "countryCode": "US",
+    "admin1": "Minnesota",
+    "latitude": 44.9778,
+    "longitude": -93.265,
+    "population": 429954
+  },
+  {
+    "name": "Charlotte",
+    "country": "United States",
+    "countryCode": "US",
+    "admin1": "North Carolina",
+    "latitude": 35.2271,
+    "longitude": -80.8431,
+    "population": 911311
+  },
+  {
+    "name": "Columbus",
+    "country": "United States",
+    "countryCode": "US",
+    "admin1": "Ohio",
+    "latitude": 39.9612,
+    "longitude": -82.9988,
+    "population": 905748
+  }
+]

@@ -49,6 +49,8 @@ export function createStorage(options: { id: string; encryptionKey?: string }): 
     // 🔐 Use secure encryption key from device keychain/keystore
     // Falls back to cached key if SecureStore hasn't been initialized yet
     const secureKey = options.encryptionKey || getCachedEncryptionKey();
+    const keyFingerprint = secureKey.length >= 8 ? `${secureKey.slice(0, 4)}...${secureKey.slice(-4)}` : '(short)';
+    logger.log(`🔐 [StorageDiag] Creating encrypted MMKV id="${options.id}" with key fingerprint: ${keyFingerprint}`);
     
     // 🎯 NEW v4.x API: Use createMMKV() instead of new MMKV()
     const storage = createMMKV({
@@ -56,11 +58,15 @@ export function createStorage(options: { id: string; encryptionKey?: string }): 
       encryptionKey: secureKey,
     });
     
-    logger.log('✅ MMKV initialized with secure encryption key');
+    // Sanity check: can we read from this store?
+    const keyCount = storage.getAllKeys().length;
+    logger.log(`✅ [StorageDiag] MMKV "${options.id}" opened OK — ${keyCount} key(s) found`);
     return storage;
   } catch (error) {
     // 3. Safe Fallback
-    logger.error('⚠️ MMKV failed to load. Using in-memory storage fallback.', error);
+    const errMsg = error instanceof Error ? error.message : String(error);
+    logger.error(`🚨 [StorageDiag] MMKV "${options.id}" FAILED to open — falling back to MemoryStorage. Error: ${errMsg}`);
+    logger.error(`🚨 [StorageDiag] THIS MEANS ALL ENCRYPTED DATA (settings, location, name) IS INACCESSIBLE`);
     return new MemoryStorage();
   }
 }

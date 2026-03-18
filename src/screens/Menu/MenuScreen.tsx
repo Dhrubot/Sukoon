@@ -1,5 +1,5 @@
 // src/screens/Menu/MenuScreen.tsx
-import React, { useCallback, useRef, useState } from 'react';
+import React, { useRef } from 'react';
 import {
   View,
   Text,
@@ -8,15 +8,16 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import { useStore } from '../../store/useStore';
-import ReflectionGardenService from '../../services/ReflectionGardenService';
-import Svg, { Path, Circle, Line, Polyline, Rect } from 'react-native-svg';
+import Svg, { Path, Circle, Line, Polyline } from 'react-native-svg';
 import DailyVerse, { DailyVerseRef } from '../../components/common/DailyVerse';
+import { withAlpha } from '../../utils/color';
 
 // ═══════════════════════════════════════════════════════════════
 // Outline SVG Icon Components
@@ -103,20 +104,6 @@ const AdhkarIcon: React.FC<{ color: string; size: number }> = ({ color, size }) 
   </Svg>
 );
 
-// Compass / qibla icon
-const CompassIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Circle cx="12" cy="12" r="10" stroke={color} strokeWidth={1.8} />
-    <Path
-      d="M16.24 7.76l-2.12 6.36-6.36 2.12 2.12-6.36 6.36-2.12z"
-      stroke={color}
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
-
 // Journey / trending-up icon
 const JourneyIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -137,38 +124,12 @@ const JourneyIcon: React.FC<{ color: string; size: number }> = ({ color, size })
   </Svg>
 );
 
-// Wrench / setup icon
-const SetupIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"
-      stroke={color}
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
-
 // Settings / gear icon
 const SettingsIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Circle cx="12" cy="12" r="3" stroke={color} strokeWidth={1.8} />
     <Path
       d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"
-      stroke={color}
-      strokeWidth={1.8}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    />
-  </Svg>
-);
-
-// Support / heart icon
-const SupportIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
-  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-    <Path
-      d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"
       stroke={color}
       strokeWidth={1.8}
       strokeLinecap="round"
@@ -205,32 +166,32 @@ interface QuickAccessItem {
 
 const quickAccessItems: QuickAccessItem[] = [
   {
+    icon: AdhkarIcon,
+    title: 'Adhkar',
+    subtitle: 'Morning and evening remembrance',
+    screen: 'Adhkar',
+    colorKey: 'amber',
+  },
+  {
+    icon: DuaIcon,
+    title: 'Dua',
+    subtitle: 'Supplications for daily life',
+    screen: 'DuaLibrary',
+    colorKey: 'purple',
+  },
+  {
     icon: TasbihIcon,
-    title: 'Dhikr Counter',
-    subtitle: 'Tasbih tracker',
+    title: 'Tasbih',
+    subtitle: 'Post-prayer dhikr',
     screen: 'Tasbih',
     colorKey: 'teal',
   },
   {
     icon: VerseIcon,
     title: 'Daily Verse',
-    subtitle: 'Quran reflection',
+    subtitle: 'A single ayah for reflection',
     screen: '',
     colorKey: 'gold',
-  },
-  {
-    icon: DuaIcon,
-    title: 'Dua Collection',
-    subtitle: 'Supplications & prayers',
-    screen: 'DuaLibrary',
-    colorKey: 'purple',
-  },
-  {
-    icon: AdhkarIcon,
-    title: 'Adhkar',
-    subtitle: 'Morning & evening',
-    screen: 'Adhkar',
-    colorKey: 'amber',
   },
 ];
 
@@ -267,35 +228,8 @@ const MenuScreen: React.FC = () => {
   const { theme, themeMode, toggleTheme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const navigation = useNavigation();
-  const { currentDawam, todayPrayerRecords } = useStore();
+  const { currentDawam } = useStore();
   const dailyVerseRef = useRef<DailyVerseRef>(null);
-
-  // Garden data
-  const [gardenSummary, setGardenSummary] = useState({
-    totalPlants: 0,
-    newBlooms: 0,
-    dawam: 0,
-  });
-
-  useFocusEffect(
-    useCallback(() => {
-      try {
-        const data = ReflectionGardenService.getGardenData(28);
-        setGardenSummary({
-          totalPlants: data.totalPlants,
-          newBlooms: data.newBlooms,
-          dawam: currentDawam,
-        });
-      } catch {
-        // Silently ignore
-      }
-    }, [currentDawam])
-  );
-
-  const prayedCount = todayPrayerRecords.filter(r => r.status === 'prayed').length;
-  const totalPrayers = 5;
-  const progressPercent = prayedCount / totalPrayers;
-
   const handleNavigate = (screen: string) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     navigation.navigate(screen as never);
@@ -305,12 +239,13 @@ const MenuScreen: React.FC = () => {
   const getAccentColors = (colorKey: string) => {
     switch (colorKey) {
       case 'teal':
-        return { bg: theme.colors.interactive.active + '14', icon: theme.colors.interactive.active };
+        return { bg: withAlpha(theme.colors.interactive.active, 0.08), icon: theme.colors.interactive.active };
       case 'gold':
-        return { bg: theme.colors.gold + '18', icon: theme.colors.gold };
-      case 'purple':
+        return { bg: withAlpha(theme.colors.gold, 0.09), icon: theme.colors.gold };
+      case 'purple': {
         const taraweeh = (theme.colors.prayer as Record<string, string>)?.taraweeh;
-        return { bg: taraweeh ? taraweeh + '20' : '#a78bfa20', icon: taraweeh || '#a78bfa' };
+        return { bg: taraweeh ? withAlpha(taraweeh, 0.12) : '#a78bfa20', icon: taraweeh || '#a78bfa' };
+      }
       case 'amber':
         return { bg: '#f59e0b18', icon: '#f59e0b' };
       default:
@@ -320,33 +255,19 @@ const MenuScreen: React.FC = () => {
 
   // More features list
   const moreFeatures: MoreFeatureItem[] = [
-    // {
-    //   icon: CompassIcon,
-    //   title: 'Qibla Compass',
-    //   subtitle: 'Find direction of prayer',
-    //   screen: 'QiblaFinder',
-    //   iconBg: theme.colors.interactive.active + '14',
-    // },
     {
       icon: JourneyIcon,
-      title: 'My Journey',
-      subtitle: 'Reflect on your prayer history',
+      title: 'Prayer Insights',
+      subtitle: 'Private reflection of your journey',
       screen: 'MyJourney',
-      iconBg: theme.colors.interactive.active + '14',
-    },
-    {
-      icon: SetupIcon,
-      title: 'Setup & Health',
-      subtitle: 'Location, reminders, diagnostics',
-      screen: 'SetupHealth',
-      iconBg: theme.colors.gold + '18',
+      iconBg: withAlpha(theme.colors.interactive.active, 0.08),
     },
     {
       icon: ThemeIcon,
       title: 'App Theme',
       subtitle: `Currently: ${themeMode === 'dark' ? 'Dark' : themeMode === 'light' ? 'Light' : 'Midnight'}`,
       screen: '',
-      iconBg: theme.colors.interactive.active + '14',
+      iconBg: withAlpha(theme.colors.interactive.active, 0.08),
       onPress: toggleTheme,
     },
     {
@@ -356,29 +277,27 @@ const MenuScreen: React.FC = () => {
       screen: 'Settings',
       iconBg: theme.colors.card.hover,
     },
-    {
-      icon: SupportIcon,
-      title: 'Support Us',
-      subtitle: 'Help keep this app ad-free',
-      screen: 'Support',
-      iconBg: '#fb718518',
-    },
   ];
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Explore</Text>
-        <Text style={styles.headerSubtitle}>Features & tools for your practice</Text>
-      </View>
-
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
+      <LinearGradient
+        colors={[theme.colors.ambient.top, theme.colors.ambient.bottom]}
+        style={styles.gradient}
       >
-        {/* ── Your Practice: Garden Featured Card ── */}
-        <Text style={styles.sectionLabel}>YOUR PRACTICE</Text>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>Companion Tools</Text>
+          {/* <Text style={styles.headerSubtitle}>Secondary devotions and private reflection around prayer</Text> */}
+        </View>
+
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+
+            {/* ── Private reflection entry ── */}
+        <Text style={styles.sectionLabel}>PRIVATE REFLECTION</Text>
         <TouchableOpacity
           style={styles.gardenCard}
           onPress={() => handleNavigate('ReflectionGarden')}
@@ -390,64 +309,24 @@ const MenuScreen: React.FC = () => {
               <GardenIcon color={theme.colors.interactive.active} size={26} />
             </View>
             <View style={styles.gardenText}>
-              <Text style={styles.gardenTitle}>Your Garden</Text>
+              <Text style={styles.gardenTitle}>Tuba Tree</Text>
               <Text style={styles.gardenSub}>
-                {gardenSummary.dawam > 0
-                  ? `${gardenSummary.dawam} days of dawam · Growing`
-                  : 'Your garden awaits'}
+                {currentDawam > 0
+                  ? `${currentDawam} days of dawam recorded`
+                  : 'A private record of return and reflection'}
               </Text>
               <Text style={styles.gardenDesc}>
-                Track your prayer consistency and grow a spiritual tree with each prayer.
+                Each prayer you reflect on nourishes a leaf
               </Text>
-            </View>
-          </View>
-
-          {/* Progress bar */}
-          <View style={styles.gardenProgressRow}>
-            <View style={styles.progLabel}>
-              <Text style={styles.progLabelText}>Today's progress</Text>
-              <Text style={[styles.progLabelValue, { color: theme.colors.interactive.active }]}>
-                {prayedCount > 0 ? `${prayedCount} of ${totalPrayers} prayers` : 'ready when you are'}
-              </Text>
-            </View>
-            <View style={styles.progBar}>
-              <View
-                style={[
-                  styles.progFill,
-                  {
-                    width: `${Math.max(progressPercent * 100, 2)}%`,
-                    backgroundColor: theme.colors.interactive.active,
-                  },
-                ]}
-              />
-            </View>
-          </View>
-
-          {/* Stats row */}
-          <View style={styles.gardenStats}>
-            <View style={styles.gardenStat}>
-              <Text style={[styles.gsVal, { color: theme.colors.interactive.active }]}>
-                {gardenSummary.dawam > 0 ? gardenSummary.dawam : '—'}
-              </Text>
-              <Text style={styles.gsLabel}>Dawam</Text>
-            </View>
-            <View style={[styles.gardenStat, styles.gardenStatMiddle]}>
-              <Text style={[styles.gsVal, { color: theme.colors.interactive.active }]}>
-                {gardenSummary.totalPlants > 0 ? gardenSummary.totalPlants : '—'}
-              </Text>
-              <Text style={styles.gsLabel}>Prayers</Text>
-            </View>
-            <View style={styles.gardenStat}>
-              <Text style={[styles.gsVal, { color: theme.colors.interactive.active }]}>
-                {gardenSummary.newBlooms > 0 ? gardenSummary.newBlooms : '—'}
-              </Text>
-              <Text style={styles.gsLabel}>Blooms</Text>
             </View>
           </View>
         </TouchableOpacity>
 
         {/* ── Quick Access Grid ── */}
-        <Text style={styles.sectionLabel}>QUICK ACCESS</Text>
+        <Text style={styles.sectionLabel}>DEVOTIONS</Text>
+        {/* <Text style={styles.sectionIntro}>
+          Keep these close, but secondary. They support prayer without competing with it.
+        </Text> */}
         <View style={styles.quickGrid}>
           {quickAccessItems.map((item) => {
             const accent = getAccentColors(item.colorKey);
@@ -480,7 +359,7 @@ const MenuScreen: React.FC = () => {
         </View>
 
         {/* ── More Features List ── */}
-        <Text style={styles.sectionLabel}>MORE FEATURES</Text>
+        <Text style={styles.sectionLabel}>APP</Text>
         <View style={styles.featuresList}>
           {moreFeatures.map((item, index) => (
             <TouchableOpacity
@@ -509,8 +388,9 @@ const MenuScreen: React.FC = () => {
           <Text style={styles.appVersion}>Sukoon v1.0.0</Text>
           <Text style={styles.blessing}>May Allah accept our efforts</Text>
         </View>
-      </ScrollView>
-    <DailyVerse ref={dailyVerseRef} modalOnly />
+        </ScrollView>
+      </LinearGradient>
+      <DailyVerse ref={dailyVerseRef} modalOnly />
     </SafeAreaView>
   );
 };
@@ -524,21 +404,24 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flex: 1,
     backgroundColor: theme.colors.background.primary,
   },
+  gradient: {
+    flex: 1,
+  },
   header: {
     paddingHorizontal: 20,
     paddingTop: 12,
     paddingBottom: 18,
   },
   headerTitle: {
-    fontSize: 26,
-    fontFamily: theme.typography.fontFamily.headingRegular,
+    fontSize: 22,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
   },
   headerSubtitle: {
-    fontSize: 12,
+    fontSize: theme.typography.fontSize.sm,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.muted,
-    marginTop: 3,
+    marginTop: 4,
     letterSpacing: 0.2,
   },
   scrollView: {
@@ -551,7 +434,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
 
   // Section labels
   sectionLabel: {
-    fontSize: 10,
+    fontSize: theme.typography.fontSize.xs - 1,
     letterSpacing: 1.8,
     fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.text.muted,
@@ -559,12 +442,20 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginTop: 20,
     marginLeft: 2,
   },
+  sectionIntro: {
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
+    color: theme.colors.text.muted,
+    marginBottom: 12,
+    marginLeft: 2,
+    lineHeight: 20,
+  },
 
   // ── Garden Featured Card ──
   gardenCard: {
     backgroundColor: theme.colors.card.background,
     borderWidth: 1,
-    borderColor: theme.colors.interactive.active + '30',
+    borderColor: withAlpha(theme.colors.interactive.active, 0.19),
     borderRadius: 18,
     overflow: 'hidden',
     position: 'relative',
@@ -576,7 +467,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     width: 150,
     height: 150,
     borderRadius: 75,
-    backgroundColor: theme.colors.interactive.active + '0A',
+    backgroundColor: withAlpha(theme.colors.interactive.active, 0.04),
   },
   gardenTop: {
     flexDirection: 'row',
@@ -587,9 +478,9 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: 16,
-    backgroundColor: theme.colors.interactive.active + '14',
+    backgroundColor: withAlpha(theme.colors.interactive.active, 0.08),
     borderWidth: 1,
-    borderColor: theme.colors.interactive.active + '28',
+    borderColor: withAlpha(theme.colors.interactive.active, 0.16),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -609,11 +500,11 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     opacity: 0.8,
   },
   gardenDesc: {
-    fontSize: 12,
+    fontSize: theme.typography.fontSize.sm,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     marginTop: 6,
-    lineHeight: 17,
+    lineHeight: 18,
   },
   gardenProgressRow: {
     paddingHorizontal: 18,
@@ -660,9 +551,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderRightColor: theme.colors.interactive.active + '15',
   },
   gsVal: {
-    fontSize: 20,
-    fontFamily: theme.typography.fontFamily.headingRegular,
-    fontWeight: '300',
+    fontSize: theme.typography.fontSize['2xl'],
+    fontFamily: theme.typography.fontFamily.bodySemibold,
   },
   gsLabel: {
     fontSize: 10,

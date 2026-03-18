@@ -3,14 +3,17 @@
 import React, { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { useAppStateChange } from '../hooks/useAppStateChange';
 import { useStore } from '../store/useStore';
+import { useShallow } from 'zustand/react/shallow';
 import PrayerTimeService from '../services/PrayerTimeService';
-import { PrayerTime, PrayerName, PrayerTimes, Location } from '../types';
+import { PrayerTime, PrayerName, PrayerTimes } from '../types';
 import { isValidCoordinates } from '../utils/locationValidation';
 import logger from '../utils/logger';
 import WidgetService from '../services/WidgetService';
 import LiveActivityService from '../services/LiveActivityService';
 import StorageService from '../services/StorageService';
 import { getLocalDateKey } from '../utils/dateHelpers';
+import { ISHA_FALLBACK_DEADLINE_MS } from '../constants/time';
+import { usePrayerTimeRefresh } from '../hooks/usePrayerTimeRefresh';
 
 interface PrayerTimesContextType {
   todayPrayerTimes: PrayerTime[];
@@ -20,6 +23,8 @@ interface PrayerTimesContextType {
   error: string | null;
   hasValidLocation: boolean;
   isOffline: boolean;
+  usingHardcodedDefaults: boolean;
+  highLatitudeWarning: boolean;
   refreshPrayerTimes: () => Promise<void>;
 }
 
@@ -31,6 +36,8 @@ const PrayerTimesContext = createContext<PrayerTimesContextType>({
   error: null,
   hasValidLocation: false,
   isOffline: false,
+  usingHardcodedDefaults: false,
+  highLatitudeWarning: false,
   refreshPrayerTimes: async () => {},
 });
 
@@ -51,11 +58,25 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
     setTodaySunrise,
     setTodaySunset,
     setTodayMidnight,
-  } = useStore();
+  } = useStore(useShallow((s) => ({
+    location: s.location,
+    userSettings: s.userSettings,
+    setTodayPrayerTimes: s.setTodayPrayerTimes,
+    setNextPrayer: s.setNextPrayer,
+    todayPrayerTimes: s.todayPrayerTimes,
+    nextPrayer: s.nextPrayer,
+    setTodaySunrise: s.setTodaySunrise,
+    setTodaySunset: s.setTodaySunset,
+    setTodayMidnight: s.setTodayMidnight,
+  })));
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [tomorrowFajr, setTomorrowFajr] = useState<PrayerTime | null>(null);
   const [isOffline, setIsOffline] = useState(false);
+  const [usingHardcodedDefaults, setUsingHardcodedDefaults] = useState(false);
+  const [highLatitudeWarning, setHighLatitudeWarning] = useState(false);
+  const { recordRefreshAttempt, recordRefreshSuccess } = usePrayerTimeRefresh();
+  const lastAnnouncedPrayerStateRef = useRef<string | null>(null);
 
   const adjustmentsKey = useMemo(() => {
     return JSON.stringify(userSettings?.adjustments ?? {});
@@ -81,6 +102,24 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
   ): PrayerTime | null => {
     if (todayPrayers.length === 0) return null;
 
+    const announcePrayerState = (kind: 'active' | 'upcoming' | 'tomorrow', prayerName: PrayerName) => {
+      const key = `${kind}:${prayerName}`;
+      if (lastAnnouncedPrayerStateRef.current === key) return;
+      lastAnnouncedPrayerStateRef.current = key;
+
+      if (kind === 'active') {
+        logger.log('✅ Active prayer window:', prayerName);
+        return;
+      }
+
+      if (kind === 'tomorrow') {
+        logger.log('✅ Next prayer is tomorrow\'s Fajr');
+        return;
+      }
+
+      logger.log('✅ Next prayer today:', prayerName);
+    };
+
     const now = new Date();
     // First pass: find the first prayer whose TIME hasn't arrived yet (upcoming)
     for (let i = 0; i < todayPrayers.length; i++) {
@@ -93,11 +132,11 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
             ? sunrise
             : todayPrayers[i].time; // deadline = next prayer's start
           if (now < prevDeadline) {
-            logger.log('✅ Active prayer window:', prev.name);
+            announcePrayerState('active', prev.name);
             return { ...prev, isNext: true };
           }
         }
-        logger.log('✅ Next prayer today:', todayPrayers[i].name);
+        announcePrayerState('upcoming', todayPrayers[i].name);
         return { ...todayPrayers[i], isNext: true };
       }
     }
@@ -110,34 +149,31 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
       ? tmrwFajr.time
       : midnight
         ? midnight
-        : new Date(lastPrayer.time.getTime() + 4 * 60 * 60 * 1000); // 4h fallback
+        : new Date(lastPrayer.time.getTime() + ISHA_FALLBACK_DEADLINE_MS);
     if (now < ishaAbsoluteDeadline) {
-      logger.log('✅ Active prayer window (last):', lastPrayer.name);
+      announcePrayerState('active', lastPrayer.name);
       return { ...lastPrayer, isNext: true };
     }
 
     // If no more prayers today, return tomorrow's Fajr
     if (tmrwFajr) {
-      logger.log('✅ Next prayer is tomorrow\'s Fajr');
+      announcePrayerState('tomorrow', tmrwFajr.name);
       return { ...tmrwFajr, isNext: true };
     }
 
     return null;
   };
 
-  // ⚠️ CLOSURE FRAGILITY: This function closes over `location`, `userSettings`,
-  // and `hasValidLocation` from the current render. When called from the
-  // useAppStateChange callback (day-boundary reload), these values reflect the
-  // render that last registered the callback — NOT necessarily the latest store
-  // state. This is safe today because:
-  //   1. The useEffect that calls loadPrayerTimes lists the relevant deps, so
-  //      React re-creates the closure whenever they change.
-  //   2. The AppState callback only calls loadPrayerTimes on day-boundary
-  //      crossings, and location/settings rarely change between renders.
-  // If you ever need truly fresh values inside a deferred or async call path,
-  // read directly from `useStore.getState()` instead of relying on the closure.
+  // 🔒 STALE-CLOSURE FIX: This function reads location/userSettings from
+  // useStore.getState() at call time — NOT from the render closure. This
+  // guarantees fresh values when called from the useAppStateChange callback
+  // (day-boundary reload after international travel, timezone change, etc.).
   const loadPrayerTimes = async () => {
-    if (!hasValidLocation || !userSettings) {
+    // Read fresh values from store at call time (not from closure)
+    const { location: freshLocation, userSettings: freshSettings } = useStore.getState();
+    const freshHasValidLocation = isValidCoordinates(freshLocation);
+
+    if (!freshHasValidLocation || !freshSettings) {
       logger.log('⏳ PrayerTimesProvider: Waiting for prerequisites');
       return;
     }
@@ -147,10 +183,10 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
     // Stale-while-revalidate: try disk cache for instant render before API call
     const today = new Date();
     const cached = PrayerTimeService.getCachedPrayerTimesFromDisk(
-      location,
+      freshLocation,
       today,
-      userSettings.calculationMethod,
-      userSettings.asrJuristic
+      freshSettings.calculationMethod,
+      freshSettings.asrJuristic
     );
 
     if (cached) {
@@ -159,7 +195,7 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
       const cachedPrayerTimes: PrayerTime[] = fardNames.map(name => {
         const timeStr = cached.times[name as keyof PrayerTimes];
         const prayerDate = PrayerTimeService.parseTimeToDate(timeStr, today);
-        const adj = userSettings.adjustments?.[name as keyof typeof userSettings.adjustments] || 0;
+        const adj = freshSettings.adjustments?.[name as keyof typeof freshSettings.adjustments] || 0;
         const adjusted = adj ? new Date(prayerDate.getTime() + adj * 60000) : prayerDate;
         return { name, time: adjusted, timestamp: adjusted.getTime(), isNext: false };
       });
@@ -188,28 +224,36 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
     setError(null);
 
     try {
+      recordRefreshAttempt(
+        freshLocation,
+        freshSettings.calculationMethod,
+        freshSettings.asrJuristic
+      );
       const tomorrow = new Date(today);
       tomorrow.setDate(tomorrow.getDate() + 1);
 
       // Load today's prayer times with sunrise/sunset
       const todayResult = await PrayerTimeService.getPrayerTimesList(
-        location,
+        freshLocation,
         today,
-        userSettings.calculationMethod,
-        userSettings.adjustments,
-        userSettings.asrJuristic
+        freshSettings.calculationMethod,
+        freshSettings.adjustments,
+        freshSettings.asrJuristic
       );
+      const todayFetchWasFallback = PrayerTimeService.lastFetchWasFallback;
+      const usedHardcodedDefaults = PrayerTimeService.usingHardcodedDefaults;
+      const hasHighLatitudeWarning = PrayerTimeService.highLatitudeWarning;
 
       // Always fetch tomorrow's Fajr — needed for Isha's fiqh deadline calculation
       // (Isha's window extends until tomorrow's Fajr, so we need it even before Isha adhan)
       let tomorrowFajrPrayer: PrayerTime | null = null;
       try {
         const tomorrowResult = await PrayerTimeService.getPrayerTimesList(
-          location,
+          freshLocation,
           tomorrow,
-          userSettings.calculationMethod,
-          userSettings.adjustments,
-          userSettings.asrJuristic
+          freshSettings.calculationMethod,
+          freshSettings.adjustments,
+          freshSettings.asrJuristic
         );
         tomorrowFajrPrayer = tomorrowResult.prayerTimes.find(p => p.name === 'Fajr') || null;
       } catch (err) {
@@ -242,8 +286,19 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
         setTodayPrayerTimes(syncedTimes);
       }
 
-      setIsOffline(PrayerTimeService.lastFetchWasFallback);
+      setIsOffline(todayFetchWasFallback);
+      setUsingHardcodedDefaults(usedHardcodedDefaults);
+      setHighLatitudeWarning(hasHighLatitudeWarning);
+      if (!todayFetchWasFallback) {
+        recordRefreshSuccess(
+          freshLocation,
+          freshSettings.calculationMethod,
+          freshSettings.asrJuristic
+        );
+      }
       lastLoadedDateRef.current = getLocalDateKey();
+      lastLoadedOffsetRef.current = new Date().getTimezoneOffset();
+      lastLoadedLocationRef.current = `${freshLocation.latitude.toFixed(3)},${freshLocation.longitude.toFixed(3)}`;
       logger.log('✅ Prayer times loaded successfully');
 
       // Push data to iOS widget
@@ -293,6 +348,9 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
   const recalcRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const runRecalcRef = useRef<() => void>(() => {});
   const lastLoadedDateRef = useRef<string>(getLocalDateKey());
+  const lastLoadedOffsetRef = useRef<number>(new Date().getTimezoneOffset());
+  const lastLoadedLocationRef = useRef<string | null>(null);
+  const lastBackgroundedAtRef = useRef<number | null>(null);
 
   const runRecalc = () => {
     if (todayPrayerTimes.length === 0) return;
@@ -348,18 +406,42 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
   // Resume/pause via shared AppState listener (single native bridge subscription)
   useAppStateChange((nextState) => {
     if (nextState === 'active') {
-      // Day-boundary check: if the date changed while backgrounded,
-      // reload prayer times entirely instead of just recalculating
       const currentDateKey = getLocalDateKey();
-      if (currentDateKey !== lastLoadedDateRef.current) {
-        logger.log(`📅 Day boundary crossed (${lastLoadedDateRef.current} → ${currentDateKey}), reloading prayer times`);
-        loadPrayerTimes();
+      const currentOffset = new Date().getTimezoneOffset();
+      const currentLocation = useStore.getState().location;
+      const currentLocationFingerprint = currentLocation
+        ? `${currentLocation.latitude.toFixed(3)},${currentLocation.longitude.toFixed(3)}`
+        : null;
+      const backgroundGapMs = lastBackgroundedAtRef.current
+        ? Date.now() - lastBackgroundedAtRef.current
+        : 0;
+
+      const shouldReload =
+        currentDateKey !== lastLoadedDateRef.current ||
+        currentOffset !== lastLoadedOffsetRef.current ||
+        (currentLocationFingerprint !== null &&
+          currentLocationFingerprint !== lastLoadedLocationRef.current) ||
+        backgroundGapMs >= 12 * 60 * 60 * 1000;
+
+      if (shouldReload) {
+        logger.log('📅 Prayer times invalidated on resume, reloading', {
+          previousDate: lastLoadedDateRef.current,
+          currentDate: currentDateKey,
+          previousOffset: lastLoadedOffsetRef.current,
+          currentOffset,
+          previousLocation: lastLoadedLocationRef.current,
+          currentLocation: currentLocationFingerprint,
+          backgroundGapMs,
+        });
+        void loadPrayerTimes();
+      } else {
+        tick();
       }
-      // Immediately recalculate stale nextPrayer and restart interval
-      tick();
+
+      lastBackgroundedAtRef.current = null;
       startInterval();
     } else {
-      // Pause interval when backgrounded/inactive
+      lastBackgroundedAtRef.current = Date.now();
       if (recalcRef.current) {
         clearInterval(recalcRef.current);
         recalcRef.current = null;
@@ -379,6 +461,8 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
     error,
     hasValidLocation,
     isOffline,
+    usingHardcodedDefaults,
+    highLatitudeWarning,
     refreshPrayerTimes,
   };
 

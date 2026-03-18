@@ -1,0 +1,18 @@
+{
+  "name": "sukoon-edge-api",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "build:city-index": "node ./scripts/build-city-index.mjs",
+    "review:city-search-misses": "node ./scripts/review-city-search-misses.mjs",
+    "sync:city-index": "wrangler kv bulk put --binding CACHE_KV dist/city-index.kv.json --preview false --remote",
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20260303.0",
+    "typescript": "^5.8.3",
+    "wrangler": "^4.6.0"
+  }
+}

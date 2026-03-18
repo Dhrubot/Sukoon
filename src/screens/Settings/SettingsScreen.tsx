@@ -1,11 +1,12 @@
 // src/screens/Settings/SettingsScreen.tsx (ENHANCED)
 import React, { useState } from 'react';
-import { View, Text, ScrollView, StyleSheet, Alert, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { LocationModal } from '../../components/LocationModal';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
-import { useTheme } from '../../providers/ThemeProvider';
 import { AppTheme } from '../../theme';
+import { useTheme } from '../../providers/ThemeProvider';
 
 // Hooks
 import { useSettingsManager } from './hooks';
@@ -30,13 +31,23 @@ import { CalculationMethodModal, NotificationModal, HijriAdjustmentModal } from 
 
 // Services
 import NotificationService from '../../services/NotificationService';
-import { getCachedHijriDate, getRawCachedHijriDate } from '../../utils/ramadan';
+import { getCachedHijriDate } from '../../utils/ramadan';
 import { NotificationDebugScreen } from '../Debug/NotificationDebugScreen';
 
-const SettingsScreen = ({ navigation }: any) => {
-  const styles = useThemedStyles(createStyles);
+type SettingsModalKey = 'calculation' | 'hijri' | 'notification' | 'location' | null;
+
+interface SettingsScreenProps {
+  navigation: {
+    navigate: (screen: string) => void;
+  };
+}
+
+const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   const { theme } = useTheme();
+  const styles = useThemedStyles(createStyles);
+  const ambientColors = [theme.colors.ambient.top, theme.colors.ambient.bottom] as const;
   const [showHijriModal, setShowHijriModal] = useState(false);
+  const [activeModal, setActiveModal] = useState<SettingsModalKey>(null);
 
   const {
     // Existing state
@@ -66,11 +77,11 @@ const SettingsScreen = ({ navigation }: any) => {
     updateLocation,
     handleResetApp,
     handleExportData,
+    handleImportData,
     handlePrivacyPolicy,
 
     // 🎯 NEW: Enhanced actions
     previewCalculationMethod,
-    selectLocationManually,
     testPrayerCalculations,
     showDebugInfo,
     refreshPrayerTimes,
@@ -79,13 +90,47 @@ const SettingsScreen = ({ navigation }: any) => {
   if (!userSettings) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Loading settings...</Text>
-          <Text style={styles.loadingSubtext}>Please wait while we prepare your settings</Text>
-        </View>
+        <LinearGradient colors={ambientColors} style={styles.gradient}>
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>Loading settings...</Text>
+            <Text style={styles.loadingSubtext}>Please wait while we prepare your settings</Text>
+          </View>
+        </LinearGradient>
       </SafeAreaView>
     );
   }
+
+  const closeAllModals = () => {
+    setActiveModal(null);
+    setShowCalculationPicker(false);
+    setShowHijriModal(false);
+    setShowNotificationModal(false);
+    setShowManualLocationModal(false);
+  };
+
+  const openCalculationModal = () => {
+    closeAllModals();
+    setActiveModal('calculation');
+    setShowCalculationPicker(true);
+  };
+
+  const openHijriModal = () => {
+    closeAllModals();
+    setActiveModal('hijri');
+    setShowHijriModal(true);
+  };
+
+  const openNotificationModal = () => {
+    closeAllModals();
+    setActiveModal('notification');
+    setShowNotificationModal(true);
+  };
+
+  const openLocationModal = () => {
+    closeAllModals();
+    setActiveModal('location');
+    setShowManualLocationModal(true);
+  };
 
   // Tahajjud toggle handler
   const handleToggleTahajjud = async () => {
@@ -116,19 +161,22 @@ const SettingsScreen = ({ navigation }: any) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <View style={styles.header}>
-          <Text style={styles.subtitle}>Prayer Preferences</Text>
-        </View>
+      <LinearGradient colors={ambientColors} style={styles.gradient}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={styles.scrollContent}
+        >
+          <View style={styles.header}>
+            <Text style={styles.eyebrow}>Settings</Text>
+            <Text style={styles.title}>Prayer Preferences</Text>
+            <Text style={styles.subtitle}>Reminders, calculations, location, and quiet adjustments</Text>
+          </View>
 
         {/* 1. Prayer Settings — Hero Card + Calculation */}
         <PrayerSettingsSection
           userSettings={userSettings}
           setUserSettings={setUserSettings}
-          onCalculationMethodPress={() => setShowCalculationPicker(true)}
+          onCalculationMethodPress={openCalculationModal}
           calculationMethods={calculationMethods}
           isUpdatingMethod={isUpdatingMethod}
           todayPrayerTimes={todayPrayerTimes}
@@ -143,7 +191,7 @@ const SettingsScreen = ({ navigation }: any) => {
         {/* 2. Notifications — consolidated with Tahajjud & Jumu'ah */}
         <NotificationSection
           userSettings={userSettings}
-          onNotificationPress={() => setShowNotificationModal(true)}
+          onNotificationPress={openNotificationModal}
           onToggleTahajjud={handleToggleTahajjud}
           onToggleJummah={handleToggleJummah}
         />
@@ -162,7 +210,7 @@ const SettingsScreen = ({ navigation }: any) => {
               const adj = userSettings.hijriAdjustment ?? 0;
               return adj === 0 ? 'Default' : adj === -1 ? '−1 Day' : '+1 Day';
             })()}
-            onPress={() => setShowHijriModal(true)}
+            onPress={openHijriModal}
           />
         </SettingSection>
 
@@ -171,65 +219,68 @@ const SettingsScreen = ({ navigation }: any) => {
           userSettings={userSettings}
           isUpdatingLocation={isUpdatingLocation}
           onUpdateLocation={updateLocation}
-          onSelectManually={selectLocationManually}
+          onSelectManually={openLocationModal}
           hasValidLocation={hasValidLocation}
         />
 
         <LocationModal
-          visible={showManualLocationModal}
-          onClose={() => setShowManualLocationModal(false)}
+          visible={showManualLocationModal && activeModal === 'location'}
+          onClose={closeAllModals}
         />
 
         {/* 5. App Data */}
         <AppDataSection
           onExportData={handleExportData}
+          onImportData={handleImportData}
           onResetApp={handleResetApp}
         />
 
         {/* 7. About */}
         <AboutSection
           onPrivacyPolicy={() => handlePrivacyPolicy(navigation)}
+          onSupport={() => navigation.navigate('Support')}
           onShowDebugInfo={__DEV__ ? showDebugInfo : undefined}
         />
 
-        {/* Dev only debugger screen */}
-        {__DEV__ && (
-          <NotificationDebugScreen />
-        )}
+          {/* Dev only debugger screen */}
+          {__DEV__ && (
+            <NotificationDebugScreen />
+          )}
 
-        {/* Dev-only: Connection status */}
-        {__DEV__ && (
-          <View style={styles.statusSection}>
-            <Text style={styles.statusTitle}>Connection Status</Text>
-            <View style={styles.statusRow}>
-              <Text style={styles.statusLabel}>Prayer Times:</Text>
-              <Text style={[
-                styles.statusValue,
-                hasValidLocation ? styles.statusConnected : styles.statusDisconnected
-              ]}>
-                {hasValidLocation ? 'Connected' : 'No Location'}
-              </Text>
+          {/* Dev-only: Connection status */}
+          {__DEV__ && (
+            <View style={styles.statusSection}>
+              <Text style={styles.statusTitle}>Connection Status</Text>
+              <View style={styles.statusRow}>
+                <Text style={styles.statusLabel}>Prayer Times:</Text>
+                <Text style={[
+                  styles.statusValue,
+                  hasValidLocation ? styles.statusConnected : styles.statusDisconnected
+                ]}>
+                  {hasValidLocation ? 'Connected' : 'No Location'}
+                </Text>
+              </View>
+              <View style={styles.statusRow}>
+                <Text style={styles.statusLabel}>Today's Prayers:</Text>
+                <Text style={styles.statusValue}>
+                  {prayerTimesLoading ? 'Loading...' : `${todayPrayerTimes.length} loaded`}
+                </Text>
+              </View>
+              <View style={styles.statusRow}>
+                <Text style={styles.statusLabel}>Next Prayer:</Text>
+                <Text style={styles.statusValue}>
+                  {nextPrayer ? `${nextPrayer.name}` : 'None'}
+                </Text>
+              </View>
             </View>
-            <View style={styles.statusRow}>
-              <Text style={styles.statusLabel}>Today's Prayers:</Text>
-              <Text style={styles.statusValue}>
-                {prayerTimesLoading ? 'Loading...' : `${todayPrayerTimes.length} loaded`}
-              </Text>
-            </View>
-            <View style={styles.statusRow}>
-              <Text style={styles.statusLabel}>Next Prayer:</Text>
-              <Text style={styles.statusValue}>
-                {nextPrayer ? `${nextPrayer.name}` : 'None'}
-              </Text>
-            </View>
-          </View>
-        )}
-      </ScrollView>
+          )}
+        </ScrollView>
+      </LinearGradient>
 
       {/* 🎯 ENHANCED: Calculation Method Modal with previews */}
       <CalculationMethodModal
-        visible={showCalculationPicker}
-        onClose={() => setShowCalculationPicker(false)}
+        visible={showCalculationPicker && activeModal === 'calculation'}
+        onClose={closeAllModals}
         calculationMethods={calculationMethods}
         selectedMethod={userSettings.calculationMethod}
         onMethodSelect={handleCalculationMethodChange}
@@ -242,8 +293,8 @@ const SettingsScreen = ({ navigation }: any) => {
 
       {/* Hijri Adjustment Modal */}
       <HijriAdjustmentModal
-        visible={showHijriModal}
-        onClose={() => setShowHijriModal(false)}
+        visible={showHijriModal && activeModal === 'hijri'}
+        onClose={closeAllModals}
         currentAdjustment={(userSettings.hijriAdjustment ?? 0) as -1 | 0 | 1}
         onAdjustmentChange={(val) => {
           setUserSettings({ ...userSettings, hijriAdjustment: val });
@@ -252,8 +303,8 @@ const SettingsScreen = ({ navigation }: any) => {
 
       {/* Notification Modal */}
       <NotificationModal
-        visible={showNotificationModal}
-        onClose={() => setShowNotificationModal(false)}
+        visible={showNotificationModal && activeModal === 'notification'}
+        onClose={closeAllModals}
         userSettings={userSettings}
         onUpdateSettings={setUserSettings}
       />
@@ -265,6 +316,9 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background.primary,
+  },
+  gradient: {
+    flex: 1,
   },
   scrollContent: {
     paddingBottom: theme.spacing.xl,
@@ -290,22 +344,26 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   header: {
     padding: theme.spacing.xl,
-    paddingBottom: theme.spacing.sm,
-    backgroundColor: theme.colors.background.primary,
-    borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border.secondary,
+    paddingBottom: theme.spacing.lg,
+  },
+  eyebrow: {
+    fontSize: theme.typography.fontSize.xs,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
+    color: theme.colors.text.muted,
+    letterSpacing: 1.4,
+    marginBottom: theme.spacing.sm,
+    textTransform: 'uppercase',
   },
   title: {
-    fontSize: theme.typography.fontSize['5xl'],
-    fontWeight: theme.typography.fontWeight.bold,
-    fontFamily: theme.typography.fontFamily.heading,
+    fontSize: theme.typography.fontSize.md,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
-    marginBottom: theme.spacing.sm,
   },
   subtitle: {
-    fontSize: theme.typography.fontSize.lg,
+    fontSize: theme.typography.fontSize.sm,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
+    marginTop: theme.spacing.xs,
   },
 
   // 🎯 NEW: Status section styles

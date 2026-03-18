@@ -77,7 +77,8 @@ function getHijriAdjustment(): -1 | 0 | 1 {
 function applyHijriAdjustment(h: HijriDate, offset: -1 | 0 | 1): HijriDate {
   if (offset === 0) return h;
 
-  let { day, month, year, monthNameEn, monthNameAr } = { ...h };
+  let { day, month, year, monthNameEn } = { ...h };
+  const { monthNameAr } = h;
 
   if (offset === 1) {
     const maxDay = hijriMonthLength(month);

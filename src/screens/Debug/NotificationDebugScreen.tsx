@@ -12,25 +12,34 @@ import {
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import NotificationService from '../../services/NotificationService';
+import NotificationTraceService from '../../services/NotificationTraceService';
 import { useStore } from '../../store/useStore';
 import { usePrayerTimes } from '../../providers/PrayerTimesProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import { CHANNELS, SOUNDS } from '../../constants/NotificationConstants';
-import { scheduleFullAdhan, stopFullAdhan } from '../../services/notifications/FullAdhanScheduler';
+import { scheduleFullAdhan } from '../../services/notifications/FullAdhanScheduler';
+import NotificationLedger, { LedgerHealth } from '../../services/NotificationLedger';
+
+type NotificationDebugInfo = Awaited<ReturnType<typeof NotificationService.getDebugInfo>>;
+type UpcomingNotification = NotificationDebugInfo['upcomingNotifications'][number];
 
 export const NotificationDebugScreen = () => {
   const styles = useThemedStyles(createStyles);
-  const [debugInfo, setDebugInfo] = useState<any>(null);
+  const [debugInfo, setDebugInfo] = useState<NotificationDebugInfo | null>(null);
   const [permissionStatus, setPermissionStatus] = useState<string>('unknown');
   const [scheduledCount, setScheduledCount] = useState(0);
   const [isAdhanPlaying, setIsAdhanPlaying] = useState(false);
+  const [ledgerHealth, setLedgerHealth] = useState<LedgerHealth | null>(null);
+  const [traceEvents, setTraceEvents] = useState(() => NotificationTraceService.getRecentEvents());
   const { userSettings } = useStore();
   const { todayPrayerTimes, nextPrayer } = usePrayerTimes();
 
   useEffect(() => {
     checkPermissions();
     loadDebugInfo();
+    loadLedgerHealth();
+    loadTraceEvents();
   }, []);
 
   // Stop adhan when leaving the screen
@@ -49,6 +58,14 @@ export const NotificationDebugScreen = () => {
     const info = await NotificationService.getDebugInfo();
     setDebugInfo(info);
     setScheduledCount(info.totalScheduledCount);
+  };
+
+  const loadLedgerHealth = () => {
+    setLedgerHealth(NotificationLedger.getHealth());
+  };
+
+  const loadTraceEvents = () => {
+    setTraceEvents(NotificationTraceService.getRecentEvents());
   };
 
   // 🧪 Test 1: Immediate Test Notification
@@ -159,6 +176,7 @@ export const NotificationDebugScreen = () => {
     try {
       await NotificationService.forceReschedule();
       await loadDebugInfo();
+      loadTraceEvents();
       Alert.alert('Success', 'Notifications rescheduled!');
     } catch (error) {
       Alert.alert('Error', `Failed: ${error}`);
@@ -170,6 +188,7 @@ export const NotificationDebugScreen = () => {
     try {
       await Notifications.cancelAllScheduledNotificationsAsync();
       await loadDebugInfo();
+      loadTraceEvents();
       Alert.alert('Success', 'All notifications cancelled');
     } catch (error) {
       Alert.alert('Error', `Failed: ${error}`);
@@ -238,6 +257,7 @@ export const NotificationDebugScreen = () => {
         <InfoRow label="Platform" value={Platform.OS} />
         <InfoRow label="Permission Status" value={permissionStatus} />
         <InfoRow label="Scheduled Count" value={scheduledCount.toString()} />
+        <InfoRow label="Trace Enabled" value={NotificationTraceService.isEnabled() ? 'Yes' : 'No'} />
       </View>
 
       {/* Prayer Times Info */}
@@ -261,17 +281,62 @@ export const NotificationDebugScreen = () => {
           {debugInfo.upcomingNotifications && debugInfo.upcomingNotifications.length > 0 && (
             <>
               <Text style={styles.subsectionTitle}>Next 3 Notifications:</Text>
-              {debugInfo.upcomingNotifications.slice(0, 3).map((notif: any, idx: number) => (
+              {debugInfo.upcomingNotifications.slice(0, 3).map((notif: UpcomingNotification, idx: number) => (
                 <View key={idx} style={styles.notificationCard}>
-                  <Text style={styles.notifText}>Prayer: {notif.prayer || 'N/A'}</Text>
-                  <Text style={styles.notifText}>Type: {notif.type}</Text>
-                  <Text style={styles.notifText}>Time: {notif.trigger}</Text>
+                  <Text style={styles.notifText}>Prayer: {String(notif.prayer ?? 'N/A')}</Text>
+                  <Text style={styles.notifText}>Type: {String(notif.type ?? 'Unknown')}</Text>
+                  <Text style={styles.notifText}>Time: {String(notif.trigger)}</Text>
                 </View>
               ))}
             </>
           )}
         </View>
       )}
+
+      {/* Notification Trace */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>Notification Trace</Text>
+        <InfoRow label="Stored Events" value={traceEvents.length.toString()} />
+
+        {traceEvents.length > 0 ? (
+          <>
+            <Text style={styles.subsectionTitle}>Recent Events:</Text>
+            {traceEvents.slice(0, 12).map((entry, idx) => (
+              <View key={`${entry.at}-${entry.event}-${idx}`} style={styles.notificationCard}>
+                <Text style={styles.notifText}>
+                  {new Date(entry.at).toLocaleTimeString()} · {entry.event}
+                </Text>
+                {entry.fields ? (
+                  <Text style={styles.notifText}>
+                    {Object.entries(entry.fields)
+                      .filter(([, value]) => value !== undefined)
+                      .map(([key, value]) => `${key}=${String(value)}`)
+                      .join(', ')}
+                  </Text>
+                ) : null}
+              </View>
+            ))}
+          </>
+        ) : (
+          <Text style={styles.noteText}>No trace events recorded yet.</Text>
+        )}
+
+        <TestButton
+          title="Refresh Notification Trace"
+          onPress={loadTraceEvents}
+          description="Reload recent trace events"
+        />
+        <TestButton
+          title="Clear Notification Trace"
+          onPress={() => {
+            NotificationTraceService.clear();
+            loadTraceEvents();
+            Alert.alert('Cleared', 'Notification trace has been cleared');
+          }}
+          description="Remove stored QA trace events"
+          danger
+        />
+      </View>
 
       {/* Test Buttons */}
       <View style={styles.section}>
@@ -344,10 +409,79 @@ export const NotificationDebugScreen = () => {
 
         <TestButton
           title="Refresh Debug Info"
-          onPress={loadDebugInfo}
+          onPress={() => {
+            loadDebugInfo();
+            loadTraceEvents();
+          }}
           description="Reload debug information"
         />
       </View>
+
+      {/* Notification Health (Ledger) */}
+      {ledgerHealth && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>📊 Notification Health</Text>
+          <InfoRow label="Tracked Scheduled" value={ledgerHealth.totalScheduled.toString()} />
+          <InfoRow label="Delivered" value={ledgerHealth.totalDelivered.toString()} />
+          <InfoRow label="Tapped" value={ledgerHealth.totalTapped.toString()} />
+          <InfoRow
+            label="Delivery Rate"
+            value={ledgerHealth.totalScheduled > 0 ? `${(ledgerHealth.deliveryRate * 100).toFixed(1)}%` : 'N/A'}
+          />
+          <InfoRow
+            label="Tap Rate"
+            value={ledgerHealth.totalDelivered > 0 ? `${(ledgerHealth.tapRate * 100).toFixed(1)}%` : 'N/A'}
+          />
+          <InfoRow label="Avg Drift" value={`${ledgerHealth.avgDriftSeconds}s`} />
+          <InfoRow label="Max Drift" value={`${ledgerHealth.maxDriftSeconds}s`} />
+          <InfoRow label="Missed (>5min)" value={ledgerHealth.missedNotifications.length.toString()} />
+
+          {ledgerHealth.missedNotifications.length > 0 && (
+            <>
+              <Text style={styles.subsectionTitle}>Missed Notifications:</Text>
+              {ledgerHealth.missedNotifications.map((entry, idx) => (
+                <View key={idx} style={styles.notificationCard}>
+                  <Text style={styles.notifText}>{entry.label}</Text>
+                  <Text style={styles.notifText}>Scheduled for: {new Date(entry.scheduledFor).toLocaleString()}</Text>
+                </View>
+              ))}
+            </>
+          )}
+
+          {ledgerHealth.recentEntries.length > 0 && (
+            <>
+              <Text style={styles.subsectionTitle}>Recent Entries (newest first):</Text>
+              {ledgerHealth.recentEntries.slice(0, 8).map((entry, idx) => (
+                <View key={idx} style={styles.notificationCard}>
+                  <Text style={styles.notifText}>{entry.label}</Text>
+                  <Text style={styles.notifText}>
+                    S: {new Date(entry.scheduledFor).toLocaleTimeString()}
+                    {entry.deliveredAt ? ` → D: ${new Date(entry.deliveredAt).toLocaleTimeString()}` : ' → ❌ Not delivered'}
+                    {entry.tappedAt ? ' → ✅ Tapped' : ''}
+                    {entry.driftSeconds !== null ? ` (${entry.driftSeconds}s drift)` : ''}
+                  </Text>
+                </View>
+              ))}
+            </>
+          )}
+
+          <TestButton
+            title="Clear Notification Ledger"
+            onPress={() => {
+              NotificationLedger.clear();
+              loadLedgerHealth();
+              Alert.alert('Cleared', 'Notification ledger has been cleared');
+            }}
+            description="Reset all tracked notification data"
+            danger
+          />
+          <TestButton
+            title="Refresh Health Data"
+            onPress={loadLedgerHealth}
+            description="Reload notification health metrics"
+          />
+        </View>
+      )}
 
       {/* Important Notes */}
       <View style={styles.section}>

@@ -1,13 +1,12 @@
 import { useState, useEffect } from "react";
+import { InteractionManager } from 'react-native';
 import * as SplashScreen from "expo-splash-screen";
 import StorageService from "../services/StorageService";
 import NotificationService from "../services/NotificationService";
 import PrayerTimeService from "../services/PrayerTimeService";
-import LocationService from "../services/LocationService";
 import { useStore } from "../store/useStore";
-import { Location as LocationType } from "../types";
 import { usePrayerTimeRefresh } from "./usePrayerTimeRefresh";
-import { initializeEncryptionKey } from "../utils/secureKeyManager";
+import { initializeEncryptionKey, getEncryptionSecurityState } from "../utils/secureKeyManager";
 import { isValidCoordinates } from "../utils/locationValidation";
 import logger from "../utils/logger";
 import PerformanceService from "../services/PerformanceService";
@@ -17,7 +16,6 @@ import ReflectionGardenService from "../services/ReflectionGardenService";
 interface AppInitializationState {
   isLoading: boolean;
   isFirstLaunch: boolean;
-  showLocationModal: boolean;
   error: string | null;
 }
 
@@ -25,12 +23,11 @@ export const useAppInitialization = () => {
   const [state, setState] = useState<AppInitializationState>({
     isLoading: true,
     isFirstLaunch: false,
-    showLocationModal: false,
     error: null,
   });
 
   const { setUserSettings, setLocation, setCurrentDawam, setEngagementDawam } = useStore();
-  const { shouldRefreshPrayerTimes } = usePrayerTimeRefresh();
+  const { shouldRefreshPrayerTimes, recordRefreshAttempt, recordRefreshSuccess } = usePrayerTimeRefresh();
 
   useEffect(() => {
     initializeApp();
@@ -39,6 +36,7 @@ export const useAppInitialization = () => {
   const initializeApp = async () => {
     const stopStartupTrace = await PerformanceService.startTrace('app_startup');
     try {
+      PerformanceService.markLaunchMilestone('app_init_started');
       logger.log("Initializing app...");
 
       // 🔐 Initialize secure encryption key first (before any storage access)
@@ -46,6 +44,11 @@ export const useAppInitialization = () => {
 
       // Create encrypted MMKV now that the key is ready
       await StorageService.initialize();
+      PerformanceService.markLaunchMilestone('storage_initialized');
+      const encryptionSecurityState = getEncryptionSecurityState();
+      if (encryptionSecurityState !== 'secure_store') {
+        logger.warn(`🔐 Storage security degraded: ${encryptionSecurityState}`);
+      }
 
       // Check if first launch
       const firstLaunch = StorageService.isFirstLaunch();
@@ -54,28 +57,14 @@ export const useAppInitialization = () => {
       let settings = StorageService.getUserSettings();
       if (!settings) {
         settings = StorageService.getDefaultSettings();
-        StorageService.setUserSettings(settings);
       }
 
       setUserSettings(settings);
+      PerformanceService.markLaunchMilestone('user_settings_loaded');
 
-      // One-time migration: split encrypted/unencrypted storage
-      StorageService.migrateSplitStorage();
-
-      // Prune old data (once per day, 365-day retention)
-      StorageService.pruneOldData(365);
-
-      // Check and update dawam on every boot (breaks dawam if yesterday was missed)
-      StorageService.updateDawam();
+      // Render immediately from stored counters; maintenance refresh runs after first paint.
       setCurrentDawam(StorageService.getCurrentDawam());
       setEngagementDawam(StorageService.getEngagementDawam());
-
-      // Bootstrap TreeGrowthState if it doesn't exist yet (one-time migration)
-      if (!TreeGrowthStateService.hasState()) {
-        logger.log("🌳 Bootstrapping TreeGrowthState from existing reflections...");
-        const existingPlants = ReflectionGardenService.getAllPlants(365);
-        TreeGrowthStateService.bootstrapFromExistingData(existingPlants);
-      }
 
       // ONLY SET LOCATION IF IT'S ACTUALLY VALID
       const isValidLocation = isValidCoordinates(settings.location);
@@ -90,43 +79,67 @@ export const useAppInitialization = () => {
 
       // Initialize notifications
       await NotificationService.initialize();
+      PerformanceService.markLaunchMilestone('notifications_initialized');
 
       // Check if prayer times need refreshing
       if (isValidCoordinates(settings.location)) {
         const needsRefresh = await shouldRefreshPrayerTimes(
           settings.location,
-          settings.calculationMethod
+          settings.calculationMethod,
+          settings.asrJuristic
         );
 
         if (needsRefresh) {
-          logger.log("Refreshing prayer times...");
-          try {
-            await PrayerTimeService.fetchPrayerTimes(
-              settings.location,
-              new Date(),
-              settings.calculationMethod,
-              settings.asrJuristic
-            );
-          } catch (error) {
-            logger.error("Failed to refresh prayer times:", error);
-            // Continue anyway, use cached times
+          const refreshDate = new Date();
+          if (PrayerTimeService.hasInFlightPrayerTimesFetch(
+            settings.location,
+            refreshDate,
+            settings.calculationMethod,
+            settings.asrJuristic
+          )) {
+            logger.log("♻️ Prayer times refresh already in progress — skipping duplicate boot refresh");
+          } else {
+            logger.log("Refreshing prayer times...");
+            try {
+              recordRefreshAttempt(
+                settings.location,
+                settings.calculationMethod,
+                settings.asrJuristic
+              );
+              await PrayerTimeService.fetchPrayerTimes(
+                settings.location,
+                refreshDate,
+                settings.calculationMethod,
+                settings.asrJuristic
+              );
+              if (!PrayerTimeService.lastFetchWasFallback) {
+                recordRefreshSuccess(
+                  settings.location,
+                  settings.calculationMethod,
+                  settings.asrJuristic
+                );
+              }
+            } catch (error) {
+              logger.error("Failed to refresh prayer times:", error);
+              // Continue anyway, use cached times
+            }
           }
         }
       }
 
-      // If no location is set, show location modal
-      const needsLocation = !isValidCoordinates(settings.location);
-
       setState({
         isLoading: false,
         isFirstLaunch: firstLaunch,
-        showLocationModal: needsLocation,
         error: null,
       });
+      PerformanceService.markLaunchMilestone('initial_state_ready');
 
       // Hide splash screen
       await SplashScreen.hideAsync();
+      PerformanceService.markLaunchMilestone('splash_hidden');
       await stopStartupTrace();
+      scheduleDeferredStartupMaintenance(encryptionSecurityState);
+      PerformanceService.finalizeLaunchSummary(firstLaunch ? 'first_launch' : 'app_launch');
       logger.log("App initialization complete");
     } catch (error) {
       logger.error("App initialization failed:", error);
@@ -138,8 +151,40 @@ export const useAppInitialization = () => {
 
       // Hide splash screen even on error
       await SplashScreen.hideAsync();
+      PerformanceService.markLaunchMilestone('app_init_failed');
       await stopStartupTrace();
+      PerformanceService.finalizeLaunchSummary('init_failed');
     }
+  };
+
+  const scheduleDeferredStartupMaintenance = (encryptionSecurityState: string) => {
+    InteractionManager.runAfterInteractions(() => {
+      void PerformanceService.traceAsync('startup_deferred_maintenance', async () => {
+        PerformanceService.markLaunchMilestone('deferred_maintenance_started');
+        StorageService.setValue('encryption_security_state', encryptionSecurityState);
+
+        // One-time migration: split encrypted/unencrypted storage
+        StorageService.migrateSplitStorage();
+
+        // Prune old data (once per day, 365-day retention)
+        StorageService.pruneOldData(365);
+
+        // Recompute dawam after first paint so boot stays responsive.
+        StorageService.updateDawam();
+        setCurrentDawam(StorageService.getCurrentDawam());
+        setEngagementDawam(StorageService.getEngagementDawam());
+
+        // Bootstrap TreeGrowthState if it doesn't exist yet (one-time migration)
+        if (!TreeGrowthStateService.hasState()) {
+          logger.log("🌳 Bootstrapping TreeGrowthState from existing reflections...");
+          const existingPlants = ReflectionGardenService.getAllPlants(365);
+          TreeGrowthStateService.bootstrapFromExistingData(existingPlants);
+        }
+        PerformanceService.markLaunchMilestone('deferred_maintenance_completed');
+      }).catch((error) => {
+        logger.error('Deferred startup maintenance failed:', error);
+      });
+    });
   };
 
   const completeOnboarding = () => {
@@ -163,29 +208,17 @@ export const useAppInitialization = () => {
       
       // Update location in store (triggers prayer time refresh)
       setLocation(settings.location);
-    } else {
-      logger.log('⚠️ Onboarding complete but no valid location set');
     }
 
     setState((prev) => ({
       ...prev,
       isFirstLaunch: false,
-      // If we have a valid location now, ensure the modal doesn't show
-      showLocationModal: !hasValidLocation, 
-    }));
-  };
-
-  const closeLocationModal = () => {
-    setState((prev) => ({
-      ...prev,
-      showLocationModal: false,
     }));
   };
 
   return {
     ...state,
     completeOnboarding,
-    closeLocationModal,
     retryInitialization: initializeApp,
   };
 };

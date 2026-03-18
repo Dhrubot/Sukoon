@@ -6,13 +6,11 @@ const {
   withInfoPlist,
   withDangerousMod,
   withXcodeProject,
-  withAndroidManifest,
   withMainApplication,
 } = require('@expo/config-plugins');
 const path = require('path');
 const fs = require('fs');
 
-const APP_GROUP = 'group.com.talukders.sukoon';
 const WIDGET_NAME = 'SukoonWidget';
 
 // ═══════════════════════════════════════════════════════════════════

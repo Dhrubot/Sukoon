@@ -1,20 +1,32 @@
 import { useState } from 'react';
-import { Alert } from 'react-native';
+import { Alert, Share, Platform } from 'react-native';
+import * as FileSystem from 'expo-file-system/legacy';
+import * as DocumentPicker from 'expo-document-picker';
 import { useStore } from '../../../store/useStore';
 import StorageService from '../../../services/StorageService';
 import LocationService from '../../../services/LocationService';
-import { CalculationMethodType, CALCULATION_METHODS } from '../../../types';
+import { CalculationMethodType, CALCULATION_METHODS, PrayerTime } from '../../../types';
 import { usePrayerTimes } from '../../../providers/PrayerTimesProvider';
 import logger from '../../../utils/logger';
+import { applyRegionalCalculationMethod } from '../../../utils/calculationMethodByRegion';
+
+interface PreviewPrayerTimes {
+  method: string;
+  times: PrayerTime[];
+}
+
+interface SettingsNavigation {
+  navigate: (screen: string) => void;
+}
 
 export const useSettingsManager = () => {
-  const { userSettings, setUserSettings, setLocation } = useStore();
+  const { userSettings, setUserSettings } = useStore();
   const [showCalculationPicker, setShowCalculationPicker] = useState(false);
   const [showNotificationModal, setShowNotificationModal] = useState(false);
   const [showManualLocationModal, setShowManualLocationModal] = useState(false);
   const [isUpdatingLocation, setIsUpdatingLocation] = useState(false);
   const [isUpdatingMethod, setIsUpdatingMethod] = useState(false);
-  const [previewPrayerTimes, setPreviewPrayerTimes] = useState<any>(null);
+  const [previewPrayerTimes, setPreviewPrayerTimes] = useState<PreviewPrayerTimes | null>(null);
 
   const { 
     todayPrayerTimes, 
@@ -35,21 +47,21 @@ export const useSettingsManager = () => {
       const location = await LocationService.getCurrentLocation();
       
       if (location && userSettings) {
-        // ✅ Use the FULL location object (has city, country, timezone)
-        const updatedSettings = {
-          ...userSettings,
-          location: location,
-        };
+        const { settings: updatedSettings, calculationMethod, didAutoSelect } =
+          applyRegionalCalculationMethod(userSettings, location);
         
-        StorageService.setUserSettings(updatedSettings);
         setUserSettings(updatedSettings);
-        setLocation(location); // Update store
         
         await refreshPrayerTimes();
-        
+
+        const method = calculationMethods.find((item) => item.value === calculationMethod);
+        const methodNote = didAutoSelect
+          ? `\n\nPrayer times are now using ${method?.label || calculationMethod} for your region.`
+          : '';
+
         Alert.alert(
           'Location Updated ✅',
-          `Your location has been set to ${location.city}, ${location.country}.\n\nPrayer times have been updated.`,
+          `Your location has been set to ${location.city}, ${location.country}.\n\nPrayer times have been updated.${methodNote}`,
           [{ text: 'Great!' }]
         );
       }
@@ -72,163 +84,6 @@ export const useSettingsManager = () => {
     }
   };
 
-  const selectLocationManually = () => {
-    setShowManualLocationModal(true);
-  };
-
-  // ✅ Manual location by city - uses existing setLocationByAddress
-  const handleManualLocationByCity = async (city: string, country: string) => {
-    if (!city.trim() || !country.trim()) {
-      Alert.alert('Missing Information', 'Please enter both city and country.');
-      return false;
-    }
-
-    setIsUpdatingLocation(true);
-    
-    try {
-      const location = await LocationService.setLocationByAddress(city.trim(), country.trim());
-
-      if (location && userSettings) {
-        const updatedSettings = {
-          ...userSettings,
-          location: location,
-        };
-        
-        StorageService.setUserSettings(updatedSettings);
-        setUserSettings(updatedSettings);
-        setLocation(location);
-        
-        await refreshPrayerTimes();
-        
-        setShowManualLocationModal(false);
-        
-        Alert.alert(
-          'Location Set! ✅',
-          `Your location has been set to ${location.city}, ${location.country}.`,
-          [{ text: 'Perfect!' }]
-        );
-        
-        return true;
-      } else {
-        throw new Error('Location not found');
-      }
-    } catch (error) {
-      logger.error('Manual location failed:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Could not find location';
-      
-      Alert.alert(
-        'Location Not Found',
-        `${errorMessage}\n\nTry:\n• Check spelling\n• Use a major city nearby\n• Include state/province if needed`,
-        [{ text: 'OK' }]
-      );
-      
-      return false;
-    } finally {
-      setIsUpdatingLocation(false);
-    }
-  };
-
-  // ✅ Manual location by postal code - uses existing setLocationByPostalCode
-  const handleManualLocationByPostalCode = async (postalCode: string, countryCode: string) => {
-    if (!postalCode.trim() || !countryCode.trim()) {
-      Alert.alert('Missing Information', 'Please enter both postal code and country code.');
-      return false;
-    }
-
-    setIsUpdatingLocation(true);
-    
-    try {
-      const location = await LocationService.setLocationByPostalCode(postalCode.trim(), countryCode.trim());
-
-      if (location && userSettings) {
-        const updatedSettings = {
-          ...userSettings,
-          location: location,
-        };
-        
-        StorageService.setUserSettings(updatedSettings);
-        setUserSettings(updatedSettings);
-        setLocation(location);
-        
-        await refreshPrayerTimes();
-        
-        setShowManualLocationModal(false);
-        
-        Alert.alert(
-          'Location Found! ✅',
-          `Found: ${location.city}, ${location.country}`,
-          [{ text: 'Excellent!' }]
-        );
-        
-        return true;
-      } else {
-        throw new Error('Postal code not found');
-      }
-    } catch (error) {
-      logger.error('Postal code location failed:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Could not find postal code';
-      
-      Alert.alert('Postal Code Not Found', errorMessage, [{ text: 'OK' }]);
-      
-      return false;
-    } finally {
-      setIsUpdatingLocation(false);
-    }
-  };
-
-  // ✅ CORRECTED: Manual location by coordinates
-  // Uses reverseGeocodeCoordinates instead of non-existent setLocationByCoordinates
-  const handleManualLocationByCoordinates = async (latitude: number, longitude: number) => {
-    if (latitude < -90 || latitude > 90 || longitude < -180 || longitude > 180) {
-      Alert.alert('Invalid Coordinates', 'Please enter valid latitude (-90 to 90) and longitude (-180 to 180).');
-      return false;
-    }
-
-    setIsUpdatingLocation(true);
-    
-    try {
-      // ✅ Use reverseGeocodeCoordinates (this method EXISTS)
-      const location = await LocationService.reverseGeocodeCoordinates({ latitude, longitude });
-
-      if (location && userSettings) {
-        // Save the location through LocationService to trigger callbacks
-        await LocationService.saveLocation(location);
-        
-        const updatedSettings = {
-          ...userSettings,
-          location: location,
-        };
-        
-        StorageService.setUserSettings(updatedSettings);
-        setUserSettings(updatedSettings);
-        setLocation(location);
-        
-        await refreshPrayerTimes();
-        
-        setShowManualLocationModal(false);
-        
-        Alert.alert(
-          'Coordinates Set! ✅',
-          `Location set to ${location.city}, ${location.country}`,
-          [{ text: 'Great!' }]
-        );
-        
-        return true;
-      } else {
-        throw new Error('Could not reverse geocode coordinates');
-      }
-    } catch (error) {
-      logger.error('Coordinate location failed:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Could not set coordinates';
-      
-      Alert.alert('Error', errorMessage, [{ text: 'OK' }]);
-      
-      return false;
-    } finally {
-      setIsUpdatingLocation(false);
-    }
-  };
-
   const handleCalculationMethodChange = async (method: CalculationMethodType) => {
     if (!userSettings) return;
 
@@ -238,9 +93,9 @@ export const useSettingsManager = () => {
       const updatedSettings = {
         ...userSettings,
         calculationMethod: method.value,
+        calculationMethodManuallySelected: true,
       };
 
-      StorageService.setUserSettings(updatedSettings);
       setUserSettings(updatedSettings);
       setShowCalculationPicker(false);
 
@@ -310,7 +165,46 @@ export const useSettingsManager = () => {
   };
 
   const handleExportData = async () => {
-    Alert.alert('Export Data', 'Data export feature coming soon!', [{ text: 'OK' }]);
+    try {
+      const jsonData = StorageService.exportPrayerData();
+      const fileName = `sukoon-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      const filePath = `${FileSystem.documentDirectory}${fileName}`;
+      await FileSystem.writeAsStringAsync(filePath, jsonData, { encoding: FileSystem.EncodingType.UTF8 });
+
+      if (Platform.OS === 'ios') {
+        await Share.share({ url: filePath });
+      } else {
+        await Share.share({ message: jsonData, title: fileName });
+      }
+    } catch (error) {
+      logger.error('Export failed:', error);
+      Alert.alert('Export Failed', 'Could not export your data. Please try again.');
+    }
+  };
+
+  const handleImportData = async () => {
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'application/json',
+        copyToCacheDirectory: true,
+      });
+
+      if (result.canceled || !result.assets?.[0]) return;
+
+      const fileUri = result.assets[0].uri;
+      const jsonString = await FileSystem.readAsStringAsync(fileUri, { encoding: FileSystem.EncodingType.UTF8 });
+      const { imported, skipped } = StorageService.importPrayerData(jsonString);
+
+      Alert.alert(
+        'Import Complete',
+        `Imported ${imported} prayer record${imported !== 1 ? 's' : ''}.${skipped > 0 ? ` ${skipped} existing record${skipped !== 1 ? 's' : ''} kept.` : ''}`,
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Invalid file format';
+      logger.error('Import failed:', error);
+      Alert.alert('Import Failed', msg);
+    }
   };
 
   const handleResetApp = () => {
@@ -331,7 +225,7 @@ export const useSettingsManager = () => {
     );
   };
 
-  const handlePrivacyPolicy = (navigation: any) => {
+  const handlePrivacyPolicy = (navigation: SettingsNavigation) => {
     navigation.navigate('PrivacyPolicy');
   };
 
@@ -364,16 +258,13 @@ export const useSettingsManager = () => {
     
     // Enhanced functions
     updateLocation,
-    selectLocationManually,
-    handleManualLocationByCity,
-    handleManualLocationByPostalCode,
-    handleManualLocationByCoordinates,
     handleCalculationMethodChange,
     previewCalculationMethod,
     testPrayerCalculations,
     
     // Data functions
     handleExportData,
+    handleImportData,
     handleResetApp,
     handlePrivacyPolicy,
     showDebugInfo,

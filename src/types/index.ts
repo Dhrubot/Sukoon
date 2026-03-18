@@ -89,6 +89,7 @@ export interface UserSettings {
   name?: string;
   location: Location;
   calculationMethod: CalculationMethod;
+  calculationMethodManuallySelected?: boolean;
   asrJuristic: "Standard" | "Hanafi";
   adjustments: {
     Fajr: number;
@@ -129,6 +130,15 @@ export interface UserSettings {
   hijriAdjustment?: -1 | 0 | 1;
   theme: "light" | "dark" | "midnight" | "auto";
 }
+
+export type NotificationSchedulingReason =
+  | 'boot'
+  | 'permission_change'
+  | 'timezone_change'
+  | 'location_change'
+  | 'clock_change'
+  | 'settings_change'
+  | 'background_refresh';
 
 // Mindfulness types
 export interface MindfulnessSession {

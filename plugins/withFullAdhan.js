@@ -300,6 +300,27 @@ public class AdhanModule extends ReactContextBaseJavaModule {
         return MODULE_NAME;
     }
 
+    @ReactMethod
+    public void getExactAlarmStatus(Promise promise) {
+        try {
+            Context context = getReactApplicationContext();
+            AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+            if (alarmManager == null) {
+                promise.resolve("unavailable");
+                return;
+            }
+
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                promise.resolve("granted");
+                return;
+            }
+
+            promise.resolve(alarmManager.canScheduleExactAlarms() ? "granted" : "fallback");
+        } catch (Exception e) {
+            promise.reject("EXACT_ALARM_STATUS_ERROR", "Failed to read exact alarm status: " + e.getMessage());
+        }
+    }
+
     /**
      * Schedule an alarm that will trigger the full Adhan foreground service.
      * @param timeMs    Epoch milliseconds for when to fire

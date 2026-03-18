@@ -10,12 +10,12 @@ import {
   Dimensions,
 } from 'react-native';
 import PreAdhanSheet from './PreAdhanSheet';
+import PostPrayerSheet from './PostPrayerSheet';
 import CountdownRing from './CountdownRing';
 import StarField from './StarField';
 import { LinearGradient } from 'expo-linear-gradient';
-import { PrayerTime, PrayerRecord, PrayerName } from '../../types';
+import { PrayerTime, PrayerRecord } from '../../types';
 import { format } from 'date-fns';
-import PrayerTimeService from '../../services/PrayerTimeService';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
@@ -42,7 +42,8 @@ interface SanctuaryViewProps {
   onPrepare: () => void;
   onPrepareQada?: () => void;
   onPraySunnah?: () => void;
-  onQuickLog?: () => void;
+  onRepeatPrayer?: () => void;
+  onLongPress?: () => void;
   isFocusMode?: boolean;
   mosqueModeInfo?: MosqueModeHeroInfo;
   onMosqueModeTap?: () => void;
@@ -59,17 +60,18 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
   onPrepare,
   onPrepareQada,
   onPraySunnah,
-  onQuickLog,
+  onRepeatPrayer,
+  onLongPress,
   isFocusMode = false,
   mosqueModeInfo,
   onMosqueModeTap,
 }) => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
-  const { userSettings } = useStore();
-  const hijriAdjustment = userSettings?.hijriAdjustment ?? 0;
+  const hijriAdjustment = useStore((state) => state.userSettings?.hijriAdjustment ?? 0);
   const [hijriDateStr, setHijriDateStr] = useState(formatHijriDateSync());
   const pulseAnim = useRef(new Animated.Value(0.6)).current;
+  const pulseLoopRef = useRef<Animated.CompositeAnimation | null>(null);
 
   // Fetch accurate Hijri date — re-run when hijriAdjustment changes
   useEffect(() => {
@@ -77,9 +79,47 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
     formatHijriDate().then(setHijriDateStr).catch(() => {});
   }, [hijriAdjustment]);
 
-  // Subtle pulse animation for the CTA
+  const isAlreadyPrayed = record?.status === 'prayed';
+  const isJummah = prayer.name === 'Dhuhr' && isFriday();
+  const [showPreAdhanSheet, setShowPreAdhanSheet] = useState(false);
+  const [showPostPrayerSheet, setShowPostPrayerSheet] = useState(false);
+
+  const handlePress = () => {
+    if (isAlreadyPrayed) {
+      // Fard done — offer sunnah/nafl or repeat
+      setShowPostPrayerSheet(true);
+    } else if (!isTimeEntered) {
+      // Adhan hasn't happened — show PreAdhanSheet with alternatives
+      setShowPreAdhanSheet(true);
+    } else {
+      onPrepare();
+    }
+  };
+
+  const handleLongPress = () => {
+    if (isCTAActive) {
+      // Prayer window open — skip sheet, go straight to MindfulnessFlow
+      onLongPress?.();
+    } else {
+      // Same as tap for pre-adhan / already-prayed states
+      handlePress();
+    }
+  };
+
+  // Pulse only when time has entered and prayer is not yet prayed (State 2)
+  const isCTAActive = isTimeEntered && !isAlreadyPrayed;
+
   useEffect(() => {
-    Animated.loop(
+    pulseLoopRef.current?.stop();
+    pulseLoopRef.current = null;
+
+    if (!isCTAActive) {
+      pulseAnim.setValue(1);
+      return;
+    }
+
+    pulseAnim.setValue(0.6);
+    pulseLoopRef.current = Animated.loop(
       Animated.sequence([
         Animated.timing(pulseAnim, {
           toValue: 1,
@@ -92,28 +132,16 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
           useNativeDriver: true,
         }),
       ])
-    ).start();
-  }, []);
+    );
+    pulseLoopRef.current.start();
 
-  const isAlreadyPrayed = record?.status === 'prayed';
-  const isJummah = prayer.name === 'Dhuhr' && isFriday();
-  const [showPreAdhanSheet, setShowPreAdhanSheet] = useState(false);
-
-  const handlePress = () => {
-    if (isAlreadyPrayed) {
-      onPrepare();
-    } else if (!isTimeEntered) {
-      // Adhan hasn't happened — show PreAdhanSheet with alternatives
-      setShowPreAdhanSheet(true);
-    } else {
-      onPrepare();
-    }
-  };
+    return () => {
+      pulseLoopRef.current?.stop();
+      pulseLoopRef.current = null;
+    };
+  }, [isCTAActive, pulseAnim]);
 
   const getButtonText = (): string => {
-    if (isAlreadyPrayed) return 'Already Prayed';
-    if (isJummah) return "Prepare for Jumu'ah";
-    if (!isTimeEntered) return 'Prepare For Prayer';
     return 'Prepare for Prayer';
   };
 
@@ -192,14 +220,14 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
         )}
 
         {/* CTA */}
-        <Animated.View style={{ opacity: isAlreadyPrayed ? 1 : pulseAnim }}>
+        <Animated.View style={{ opacity: isCTAActive ? pulseAnim : 1 }}>
           <TouchableOpacity
             style={[
               styles.prepareButton,
-              (isAlreadyPrayed || !isTimeEntered) && styles.alreadyPrayedButton,
+              !isCTAActive && styles.mutedButton,
             ]}
             onPress={handlePress}
-            onLongPress={!isAlreadyPrayed ? onQuickLog : undefined}
+            onLongPress={handleLongPress}
             delayLongPress={400}
             activeOpacity={0.7}
           >
@@ -231,6 +259,21 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
           onPraySunnah?.();
         }}
         onDismiss={() => setShowPreAdhanSheet(false)}
+      />
+
+      {/* Post-Prayer Sheet — fard done, offer sunnah/nafl or repeat */}
+      <PostPrayerSheet
+        visible={showPostPrayerSheet}
+        prayerName={prayer.name}
+        onPraySunnah={() => {
+          setShowPostPrayerSheet(false);
+          onPraySunnah?.();
+        }}
+        onRepeatPrayer={() => {
+          setShowPostPrayerSheet(false);
+          onRepeatPrayer?.();
+        }}
+        onDismiss={() => setShowPostPrayerSheet(false)}
       />
     </>
   );
@@ -290,7 +333,7 @@ const createStyles = (theme: AppTheme) =>
       paddingHorizontal: theme.spacing['4xl'],
       backgroundColor: theme.colors.sanctuary.buttonBg,
     },
-    alreadyPrayedButton: {
+    mutedButton: {
       backgroundColor: theme.colors.sanctuary.buttonBgMuted,
       borderColor: theme.colors.sanctuary.buttonBorderMuted,
     },
@@ -340,7 +383,7 @@ const createStyles = (theme: AppTheme) =>
       bottom: -1,
       left: 0,
       right: 0,
-      height: 40,
+      height: 32,
       backgroundColor: theme.colors.background.primary,
       borderTopLeftRadius: 24,
       borderTopRightRadius: 24,

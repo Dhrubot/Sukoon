@@ -21,7 +21,6 @@ export const WatchAdCard: React.FC<WatchAdCardProps> = ({ onRewardEarned }) => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const [canWatch, setCanWatch] = useState(false);
-  const [hoursLeft, setHoursLeft] = useState(0);
   const [isWatching, setIsWatching] = useState(false);
   const [hasActiveReward, setHasActiveReward] = useState(false);
 
@@ -34,7 +33,6 @@ export const WatchAdCard: React.FC<WatchAdCardProps> = ({ onRewardEarned }) => {
   const checkAdStatus = async () => {
     const eligible = await AdService.canShowAd();
     setCanWatch(eligible);
-    setHoursLeft(AdService.getHoursUntilNextAd());
 
     const status = await AdService.getAdFreeStatus();
     setHasActiveReward(status.reason === 'temporary');
@@ -86,7 +84,7 @@ export const WatchAdCard: React.FC<WatchAdCardProps> = ({ onRewardEarned }) => {
       </View>
 
       <Text style={[styles.description, { color: theme.colors.text.secondary }]}>
-        Can't donate? No problem! All ads are halal-filtered.
+        Can't donate? No problem! We use family-safe ad settings to keep content appropriate.
       </Text>
 
       <TouchableOpacity

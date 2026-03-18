@@ -1,6 +1,6 @@
 // src/components/mosque/MosqueModeOverlay.tsx
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, Animated, Modal } from 'react-native';
+import { Text, StyleSheet, Animated, Modal } from 'react-native';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
@@ -70,7 +70,7 @@ export const MosqueModeOverlay: React.FC = () => {
   return (
     <Modal transparent visible={!!overlayType} animationType="none" statusBarTranslucent>
       <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
-        <Text style={[styles.emoji]}>{isActivation ? '🕌' : '☀️'}</Text>
+        <Text style={styles.emoji}>{isActivation ? '🕌' : '☀️'}</Text>
         <Text style={[styles.text, { color: theme.colors.text.primary }]}>
           {isActivation ? 'Your phone is at rest' : 'Your phone is awake again'}
         </Text>

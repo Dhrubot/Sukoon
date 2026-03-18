@@ -98,10 +98,10 @@ const QuickLogSheet: React.FC<QuickLogSheetProps> = ({
         >
           <View style={styles.handle} />
 
-          <Text style={styles.title}>Mark {displayName} as Prayed?</Text>
+          <Text style={styles.title}>Did you already pray {displayName}?</Text>
 
           <Text style={styles.message}>
-            You can log your prayer quickly, or take a moment to prepare mindfully.
+            If yes, log it quietly. If not, step into a calmer preparation flow.
           </Text>
 
           <TouchableOpacity
@@ -110,7 +110,7 @@ const QuickLogSheet: React.FC<QuickLogSheetProps> = ({
             activeOpacity={0.8}
           >
             <Text style={styles.primaryButtonText}>
-              I Prayed {displayName}
+              I already prayed
             </Text>
           </TouchableOpacity>
 
@@ -119,7 +119,7 @@ const QuickLogSheet: React.FC<QuickLogSheetProps> = ({
             onPress={onOpenFlow}
             activeOpacity={0.7}
           >
-            <Text style={styles.secondaryButtonText}>Prepare Mindfully</Text>
+            <Text style={styles.secondaryButtonText}>Prepare for Prayer</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -183,11 +183,13 @@ const createStyles = (theme: AppTheme) =>
     secondaryButton: {
       paddingVertical: 12,
       alignItems: 'center',
+      backgroundColor: theme.colors.background.primary ,
+      borderRadius: 16,
     },
     secondaryButtonText: {
-      fontSize: theme.typography.fontSize.base,
+      fontSize: theme.typography.fontSize.lg,
       fontFamily: theme.typography.fontFamily.body,
-      color: theme.colors.text.muted,
+      color: theme.colors.text.primary,
     },
   });
 

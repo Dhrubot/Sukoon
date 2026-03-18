@@ -6,7 +6,6 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import * as Haptics from 'expo-haptics';
-import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 
@@ -17,7 +16,6 @@ interface QuickStatsProps {
 const QuickStats: React.FC<QuickStatsProps> = ({
   prayersToday,
 }) => {
-  const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const navigation = useNavigation();
 

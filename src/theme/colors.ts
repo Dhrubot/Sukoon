@@ -134,31 +134,34 @@ const palette = {
 } as const;
 
 // ─── Prayer Sky Gradients ──────────────────────────────────────────
-// Each prayer maps to the actual sky color at that time of day.
-// Used in MindfulnessFlow, SanctuaryView, and HomeScreen backgrounds.
+// Dark is the canonical prayer atmosphere. Light and midnight stay in
+// the same emotional family so each prayer feels recognisable across themes.
+const canonicalPrayerGradients = {
+  Fajr:    ['#0D1B4C', '#152E4A', '#1A3D5C'] as const,
+  Dhuhr:   ['#1A2F38', '#153A35', '#0D4F35'] as const,
+  Asr:     ['#2A2A1A', '#1F3222', '#1B3A2A'] as const,
+  Maghrib: ['#2D1530', '#231A3A', '#1A1F3A'] as const,
+  Isha:    ['#12103A', '#0F1430', '#0A0D2E'] as const,
+  Taraweeh: ['#1A1040', '#0F1A3A', '#0A2040'] as const,
+  Tahajjud: ['#0A0A2E', '#080818', '#050510'] as const,
+  Jumah:    ['#2A2A10', '#3A3010', '#4A3A10'] as const,
+  default:  ['#1A2F3A', '#153530', '#0D4F35'] as const,
+} as const;
+
 const prayerGradients = {
-  dark: {
-    Fajr:    ['#0D1B4C', '#152E4A', '#1A3D5C'] as const,
-    Dhuhr:   ['#1A2F38', '#153A35', '#0D4F35'] as const,
-    Asr:     ['#2A2A1A', '#1F3222', '#1B3A2A'] as const,
-    Maghrib: ['#2D1530', '#231A3A', '#1A1F3A'] as const,
-    Isha:     ['#12103A', '#0F1430', '#0A0D2E'] as const,
-    Taraweeh: ['#1A1040', '#0F1A3A', '#0A2040'] as const,
-    Tahajjud: ['#0A0A2E', '#080818', '#050510'] as const,
-    Jumah:    ['#2A2A10', '#3A3010', '#4A3A10'] as const,
-    default:  ['#1A2F3A', '#153530', '#0D4F35'] as const,
-  },
-  // Light gradients — hero stays dark even in light mode (forest green)
+  dark: canonicalPrayerGradients,
+  // Light keeps the same prayer identity, just softened slightly so
+  // the experience still feels coherent when the rest of the UI is brighter.
   light: {
-    Fajr:     ['#0D1B3A', '#122840', '#1A3548'] as const,  // deep pre-dawn navy
-    Dhuhr:    ['#1a3a2e', '#0f2a20', '#132e24'] as const,  // midday forest green
-    Asr:      ['#1a3420', '#152a1c', '#1e3828'] as const,  // afternoon forest
-    Maghrib:  ['#2D1530', '#231A3A', '#1A1F3A'] as const,  // sunset plum
-    Isha:     ['#12103A', '#0F1430', '#0A0D2E'] as const,  // night sky
-    Taraweeh: ['#1A1040', '#0F1A3A', '#0A2040'] as const,  // Ramadan night
-    Tahajjud: ['#0A0A2E', '#080818', '#050510'] as const,  // deep night
-    Jumah:    ['#2A2A10', '#3A3010', '#4A3A10'] as const,  // golden mosque
-    default:  ['#1a3a2e', '#0f2a20', '#132e24'] as const,  // forest green
+    Fajr:     ['#132554', '#1B3352', '#224163'] as const,
+    Dhuhr:    ['#214036', '#1D4A3A', '#166045'] as const,
+    Asr:      ['#353322', '#293A29', '#234531'] as const,
+    Maghrib:  ['#3A1D3E', '#2F2447', '#23284B'] as const,
+    Isha:     ['#18164A', '#141A3C', '#101437'] as const,
+    Taraweeh: ['#221650', '#15204A', '#10264C'] as const,
+    Tahajjud: ['#11113A', '#0D0D22', '#090914'] as const,
+    Jumah:    ['#3A3518', '#4A4018', '#5B4918'] as const,
+    default:  ['#21403E', '#1C4640', '#166045'] as const,
   },
 } as const;
 
@@ -294,6 +297,12 @@ export const darkTheme = {
     active:   palette.green500,
     hover:    palette.navy600,
     disabled: palette.slate500,
+  },
+
+  ambient: {
+    top:    '#141a33',
+    bottom: '#1b2440',
+    glow:   palette.greenAlpha08,
   },
 
   // ── Extended tokens (no more hardcoded colors in components) ──
@@ -629,6 +638,12 @@ export const lightTheme = {
     disabled: lightPalette.textSub,
   },
 
+  ambient: {
+    top:    lightPalette.cream,
+    bottom: lightPalette.cream2,
+    glow:   lightPalette.goldGlow,
+  },
+
   gold:        lightPalette.gold,
   goldLight:   lightPalette.goldLight,
   goldDark:    '#8a6e1f',
@@ -916,15 +931,15 @@ const midnightPalette = {
 
 // ─── Midnight prayer gradients ───────────────────────────────────
 const midnightPrayerGradients = {
-  Fajr:     ['#080E2A', '#0D1940', '#121F4A'] as const,
-  Dhuhr:    ['#0D1820', '#091E1C', '#0A2818'] as const,
-  Asr:      ['#1A1808', '#151C0E', '#122214'] as const,
-  Maghrib:  ['#1A0A18', '#160E22', '#12121E'] as const,
-  Isha:     ['#0A0820', '#08091A', '#060816'] as const,
-  Taraweeh: ['#100828', '#0A0E22', '#081428'] as const,
-  Tahajjud: ['#060618', '#040410', '#02020A'] as const,
-  Jumah:    ['#181408', '#221C08', '#2A2208'] as const,
-  default:  ['#0D1820', '#091E1C', '#0A2818'] as const,
+  Fajr:     ['#0A132F', '#0F1F46', '#14295A'] as const,
+  Dhuhr:    ['#102028', '#0D2722', '#10341F'] as const,
+  Asr:      ['#201E10', '#1A2414', '#162C1B'] as const,
+  Maghrib:  ['#210E20', '#1B1430', '#171A2C'] as const,
+  Isha:     ['#0D0A28', '#0A0D20', '#070A1B'] as const,
+  Taraweeh: ['#140C30', '#0D1230', '#0A1A32'] as const,
+  Tahajjud: ['#07081F', '#050512', '#03030C'] as const,
+  Jumah:    ['#211C0D', '#2D240D', '#352C0D'] as const,
+  default:  ['#102028', '#0D2722', '#10341F'] as const,
 } as const;
 
 // ─── Midnight prayer identity colors ─────────────────────────────
@@ -992,6 +1007,12 @@ export const midnightTheme = {
     active:   midnightPalette.teal,
     hover:    midnightPalette.card2,
     disabled: midnightPalette.textSub,
+  },
+
+  ambient: {
+    top:    midnightPalette.night,
+    bottom: midnightPalette.deep,
+    glow:   midnightPalette.goldAlpha10,
   },
 
   gold:        midnightPalette.gold,

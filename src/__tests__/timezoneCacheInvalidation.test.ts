@@ -4,6 +4,7 @@
 
 import PrayerTimeService from '../services/PrayerTimeService';
 import { Coordinates, CalculationMethod } from '../types';
+import { getLocalDateKey } from '../utils/dateHelpers';
 
 // We test getCachedPrayerTimesFromDisk's timezone validation logic.
 // The method returns null when timezoneOffset doesn't match current.
@@ -45,7 +46,7 @@ describe('Disk cache timezone invalidation', () => {
     const differentOffset = currentOffset + 60; // 1 hour different (e.g., DST change)
 
     const cachedData = {
-      date: today.toISOString().slice(0, 10),
+      date: getLocalDateKey(today),
       lat: 23.8103,
       lon: 90.4125,
       method: 'MWL',
@@ -67,7 +68,7 @@ describe('Disk cache timezone invalidation', () => {
 
   it('returns cached data when timezone offset matches', () => {
     const currentOffset = new Date().getTimezoneOffset();
-    const dateStr = today.toISOString().slice(0, 10);
+    const dateStr = getLocalDateKey(today);
 
     const cachedData = {
       date: dateStr,
@@ -92,7 +93,7 @@ describe('Disk cache timezone invalidation', () => {
   });
 
   it('accepts legacy cache entries without timezoneOffset field', () => {
-    const dateStr = today.toISOString().slice(0, 10);
+    const dateStr = getLocalDateKey(today);
 
     const cachedData = {
       date: dateStr,

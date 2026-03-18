@@ -12,7 +12,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
-import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import DhikrCounter from '../../components/mindfulness/DhikrCounter';
@@ -27,7 +26,6 @@ const getDefaultType = (): AdhkarType => {
 };
 
 const AdhkarScreen: React.FC = () => {
-  const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const navigation = useNavigation();
 

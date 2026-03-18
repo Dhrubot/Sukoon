@@ -21,50 +21,59 @@ import JummahNotificationService from '../services/JummahNotificationService';
 import EidNotificationService from '../services/EidNotificationService';
 import PerformanceService from '../services/PerformanceService';
 import logger from '../utils/logger';
+import { SCHEDULING_DEBOUNCE_MS } from '../constants/time';
+import StorageService from '../services/StorageService';
+
+/** If the rescheduler ran within this window, skip the settings-change schedule. */
+const COLD_START_GUARD_MS = 30_000;
 
 export const useServiceInitialization = () => {
-  const { todayPrayerTimes, nextPrayer, isLoading, hasValidLocation } =
+  const { todayPrayerTimes, isLoading, hasValidLocation } =
     usePrayerTimes();
 
   const { userSettings, setLocation, updateUserSettings } = useStore();
 
   // 🔄 Initialize all services once on mount
   useEffect(() => {
-    const initializeServices = async () => {
-      logger.log("🚀 Initializing services...");
-      const stopTrace = await PerformanceService.startTrace('service_initialization');
+    let cancelled = false;
+    const interactionHandle = InteractionManager.runAfterInteractions(() => {
+      void PerformanceService.traceAsync('service_initialization', async () => {
+        if (cancelled) return;
 
-      try {
-        await Promise.all([
-          SubscriptionService.initialize(),
-          AdService.initialize(),
-          DonationService.initialize(),
-          LocationService.initialize(),
-        ]);
+        PerformanceService.markLaunchMilestone('deferred_services_started');
+        logger.log("🚀 Initializing deferred services...");
 
         try {
-          const isRegistered = await TaskManager.isTaskRegisteredAsync(NOTIFICATION_RESCHEDULE_TASK);
-          if (!isRegistered) {
-            await BackgroundTask.registerTaskAsync(NOTIFICATION_RESCHEDULE_TASK, {
-              minimumInterval: 24 * 60,
-            });
+          await Promise.all([
+            // SubscriptionService.initialize(),
+            // AdService.initialize(),
+            DonationService.initialize(),
+            LocationService.initialize(),
+          ]);
+
+          try {
+            const isRegistered = await TaskManager.isTaskRegisteredAsync(NOTIFICATION_RESCHEDULE_TASK);
+            if (!isRegistered) {
+              await BackgroundTask.registerTaskAsync(NOTIFICATION_RESCHEDULE_TASK, {
+                minimumInterval: 24 * 60,
+              });
+            }
+          } catch (error) {
+            logger.warn('⚠️ Failed to register background notification rescheduler:', error);
           }
+
+          void AnalyticsService.logEvent('app_open');
+          PerformanceService.markLaunchMilestone('deferred_services_completed');
+          logger.log("✅ Deferred services initialized");
         } catch (error) {
-          logger.warn('⚠️ Failed to register background notification rescheduler:', error);
+          logger.error("❌ Error initializing deferred services:", error);
         }
-
-        AnalyticsService.logEvent('app_open');
-        await stopTrace();
-        logger.log("✅ All core services initialized");
-      } catch (error) {
-        await stopTrace();
-        logger.error("❌ Error initializing services:", error);
-      }
-    };
-
-    initializeServices();
+      });
+    });
 
     return () => {
+      cancelled = true;
+      interactionHandle.cancel();
       logger.log("🧹 Cleaning up services...");
       SubscriptionService.cleanup();
       AdService.cleanup();
@@ -87,11 +96,19 @@ export const useServiceInitialization = () => {
     logger.log("🔗 NotificationService fetcher connected");
   }, []);
 
-  // ⏰ Schedule prayer notifications if conditions are met
-  // Debounced: todayPrayerTimes.length changes twice on cold start
-  // (disk cache → API), so we wait 3s for it to stabilize.
+  // ⏰ Reschedule prayer notifications when SETTINGS change.
+  // Initial cold-start scheduling is handled by useNotificationRescheduler
+  // (in AppInitializer). This effect skips scheduling if the rescheduler
+  // ran recently (within COLD_START_GUARD_MS) to avoid double-scheduling.
   const scheduleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const isInitialMountRef = useRef(true);
   useEffect(() => {
+    // Always skip the very first invocation (component mount).
+    if (isInitialMountRef.current) {
+      isInitialMountRef.current = false;
+      return;
+    }
+
     const shouldSchedule =
       hasValidLocation &&
       !isLoading &&
@@ -101,12 +118,23 @@ export const useServiceInitialization = () => {
     if (shouldSchedule) {
       if (scheduleTimerRef.current) clearTimeout(scheduleTimerRef.current);
       scheduleTimerRef.current = setTimeout(() => {
+        // Guard: skip if useNotificationRescheduler ran recently (cold-start window)
+        const lastRun = StorageService.getValue('last_batch_schedule_date');
+        if (lastRun) {
+          const msSinceLastRun = Date.now() - new Date(lastRun).getTime();
+          if (msSinceLastRun < COLD_START_GUARD_MS) {
+            logger.log("📅 Skipping settings-change reschedule — rescheduler ran recently");
+            scheduleTimerRef.current = null;
+            return;
+          }
+        }
+
         InteractionManager.runAfterInteractions(() => {
-          logger.log("📅 Scheduling prayer notifications...");
-          NotificationService.scheduleAllPrayerNotifications();
+          logger.log("📅 Settings changed — rescheduling prayer notifications...");
+          NotificationService.reconcileScheduling('settings_change');
         });
         scheduleTimerRef.current = null;
-      }, 3_000);
+      }, SCHEDULING_DEBOUNCE_MS);
     }
 
     return () => {

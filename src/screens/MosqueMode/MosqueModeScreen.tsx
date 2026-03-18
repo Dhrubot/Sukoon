@@ -7,6 +7,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
@@ -16,6 +17,7 @@ import { IqamahTimeConfig } from '../../components/mosque/IqamahTimeConfig';
 import { MosqueModeOptions } from '../../components/mosque/MosqueModeOptions';
 import JummahMosqueConfig from '../../components/mosque/JummahMosqueConfig';
 import { useMosqueMode } from '../../hooks/useMosqueMode';
+import { mosqueModePlatformUi } from '../../utils/mosqueModePlatform';
 
 const MosqueModeScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -24,50 +26,75 @@ const MosqueModeScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-    <ScrollView
-      style={styles.scrollView}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Mosque Mode</Text>
-        <Text style={styles.headerSubtitle}>
-          Automatically silence your phone when iqamah starts so you can focus entirely on your prayer.
-        </Text>
-      </View>
-
-      <MosqueModeStatus />
-
-      <View style={styles.section}>
-        <Text style={styles.sectionLabel}>MODE</Text>
-        <MosqueModeToggle />
-      </View>
-
-      {isEnabled && (
-        <>
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>IQAMAH TIMES</Text>
-            <IqamahTimeConfig />
+      <LinearGradient
+        colors={[theme.colors.ambient.top, theme.colors.ambient.bottom]}
+        style={styles.gradient}
+      >
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.content}
+          showsVerticalScrollIndicator={false}
+        >
+          <View style={styles.header}>
+            <Text style={styles.headerTitle}>Mosque Mode</Text>
+            <Text style={styles.headerSubtitle}>
+              {mosqueModePlatformUi.headerSubtitle}
+            </Text>
           </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionLabel}>SILENT MODE OPTIONS</Text>
-            <MosqueModeOptions />
-          </View>
+          {!isEnabled && (
+            <View style={styles.section}>
+              <Text style={styles.sectionLabel}>JOURNEY</Text>
+              <View style={styles.journeyCard}>
+                <Text style={styles.journeyTitle}>Built for the Masjid</Text>
+                <Text style={styles.journeyText}>
+                  Use Mosque Mode when you are heading out, settling before iqamah, and staying present through salah.
+                </Text>
+                <View style={styles.journeySteps}>
+                  <Text style={styles.journeyStep}>1. Set your mosque's iqamah times once.</Text>
+                  <Text style={styles.journeyStep}>2. Let Sukoon guard the quiet before prayer begins.</Text>
+                  <Text style={styles.journeyStep}>3. Leave Jumu'ah on a longer silence time.</Text>
+                </View>
+              </View>
+            </View>
+          )}
+
+          <MosqueModeStatus />
 
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>JUMU'AH SETTINGS</Text>
-            <JummahMosqueConfig />
+            <Text style={styles.sectionLabel}>MODE</Text>
+            <MosqueModeToggle />
           </View>
-        </>
-      )}
 
-      <View style={styles.footer}>
-        <Text style={styles.footerText}>
-          Your phone will go silent at iqamah time and restore automatically after the prayer ends.
-        </Text>
-      </View>
-    </ScrollView>
+          {isEnabled && (
+            <>
+              <View style={styles.section}>
+                <Text style={styles.sectionLabel}>IQAMAH TIMES</Text>
+                <IqamahTimeConfig />
+              </View>
+
+              <View style={styles.section}>
+                <Text style={styles.sectionLabel}>{"JUMU'AH SETTINGS"}</Text>
+                <Text style={styles.sectionHelper}>
+                  Keep Friday separate so khutbah and salah stay inside the same quiet window.
+                </Text>
+                <JummahMosqueConfig />
+              </View>
+
+              <View style={styles.section}>
+                <Text style={styles.sectionLabel}>{mosqueModePlatformUi.optionsSectionLabel}</Text>
+                <MosqueModeOptions />
+              </View>
+            </>
+          )}
+
+          <View style={styles.footer}>
+            <Text style={styles.footerText}>
+              {mosqueModePlatformUi.footerText}
+            </Text>
+          </View>
+        </ScrollView>
+      </LinearGradient>
     </SafeAreaView>
   );
 };
@@ -76,6 +103,9 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background.primary,
+  },
+  gradient: {
+    flex: 1,
   },
   scrollView: {
     flex: 1,
@@ -89,8 +119,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     paddingBottom: theme.spacing.sm,
   },
   headerTitle: {
-    fontSize: 26,
-    fontFamily: theme.typography.fontFamily.headingRegular,
+    fontSize: 22,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.sm,
   },
@@ -111,6 +141,41 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   section: {
     marginTop: theme.spacing.xl,
     paddingHorizontal: theme.spacing.xl,
+  },
+  sectionHelper: {
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.body,
+    color: theme.colors.text.muted,
+    marginBottom: theme.spacing.md,
+    lineHeight: 20,
+  },
+  journeyCard: {
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.xl,
+    backgroundColor: theme.colors.mosqueMode.card.bg,
+    borderWidth: 1,
+    borderColor: theme.colors.mosqueMode.card.border,
+    gap: theme.spacing.md,
+  },
+  journeyTitle: {
+    fontSize: theme.typography.fontSize.xl,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
+    color: theme.colors.text.primary,
+  },
+  journeyText: {
+    fontSize: theme.typography.fontSize.base,
+    fontFamily: theme.typography.fontFamily.body,
+    color: theme.colors.text.secondary,
+    lineHeight: 22,
+  },
+  journeySteps: {
+    gap: theme.spacing.sm,
+  },
+  journeyStep: {
+    fontSize: theme.typography.fontSize.sm,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
+    color: theme.colors.text.primary,
+    lineHeight: 20,
   },
   footer: {
     paddingHorizontal: theme.spacing.xl,

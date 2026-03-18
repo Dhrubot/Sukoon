@@ -1,10 +1,11 @@
 // src/services/LocationService.ts (FINAL ENHANCED VERSION)
 import * as ExpoLocation from 'expo-location';
-import { Platform } from 'react-native';
 import { Location } from '../types';
 import GeocodingService from './GeocodingService';
 import StorageService from './StorageService';
+import { useStore } from '../store/useStore';
 import logger from '../utils/logger';
+import { applyRegionalCalculationMethod } from '../utils/calculationMethodByRegion';
 
 interface LocationUpdateCallback {
   onLocationUpdate: (location: Location) => Promise<void>;
@@ -79,11 +80,19 @@ class LocationService {
   /**
    * 🎯 ENHANCED: Get current location with better error handling
    */
-  async getCurrentLocation(): Promise<Location | null> {
+  async getCurrentLocation(options?: { requestPermission?: boolean }): Promise<Location | null> {
     try {
-      logger.log('📍 Requesting location permission...');
-      
-      const { status } = await ExpoLocation.requestForegroundPermissionsAsync();
+      const shouldRequestPermission = options?.requestPermission !== false;
+
+      if (shouldRequestPermission) {
+        logger.log('📍 Requesting location permission...');
+      }
+
+      const permission = shouldRequestPermission
+        ? await ExpoLocation.requestForegroundPermissionsAsync()
+        : await ExpoLocation.getForegroundPermissionsAsync();
+
+      const { status } = permission;
       if (status !== 'granted') {
         logger.log('❌ Location permission denied');
         return null;
@@ -118,15 +127,19 @@ class LocationService {
       }
 
       return enrichedLocation;
-    } catch (error: any) {
+    } catch (error) {
       logger.error('❌ Error getting current location:', error);
-      
+
       // 🎯 ENHANCED: Specific error messages
-      if (error.code === 'E_LOCATION_SERVICES_DISABLED') {
+      const errorCode = typeof error === 'object' && error !== null && 'code' in error
+        ? String((error as { code: unknown }).code)
+        : null;
+
+      if (errorCode === 'E_LOCATION_SERVICES_DISABLED') {
         throw new Error('Location services are disabled. Please enable them in your device settings.');
-      } else if (error.code === 'E_LOCATION_TIMEOUT') {
+      } else if (errorCode === 'E_LOCATION_TIMEOUT') {
         throw new Error('Location request timed out. Please try again.');
-      } else if (error.code === 'E_LOCATION_UNAVAILABLE') {
+      } else if (errorCode === 'E_LOCATION_UNAVAILABLE') {
         throw new Error('Location is currently unavailable. Please try again later.');
       }
       
@@ -144,27 +157,24 @@ class LocationService {
         return null;
       }
 
-      logger.log('🔍 Geocoding address:', { city, country });
+      logger.log('🔍 Geocoding address provided by user');
       
       const locationQuery = `${city}, ${country}`;
       const location = await GeocodingService.geocodeAddress(locationQuery, country);
       
       if (location) {
-        logger.log('✅ Address geocoded successfully:', {
-          query: locationQuery,
-          result: { lat: location.latitude, lng: location.longitude }
-        });
+        logger.log(`✅ Address geocoded successfully to ${location.city || 'Unknown city'}, ${location.country || 'Unknown country'}`);
         
         // 🎯 Save and notify (automatic prayer time refresh)
         await this.saveLocationAndNotify(location);
         return location;
       }
       
-      logger.warn('❌ Could not find location for:', locationQuery);
+      logger.warn('❌ Could not find location for the provided address');
       return null;
     } catch (error) {
       logger.error('❌ Error setting location by address:', error);
-      throw new Error(`Failed to find location for "${city}, ${country}". Please check your spelling or try a different format.`);
+      throw new Error('Failed to find that location. Please check the spelling or choose the nearest major city.');
     }
   }
 
@@ -178,26 +188,23 @@ class LocationService {
         return null;
       }
 
-      logger.log('🔍 Geocoding postal code:', { postalCode, countryCode });
+      logger.log('🔍 Geocoding postal code provided by user');
 
       const location = await GeocodingService.geocodePostalCode(postalCode, countryCode);
       
       if (location) {
-        logger.log('✅ Postal code geocoded successfully:', {
-          postalCode,
-          result: { lat: location.latitude, lng: location.longitude }
-        });
+        logger.log(`✅ Postal code geocoded successfully to ${location.city || 'Unknown city'}, ${location.country || 'Unknown country'}`);
         
         // 🎯 Save and notify (automatic prayer time refresh)
         await this.saveLocationAndNotify(location);
         return location;
       }
       
-      logger.warn('❌ Could not find location for postal code:', postalCode);
+      logger.warn('❌ Could not find location for the provided postal code');
       return null;
     } catch (error) {
       logger.error('❌ Error setting location by postal code:', error);
-      throw new Error(`Failed to find location for postal code "${postalCode}". Please check the code and country.`);
+      throw new Error('Failed to find that postal code. Please check the code or choose the nearest major city.');
     }
   }
 
@@ -207,14 +214,15 @@ class LocationService {
   async reverseGeocodeCoordinates(coordinates: { latitude: number, longitude: number }): Promise<Location | null> {
     logger.log('🔄 Reverse geocoding coordinates:', coordinates);
     
-    // First try using GeocodingService (Nominatim)
-    try {
-      const location = await GeocodingService.reverseGeocode(coordinates);
+      // First try using GeocodingService (edge API or direct fallback)
+      try {
+        const location = await GeocodingService.reverseGeocode(coordinates);
       
       if (location) {
-        logger.log('✅ Nominatim reverse geocoding successful:', {
+        logger.log('✅ Reverse geocoding successful:', {
           city: location.city,
-          country: location.country
+          country: location.country,
+          source: GeocodingService.getLastSource(),
         });
         return location;
       }
@@ -270,8 +278,8 @@ class LocationService {
       
       // Update settings with the new location
       const settings = StorageService.getUserSettings() || StorageService.getDefaultSettings();
-      settings.location = location;
-      StorageService.setUserSettings(settings);
+      const { settings: updatedSettings } = applyRegionalCalculationMethod(settings, location);
+      useStore.getState().setUserSettings(updatedSettings);
       
       logger.log('✅ Location saved to storage');
       

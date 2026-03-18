@@ -84,7 +84,6 @@ const DhikrCounter: React.FC<DhikrCounterProps> = ({ onComplete, onSkip, items }
   }, [currentDhikr, advanceToNext]);
 
   // Overall progress across all dhikr items
-  const totalItems = dhikrItems.length;
   const completedItems = dhikrIndex;
 
   return (

@@ -3,7 +3,7 @@
 // returns 5 fard prayers with valid Date objects for known coordinates.
 
 import PrayerTimeService from '../services/PrayerTimeService';
-import { Coordinates, CalculationMethod } from '../types';
+import { Coordinates } from '../types';
 
 // Mock the fetch call so we don't hit the real API
 const MOCK_API_RESPONSE = {
@@ -32,6 +32,7 @@ const MOCK_API_RESPONSE = {
 
 // Mock global fetch
 beforeEach(() => {
+  PrayerTimeService.clearCache();
   (global.fetch as jest.Mock) = jest.fn(() =>
     Promise.resolve({
       ok: true,
@@ -98,5 +99,44 @@ describe('PrayerTimeService.getPrayerTimesList', () => {
 
     // 5 minute adjustment = 300,000 ms
     expect(adjustedFajr.time.getTime() - baseFajr.time.getTime()).toBe(5 * 60000);
+  });
+
+  it('uses high-latitude night portions when offline fallback is needed', async () => {
+    (global.fetch as jest.Mock) = jest.fn(() => Promise.reject(new Error('offline')));
+
+    const tromso: Coordinates = { latitude: 69.6492, longitude: 18.9553 };
+    const winterDate = new Date(2025, 11, 21);
+
+    const result = await PrayerTimeService.getPrayerTimesList(tromso, winterDate, 'MWL');
+
+    expect(result.prayerTimes).toHaveLength(5);
+    expect(PrayerTimeService.lastFetchWasFallback).toBe(true);
+    expect(PrayerTimeService.usingHardcodedDefaults).toBe(false);
+    expect(PrayerTimeService.highLatitudeWarning).toBe(true);
+
+    const fajr = result.prayerTimes.find(p => p.name === 'Fajr')!;
+    const dhuhr = result.prayerTimes.find(p => p.name === 'Dhuhr')!;
+    const asr = result.prayerTimes.find(p => p.name === 'Asr')!;
+    const maghrib = result.prayerTimes.find(p => p.name === 'Maghrib')!;
+    const isha = result.prayerTimes.find(p => p.name === 'Isha')!;
+
+    expect(fajr.time.getTime()).toBeLessThan(result.sunrise.getTime());
+    expect(result.sunrise.getTime()).toBeLessThan(dhuhr.time.getTime());
+    expect(dhuhr.time.getTime()).toBeLessThan(asr.time.getTime());
+    expect(asr.time.getTime()).toBeLessThan(maghrib.time.getTime());
+    expect(maghrib.time.getTime()).toBeLessThan(isha.time.getTime());
+  });
+
+  it('keeps Makkah fallback isha at 90 minutes after maghrib', async () => {
+    (global.fetch as jest.Mock) = jest.fn(() => Promise.reject(new Error('offline')));
+
+    const tromso: Coordinates = { latitude: 69.6492, longitude: 18.9553 };
+    const winterDate = new Date(2025, 11, 21);
+
+    const result = await PrayerTimeService.getPrayerTimesList(tromso, winterDate, 'Makkah');
+    const maghrib = result.prayerTimes.find(p => p.name === 'Maghrib')!;
+    const isha = result.prayerTimes.find(p => p.name === 'Isha')!;
+
+    expect(isha.time.getTime() - maghrib.time.getTime()).toBe(90 * 60000);
   });
 });

@@ -1,13 +1,9 @@
 import {
   format,
-  parse,
   isAfter,
-  isBefore,
   addDays,
-  startOfDay,
 } from "date-fns";
 import { isFriday } from "../utils/ramadan";
-import { toZonedTime, formatInTimeZone } from "date-fns-tz";
 import {
   PrayerTimes,
   PrayerTime,
@@ -23,6 +19,8 @@ import logger from "../utils/logger";
 import StorageService from "./StorageService";
 import { getLocalDateKey } from "../utils/dateHelpers";
 import { PRAYER_API_TIMEOUT_MS } from "../constants/NotificationConstants";
+import { fetchWithTimeout, describeNetworkError } from '../utils/networkRequest';
+import { fetchPrayerTimesFromEdge } from './api/EdgeApiClient';
 
 interface CachedPrayerTimesData {
   date: string;           // YYYY-MM-DD
@@ -52,14 +50,39 @@ const CALCULATION_METHOD_MAP: Record<CalculationMethod, number> = {
 
 const MAX_CACHE_SIZE = 30;
 
+interface PrayerApiResult {
+  times: PrayerTimes;
+  hijri?: {
+    day: string;
+    month: { number: number; en: string; ar: string };
+    year: string;
+  };
+}
+
 export class PrayerTimeService {
   private static instance: PrayerTimeService;
   private cachedTimes: Map<string, PrayerTimes> = new Map();
   private cachedLocations: Map<string, Coordinates> = new Map();
+  private inFlightFetches: Map<string, Promise<PrayerTimes>> = new Map();
   private _lastFetchWasFallback: boolean = false;
+  private _usingHardcodedDefaults: boolean = false;
+  private _highLatitudeWarning: boolean = false;
+  private _lastProviderSource: 'edge' | 'direct' | 'memory_cache' | 'calculated_fallback' | 'disk_cache' | 'hardcoded_defaults' | null = null;
 
   get lastFetchWasFallback(): boolean {
     return this._lastFetchWasFallback;
+  }
+
+  get usingHardcodedDefaults(): boolean {
+    return this._usingHardcodedDefaults;
+  }
+
+  get highLatitudeWarning(): boolean {
+    return this._highLatitudeWarning;
+  }
+
+  get lastProviderSource(): string | null {
+    return this._lastProviderSource;
   }
 
   static getInstance(): PrayerTimeService {
@@ -79,6 +102,28 @@ export class PrayerTimeService {
         this.cachedTimes.delete(key);
       }
     }
+  }
+
+  private getFetchCacheKey(
+    coordinates: Coordinates,
+    date: Date,
+    method: CalculationMethod,
+    asrJuristic: "Standard" | "Hanafi"
+  ): string {
+    const dateStr = format(date, "dd-MM-yyyy");
+    const tzOffset = new Date().getTimezoneOffset();
+    return `${coordinates.latitude}-${coordinates.longitude}-${dateStr}-${method}-${asrJuristic}-${tzOffset}`;
+  }
+
+  hasInFlightPrayerTimesFetch(
+    coordinates: Coordinates,
+    date: Date,
+    method: CalculationMethod = "MWL",
+    asrJuristic: "Standard" | "Hanafi" = "Standard"
+  ): boolean {
+    if (!isValidCoordinates(coordinates)) return false;
+    const cacheKey = this.getFetchCacheKey(coordinates, date, method, asrJuristic);
+    return this.inFlightFetches.has(cacheKey);
   }
 
   /**
@@ -101,56 +146,32 @@ export class PrayerTimeService {
     }
 
     const dateStr = format(date, "dd-MM-yyyy");
-    const tzOffset = new Date().getTimezoneOffset();
-    const cacheKey = `${coordinates.latitude}-${coordinates.longitude}-${dateStr}-${method}-${asrJuristic}-${tzOffset}`;
+    const cacheKey = this.getFetchCacheKey(coordinates, date, method, asrJuristic);
 
     // Check cache first
     if (this.cachedTimes.has(cacheKey)) {
+      this._lastProviderSource = 'memory_cache';
       return this.cachedTimes.get(cacheKey)!;
     }
 
-    try {
-      const methodId = CALCULATION_METHOD_MAP[method];
-      const school = asrJuristic === "Hanafi" ? 1 : 0;
+    const inFlight = this.inFlightFetches.get(cacheKey);
+    if (inFlight) {
+      logger.log(`♻️ Reusing in-flight prayer times for ${dateStr} with ${method}/${asrJuristic}`);
+      return inFlight;
+    }
 
-      const url = `${ALADHAN_API_BASE}/timings/${dateStr}?latitude=${coordinates.latitude}&longitude=${coordinates.longitude}&method=${methodId}&school=${school}`;
-
-      logger.log(`Fetching prayer times from: ${url}`);
-
-      // AbortController with 8s timeout to prevent indefinite hangs on poor network
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), PRAYER_API_TIMEOUT_MS);
-
-      let response: Response;
+    const fetchPromise = (async () => {
+      logger.log(`Fetching prayer times for ${dateStr} with ${method}/${asrJuristic}`);
       try {
-        response = await fetch(url, { signal: controller.signal });
-      } finally {
-        clearTimeout(timeoutId);
-      }
+        const apiResult = await this.fetchPrayerTimesFromProvider(
+          coordinates,
+          date,
+          method,
+          asrJuristic
+        );
 
-      if (!response.ok) {
-        throw new Error(`API responded with status: ${response.status}`);
-      }
+        const times = apiResult.times;
 
-      const data: AladhanResponse = await response.json();
-
-      if (data.code === 200 && data.data && data.data.timings) {
-        const apiTimes = data.data.timings;
-        logger.log("Prayer times received:", apiTimes);
-
-        // Create normalized version with lowercase keys to match our internal format
-        const times: PrayerTimes = {
-          Fajr: apiTimes.Fajr || "",
-          Sunrise: apiTimes.Sunrise || "",
-          Dhuhr: apiTimes.Dhuhr || "",
-          Asr: apiTimes.Asr || "",
-          Sunset: apiTimes.Sunset || "",
-          Maghrib: apiTimes.Maghrib || "",
-          Isha: apiTimes.Isha || "",
-          Midnight: apiTimes.Midnight || "",
-        };
-
-        // Check for any missing times
         const requiredTimes = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
         const missingTimes = requiredTimes.filter(
           (time) => !times[time as keyof typeof times]
@@ -158,30 +179,25 @@ export class PrayerTimeService {
 
         if (missingTimes.length > 0) {
           logger.warn(
-            `Missing prayer times after normalization: ${missingTimes.join(
-              ", "
-            )}`
+            `Missing prayer times after normalization: ${missingTimes.join(", ")}`
           );
         }
 
         this._lastFetchWasFallback = false;
+        this._usingHardcodedDefaults = false;
+        this._highLatitudeWarning = false;
         this.cachedTimes.set(cacheKey, times);
         this.evictCacheIfNeeded();
 
-        // Cache Hijri date for Ramadan detection (no extra API call).
-        // Pass the requested date so pre-fetches for tomorrow don't
-        // overwrite today's Hijri cache.
-        if (data.data.date?.hijri) {
-          cacheHijriDate(data.data.date.hijri, date);
+        if (apiResult.hijri) {
+          cacheHijriDate(apiResult.hijri, date);
         }
 
-        // Persist to disk for instant boot (stale-while-revalidate)
         this.cachePrayerTimesToDisk(coordinates, date, method, asrJuristic, times);
 
-        // Cache for tomorrow as well if it's after Asr
         const now = new Date();
         const asrTime = this.parseTimeToDate(times.Asr, date);
-        if (isAfter(now, asrTime)) {
+        if (getLocalDateKey(now) === getLocalDateKey(date) && isAfter(now, asrTime)) {
           this.fetchPrayerTimes(
             coordinates,
             addDays(date, 1),
@@ -193,16 +209,111 @@ export class PrayerTimeService {
         }
 
         return times;
-      } else {
-        logger.error("Invalid API response format:", data);
-        throw new Error("Invalid API response format");
+      } catch (error) {
+        logger.error("Error fetching prayer times:", describeNetworkError(error));
+        // Return calculated times as fallback
+        this._lastFetchWasFallback = true;
+        this._lastProviderSource = 'calculated_fallback';
+        return this.calculatePrayerTimes(coordinates, date, method);
+      } finally {
+        this.inFlightFetches.delete(cacheKey);
       }
-    } catch (error) {
-      logger.error("Error fetching prayer times:", error);
-      // Return calculated times as fallback
-      this._lastFetchWasFallback = true;
-      return this.calculatePrayerTimes(coordinates, date, method);
+    })();
+
+    this.inFlightFetches.set(cacheKey, fetchPromise);
+    return fetchPromise;
+  }
+
+  private async fetchPrayerTimesFromProvider(
+    coordinates: Coordinates,
+    date: Date,
+    method: CalculationMethod,
+    asrJuristic: "Standard" | "Hanafi"
+  ): Promise<PrayerApiResult> {
+    try {
+      const edgePayload = await fetchPrayerTimesFromEdge(
+        coordinates,
+        date,
+        method,
+        asrJuristic
+      );
+      this._lastProviderSource = 'edge';
+      logger.log('🌐 Prayer times source: edge');
+
+      return {
+        times: edgePayload.timings,
+        hijri: edgePayload.hijri
+          ? {
+              day: String(edgePayload.hijri.day),
+              month: {
+                number: edgePayload.hijri.month,
+                en: edgePayload.hijri.monthName,
+                ar: edgePayload.hijri.monthNameAr ?? '',
+              },
+              year: String(edgePayload.hijri.year),
+            }
+          : undefined,
+      };
+    } catch (edgeError) {
+      logger.warn(
+        "Edge prayer time fetch unavailable, falling back to direct provider:",
+        describeNetworkError(edgeError)
+      );
+      return this.fetchPrayerTimesFromAladhan(coordinates, date, method, asrJuristic);
     }
+  }
+
+  private async fetchPrayerTimesFromAladhan(
+    coordinates: Coordinates,
+    date: Date,
+    method: CalculationMethod,
+    asrJuristic: "Standard" | "Hanafi"
+  ): Promise<PrayerApiResult> {
+    const dateStr = format(date, "dd-MM-yyyy");
+    const methodId = CALCULATION_METHOD_MAP[method];
+    const school = asrJuristic === "Hanafi" ? 1 : 0;
+    const url = `${ALADHAN_API_BASE}/timings/${dateStr}?latitude=${coordinates.latitude}&longitude=${coordinates.longitude}&method=${methodId}&school=${school}`;
+
+    const response = await fetchWithTimeout(url, undefined, PRAYER_API_TIMEOUT_MS);
+
+    if (!response.ok) {
+      throw new Error(`API responded with status: ${response.status}`);
+    }
+
+    const data: AladhanResponse = await response.json();
+
+    if (!(data.code === 200 && data.data && data.data.timings)) {
+      logger.error("Invalid API response format:", data);
+      throw new Error("Invalid API response format");
+    }
+
+    const apiTimes = data.data.timings;
+    this._lastProviderSource = 'direct';
+    logger.log('🌐 Prayer times source: direct_fallback');
+
+    return {
+      times: {
+        Fajr: apiTimes.Fajr || "",
+        Sunrise: apiTimes.Sunrise || "",
+        Dhuhr: apiTimes.Dhuhr || "",
+        Asr: apiTimes.Asr || "",
+        Sunset: apiTimes.Sunset || "",
+        Maghrib: apiTimes.Maghrib || "",
+        Isha: apiTimes.Isha || "",
+        Midnight: apiTimes.Midnight || "",
+      },
+      hijri: data.data.date?.hijri
+        ? {
+            day: data.data.date.hijri.day,
+            month: {
+              number: data.data.date.hijri.month.number,
+              en: data.data.date.hijri.month.en,
+              ar: data.data.date.hijri.month.ar,
+            },
+            year: data.data.date.hijri.year,
+          }
+        : undefined,
+    };
   }
 
   /**
@@ -245,6 +356,11 @@ export class PrayerTimeService {
           prayerDate = new Date(
             prayerDate.getTime() + adjustments[name] * 60000
           );
+        }
+
+        const previousPrayer = prayerTimesList[prayerTimesList.length - 1];
+        if (previousPrayer && prayerDate.getTime() <= previousPrayer.time.getTime()) {
+          prayerDate = addDays(prayerDate, 1);
         }
 
         const isNext = !nextPrayerFound && isAfter(prayerDate, now);
@@ -327,6 +443,9 @@ export class PrayerTimeService {
       logger.log("Using fallback prayer time calculation");
       const { latitude, longitude } = coordinates;
 
+      // Flag high-latitude locations where astronomical calculations may be inaccurate
+      this._highLatitudeWarning = Math.abs(latitude) > 48;
+
       // Convert date to Julian date
       const julian = this.getJulianDate(date);
 
@@ -340,13 +459,13 @@ export class PrayerTimeService {
 
       // Method parameters (angles) for different calculation methods
       const methodParams = {
-        MWL: { fajrAngle: 18, ishaAngle: 17 }, // Muslim World League
-        ISNA: { fajrAngle: 15, ishaAngle: 15 }, // Islamic Society of North America
-        Egypt: { fajrAngle: 19.5, ishaAngle: 17.5 }, // Egyptian General Authority of Survey
-        Makkah: { fajrAngle: 18.5, ishaAngle: 90 }, // Umm al-Qura, Makkah
-        Karachi: { fajrAngle: 18, ishaAngle: 18 }, // University of Islamic Sciences, Karachi
-        Tehran: { fajrAngle: 17.7, ishaAngle: 14 }, // Institute of Geophysics, Tehran
-        Jafari: { fajrAngle: 16, ishaAngle: 14 }, // Shia Ithna Ashari, Leva Research Institute
+        MWL: { fajrAngle: 18, ishaAngle: 17, ishaIntervalMinutes: null }, // Muslim World League
+        ISNA: { fajrAngle: 15, ishaAngle: 15, ishaIntervalMinutes: null }, // Islamic Society of North America
+        Egypt: { fajrAngle: 19.5, ishaAngle: 17.5, ishaIntervalMinutes: null }, // Egyptian General Authority of Survey
+        Makkah: { fajrAngle: 18.5, ishaAngle: null, ishaIntervalMinutes: 90 }, // Umm al-Qura, Makkah
+        Karachi: { fajrAngle: 18, ishaAngle: 18, ishaIntervalMinutes: null }, // University of Islamic Sciences, Karachi
+        Tehran: { fajrAngle: 17.7, ishaAngle: 14, ishaIntervalMinutes: null }, // Institute of Geophysics, Tehran
+        Jafari: { fajrAngle: 16, ishaAngle: 14, ishaIntervalMinutes: null }, // Shia Ithna Ashari, Leva Research Institute
       };
 
       // Select method parameters (default to MWL if method not found)
@@ -357,23 +476,25 @@ export class PrayerTimeService {
       // Zuhr time (local noon)
       const midDay = 12 + timeZoneOffset - longitude / 15 - equationOfTime / 60;
 
-      // Fajr time using angle
-      const fajrTime = this.getTimeByAngle(
-        params.fajrAngle,
-        declination,
-        latitude,
-        midDay,
-        true
-      );
-
-      // Sunrise time (angle = 0.833 degrees)
-      const sunriseTime = this.getTimeByAngle(
+      const directSunriseTime = this.getTimeByAngleOrNull(
         0.833,
         declination,
         latitude,
         midDay,
         true
       );
+      const directMaghribTime = this.getTimeByAngleOrNull(
+        0.833,
+        declination,
+        latitude,
+        midDay,
+        false
+      );
+
+      // When sunrise/sunset are astronomically unavailable, fall back to a 12h day
+      // centered on solar noon so downstream prayer times stay coherent.
+      const sunriseTime = directSunriseTime ?? midDay - 6;
+      const maghribTime = directMaghribTime ?? midDay + 6;
 
       // Dhuhr time (adjust midDay slightly)
       const dhuhrTime = midDay + 2 / 60; // Add 2 minutes
@@ -396,46 +517,68 @@ export class PrayerTimeService {
         false
       );
 
-      // Maghrib time (sunset, angle = 0.833 degrees)
-      const maghribTime = this.getTimeByAngle(
-        0.833,
-        declination,
-        latitude,
-        midDay,
-        false
-      );
-
-      // Isha time using angle
-      const ishaTime = this.getTimeByAngle(
-        params.ishaAngle,
-        declination,
-        latitude,
-        midDay,
-        false
-      );
-
       // Midnight (for Tahajjud) - calculated as middle point between Maghrib and Fajr
       const nextDay = new Date(date);
       nextDay.setDate(nextDay.getDate() + 1);
       const nextJulian = this.getJulianDate(nextDay);
       const nextSunPosition = this.getSunPosition(nextJulian);
-      const nextFajrTime = this.getTimeByAngle(
+      const nextMidDay =
+        12 +
+        timeZoneOffset -
+        longitude / 15 -
+        nextSunPosition.equationOfTime / 60;
+      const nextSunriseTime =
+        this.getTimeByAngleOrNull(
+          0.833,
+          nextSunPosition.declination,
+          latitude,
+          nextMidDay,
+          true
+        ) ?? nextMidDay - 6;
+
+      const nightDuration = this.getNightDurationHours(maghribTime, nextSunriseTime);
+      const directFajrTime = this.getTimeByAngleOrNull(
+        params.fajrAngle,
+        declination,
+        latitude,
+        midDay,
+        true
+      );
+      const fajrTime =
+        directFajrTime ??
+        this.normalizeTime(sunriseTime - nightDuration * this.getNightPortion(params.fajrAngle));
+
+      const directIshaTime =
+        params.ishaAngle === null
+          ? null
+          : this.getTimeByAngleOrNull(
+              params.ishaAngle,
+              declination,
+              latitude,
+              midDay,
+              false
+            );
+      const ishaTime =
+        params.ishaIntervalMinutes !== null
+          ? this.normalizeTime(maghribTime + params.ishaIntervalMinutes / 60)
+          : directIshaTime ??
+            this.normalizeTime(maghribTime + nightDuration * this.getNightPortion(params.ishaAngle!));
+
+      const nextDirectFajrTime = this.getTimeByAngleOrNull(
         params.fajrAngle,
         nextSunPosition.declination,
         latitude,
-        12 +
-          timeZoneOffset -
-          longitude / 15 -
-          nextSunPosition.equationOfTime / 60,
+        nextMidDay,
         true
       );
+      const nextFajrTime =
+        nextDirectFajrTime ??
+        this.normalizeTime(nextSunriseTime - nightDuration * this.getNightPortion(params.fajrAngle));
 
       // Adjust nextFajrTime if needed
-      const adjustedNextFajr =
-        nextFajrTime < 0 ? nextFajrTime + 24 : nextFajrTime;
+      const adjustedNextFajr = this.normalizeTime(nextFajrTime);
       const midnightTime = (maghribTime + adjustedNextFajr) / 2;
-      const normalizedMidnight =
-        midnightTime >= 24 ? midnightTime - 24 : midnightTime;
+      const normalizedMidnight = this.normalizeTime(midnightTime);
 
       // Format times as strings
       return {
@@ -451,7 +594,27 @@ export class PrayerTimeService {
     } catch (error) {
       logger.error("Error in fallback prayer time calculation:", error);
 
-      // Return default times if calculation fails
+      // Try last-known-good cached times from MMKV before using hardcoded defaults
+      try {
+        const raw = StorageService.getValue('cached_prayer_times');
+        if (raw) {
+          const cached: CachedPrayerTimesData = JSON.parse(raw);
+          if (cached.times) {
+            logger.warn("Using last-known-good cached prayer times as fallback");
+            this._lastFetchWasFallback = true;
+            this._usingHardcodedDefaults = false;
+            this._lastProviderSource = 'disk_cache';
+            return cached.times;
+          }
+        }
+      } catch (cacheError) {
+        logger.warn("Failed to read cached prayer times:", cacheError);
+      }
+
+      // Absolute last resort: hardcoded defaults
+      logger.error("No cached times available — using hardcoded defaults");
+      this._usingHardcodedDefaults = true;
+      this._lastProviderSource = 'hardcoded_defaults';
       return {
         Fajr: "05:00",
         Sunrise: "06:30",
@@ -473,8 +636,8 @@ export class PrayerTimeService {
     let month = date.getMonth() + 1;
     const day = date.getDate();
 
-    let A = Math.floor(year / 100);
-    let B = 2 - A + Math.floor(A / 4);
+    const A = Math.floor(year / 100);
+    const B = 2 - A + Math.floor(A / 4);
 
     if (month <= 2) {
       year--;
@@ -573,8 +736,8 @@ export class PrayerTimeService {
     const decRad = (declination * Math.PI) / 180;
     const angleRad = (angle * Math.PI) / 180;
 
-    let num = Math.sin(angleRad) - Math.sin(latRad) * Math.sin(decRad);
-    let den = Math.cos(latRad) * Math.cos(decRad);
+    const num = Math.sin(angleRad) - Math.sin(latRad) * Math.sin(decRad);
+    const den = Math.cos(latRad) * Math.cos(decRad);
 
     let cosAng = num / den;
 
@@ -588,6 +751,47 @@ export class PrayerTimeService {
     time = isBefore ? midDay - time : midDay + time;
 
     return time;
+  }
+
+  private getTimeByAngleOrNull(
+    angle: number,
+    declination: number,
+    latitude: number,
+    midDay: number,
+    isBefore: boolean
+  ): number | null {
+    const latRad = (latitude * Math.PI) / 180;
+    const decRad = (declination * Math.PI) / 180;
+    const angleRad = (angle * Math.PI) / 180;
+
+    const num = Math.sin(angleRad) - Math.sin(latRad) * Math.sin(decRad);
+    const den = Math.cos(latRad) * Math.cos(decRad);
+    const cosAng = num / den;
+
+    if (!Number.isFinite(cosAng) || cosAng > 1 || cosAng < -1) {
+      return null;
+    }
+
+    const time = (Math.acos(cosAng) * 180) / Math.PI / 15;
+    return isBefore ? midDay - time : midDay + time;
+  }
+
+  private getNightPortion(angle: number): number {
+    return angle / 60;
+  }
+
+  private getNightDurationHours(maghribTime: number, nextSunriseTime: number): number {
+    const normalizedMaghrib = this.normalizeTime(maghribTime);
+    const normalizedNextSunrise = this.normalizeTime(nextSunriseTime);
+    const duration = normalizedNextSunrise - normalizedMaghrib;
+    return duration > 0 ? duration : duration + 24;
+  }
+
+  private normalizeTime(time: number): number {
+    let normalized = time;
+    while (normalized < 0) normalized += 24;
+    while (normalized >= 24) normalized -= 24;
+    return normalized;
   }
 
   /**
@@ -606,9 +810,7 @@ export class PrayerTimeService {
       return "00:00";
     }
 
-    // Normalize time to 0-24 range
-    while (time < 0) time += 24;
-    while (time >= 24) time -= 24;
+    time = this.normalizeTime(time);
 
     const hours = Math.floor(time);
     const minutes = Math.round((time - hours) * 60);
@@ -695,6 +897,7 @@ export class PrayerTimeService {
    */
   clearCache(): void {
     this.cachedTimes.clear();
+    this.inFlightFetches.clear();
   }
 
   /**

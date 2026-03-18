@@ -2,21 +2,31 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
-import { PrayerTime, PrayerName, UserSettings } from '../types';
+import { PrayerTime, PrayerName, UserSettings, NotificationSchedulingReason } from '../types';
 import StorageService from './StorageService';
 import PrayerTimeService from './PrayerTimeService';
 import ReminderStateService from './ReminderStateService';
 import { format } from 'date-fns';
-import { CHANNELS, SOUNDS, NOTIFICATION_CHANNEL_VERSION, NOTIFICATION_SCHEDULING_DAYS, NOTIFICATION_LOWER_TIER_DAYS, NOTIFICATION_MAX_FUTURE_DAYS, IOS_NOTIFICATION_CAP, SCHEDULING_LOCK_TIMEOUT_MS, KEEP_ALIVE_INTERVAL_MS } from '../constants/NotificationConstants';
+import { CHANNELS, NOTIFICATION_CHANNEL_VERSION, NOTIFICATION_SCHEDULING_DAYS, NOTIFICATION_LOWER_TIER_DAYS, IOS_NOTIFICATION_CAP, SCHEDULING_LOCK_TIMEOUT_MS, KEEP_ALIVE_INTERVAL_MS } from '../constants/NotificationConstants';
 import MosqueModeService from './MosqueModeService';
 import { NOTIFICATION_CATEGORIES, initializeChannelsAndCategories } from './notifications/NotificationChannels';
 import AdhanPlayer from './notifications/AdhanPlayer';
-import { scheduleFullAdhan, cancelAllFullAdhans, stopFullAdhan } from './notifications/FullAdhanScheduler';
+import { scheduleFullAdhan, cancelAllFullAdhans, stopFullAdhan, getExactAlarmStatus } from './notifications/FullAdhanScheduler';
 import { scheduleTier2PersistentReminders, scheduleTier3GracePeriodWarning } from './notifications/HabitBuilderNotifications';
+import {
+  resolveMainPrayerNotificationAudio,
+  resolveRuntimeAdhanPlaybackPolicy,
+  shouldPlayForegroundClip,
+  shouldSuppressForegroundAdhanNotificationSound,
+  usesAndroidScheduledFullAdhan,
+} from './notifications/AdhanPlaybackPolicy';
 import { isValidCoordinates } from '../utils/locationValidation';
 import logger from '../utils/logger';
+import { captureNow } from '../constants/time';
 import AnalyticsService from './AnalyticsService';
+import NotificationLedger from './NotificationLedger';
 import { useStore } from '../store/useStore';
+import NotificationTraceService from './NotificationTraceService';
 
 // NOTIFICATION_CATEGORIES now imported from ./notifications/NotificationChannels
 
@@ -31,8 +41,13 @@ Notifications.setNotificationHandler({
     // ONLY when adhan is actually enabled (AdhanPlayer handles playback).
     // If adhan is off, let the notification play its own channel sound normally.
     const currentSettings = StorageService.getUserSettings();
-    const adhanEnabled = currentSettings?.notifications?.enabled && currentSettings?.notifications?.adhanEnabled;
-    const suppressSound = Platform.OS === 'android' && isAdhan && !!adhanEnabled;
+    const suppressSound = currentSettings?.notifications
+      ? shouldSuppressForegroundAdhanNotificationSound(
+          Platform.OS,
+          isAdhan,
+          currentSettings.notifications
+        )
+      : false;
 
     return {
       shouldShowAlert: !isTest || Platform.OS === 'ios',
@@ -72,6 +87,35 @@ class NotificationService {
   private responseListener: Notifications.Subscription | null = null;
   private notificationCache = new Map<string, string>();
   private navigationHandler: ((prayer: PrayerName, action: string) => void) | null = null;
+  private initialized = false;
+  private channelsInitialized = false;
+  private pendingInitialResponse: Notifications.NotificationResponse | null = null;
+  private lastHandledResponseKey: string | null = null;
+  private lastScheduleSummary:
+    | {
+        reason: NotificationSchedulingReason;
+        scheduledCount: number;
+        totalScheduledCount: number;
+        exactAlarmStatus?: string;
+      }
+    | null = null;
+
+  private async syncAndroidExactAlarmStatus(settings: UserSettings): Promise<void> {
+    if (Platform.OS !== 'android') return;
+
+    const usesExactAlarm = !!settings.notifications.fullAdhanEnabled && !!settings.notifications.adhanEnabled;
+    if (!usesExactAlarm) {
+      StorageService.setValue('android_exact_alarm_status', 'not_applicable');
+      return;
+    }
+
+    const status = await getExactAlarmStatus();
+    StorageService.setValue('android_exact_alarm_status', status);
+
+    if (status === 'fallback') {
+      logger.warn('⚠️ Exact alarms unavailable for full Adhan; Android will use an inexact fallback');
+    }
+  }
 
   private acquireSchedulingLock(): boolean {
     const lockTime = StorageService.getValue('notification_scheduling_lock');
@@ -118,6 +162,7 @@ class NotificationService {
       type === 'pre-prayer' ||
       type === 'prayer-time' ||
       type === 'post-prayer-check' ||
+      type === 'keepalive' ||
       type === 'mindfulness-reminder' ||
       type === 'snoozed' ||
       type === 'tier2-reminder' ||
@@ -160,21 +205,51 @@ class NotificationService {
     return toCancel.length;
   }
 
-  async maybeRescheduleExtendedNotifications(hoursThreshold: number = 12): Promise<boolean> {
+  async maybeRescheduleExtendedNotifications(
+    hoursThreshold: number = 12,
+    reason: NotificationSchedulingReason = 'background_refresh'
+  ): Promise<boolean> {
     try {
+      if (!StorageService.isInitialized()) {
+        logger.log(`⏳ Skipping notification reconcile (${reason}) — storage not initialized`);
+        NotificationTraceService.log('reschedule_check_skipped', {
+          reason,
+          skipReason: 'storage_not_initialized',
+        });
+        return false;
+      }
+
       const lastRunStr = StorageService.getValue('last_batch_schedule_date');
       const lastRun = lastRunStr ? new Date(lastRunStr) : new Date(0);
       const now = new Date();
       const hoursSinceLastRun = (now.getTime() - lastRun.getTime()) / (1000 * 60 * 60);
 
+      NotificationTraceService.log('reschedule_check_started', {
+        reason,
+        hoursThreshold,
+        hoursSinceLastRun: Number(hoursSinceLastRun.toFixed(2)),
+      });
+
       if (hoursSinceLastRun > hoursThreshold) {
-        await this.scheduleExtendedNotifications();
-        StorageService.setValue('last_batch_schedule_date', now.toISOString());
-        return true;
+        NotificationTraceService.log('reschedule_check_triggered', {
+          reason,
+          hoursThreshold,
+          hoursSinceLastRun: Number(hoursSinceLastRun.toFixed(2)),
+        });
+        return this.reconcileScheduling(reason, { force: reason !== 'settings_change' });
       }
 
+      NotificationTraceService.log('reschedule_check_skipped', {
+        reason,
+        skipReason: 'within_threshold',
+        hoursThreshold,
+        hoursSinceLastRun: Number(hoursSinceLastRun.toFixed(2)),
+      });
       return false;
     } catch (error) {
+      NotificationTraceService.log('reschedule_check_failed', {
+        reason,
+      });
       logger.error('❌ Reschedule failed:', error);
       return false;
     }
@@ -186,35 +261,60 @@ class NotificationService {
   }
 
   // Register a handler function that will be called when navigation is needed
-  registerNavigationHandler(handler: (prayer: PrayerName, action: string) => void) {
+  registerNavigationHandler(handler: ((prayer: PrayerName, action: string) => void) | null) {
+    if (this.navigationHandler === handler) {
+      logger.log('♻️ Navigation handler already registered');
+      return;
+    }
+
+    const replacingHandler = this.navigationHandler !== null;
     this.navigationHandler = handler;
-    logger.log('✅ Navigation handler registered');
+    if (!handler) {
+      logger.log('🧹 Navigation handler cleared');
+      return;
+    }
+
+    logger.log(replacingHandler ? '♻️ Navigation handler replaced' : '✅ Navigation handler registered');
   }
 
   async initialize(): Promise<boolean> {
     try {
+      NotificationTraceService.log('initialize_started');
+      if (this.initialized) {
+        logger.log('♻️ Re-initializing NotificationService safely');
+        NotificationTraceService.log('initialize_reentered');
+      }
+
       // Request permissions
       const hasPermission = await this.requestPermissions();
       if (!hasPermission) {
         logger.log('📵 Notification permissions not granted');
+        NotificationTraceService.log('initialize_permissions_missing');
         return false;
       }
 
       // Set up Audio Mode
       await AdhanPlayer.configureAudioMode();
 
-      // Set up notification channels (Android) and categories (iOS)
-      await initializeChannelsAndCategories();
+      // Channels/categories only need a one-time setup per process.
+      if (!this.channelsInitialized) {
+        await initializeChannelsAndCategories();
+        this.channelsInitialized = true;
+      }
 
       // Clean up old reminder states (Prayer Habit Builder)
       ReminderStateService.cleanupOldStates();
 
-      // Set up listeners
-      this.setupListeners();
+      // Rebind listeners defensively so repeated initialize() calls are safe.
+      this.replaceListeners();
+      await this.hydrateInitialNotificationResponse();
 
+      this.initialized = true;
+      NotificationTraceService.log('initialize_completed');
       logger.log('✅ NotificationService initialized');
       return true;
     } catch (error) {
+      NotificationTraceService.log('initialize_failed');
       logger.error('❌ Failed to initialize notifications:', error);
       return false;
     }
@@ -223,10 +323,14 @@ class NotificationService {
   private async requestPermissions(): Promise<boolean> {
     if (!Device.isDevice) {
       logger.log('📱 Notifications only work on physical devices');
+      NotificationTraceService.log('permission_request_skipped_simulator');
       return false;
     }
 
     const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    NotificationTraceService.log('permission_status_checked', {
+      existingStatus,
+    });
     let finalStatus = existingStatus;
 
     if (existingStatus !== 'granted') {
@@ -238,6 +342,10 @@ class NotificationService {
         },
       });
       finalStatus = status;
+      NotificationTraceService.log('permission_request_result', {
+        requestedFrom: existingStatus,
+        finalStatus,
+      });
     }
 
     return finalStatus === 'granted';
@@ -257,23 +365,260 @@ class NotificationService {
 
   // Category setup delegated to notifications/NotificationChannels.ts
 
+  private getResponseKey(response: Notifications.NotificationResponse): string {
+    return `${response.notification.request.identifier}:${response.actionIdentifier}`;
+  }
+
+  private responseNeedsNavigation(response: Notifications.NotificationResponse): boolean {
+    const data = response.notification.request.content.data as NotificationData | undefined;
+    const { actionIdentifier } = response;
+
+    if (actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER) {
+      return (
+        data?.type === 'mosque_mode_prompt' ||
+        data?.type === 'prayer-time' ||
+        data?.type === 'test'
+      );
+    }
+
+    return (
+      actionIdentifier === 'complete' ||
+      actionIdentifier === 'mark_prayed' ||
+      actionIdentifier === 'yes_prayed' ||
+      actionIdentifier === 'pray_now' ||
+      actionIdentifier === 'prepare'
+    );
+  }
+
+  private async hydrateInitialNotificationResponse(): Promise<void> {
+    try {
+      const response = await Notifications.getLastNotificationResponseAsync?.();
+      if (!response) return;
+
+      const key = this.getResponseKey(response);
+      if (this.lastHandledResponseKey === key) return;
+      this.pendingInitialResponse = response;
+      NotificationTraceService.log('initial_response_hydrated', {
+        type: String((response.notification.request.content.data as NotificationData | undefined)?.type || 'unknown'),
+        action: response.actionIdentifier,
+      });
+    } catch (error) {
+      logger.warn('⚠️ Failed to hydrate initial notification response:', error);
+    }
+  }
+
+  async consumeInitialNotificationResponse(): Promise<boolean> {
+    const response =
+      this.pendingInitialResponse ||
+      await Notifications.getLastNotificationResponseAsync?.();
+
+    if (!response) return false;
+
+    const key = this.getResponseKey(response);
+    if (this.lastHandledResponseKey === key) {
+      this.pendingInitialResponse = null;
+      NotificationTraceService.log('initial_response_skipped_duplicate');
+      return false;
+    }
+
+    if (this.responseNeedsNavigation(response) && !this.navigationHandler) {
+      this.pendingInitialResponse = response;
+      NotificationTraceService.log('initial_response_waiting_for_navigation');
+      return false;
+    }
+
+    this.pendingInitialResponse = null;
+    NotificationTraceService.log('initial_response_consumed');
+    await this.handleNotificationResponse(response);
+    return true;
+  }
+
+  private replaceListeners() {
+    if (this.notificationListener) {
+      this.notificationListener.remove();
+      this.notificationListener = null;
+    }
+    if (this.responseListener) {
+      this.responseListener.remove();
+      this.responseListener = null;
+    }
+    this.setupListeners();
+  }
+
+  private async handleNotificationResponse(response: Notifications.NotificationResponse): Promise<void> {
+    const { notification, actionIdentifier } = response;
+    const data = notification.request.content.data as NotificationData | undefined;
+    this.lastHandledResponseKey = this.getResponseKey(response);
+    NotificationTraceService.log('notification_response_handled', {
+      action: actionIdentifier,
+      type: String(data?.type || 'unknown'),
+      prayer: String(data?.prayer || 'unknown'),
+    });
+
+    // Log notification tap
+    NotificationLedger.recordTapped(notification.request.identifier);
+    AnalyticsService.logEvent('notification_tapped', {
+      action: actionIdentifier,
+      prayer: (data?.prayer as string) || 'unknown',
+      type: (data?.type as string) || 'unknown',
+    });
+
+    // If user taps the notification itself
+    if (actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER) {
+      // Mosque mode prompt: store pending prayer and navigate to Home
+      if (data?.type === 'mosque_mode_prompt' && data?.prayer) {
+        useStore.getState().setPendingMosquePromptPrayer(data.prayer as PrayerName);
+        if (this.navigationHandler) {
+          this.navigationHandler(data.prayer as PrayerName, 'default');
+        }
+        logger.log('🕌 Mosque mode prompt tapped for:', data.prayer);
+      }
+      // Play adhan for both prayer-time and test notifications (only if adhan is enabled)
+      else if ((data?.type === 'prayer-time' || data?.type === 'test') && (data?.prayer || data?.type === 'test')) {
+        const tapSettings = StorageService.getUserSettings();
+        if (tapSettings?.notifications) {
+          const playbackPolicy = resolveRuntimeAdhanPlaybackPolicy(Platform.OS, tapSettings.notifications);
+          if (usesAndroidScheduledFullAdhan(playbackPolicy)) {
+            // If Full Adhan service is running, stop it (user is now in-app)
+            stopFullAdhan();
+          } else if (shouldPlayForegroundClip(playbackPolicy)) {
+            // Play full adhan inside app (for immersive experience)
+            this.playFullAdhan();
+          }
+        }
+
+        // Only navigate if it's a prayer-time notification with prayer data
+        if (data?.prayer && this.navigationHandler) {
+          this.navigationHandler(data.prayer as PrayerName, 'default');
+        }
+      }
+    }
+
+    switch (actionIdentifier) {
+      case 'snooze':
+        if (data?.prayer && data?.prayerId) {
+          this.stopAdhan(); // Stop adhan if playing
+          // Get user's snooze preferences
+          const settings = StorageService.getUserSettings();
+          const snoozeInterval = settings?.habitBuilder?.snooze?.defaultInterval || 10;
+
+          // Check max snoozes
+          const maxSnoozes = settings?.habitBuilder?.snooze?.maxSnoozesPerPrayer || 5;
+          if (ReminderStateService.hasReachedMaxSnoozes(data.prayerId as string, maxSnoozes)) {
+            logger.log('⚠️ Max snoozes reached for', data.prayerId);
+            // Still allow one more snooze
+          }
+          // Increment snooze count and schedule snooze
+          ReminderStateService.incrementSnoozeCount(data.prayerId as string);
+          await this.snoozePrayerNotification(data.prayer as PrayerName, snoozeInterval, data.prayerId as string);
+        }
+        break;
+
+      case 'complete':
+      case 'mark_prayed': // DEPRECATED - keeping for compatibility
+        if (data?.prayer) {
+          this.stopAdhan();
+          if (this.navigationHandler) {
+            this.navigationHandler(data.prayer as PrayerName, 'complete');
+          }
+          logger.log('✅ Mark prayer complete:', data.prayer);
+        }
+        break;
+
+      // PRAYER HABIT BUILDER ACTIONS
+      case 'yes_prayed':
+        if (data?.prayerId && data?.prayer) {
+          this.stopAdhan();
+          // Mark as completed in reminder state
+          ReminderStateService.markPrayerCompleted(data.prayerId as string);
+          // Cancel all future reminders for this prayer
+          await this.cancelPrayerReminderFlow(data.prayerId as string);
+          // Navigate to complete prayer flow
+          if (this.navigationHandler) {
+            this.navigationHandler(data.prayer as PrayerName, 'complete');
+          }
+        }
+        break;
+
+      case 'snooze_prayer':
+        if (data?.prayerId && data?.prayer) {
+          // Snooze for user's preferred interval
+          const settingsSnooze = StorageService.getUserSettings();
+          const snoozeIntervalCustom = settingsSnooze?.habitBuilder?.snooze?.defaultInterval || 10;
+
+          ReminderStateService.incrementSnoozeCount(data.prayerId as string);
+          await this.snoozePrayerNotification(data.prayer as PrayerName, snoozeIntervalCustom, data.prayerId as string);
+
+          logger.log(`⏰ Prayer ${data.prayerId} snoozed for ${snoozeIntervalCustom} min`);
+        }
+        break;
+
+      case 'skip_prayer':
+        if (data?.prayerId && data?.prayer) {
+          // User explicitly chose to skip
+          ReminderStateService.markPrayerSkipped(data.prayerId as string);
+
+          // Cancel all future reminders for this prayer
+          await this.cancelPrayerReminderFlow(data.prayerId as string);
+
+          AnalyticsService.logPrayerMissed(data.prayer as string);
+          logger.log('⏭️ Prayer skipped:', data.prayerId);
+        }
+        break;
+
+      case 'pray_now':
+        // Grace period warning - open mindfulness flow
+        if (data?.prayer && this.navigationHandler) {
+          this.navigationHandler(data.prayer as PrayerName, 'prepare');
+        }
+        logger.log('🕌 Opening prayer flow from grace period warning');
+        break;
+
+      case 'prepare':
+        // Navigate to mindfulness flow
+        if (data?.prayer && this.navigationHandler) {
+          this.navigationHandler(data.prayer as PrayerName, 'prepare');
+        }
+        logger.log('🧘 Open mindfulness flow for:', data?.prayer);
+        break;
+
+      default:
+        // Handle mosque mode notifications
+        if (data?.type && typeof data.type === 'string' && data.type.startsWith('mosque_mode')) {
+          await MosqueModeService.handleNotificationResponse(data);
+        }
+        // Already handled above for DEFAULT_ACTION_IDENTIFIER
+        break;
+    }
+  }
+
   private setupListeners() {
     // Handle notifications when app is in foreground
     this.notificationListener = Notifications.addNotificationReceivedListener((notification) => {
       logger.log('🔔 Notification received:', notification.request.content.title);
+      NotificationTraceService.log('notification_received', {
+        identifier: notification.request.identifier,
+        type: (notification.request.content.data?.type as string) || 'unknown',
+        prayer: (notification.request.content.data?.prayer as string) || null,
+      });
+
+      // Ledger: record delivery
+      NotificationLedger.recordDelivered(notification.request.identifier);
 
       // Auto-play adhan for test notifications when app is in foreground
       // This is necessary because Android doesn't play channel-specific sounds in foreground
       const data = notification.request.content.data;
       if ((data?.type === 'test' || data?.type === 'prayer-time') && Platform.OS === 'android') {
         const currentSettings = StorageService.getUserSettings();
-        const adhanOn = currentSettings?.notifications?.enabled && currentSettings?.notifications?.adhanEnabled;
-        if (!adhanOn) {
+        const playbackPolicy = currentSettings?.notifications
+          ? resolveRuntimeAdhanPlaybackPolicy(Platform.OS, currentSettings.notifications)
+          : 'silent';
+        if (playbackPolicy === 'silent') {
           logger.log('🔇 Adhan disabled in settings — skipping playback');
-        } else if (currentSettings?.notifications?.fullAdhanEnabled) {
+        } else if (usesAndroidScheduledFullAdhan(playbackPolicy)) {
           // When Full Adhan foreground service is active, it handles audio — skip AdhanPlayer
           logger.log('🎵 Full Adhan service handling audio — skipping AdhanPlayer');
-        } else {
+        } else if (shouldPlayForegroundClip(playbackPolicy)) {
           logger.log('🎵 Playing adhan for prayer notification in foreground');
           this.playFullAdhan();
         }
@@ -282,142 +627,7 @@ class NotificationService {
 
     // Handle notification responses (taps, actions)
     this.responseListener = Notifications.addNotificationResponseReceivedListener(async (response) => {
-      const { notification, actionIdentifier } = response;
-      const data = notification.request.content.data;
-
-      // Log notification tap
-      AnalyticsService.logEvent('notification_tapped', {
-        action: actionIdentifier,
-        prayer: (data?.prayer as string) || 'unknown',
-        type: (data?.type as string) || 'unknown',
-      });
-
-      // If user taps the notification itself
-      if (actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER) {
-        // Mosque mode prompt: store pending prayer and navigate to Home
-        if (data?.type === 'mosque_mode_prompt' && data?.prayer) {
-          const { useStore } = require('../store/useStore');
-          useStore.getState().setPendingMosquePromptPrayer(data.prayer as PrayerName);
-          if (this.navigationHandler) {
-            this.navigationHandler(data.prayer as PrayerName, 'default');
-          }
-          logger.log('🕌 Mosque mode prompt tapped for:', data.prayer);
-        }
-        // Play adhan for both prayer-time and test notifications (only if adhan is enabled)
-        else if ((data?.type === 'prayer-time' || data?.type === 'test') && (data?.prayer || data?.type === 'test')) {
-          const tapSettings = StorageService.getUserSettings();
-          const tapAdhanOn = tapSettings?.notifications?.enabled && tapSettings?.notifications?.adhanEnabled;
-          if (Platform.OS === 'android' && tapSettings?.notifications?.fullAdhanEnabled) {
-            // If Full Adhan service is running, stop it (user is now in-app)
-            stopFullAdhan();
-          } else if (tapAdhanOn) {
-            // Play full adhan inside app (for immersive experience)
-            this.playFullAdhan();
-          }
-
-          // Only navigate if it's a prayer-time notification with prayer data
-          if (data?.prayer && this.navigationHandler) {
-            this.navigationHandler(data.prayer as PrayerName, 'default');
-          }
-        }
-      }
-
-      switch (actionIdentifier) {
-        case 'snooze':
-          if (data?.prayer && data?.prayerId) {
-            this.stopAdhan(); // Stop adhan if playing
-            // Get user's snooze preferences
-            const settings = StorageService.getUserSettings();
-            const snoozeInterval = settings?.habitBuilder?.snooze?.defaultInterval || 10;
-
-            // Check max snoozes
-            const maxSnoozes = settings?.habitBuilder?.snooze?.maxSnoozesPerPrayer || 5;
-            if (ReminderStateService.hasReachedMaxSnoozes(data.prayerId as string, maxSnoozes)) {
-              logger.log('⚠️ Max snoozes reached for', data.prayerId);
-              // Still allow one more snooze
-            }
-            // Increment snooze count and schedule snooze
-            ReminderStateService.incrementSnoozeCount(data.prayerId as string);
-            await this.snoozePrayerNotification(data.prayer as PrayerName, snoozeInterval, data.prayerId as string);
-          }
-          break;
-
-        case 'complete':
-        case 'mark_prayed': // DEPRECATED - keeping for compatibility
-          if (data?.prayer) {
-            this.stopAdhan();
-            if (this.navigationHandler) {
-              this.navigationHandler(data.prayer as PrayerName, 'complete');
-            }
-            logger.log('✅ Mark prayer complete:', data.prayer);
-          }
-          break;
-
-        // PRAYER HABIT BUILDER ACTIONS
-        case 'yes_prayed':
-          if (data?.prayerId && data?.prayer) {
-            this.stopAdhan();
-            // Mark as completed in reminder state
-            ReminderStateService.markPrayerCompleted(data.prayerId as string);
-            // Cancel all future reminders for this prayer
-            await this.cancelPrayerReminderFlow(data.prayerId as string);
-            // Navigate to complete prayer flow
-            if (this.navigationHandler) {
-              this.navigationHandler(data.prayer as PrayerName, 'complete');
-            }
-          }
-          break;
-
-        case 'snooze_prayer':
-          if (data?.prayerId && data?.prayer) {
-            // Snooze for user's preferred interval
-            const settingsSnooze = StorageService.getUserSettings();
-            const snoozeIntervalCustom = settingsSnooze?.habitBuilder?.snooze?.defaultInterval || 10;
-
-            ReminderStateService.incrementSnoozeCount(data.prayerId as string);
-            await this.snoozePrayerNotification(data.prayer as PrayerName, snoozeIntervalCustom, data.prayerId as string);
-
-            logger.log(`⏰ Prayer ${data.prayerId} snoozed for ${snoozeIntervalCustom} min`);
-          }
-          break;
-
-        case 'skip_prayer':
-          if (data?.prayerId && data?.prayer) {
-            // User explicitly chose to skip
-            ReminderStateService.markPrayerSkipped(data.prayerId as string);
-
-            // Cancel all future reminders for this prayer
-            await this.cancelPrayerReminderFlow(data.prayerId as string);
-
-            AnalyticsService.logPrayerMissed(data.prayer as string);
-            logger.log('⏭️ Prayer skipped:', data.prayerId);
-          }
-          break;
-
-        case 'pray_now':
-          // Grace period warning - open mindfulness flow
-          if (data?.prayer && this.navigationHandler) {
-            this.navigationHandler(data.prayer as PrayerName, 'prepare');
-          }
-          logger.log('🕌 Opening prayer flow from grace period warning');
-          break;
-
-        case 'prepare':
-          // Navigate to mindfulness flow
-          if (data?.prayer && this.navigationHandler) {
-            this.navigationHandler(data.prayer as PrayerName, 'prepare');
-          }
-          logger.log('🧘 Open mindfulness flow for:', data?.prayer);
-          break;
-
-        default:
-          // Handle mosque mode notifications
-          if (data?.type && typeof data.type === 'string' && data.type.startsWith('mosque_mode')) {
-            await MosqueModeService.handleNotificationResponse(data);
-          }
-          // Already handled above for DEFAULT_ACTION_IDENTIFIER
-          break;
-      }
+      await this.handleNotificationResponse(response);
     });
   }
 
@@ -440,25 +650,97 @@ class NotificationService {
 
   // 🚀 MAIN ENTRY POINT - Now simply delegates to the 14-day batch scheduler
   async scheduleAllPrayerNotifications() {
+    await this.reconcileScheduling('settings_change');
+  }
+
+  async reconcileScheduling(
+    reason: NotificationSchedulingReason,
+    options?: {
+      force?: boolean;
+      onProgress?: (day: number, total: number) => void;
+    }
+  ): Promise<boolean> {
     try {
+      NotificationTraceService.log('reconcile_started', {
+        reason,
+        force: Boolean(options?.force),
+      });
+      if (!StorageService.isInitialized()) {
+        logger.log(`⏳ Skipping notification reconcile (${reason}) — storage not initialized`);
+        NotificationTraceService.log('reconcile_skipped', {
+          reason,
+          skipReason: 'storage_not_initialized',
+        });
+        return false;
+      }
+
       const settings = StorageService.getUserSettings();
-      if (!settings || !settings.notifications.enabled) {
-        logger.log('📵 Notifications disabled in settings');
-        return;
+      if (!settings) {
+        logger.log(`📵 Skipping notification reconcile (${reason}) — no user settings`);
+        NotificationTraceService.log('reconcile_skipped', {
+          reason,
+          skipReason: 'no_user_settings',
+        });
+        return false;
+      }
+
+      if (!settings.notifications.enabled) {
+        logger.log(`📵 Notifications disabled — clearing prayer notifications (${reason})`);
+        await this.cancelAllPrayerNotifications();
+        StorageService.deleteValue('notification_schedule_fingerprint');
+        StorageService.deleteValue('last_batch_schedule_date');
+        NotificationTraceService.log('reconcile_skipped', {
+          reason,
+          skipReason: 'notifications_disabled',
+        });
+        return false;
       }
 
       if (!isValidCoordinates(settings.location)) {
-        logger.log('❌ No valid location for notifications');
-        return;
+        logger.log(`❌ No valid location for notification reconcile (${reason})`);
+        NotificationTraceService.log('reconcile_skipped', {
+          reason,
+          skipReason: 'no_valid_location',
+        });
+        return false;
       }
 
-      logger.log('🗓️ Scheduling prayer notifications...');
+      await this.syncAndroidExactAlarmStatus(settings);
+      const exactAlarmStatus = Platform.OS === 'android'
+        ? StorageService.getValue('android_exact_alarm_status') || 'unknown'
+        : 'not_applicable';
+      const scheduled = await this.scheduleExtendedNotifications(options?.onProgress, {
+        forceRebuild: options?.force ?? reason !== 'settings_change',
+        reason,
+      });
 
-      // Simply call the extended scheduler - it handles everything
-      await this.scheduleExtendedNotifications();
+      if (!scheduled) {
+        NotificationTraceService.log('reconcile_completed', {
+          reason,
+          scheduled: false,
+          exactAlarmStatus,
+        });
+        return false;
+      }
 
+      const now = new Date();
+      StorageService.setValue('last_batch_schedule_date', now.toISOString());
+      StorageService.setValue('notification_schedule_last_reason', reason);
+      StorageService.setValue('notification_utc_offset', now.getTimezoneOffset().toString());
+      NotificationTraceService.log('reconcile_completed', {
+        reason,
+        scheduled: true,
+        exactAlarmStatus,
+        prayerScheduledCount: this.lastScheduleSummary?.scheduledCount ?? 0,
+        totalScheduledCount: this.lastScheduleSummary?.totalScheduledCount ?? 0,
+      });
+      return true;
     } catch (error) {
-      logger.error('❌ Failed to schedule notifications:', error);
+      NotificationTraceService.log('reconcile_failed', {
+        reason,
+      });
+      logger.error(`❌ Failed to reconcile notifications (${reason}):`, error);
+      return false;
     }
   }
 
@@ -486,21 +768,9 @@ class NotificationService {
     }
 
     // Hybrid Audio Logic
-    let soundAsset: string | undefined = undefined;
-    let androidChannel = CHANNELS.DEFAULT;
-    const useFullAdhan = Platform.OS === 'android' && notifications.fullAdhanEnabled && notifications.adhanEnabled;
-    if (notifications.enabled && notifications.adhanEnabled) {
-      if (useFullAdhan) {
-        // Full Adhan mode: silent channel (audio from foreground service)
-        soundAsset = undefined;
-        androidChannel = CHANNELS.ADHAN_SILENT;
-      } else {
-        soundAsset = Platform.OS === 'ios' ? SOUNDS.IOS_SHORT : SOUNDS.ANDROID_SHORT;
-        androidChannel = CHANNELS.ADHAN;
-      }
-    } else if (notifications.enabled && notifications.soundEnabled) {
-      soundAsset = 'default';
-    }
+    const audioResolution = resolveMainPrayerNotificationAudio(Platform.OS, notifications);
+    const soundAsset = audioResolution.notificationSound;
+    const androidChannel = audioResolution.androidChannelId;
 
     const mainContent = this.getPrayerTimeContent(prayerName, prayer.name);
 
@@ -525,11 +795,14 @@ class NotificationService {
       identifier: prayerIdentifier,
     });
 
+    // Ledger: record scheduled notification
+    NotificationLedger.recordScheduled(prayerIdentifier, `${prayer.name} (adhan)`, prayer.time);
+
     existingIdentifiers.add(prayerIdentifier);
     if (iosCounter) iosCounter.count++;
 
     // Schedule native full Adhan alarm (Android foreground service)
-    if (useFullAdhan) {
+    if (audioResolution.shouldScheduleNativeFullAdhan) {
       const displayName = PrayerTimeService.getPrayerDisplayName(prayer.name);
       await scheduleFullAdhan(prayer.time, prayer.name, displayName);
     }
@@ -583,6 +856,9 @@ class NotificationService {
       } as Notifications.NotificationTriggerInput,
       identifier: preIdentifier,
     });
+
+    // Ledger: record scheduled pre-prayer notification
+    NotificationLedger.recordScheduled(preIdentifier, `${prayer.name} (pre-prayer)`, preNotificationTime);
 
     existingIdentifiers.add(preIdentifier);
     if (iosCounter) iosCounter.count++;
@@ -645,9 +921,15 @@ class NotificationService {
     if (iosCounter) iosCounter.count++;
   }
 
-  private async scheduleKeepAliveNotification(iosCounter?: { count: number }): Promise<void> {
+  private async scheduleKeepAliveNotification(
+    existingIdentifiers: Set<string>,
+    iosCounter?: { count: number }
+  ): Promise<void> {
     const keepAliveTime = new Date(Date.now() + KEEP_ALIVE_INTERVAL_MS);
     try {
+      if (existingIdentifiers.has('notification-keepalive')) {
+        return;
+      }
       if (Platform.OS === 'ios' && iosCounter && iosCounter.count >= IOS_NOTIFICATION_CAP) {
         logger.log(`🚫 iOS cap reached, skipping keep-alive notification`);
         return;
@@ -655,7 +937,7 @@ class NotificationService {
       await Notifications.scheduleNotificationAsync({
         content: {
           title: 'Assalamu Alaikum',
-          body: 'Tap to keep your prayer reminders flowing. May your prayers be accepted.',
+          body: 'Open Sukoon occasionally so prayer reminders can stay active.',
           data: { type: 'keepalive' },
           ...(Platform.OS === 'android' && { channelId: CHANNELS.DEFAULT }),
         },
@@ -666,6 +948,7 @@ class NotificationService {
         } as Notifications.NotificationTriggerInput,
         identifier: 'notification-keepalive',
       });
+      existingIdentifiers.add('notification-keepalive');
       if (iosCounter) iosCounter.count++;
       logger.log(`🔄 Keep-alive notification scheduled for ${format(keepAliveTime, 'yyyy-MM-dd HH:mm')}`);
     } catch (error) {
@@ -680,8 +963,8 @@ class NotificationService {
 
     await Notifications.scheduleNotificationAsync({
       content: {
-        title: 'Mindful Moment 🧘‍♂️',
-        body: `Take a moment to prepare your heart for ${displayName} prayer`,
+        title: 'Prepare for prayer',
+        body: `Take a quiet moment before ${displayName} prayer`,
         data: {
           prayer: prayerName,
           type: 'mindfulness-reminder',
@@ -803,7 +1086,7 @@ class NotificationService {
     });
 
     if (toCancel.length > 0) {
-      await Promise.all(toCancel.map(n => Notifications.cancelScheduledNotificationAsync(n.identifier)));
+      await Promise.allSettled(toCancel.map(n => Notifications.cancelScheduledNotificationAsync(n.identifier)));
     }
   }
 
@@ -828,7 +1111,7 @@ class NotificationService {
     });
 
     if (prayerNotifications.length > 0) {
-      await Promise.all(
+      await Promise.allSettled(
         prayerNotifications.map(n => Notifications.cancelScheduledNotificationAsync(n.identifier))
       );
     }
@@ -849,9 +1132,13 @@ class NotificationService {
       (notif) => notif.content.data?.prayerId === prayerId
     );
     if (toCancel.length > 0) {
-      await Promise.all(
+      const results = await Promise.allSettled(
         toCancel.map(n => Notifications.cancelScheduledNotificationAsync(n.identifier))
       );
+      const failed = results.filter(r => r.status === 'rejected').length;
+      if (failed > 0) {
+        logger.warn(`⚠️ ${failed}/${toCancel.length} notification cancellations failed for ${prayerId}`);
+      }
     }
     logger.log(`🗑️ Cancelled ${toCancel.length} notifications for ${prayerId}`);
   }
@@ -871,15 +1158,13 @@ class NotificationService {
       },
     };
 
-    StorageService.setUserSettings(updatedSettings);
-
     // Stop any currently-playing adhan if adhan or notifications were just disabled
     if (!updatedSettings.notifications.enabled || !updatedSettings.notifications.adhanEnabled) {
       this.stopAdhan();
     }
 
     if (updatedSettings.notifications.enabled) {
-      await this.scheduleAllPrayerNotifications();
+      await this.reconcileScheduling('settings_change');
     } else {
       await this.cancelAllPrayerNotifications();
     }
@@ -892,11 +1177,18 @@ class NotificationService {
   // Tier 1 (Adhan) → 3 days | Pre-prayer, Tier 3, Tier 2 → 2 days
   // Called by useNotificationRescheduler hook every ~12h and background task every ~24h
   async scheduleExtendedNotifications(
-    onProgress?: (day: number, total: number) => void
-  ) {
+    onProgress?: (day: number, total: number) => void,
+    options?: {
+      forceRebuild?: boolean;
+      reason?: NotificationSchedulingReason;
+    }
+  ): Promise<boolean> {
     if (!this.acquireSchedulingLock()) {
       logger.log('🔒 Scheduling already in progress, skipping');
-      return;
+      NotificationTraceService.log('schedule_skipped_locked', {
+        reason: options?.reason || 'unspecified',
+      });
+      return false;
     }
 
     this.schedulingProgress = 0;
@@ -906,22 +1198,35 @@ class NotificationService {
       if (status !== 'granted') {
         logger.warn('🚫 Notification permission not granted (status: ' + status + '), skipping scheduling');
         StorageService.setValue('notification_permission_denied', 'true');
-        return;
+        NotificationTraceService.log('schedule_skipped_permission', {
+          reason: options?.reason || 'unspecified',
+          status,
+        });
+        return false;
       }
       // Permission is granted — clear any stale denial flag
       StorageService.deleteValue('notification_permission_denied');
 
-      logger.log('🗓️ Starting split-tier horizontal scheduling...');
+      logger.log(`🗓️ Starting split-tier horizontal scheduling (${options?.reason || 'unspecified'})...`);
+      NotificationTraceService.log('schedule_started', {
+        reason: options?.reason || 'unspecified',
+        forceRebuild: Boolean(options?.forceRebuild),
+      });
 
       const settings = StorageService.getUserSettings();
       if (!settings?.notifications.enabled || !isValidCoordinates(settings.location)) {
         logger.log('📵 Notifications disabled or no location');
-        return;
+        NotificationTraceService.log('schedule_skipped_prereqs', {
+          reason: options?.reason || 'unspecified',
+          notificationsEnabled: Boolean(settings?.notifications.enabled),
+          hasValidLocation: Boolean(settings?.location && isValidCoordinates(settings.location)),
+        });
+        return false;
       }
 
       const fingerprint = this.getScheduleFingerprint(settings);
       const previousFingerprint = StorageService.getValue('notification_schedule_fingerprint');
-      const shouldRebuild = previousFingerprint !== fingerprint;
+      const shouldRebuild = options?.forceRebuild || previousFingerprint !== fingerprint;
 
       if (shouldRebuild) {
         await this.cancelAllPrayerNotifications();
@@ -949,8 +1254,9 @@ class NotificationService {
         ? { count: scheduled.length }
         : undefined;
 
-      const today = new Date();
-      const now = new Date();
+      // Single timestamp capture — prevents drift across async scheduling passes
+      const now = captureNow();
+      const today = now;
 
       const fetcher: PrayerTimesFetcher =
         this.prayerTimesFetcher ||
@@ -1016,6 +1322,8 @@ class NotificationService {
         }
       }
       await Promise.all(pass1Promises);
+      // Yield to JS thread between passes to avoid blocking UI
+      await new Promise(resolve => setTimeout(resolve, 0));
 
       // PASS 2: Pre-prayer — NOTIFICATION_LOWER_TIER_DAYS (2 days)
       const lowerDays = Math.min(NOTIFICATION_LOWER_TIER_DAYS, allDays.length);
@@ -1030,6 +1338,7 @@ class NotificationService {
         }
       }
       await Promise.all(pass2Promises);
+      await new Promise(resolve => setTimeout(resolve, 0));
 
       // PASS 3: Tier 3 (Grace period warnings) — 2 days
       if (settings.habitBuilder?.enabled) {
@@ -1050,6 +1359,7 @@ class NotificationService {
           }
         }
         await Promise.all(pass3Promises);
+        await new Promise(resolve => setTimeout(resolve, 0));
       }
 
       // PASS 4: Tier 2 (Persistent reminders) — 2 days, fills remaining budget
@@ -1071,6 +1381,7 @@ class NotificationService {
           }
         }
         await Promise.all(pass4Promises);
+        await new Promise(resolve => setTimeout(resolve, 0));
       }
 
       // PASS 5: Legacy post-prayer check — 2 days (for users without Habit Builder)
@@ -1086,10 +1397,11 @@ class NotificationService {
           }
         }
         await Promise.all(pass5Promises);
+        await new Promise(resolve => setTimeout(resolve, 0));
       }
 
       // PASS 6: Keep-alive notification at T+48h (self-renewing safety net)
-      await this.scheduleKeepAliveNotification(iosCounter);
+      await this.scheduleKeepAliveNotification(existingIdentifiers, iosCounter);
 
       // Save fingerprint AFTER all passes complete — if we crash mid-scheduling,
       // the stale fingerprint forces a full rebuild on next invocation.
@@ -1101,10 +1413,36 @@ class NotificationService {
         logger.log(`📊 iOS notification count: ${iosCounter.count}/${IOS_NOTIFICATION_CAP}`);
       }
 
+      const allScheduledAfter = await Notifications.getAllScheduledNotificationsAsync();
+      const prayerScheduledCount = allScheduledAfter.filter((notif) => {
+        const data = (notif.content?.data || {}) as Record<string, unknown>;
+        return this.isPrayerNotificationType(data?.type) || typeof data?.prayer === 'string';
+      }).length;
+      const exactAlarmStatus = Platform.OS === 'android'
+        ? StorageService.getValue('android_exact_alarm_status') || 'unknown'
+        : 'not_applicable';
+      this.lastScheduleSummary = {
+        reason: options?.reason || 'background_refresh',
+        scheduledCount: prayerScheduledCount,
+        totalScheduledCount: allScheduledAfter.length,
+        exactAlarmStatus,
+      };
+      NotificationTraceService.log('schedule_completed', {
+        reason: options?.reason || 'unspecified',
+        prayerScheduledCount,
+        totalScheduledCount: allScheduledAfter.length,
+        exactAlarmStatus,
+      });
+
       this.schedulingProgress = 1;
       onProgress?.(NOTIFICATION_SCHEDULING_DAYS, NOTIFICATION_SCHEDULING_DAYS);
+      return true;
     } catch (error) {
+      NotificationTraceService.log('schedule_failed', {
+        reason: options?.reason || 'unspecified',
+      });
       logger.error('❌ Extended scheduling failed:', error);
+      return false;
     } finally {
       this.releaseSchedulingLock();
       this.schedulingProgress = 0;
@@ -1171,6 +1509,9 @@ class NotificationService {
       totalScheduledCount: allScheduled.length,
       prayerScheduledCount: scheduled.length,
       iosCap: IOS_NOTIFICATION_CAP,
+      notificationTraceEnabled: NotificationTraceService.isEnabled(),
+      recentNotificationTraceCount: NotificationTraceService.getRecentEvents().length,
+      lastScheduleSummary: this.lastScheduleSummary,
       tierDistribution: tierCounts,
       hasSource,
       sourceHasLocation,
@@ -1373,7 +1714,8 @@ class NotificationService {
   // Force rescheduling method for debugging
   async forceReschedule() {
     logger.log('🔧 Force rescheduling notifications...');
-    await this.scheduleAllPrayerNotifications();
+    NotificationTraceService.log('force_reschedule_requested');
+    await this.reconcileScheduling('settings_change', { force: true });
   }
 
   cleanup() {
@@ -1385,6 +1727,9 @@ class NotificationService {
       this.responseListener.remove();
       this.responseListener = null;
     }
+    this.initialized = false;
+    this.pendingInitialResponse = null;
+    this.lastHandledResponseKey = null;
 
     // Stop any playing audio
     this.stopAdhan();

@@ -14,7 +14,6 @@ import {
   TouchableWithoutFeedback,
   Modal,
 } from 'react-native';
-import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import PrayerTimeService from '../../services/PrayerTimeService';
@@ -41,7 +40,6 @@ const PreAdhanSheet: React.FC<PreAdhanSheetProps> = ({
   onPraySunnah,
   onDismiss,
 }) => {
-  const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
@@ -102,13 +100,12 @@ const PreAdhanSheet: React.FC<PreAdhanSheetProps> = ({
         >
           <View style={styles.handle} />
 
-          <Text style={styles.title}>{displayName} Time Hasn't Entered</Text>
+          <Text style={styles.title}>{displayName} begins later</Text>
 
           <Text style={styles.message}>
-            The adhan for {displayName} hasn't been called yet.
-            You cannot pray this fard prayer until its time enters.
+            The time for {displayName} has not entered yet, so this fard prayer should wait until its adhan.
             {'\n\n'}
-            You can still earn reward with other prayers.
+            If you wish, you can make up an earlier prayer or spend this moment in Sunnah or Nafl.
           </Text>
 
           {/* Option A: Make up a missed prayer */}
@@ -126,18 +123,12 @@ const PreAdhanSheet: React.FC<PreAdhanSheetProps> = ({
 
           {/* Option B: Pray Sunnah/Nafl */}
           <TouchableOpacity
-            style={[
-              missedDisplayName ? styles.outlineButton : styles.primaryButton,
-            ]}
+            style={missedDisplayName ? styles.outlineButton : styles.primaryButton}
             onPress={onPraySunnah}
             activeOpacity={0.8}
           >
             <Text
-              style={[
-                missedDisplayName
-                  ? styles.outlineButtonText
-                  : styles.primaryButtonText,
-              ]}
+              style={missedDisplayName ? styles.outlineButtonText : styles.primaryButtonText}
             >
               Pray Sunnah / Nafl
             </Text>
@@ -149,7 +140,7 @@ const PreAdhanSheet: React.FC<PreAdhanSheetProps> = ({
             onPress={onDismiss}
             activeOpacity={0.7}
           >
-            <Text style={styles.dismissButtonText}>I'll Wait</Text>
+            <Text style={styles.dismissButtonText}>Return when adhan begins</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>

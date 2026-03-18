@@ -13,6 +13,7 @@ import { useThemedStyles } from '../../../hooks/useThemedStyles';
 import { AppTheme } from '../../../theme';
 import { NotificationToggleButton } from '../../../components/common/NotificationToggleButton';
 import { SegmentedControl } from '../../../components/settings/SegmentedControl';
+import { withAlpha } from '../../../utils/color';
 
 interface PrayerSettingsSectionProps {
   userSettings: UserSettings;
@@ -33,7 +34,7 @@ interface PrayerSettingsSectionProps {
 
 export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
   userSettings,
-  setUserSettings,
+  setUserSettings: _setUserSettings,
   onCalculationMethodPress,
   calculationMethods,
   
@@ -44,7 +45,7 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
   prayerTimesLoading = false,
   hasValidLocation = false,
   onTestCalculations,
-  onPreviewMethod,
+  onPreviewMethod: _onPreviewMethod,
   onRefreshPrayerTimes, // 🆕 NEW
 }) => {
   const { theme } = useTheme();
@@ -76,7 +77,7 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
     }
 
     if (newState) {
-      await NotificationService.scheduleAllPrayerNotifications();
+      await NotificationService.reconcileScheduling('settings_change');
     } else {
       await NotificationService.cancelPrayerNotifications(prayerName);
     }
@@ -321,9 +322,9 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderRadius: theme.borderRadius.sm,
   },
   prayerItemActive: {
-    backgroundColor: theme.colors.primary.DEFAULT + '14',
+    backgroundColor: withAlpha(theme.colors.primary.DEFAULT, 0.08),
     borderWidth: 1,
-    borderColor: theme.colors.primary.DEFAULT + '26',
+    borderColor: withAlpha(theme.colors.primary.DEFAULT, 0.15),
   },
   prayerNameRow: {
     flexDirection: 'row',
@@ -354,9 +355,9 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     gap: theme.spacing.sm,
   },
   nextBadge: {
-    backgroundColor: theme.colors.primary.DEFAULT + '26',
+    backgroundColor: withAlpha(theme.colors.primary.DEFAULT, 0.15),
     borderWidth: 1,
-    borderColor: theme.colors.primary.DEFAULT + '4D',
+    borderColor: withAlpha(theme.colors.primary.DEFAULT, 0.3),
     borderRadius: 20,
     paddingHorizontal: 7,
     paddingVertical: 2,
@@ -399,7 +400,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderTopColor: theme.colors.border.primary,
   },
   juristicLabel: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: theme.typography.fontSize.md,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     marginBottom: theme.spacing.sm,
@@ -412,9 +413,9 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginTop: theme.spacing.xxs,
   },
   juristicExplanation: {
-    backgroundColor: theme.colors.primary.DEFAULT + '0D',
+    backgroundColor: withAlpha(theme.colors.primary.DEFAULT, 0.05),
     borderWidth: 1,
-    borderColor: theme.colors.primary.DEFAULT + '1A',
+    borderColor: withAlpha(theme.colors.primary.DEFAULT, 0.1),
     borderRadius: theme.borderRadius.sm,
     padding: theme.spacing.md,
     marginTop: theme.spacing.md,
@@ -433,7 +434,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderRadius: theme.borderRadius.sm,
     borderWidth: 1,
     borderStyle: 'dashed',
-    borderColor: theme.colors.primary.DEFAULT + '4D',
+    borderColor: withAlpha(theme.colors.primary.DEFAULT, 0.3),
     alignItems: 'center',
   },
   testButtonText: {

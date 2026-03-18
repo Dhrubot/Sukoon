@@ -15,7 +15,8 @@ import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import { useMosqueMode } from '../../hooks/useMosqueMode';
 import { usePrayerTimes } from '../../providers/PrayerTimesProvider';
-import TimeInput, { formatTime } from '../common/TimeInput';
+import TimeInput from '../common/TimeInput';
+import { mosqueModePlatformUi } from '../../utils/mosqueModePlatform';
 
 const DURATION_OPTIONS = [15, 20, 25, 30, 35, 40, 45, 50, 55, 60];
 const OFFSET_OPTIONS = [5, 10, 15, 20, 25, 30];
@@ -84,7 +85,7 @@ const JummahMosqueConfig: React.FC = () => {
         <View style={styles.headerLeft}>
           <Text style={styles.title}>Jumu'ah Settings</Text>
           <Text style={styles.subtitle}>
-            Khutba + prayer — longer silent mode for Fridays
+            {mosqueModePlatformUi.jummahSubtitle}
           </Text>
         </View>
         <Switch
@@ -100,50 +101,53 @@ const JummahMosqueConfig: React.FC = () => {
 
       {jummah.enabled && (
         <View style={styles.options}>
-          {/* Silent Duration */}
-          <TouchableOpacity
-            style={styles.optionRow}
-            onPress={() => setShowDurationPicker(!showDurationPicker)}
-            activeOpacity={0.7}
-          >
-            <View>
-              <Text style={styles.optionLabel}>Silent Duration</Text>
-              <Text style={styles.optionHint}>
-                Includes khutba (~20 min) + prayer (~10 min)
-              </Text>
-            </View>
-            <Text style={styles.optionValue}>{jummah.silentDuration} min</Text>
-          </TouchableOpacity>
+          {mosqueModePlatformUi.showsSilentModeControls && (
+            <>
+              <TouchableOpacity
+                style={styles.optionRow}
+                onPress={() => setShowDurationPicker(!showDurationPicker)}
+                activeOpacity={0.7}
+              >
+                <View>
+                  <Text style={styles.optionLabel}>{mosqueModePlatformUi.jummahDurationLabel}</Text>
+                  <Text style={styles.optionHint}>
+                    {mosqueModePlatformUi.jummahDurationHint}
+                  </Text>
+                </View>
+                <Text style={styles.optionValue}>{jummah.silentDuration} min</Text>
+              </TouchableOpacity>
 
-          {showDurationPicker && (
-            <View style={styles.chipGrid}>
-              {DURATION_OPTIONS.map((min) => {
-                const isSelected = jummah.silentDuration === min;
-                return (
-                  <TouchableOpacity
-                    key={min}
-                    style={[
-                      styles.chip,
-                      isSelected && styles.chipActive,
-                    ]}
-                    onPress={() => {
-                      handleDurationChange(min);
-                      setShowDurationPicker(false);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Text
-                      style={[
-                        styles.chipText,
-                        isSelected && styles.chipTextActive,
-                      ]}
-                    >
-                      {min} min
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+              {showDurationPicker && (
+                <View style={styles.chipGrid}>
+                  {DURATION_OPTIONS.map((min) => {
+                    const isSelected = jummah.silentDuration === min;
+                    return (
+                      <TouchableOpacity
+                        key={min}
+                        style={[
+                          styles.chip,
+                          isSelected && styles.chipActive,
+                        ]}
+                        onPress={() => {
+                          handleDurationChange(min);
+                          setShowDurationPicker(false);
+                        }}
+                        activeOpacity={0.7}
+                      >
+                        <Text
+                          style={[
+                            styles.chipText,
+                            isSelected && styles.chipTextActive,
+                          ]}
+                        >
+                          {min} min
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </View>
+              )}
+            </>
           )}
 
           {/* Iqamah Time — Offset / Exact toggle */}
@@ -189,7 +193,7 @@ const JummahMosqueConfig: React.FC = () => {
                   activeOpacity={0.7}
                 >
                   <Text style={styles.optionHint}>
-                    Minutes after Dhuhr adhan on Friday
+                    {mosqueModePlatformUi.jummahOffsetHint}
                   </Text>
                   <Text style={styles.optionValue}>{jummah.iqamahOffset} min</Text>
                 </TouchableOpacity>

@@ -101,8 +101,8 @@ yarn-debug.log*
 yarn-error.log*
 
 # Firebase credentials (distribute via EAS Secrets)
-GoogleService-Info.plist
-google-services.json
+# GoogleService-Info.plist
+# google-services.json
 
 /android
 /ios
