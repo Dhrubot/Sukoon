@@ -52,11 +52,96 @@ export const ROOT_VISIBILITY: Record<TreeStage, number> = {
 } as const;
 
 export const BRANCH_DEFINITIONS: BranchDefinition[] = [
-  { prayer: 'Fajr' as PrayerName, curve: { start: { x: 160, y: 180 }, control: { x: 120, y: 150 }, end: { x: 60, y: 108 } }, baseAngle: -45 },
-  { prayer: 'Dhuhr' as PrayerName, curve: { start: { x: 160, y: 178 }, control: { x: 200, y: 148 }, end: { x: 262, y: 106 } }, baseAngle: 45 },
-  { prayer: 'Asr' as PrayerName, curve: { start: { x: 160, y: 202 }, control: { x: 200, y: 190 }, end: { x: 268, y: 160 } }, baseAngle: 55 },
-  { prayer: 'Maghrib' as PrayerName, curve: { start: { x: 160, y: 202 }, control: { x: 120, y: 190 }, end: { x: 52, y: 160 } }, baseAngle: -55 },
-  { prayer: 'Isha' as PrayerName, curve: { start: { x: 160, y: 160 }, control: { x: 161, y: 120 }, end: { x: 162, y: 50 } }, baseAngle: 0 },
+  {
+    id: 'fajr-primary',
+    prayer: 'Fajr' as PrayerName,
+    curve: { start: { x: 160, y: 188 }, control: { x: 129, y: 154 }, end: { x: 74, y: 118 } },
+    baseAngle: -38,
+    weight: 0.58,
+    minStage: 'seedling',
+    minLeaves: 1,
+  },
+  {
+    id: 'fajr-secondary',
+    prayer: 'Fajr' as PrayerName,
+    curve: { start: { x: 160, y: 172 }, control: { x: 142, y: 129 }, end: { x: 108, y: 78 } },
+    baseAngle: -16,
+    weight: 0.42,
+    minStage: 'growing',
+    minLeaves: 6,
+  },
+  {
+    id: 'dhuhr-primary',
+    prayer: 'Dhuhr' as PrayerName,
+    curve: { start: { x: 160, y: 186 }, control: { x: 193, y: 152 }, end: { x: 248, y: 116 } },
+    baseAngle: 38,
+    weight: 0.58,
+    minStage: 'seedling',
+    minLeaves: 1,
+  },
+  {
+    id: 'dhuhr-secondary',
+    prayer: 'Dhuhr' as PrayerName,
+    curve: { start: { x: 160, y: 171 }, control: { x: 178, y: 128 }, end: { x: 212, y: 80 } },
+    baseAngle: 16,
+    weight: 0.42,
+    minStage: 'growing',
+    minLeaves: 6,
+  },
+  {
+    id: 'asr-primary',
+    prayer: 'Asr' as PrayerName,
+    curve: { start: { x: 160, y: 214 }, control: { x: 202, y: 196 }, end: { x: 272, y: 172 } },
+    baseAngle: 52,
+    weight: 0.56,
+    minStage: 'sapling',
+    minLeaves: 2,
+  },
+  {
+    id: 'asr-secondary',
+    prayer: 'Asr' as PrayerName,
+    curve: { start: { x: 160, y: 196 }, control: { x: 198, y: 167 }, end: { x: 238, y: 132 } },
+    baseAngle: 30,
+    weight: 0.44,
+    minStage: 'growing',
+    minLeaves: 6,
+  },
+  {
+    id: 'maghrib-primary',
+    prayer: 'Maghrib' as PrayerName,
+    curve: { start: { x: 160, y: 214 }, control: { x: 118, y: 196 }, end: { x: 48, y: 172 } },
+    baseAngle: -52,
+    weight: 0.56,
+    minStage: 'sapling',
+    minLeaves: 2,
+  },
+  {
+    id: 'maghrib-secondary',
+    prayer: 'Maghrib' as PrayerName,
+    curve: { start: { x: 160, y: 196 }, control: { x: 122, y: 168 }, end: { x: 82, y: 134 } },
+    baseAngle: -30,
+    weight: 0.44,
+    minStage: 'growing',
+    minLeaves: 6,
+  },
+  {
+    id: 'isha-primary',
+    prayer: 'Isha' as PrayerName,
+    curve: { start: { x: 160, y: 168 }, control: { x: 156, y: 120 }, end: { x: 146, y: 54 } },
+    baseAngle: -10,
+    weight: 0.54,
+    minStage: 'seedling',
+    minLeaves: 1,
+  },
+  {
+    id: 'isha-secondary',
+    prayer: 'Isha' as PrayerName,
+    curve: { start: { x: 160, y: 166 }, control: { x: 171, y: 121 }, end: { x: 186, y: 60 } },
+    baseAngle: 12,
+    weight: 0.46,
+    minStage: 'growing',
+    minLeaves: 8,
+  },
 ];
 
 export const STAGE_THRESHOLDS: { stage: TreeStage; min: number; max: number }[] = [
@@ -105,6 +190,8 @@ export const LEAF_DISTRIBUTION = {
   range: 0.88,         // spread to 0.93 at full branch
   tipClusterT: 0.65,
   tipJitterScale: 0.40,
+  mainTipT: 0.96,
+  subTipT: 0.94,
 } as const;
 
 // ═══════════════════════════════════════════════════════════════════
@@ -496,9 +583,32 @@ export function trunkTaperSegments(
 // ── BRANCH TAPER ──────────────────────────────────────────────────
 // 2-layer: thick base (60%) + thin full-length overlay.
 export const BRANCH_TAPER = {
-  baseFraction: 0.60,
+  segments: 8,
   tipWidthRatio: 0.30,
 } as const;
+
+export function branchTaperSegments(
+  start: Point,
+  control: Point,
+  end: Point,
+  scale: number,
+  baseWidth: number,
+): Array<{ x1: number; y1: number; x2: number; y2: number; width: number }> {
+  const { segments, tipWidthRatio } = BRANCH_TAPER;
+  const result: Array<{ x1: number; y1: number; x2: number; y2: number; width: number }> = [];
+
+  for (let i = 0; i < segments; i++) {
+    const t0 = (i / segments) * scale;
+    const t1 = ((i + 1) / segments) * scale;
+    const p0 = quadBezierPoint(start, control, end, t0);
+    const p1 = quadBezierPoint(start, control, end, t1);
+    const frac = (i + 0.5) / segments;
+    const width = baseWidth * (1 - frac * (1 - tipWidthRatio));
+    result.push({ x1: p0.x, y1: p0.y, x2: p1.x, y2: p1.y, width });
+  }
+
+  return result;
+}
 
 // ── PHYLLOTAXIS (Leaf Arrangement) ────────────────────────────────
 // Alternating-side placement with golden-angle-derived offsets.
@@ -513,11 +623,12 @@ export const PHYLLOTAXIS = {
 // ── CANOPY ENVELOPE ───────────────────────────────────────────────
 // Soft elliptical clamp — leaves that extend past get gently pulled in.
 export const CANOPY = {
-  radiusX: 145,
-  radiusY: 130,
+  radiusX: 156,
+  radiusY: 140,
   centerX: 160,
-  centerYOffset: 30,
-  softness: 0.85,
+  centerYOffset: 34,
+  grace: 1.08,
+  softness: 0.48,
 } as const;
 
 export function clampToCanopy(x: number, y: number, trunkTopY: number): { x: number; y: number } {
@@ -526,8 +637,9 @@ export function clampToCanopy(x: number, y: number, trunkTopY: number): { x: num
   const dx = (x - cx) / CANOPY.radiusX;
   const dy = (y - cy) / CANOPY.radiusY;
   const dist = Math.sqrt(dx * dx + dy * dy);
-  if (dist <= 1) return { x, y };
-  const clampedDist = 1 + (dist - 1) * CANOPY.softness;
+  if (dist <= CANOPY.grace) return { x, y };
+  const overshoot = dist - CANOPY.grace;
+  const clampedDist = CANOPY.grace + overshoot * CANOPY.softness;
   const scale = clampedDist / dist;
   return {
     x: cx + (x - cx) * scale,

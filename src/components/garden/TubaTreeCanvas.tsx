@@ -21,6 +21,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import Svg, {
   Path,
   G,
+  Circle,
   Defs,
   LinearGradient as SvgGradient,
   Stop,
@@ -54,11 +55,12 @@ import {
   STAGE_INFO,
   BRANCH_SWAY,
   RAMADAN_GOLD_BLEND,
-  branchPathD,
+  branchTaperSegments,
   trunkColor,
   swayMultiplier,
   rootWidthScale,
   trunkTaperSegments,
+  branchPathD,
 } from '../../constants/tubaTree';
 
 const AnimatedG = Animated.createAnimatedComponent(G);
@@ -117,7 +119,7 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
       logger.log(`[TubaTreeCanvas] plants=${plants.length}, rendered=${totalRendered}, stage=${treeData.stage}`);
       treeData.branches.forEach((b) => {
         if (b.lengthScale > 0) {
-          logger.log(`  [${b.prayer}] scale=${b.lengthScale.toFixed(2)}, leaves=${b.leaves.length}`);
+          logger.log(`  [${b.id}] scale=${b.lengthScale.toFixed(2)}, leaves=${b.leaves.length}`);
         }
       });
     }
@@ -152,14 +154,35 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
   // Continuous trunk geometry from g
   const trunkScale = treeData.trunkScale;
   const g = treeData.g;
+  const trunkCurve = treeData.trunkCurve;
 
   const trunkStrokeColor = useMemo(() => trunkColor(g), [g]);
+  const trunkHighlightColor = useMemo(
+    () => blendTowardGold(trunkStrokeColor, '#f3e4c7', 0.24),
+    [trunkStrokeColor],
+  );
+  const trunkShadowColor = useMemo(
+    () => blendTowardGold(trunkStrokeColor, '#20140c', 0.22),
+    [trunkStrokeColor],
+  );
 
   // Trunk taper: 12 segments with interpolated width
   const taperSegs = useMemo(
-    () => trunkTaperSegments(TRUNK.start, TRUNK.control, TRUNK.end, trunkScale, treeData.trunkWidth),
-    [trunkScale, treeData.trunkWidth],
+    () => trunkTaperSegments(trunkCurve.start, trunkCurve.control, trunkCurve.end, trunkScale, treeData.trunkWidth),
+    [trunkCurve, trunkScale, treeData.trunkWidth],
   );
+  const trunkFlare = useMemo(() => {
+    const spread = treeData.trunkWidth * (0.95 + g * 0.22);
+    const rise = 8 + g * 8;
+    const baseX = trunkCurve.start.x;
+    const baseY = trunkCurve.start.y;
+
+    return {
+      left: `M ${baseX.toFixed(1)} ${baseY.toFixed(1)} Q ${(baseX - spread * 0.45).toFixed(1)} ${(baseY - rise * 0.25).toFixed(1)} ${(baseX - spread).toFixed(1)} ${(baseY - rise).toFixed(1)}`,
+      right: `M ${baseX.toFixed(1)} ${baseY.toFixed(1)} Q ${(baseX + spread * 0.45).toFixed(1)} ${(baseY - rise * 0.25).toFixed(1)} ${(baseX + spread).toFixed(1)} ${(baseY - rise).toFixed(1)}`,
+      collar: `M ${(baseX - spread * 0.32).toFixed(1)} ${(baseY - rise * 0.32).toFixed(1)} Q ${baseX.toFixed(1)} ${(baseY - rise * 0.6).toFixed(1)} ${(baseX + spread * 0.32).toFixed(1)} ${(baseY - rise * 0.32).toFixed(1)}`,
+    };
+  }, [treeData.trunkWidth, g, trunkCurve]);
 
   const visibleRootCount = ROOT_VISIBILITY[treeData.stage];
   const rootScale = useMemo(() => rootWidthScale(g), [g]);
@@ -194,8 +217,8 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
               const prayerColor = getPrayerColor(branch.prayer);
               return (
                 <SvgGradient
-                  key={`grad-${branch.prayer}`}
-                  id={`branchGrad-${branch.prayer}`}
+                  key={`grad-${branch.id}`}
+                  id={`branchGrad-${branch.id}`}
                   x1="0" y1="1" x2="1" y2="0"
                 >
                   <Stop offset="0%" stopColor={theme.colors.garden.trunk} stopOpacity="1" />
@@ -218,22 +241,65 @@ const TubaTreeCanvas: React.FC<TubaTreeCanvasProps> = ({
             />
           ))}
 
+          {/* Root collar / base flare */}
+          <Path
+            d={trunkFlare.left}
+            stroke={trunkShadowColor}
+            strokeWidth={Math.max(1.2, treeData.trunkWidth * 0.46)}
+            fill="none"
+            strokeLinecap="round"
+            opacity={0.32}
+          />
+          <Path
+            d={trunkFlare.right}
+            stroke={trunkStrokeColor}
+            strokeWidth={Math.max(1.2, treeData.trunkWidth * 0.5)}
+            fill="none"
+            strokeLinecap="round"
+            opacity={0.36}
+          />
+          <Path
+            d={trunkFlare.collar}
+            stroke={trunkHighlightColor}
+            strokeWidth={Math.max(0.8, treeData.trunkWidth * 0.16)}
+            fill="none"
+            strokeLinecap="round"
+            opacity={0.24}
+          />
+
           {/* Trunk — 12-segment taper */}
           {taperSegs.map((seg, i) => (
-            <Path
-              key={`trunk-${i}`}
-              d={`M ${seg.x1.toFixed(1)} ${seg.y1.toFixed(1)} L ${seg.x2.toFixed(1)} ${seg.y2.toFixed(1)}`}
-              stroke={trunkStrokeColor}
-              strokeWidth={seg.width}
-              fill="none"
-              strokeLinecap="round"
-            />
+            <React.Fragment key={`trunk-${i}`}>
+              <Path
+                d={`M ${seg.x1.toFixed(1)} ${seg.y1.toFixed(1)} L ${seg.x2.toFixed(1)} ${seg.y2.toFixed(1)}`}
+                stroke={trunkStrokeColor}
+                strokeWidth={seg.width}
+                fill="none"
+                strokeLinecap="round"
+              />
+              <Path
+                d={`M ${(seg.x1 - 0.35).toFixed(1)} ${seg.y1.toFixed(1)} L ${(seg.x2 - 0.35).toFixed(1)} ${seg.y2.toFixed(1)}`}
+                stroke={trunkHighlightColor}
+                strokeWidth={Math.max(0.5, seg.width * 0.24)}
+                fill="none"
+                strokeLinecap="round"
+                opacity={0.30}
+              />
+              <Path
+                d={`M ${(seg.x1 + 0.45).toFixed(1)} ${seg.y1.toFixed(1)} L ${(seg.x2 + 0.45).toFixed(1)} ${seg.y2.toFixed(1)}`}
+                stroke={trunkShadowColor}
+                strokeWidth={Math.max(0.4, seg.width * 0.18)}
+                fill="none"
+                strokeLinecap="round"
+                opacity={0.22}
+              />
+            </React.Fragment>
           ))}
 
           {/* Branches + Leaves */}
           {treeData.branches.map((branch, branchIndex) => (
             <AnimatedBranchGroup
-              key={branch.prayer}
+              key={branch.id}
               branch={branch}
               branchIndex={branchIndex}
               prayerColor={getPrayerColor(branch.prayer)}
@@ -315,7 +381,15 @@ interface AnimatedBranchGroupProps {
 
 const AnimatedBranchGroup: React.FC<AnimatedBranchGroupProps> = React.memo(
   ({ branch, branchIndex, prayerColor, bloomGlowColor, growthG, onLeafPress }) => {
-    const { curve, lengthScale, strokeWidth, leaves, prayer, subBranches } = branch;
+    const { id, curve, lengthScale, strokeWidth, leaves, subBranches } = branch;
+    const branchHighlightColor = useMemo(
+      () => blendTowardGold(prayerColor, '#f6f0dd', 0.22),
+      [prayerColor],
+    );
+    const branchShadowColor = useMemo(
+      () => blendTowardGold(prayerColor, '#24170f', 0.18),
+      [prayerColor],
+    );
 
     const swayRotation = useSharedValue(0);
 
@@ -371,7 +445,17 @@ const AnimatedBranchGroup: React.FC<AnimatedBranchGroupProps> = React.memo(
     // Don't render zero-length branches
     if (lengthScale <= 0 && leaves.length === 0) return null;
 
-    const d = branchPathD(curve.start, curve.control, curve.end, lengthScale);
+    const branchSegments = branchTaperSegments(
+      curve.start,
+      curve.control,
+      curve.end,
+      lengthScale,
+      strokeWidth,
+    );
+    const branchPath = useMemo(
+      () => branchPathD(curve.start, curve.control, curve.end, lengthScale),
+      [curve, lengthScale],
+    );
 
     return (
       <AnimatedG
@@ -381,24 +465,87 @@ const AnimatedBranchGroup: React.FC<AnimatedBranchGroupProps> = React.memo(
       >
         {/* Main branch */}
         <Path
-          d={d}
-          stroke={`url(#branchGrad-${prayer})`}
-          strokeWidth={strokeWidth}
+          d={branchPath}
+          stroke={`url(#branchGrad-${id})`}
+          strokeWidth={Math.max(1.1, strokeWidth * 0.8)}
           fill="none"
           strokeLinecap="round"
+          strokeLinejoin="round"
+          opacity={0.95}
         />
+        {branchSegments.map((segment, segmentIndex) => (
+          <React.Fragment key={`branch-${id}-${segmentIndex}`}>
+            <Path
+              d={`M ${segment.x1.toFixed(1)} ${segment.y1.toFixed(1)} L ${segment.x2.toFixed(1)} ${segment.y2.toFixed(1)}`}
+              stroke={`url(#branchGrad-${id})`}
+              strokeWidth={segment.width}
+              fill="none"
+              strokeLinecap="round"
+            />
+            <Path
+              d={`M ${(segment.x1 - 0.25).toFixed(1)} ${segment.y1.toFixed(1)} L ${(segment.x2 - 0.25).toFixed(1)} ${segment.y2.toFixed(1)}`}
+              stroke={branchHighlightColor}
+              strokeWidth={Math.max(0.35, segment.width * 0.18)}
+              fill="none"
+              strokeLinecap="round"
+              opacity={0.24}
+            />
+            <Path
+              d={`M ${(segment.x1 + 0.2).toFixed(1)} ${segment.y1.toFixed(1)} L ${(segment.x2 + 0.2).toFixed(1)} ${segment.y2.toFixed(1)}`}
+              stroke={branchShadowColor}
+              strokeWidth={Math.max(0.3, segment.width * 0.14)}
+              fill="none"
+              strokeLinecap="round"
+              opacity={0.18}
+            />
+          </React.Fragment>
+        ))}
 
         {/* Sub-branches + their leaves */}
         {subBranches.map((sub: SubBranch, i: number) => (
-          <React.Fragment key={`sub-${prayer}-${i}`}>
+          <React.Fragment key={`sub-${id}-${i}`}>
             <Path
-              d={sub.d}
+              d={branchPathD(sub.curve.start, sub.curve.control, sub.curve.end, 1)}
               stroke={prayerColor}
-              strokeWidth={sub.strokeWidth}
+              strokeWidth={Math.max(0.8, sub.strokeWidth * 0.78)}
               fill="none"
               strokeLinecap="round"
-              opacity={sub.opacity}
+              strokeLinejoin="round"
+              opacity={sub.opacity * 0.88}
             />
+            <Circle
+              cx={sub.curve.start.x}
+              cy={sub.curve.start.y}
+              r={Math.max(0.8, sub.strokeWidth * 0.34)}
+              fill={prayerColor}
+              opacity={sub.opacity * 0.78}
+            />
+            {branchTaperSegments(
+              sub.curve.start,
+              sub.curve.control,
+              sub.curve.end,
+              1,
+              sub.strokeWidth,
+            ).map((segment, segmentIndex) => (
+              <React.Fragment key={`sub-segment-${id}-${i}-${segmentIndex}`}>
+                <Path
+                  d={`M ${segment.x1.toFixed(1)} ${segment.y1.toFixed(1)} L ${segment.x2.toFixed(1)} ${segment.y2.toFixed(1)}`}
+                  stroke={prayerColor}
+                  strokeWidth={segment.width}
+                  fill="none"
+                  strokeLinecap="round"
+                  opacity={sub.opacity}
+                />
+                <Path
+                  d={`M ${(segment.x1 - 0.16).toFixed(1)} ${segment.y1.toFixed(1)} L ${(segment.x2 - 0.16).toFixed(1)} ${segment.y2.toFixed(1)}`}
+                  stroke={branchHighlightColor}
+                  strokeWidth={Math.max(0.25, segment.width * 0.16)}
+                  fill="none"
+                  strokeLinecap="round"
+                  opacity={sub.opacity * 0.24}
+                />
+              </React.Fragment>
+            ))}
             {sub.leaves.map((leaf, leafIdx) => (
               <TreeLeaf
                 key={leaf.id}

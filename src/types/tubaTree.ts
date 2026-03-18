@@ -32,13 +32,23 @@ export interface BezierCurve {
   end: Point;
 }
 
+export type LeafTone = 'fresh' | 'aged';
+export type LeafHueVariant = 'base' | 'sage' | 'olive' | 'amber';
+
 // ─── Branch Definition (from constants) ────────────────────────────
 
 export interface BranchDefinition {
+  id: string;
   prayer: PrayerName;
   curve: BezierCurve;
   /** Angle in degrees for leaf rotation base */
   baseAngle: number;
+  /** Relative share of a prayer's growth allocated to this primary branch */
+  weight: number;
+  /** Earliest tree stage where this branch can emerge */
+  minStage: TreeStage;
+  /** Minimum prayer reflections required before this branch can emerge */
+  minLeaves: number;
 }
 
 // ─── Computed Tree Data (from service) ─────────────────────────────
@@ -67,6 +77,10 @@ export interface TreeLeafData {
   isArchived: boolean;
   /** Age fraction: 0 = newest (tip), 1 = oldest (base) — drives color variation */
   ageFraction: number;
+  /** Tonal treatment within the prayer palette */
+  tone: LeafTone;
+  /** Subtle palette variation for canopy richness */
+  hueVariant: LeafHueVariant;
   /** Prayer name (for detail overlay) */
   prayer: string;
   /** Date string YYYY-MM-DD (for detail overlay) */
@@ -77,6 +91,7 @@ export interface TreeLeafData {
 
 /** A computed branch with its leaves */
 export interface TreeBranch {
+  id: string;
   prayer: PrayerName;
   /** The branch's Bézier curve */
   curve: BezierCurve;
@@ -99,6 +114,8 @@ export interface TreeData {
   totalLeaves: number;
   /** Bloom count (mood 4-5 reflections) */
   bloomCount: number;
+  /** Materialized trunk curve with subtle lean/character */
+  trunkCurve: BezierCurve;
   /** Trunk stroke width — scales with total reflections */
   trunkWidth: number;
   /**
@@ -118,8 +135,8 @@ export interface TreeData {
 
 /** A smaller branch that forks from a main branch */
 export interface SubBranch {
-  /** SVG path d string */
-  d: string;
+  /** The sub-branch's Bézier curve */
+  curve: BezierCurve;
   /** Stroke width */
   strokeWidth: number;
   /** Opacity */

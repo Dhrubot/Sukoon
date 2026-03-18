@@ -24,7 +24,7 @@
 // ╚══════════════════════════════════════════════════════════════════╝
 
 import React, { useEffect, useMemo } from 'react';
-import { G, Ellipse, Circle } from 'react-native-svg';
+import { G, Ellipse, Circle, Path } from 'react-native-svg';
 import Animated, {
   useSharedValue,
   useAnimatedProps,
@@ -42,6 +42,23 @@ import {
 } from '../../constants/tubaTree';
 
 const AnimatedEllipse = Animated.createAnimatedComponent(Ellipse);
+const AnimatedPath = Animated.createAnimatedComponent(Path);
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
+function blendHex(baseColor: string, targetColor: string, ratio: number): string {
+  const parse = (hex: string) => ({
+    r: parseInt(hex.slice(1, 3), 16),
+    g: parseInt(hex.slice(3, 5), 16),
+    b: parseInt(hex.slice(5, 7), 16),
+  });
+
+  const clamp = Math.max(0, Math.min(1, ratio));
+  const from = parse(baseColor);
+  const to = parse(targetColor);
+  const channel = (a: number, b: number) => Math.round(a + (b - a) * clamp);
+
+  return `#${channel(from.r, to.r).toString(16).padStart(2, '0')}${channel(from.g, to.g).toString(16).padStart(2, '0')}${channel(from.b, to.b).toString(16).padStart(2, '0')}`;
+}
 
 interface TreeLeafProps {
   leaf: TreeLeafData;
@@ -56,21 +73,78 @@ interface TreeLeafProps {
 const TreeLeaf: React.FC<TreeLeafProps> = ({
   leaf,
   color,
+  bloomGlowColor,
   branchIndex,
   leafIndex,
   growthG,
   onPress,
 }) => {
-  const baseSize = LEAF_SIZES.sprout;
+  const baseSize = LEAF_SIZES[leaf.growthStage];
   const sizeScale = 0.92 + growthG * 0.08;
   const ageScale = ageSizeMultiplier(leaf.ageFraction);
   const size = { rx: baseSize.rx * sizeScale * ageScale, ry: baseSize.ry * sizeScale * ageScale };
+  const isTipBud = leaf.ageFraction <= 0.14 && leaf.growthStage !== 'bloom';
 
   // Age-adjusted leaf color: youngest (tip) lighter, oldest (base) deeper
   const leafColor = useMemo(
     () => ageAdjustedColor(color, leaf.ageFraction),
     [color, leaf.ageFraction],
   );
+
+  const renderedLeafColor = useMemo(() => {
+    let resolved = leafColor;
+
+    if (leaf.hueVariant === 'sage') {
+      resolved = blendHex(resolved, '#a5c39a', 0.14);
+    } else if (leaf.hueVariant === 'olive') {
+      resolved = blendHex(resolved, '#8da45e', 0.16);
+    } else if (leaf.hueVariant === 'amber') {
+      resolved = blendHex(resolved, '#c1b866', 0.12);
+    }
+
+    if (leaf.tone === 'aged') {
+      resolved = blendHex(resolved, '#4f5f34', 0.18);
+    }
+
+    return resolved;
+  }, [leaf.hueVariant, leaf.tone, leafColor]);
+
+  const veinColor = leaf.tone === 'aged'
+    ? 'rgba(255,244,214,0.18)'
+    : 'rgba(255,255,255,0.22)';
+
+  const leafBodyPath = useMemo(() => {
+    const rx = size.rx;
+    const ry = size.ry;
+
+    if (leaf.growthStage === 'seed' || isTipBud) {
+      return [
+        `M 0 ${(-ry * 0.95).toFixed(1)}`,
+        `C ${(rx * 0.75).toFixed(1)} ${(-ry * 0.9).toFixed(1)} ${(rx * 0.95).toFixed(1)} ${(-ry * 0.1).toFixed(1)} ${(rx * 0.4).toFixed(1)} ${(ry * 0.65).toFixed(1)}`,
+        `C ${(rx * 0.1).toFixed(1)} ${(ry * 0.92).toFixed(1)} ${(-rx * 0.1).toFixed(1)} ${(ry * 0.92).toFixed(1)} ${(-rx * 0.4).toFixed(1)} ${(ry * 0.65).toFixed(1)}`,
+        `C ${(-rx * 0.95).toFixed(1)} ${(-ry * 0.1).toFixed(1)} ${(-rx * 0.75).toFixed(1)} ${(-ry * 0.9).toFixed(1)} 0 ${(-ry * 0.95).toFixed(1)}`,
+        'Z',
+      ].join(' ');
+    }
+
+    const shoulder = leaf.growthStage === 'bloom' ? 1.05 : 0.9;
+    const waist = leaf.growthStage === 'bloom' ? 0.62 : 0.5;
+    const tail = leaf.growthStage === 'bloom' ? 0.9 : 0.82;
+
+    return [
+      `M 0 ${(-ry * 1.15).toFixed(1)}`,
+      `C ${(rx * shoulder).toFixed(1)} ${(-ry * 0.95).toFixed(1)} ${(rx * 1.08).toFixed(1)} ${(-ry * 0.08).toFixed(1)} ${(rx * waist).toFixed(1)} ${(ry * tail).toFixed(1)}`,
+      `C ${(rx * 0.22).toFixed(1)} ${(ry * 1.02).toFixed(1)} ${(-rx * 0.22).toFixed(1)} ${(ry * 1.02).toFixed(1)} ${(-rx * waist).toFixed(1)} ${(ry * tail).toFixed(1)}`,
+      `C ${(-rx * 1.08).toFixed(1)} ${(-ry * 0.08).toFixed(1)} ${(-rx * shoulder).toFixed(1)} ${(-ry * 0.95).toFixed(1)} 0 ${(-ry * 1.15).toFixed(1)}`,
+      'Z',
+    ].join(' ');
+  }, [size.rx, size.ry, leaf.growthStage, isTipBud]);
+
+  const veinPath = useMemo(() => {
+    const veinTop = -size.ry * (leaf.growthStage === 'seed' || isTipBud ? 0.6 : 0.9);
+    const veinBottom = size.ry * (leaf.growthStage === 'seed' || isTipBud ? 0.55 : 0.82);
+    return `M 0 ${veinTop.toFixed(1)} Q ${(size.rx * 0.08).toFixed(1)} ${(size.ry * 0.05).toFixed(1)} 0 ${veinBottom.toFixed(1)}`;
+  }, [size.rx, size.ry, leaf.growthStage, isTipBud]);
 
   // ── Entry animation ────────────────────────────────────────────
   const entryProgress = useSharedValue(0);
@@ -99,6 +173,21 @@ const TreeLeaf: React.FC<TreeLeafProps> = ({
     opacity: leaf.opacity * entryProgress.value,
   }));
 
+  const bloomAnimatedProps = useAnimatedProps(() => ({
+    rx: size.rx * 1.4 * entryProgress.value,
+    ry: size.ry * 1.3 * entryProgress.value,
+    opacity: leaf.opacity * 0.2 * entryProgress.value,
+  }));
+
+  const detailAnimatedProps = useAnimatedProps(() => ({
+    opacity: leaf.opacity * entryProgress.value,
+  }));
+
+  const budHighlightAnimatedProps = useAnimatedProps(() => ({
+    r: size.rx * 0.26 * entryProgress.value,
+    opacity: leaf.opacity * 0.24 * entryProgress.value,
+  }));
+
   const handlePress = () => {
     onPress?.(leaf);
   };
@@ -124,13 +213,53 @@ const TreeLeaf: React.FC<TreeLeafProps> = ({
       originX={0}
       originY={0}
     >
+      {leaf.isBloom && (
+        <AnimatedEllipse
+          cx={0}
+          cy={0}
+          fill={bloomGlowColor}
+          animatedProps={bloomAnimatedProps}
+        />
+      )}
       {/* Main leaf body */}
-      <AnimatedEllipse
-        cx={0}
-        cy={0}
-        fill={leafColor}
-        animatedProps={leafAnimatedProps}
-      />
+      {leaf.growthStage === 'seed' || isTipBud ? (
+        <>
+          <AnimatedPath
+            d={leafBodyPath}
+            fill={renderedLeafColor}
+            animatedProps={detailAnimatedProps}
+          />
+          <AnimatedCircle
+            cx={size.rx * 0.08}
+            cy={-size.ry * 0.28}
+            fill="#ffffff"
+            animatedProps={budHighlightAnimatedProps}
+          />
+        </>
+      ) : (
+        <>
+          <AnimatedPath
+            d={leafBodyPath}
+            fill={renderedLeafColor}
+            animatedProps={detailAnimatedProps}
+          />
+          <AnimatedPath
+            d={veinPath}
+            stroke={veinColor}
+            strokeWidth={Math.max(0.6, size.rx * 0.11)}
+            strokeLinecap="round"
+            fill="none"
+            animatedProps={detailAnimatedProps}
+          />
+          <AnimatedEllipse
+            cx={0}
+            cy={size.ry * 0.04}
+            fill={renderedLeafColor}
+            animatedProps={leafAnimatedProps}
+            opacity={0.14}
+          />
+        </>
+      )}
       {/* Reflection text indicator */}
       {leaf.hasText && (
         <Circle
