@@ -1,5 +1,4 @@
 // src/services/AnalyticsService.ts
-import { getAnalytics, logEvent as fbLogEvent, setUserProperty as fbSetUserProperty, logScreenView as fbLogScreenView } from '@react-native-firebase/analytics';
 import logger from '../utils/logger';
 
 // Religious practice events (prayer_completed, prayer_missed, mindfulness_started/completed,
@@ -25,6 +24,32 @@ interface AnalyticsParams {
 
 class AnalyticsService {
   private enabled = true;
+  private analyticsModule: any | null | undefined;
+
+  private getAnalyticsModule(): any | null {
+    if (this.analyticsModule !== undefined) {
+      return this.analyticsModule;
+    }
+
+    try {
+      const module = require('@react-native-firebase/analytics');
+      this.analyticsModule = {
+        getAnalytics: module.getAnalytics,
+        logEvent: module.logEvent,
+        setUserProperty: module.setUserProperty,
+        logScreenView: module.logScreenView,
+      };
+    } catch (error) {
+      logger.warn('[Analytics] Firebase Analytics unavailable:', error);
+      this.analyticsModule = null;
+    }
+
+    return this.analyticsModule;
+  }
+
+  async preload(): Promise<void> {
+    this.getAnalyticsModule();
+  }
 
   async logEvent(event: AnalyticsEvent, params?: AnalyticsParams): Promise<void> {
     if (__DEV__) {
@@ -34,7 +59,9 @@ class AnalyticsService {
     if (!this.enabled) return;
 
     try {
-      await fbLogEvent(getAnalytics(), event, params);
+      const analyticsModule = this.getAnalyticsModule();
+      if (!analyticsModule) return;
+      await analyticsModule.logEvent(analyticsModule.getAnalytics(), event, params);
     } catch (error) {
       logger.error('[Analytics] Failed to log event:', error);
     }
@@ -43,7 +70,9 @@ class AnalyticsService {
   async setUserProperty(name: string, value: string): Promise<void> {
     if (!this.enabled) return;
     try {
-      await fbSetUserProperty(getAnalytics(), name, value);
+      const analyticsModule = this.getAnalyticsModule();
+      if (!analyticsModule) return;
+      await analyticsModule.setUserProperty(analyticsModule.getAnalytics(), name, value);
     } catch (error) {
       logger.error('[Analytics] Failed to set user property:', error);
     }
@@ -52,7 +81,9 @@ class AnalyticsService {
   async logScreenView(screenName: string): Promise<void> {
     if (!this.enabled) return;
     try {
-      await fbLogScreenView(getAnalytics(), {
+      const analyticsModule = this.getAnalyticsModule();
+      if (!analyticsModule) return;
+      await analyticsModule.logScreenView(analyticsModule.getAnalytics(), {
         screen_name: screenName,
         screen_class: screenName,
       });

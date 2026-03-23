@@ -15,8 +15,6 @@ import Svg, { Path } from 'react-native-svg';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
-import { VERSES } from '../../constants';
-import { HADITH_COLLECTION } from '../../constants/hadithCollection';
 import { isRamadan } from '../../utils/ramadan';
 import logger from '../../utils/logger';
 
@@ -48,8 +46,20 @@ const QuranIcon: React.FC<{ color: string; size: number }> = ({ color, size }) =
   </Svg>
 );
 
-const verses = VERSES;
-type VerseEntry = (typeof verses)[number];
+type VerseEntry = {
+  id: number;
+  arabic: string;
+  translation: string;
+  reference: string;
+  theme: string;
+};
+
+type HadithEntry = {
+  arabic: string;
+  translation: string;
+  source: string;
+  narrator?: string;
+};
 
 interface DailyContent {
   arabic: string;
@@ -73,9 +83,9 @@ const DailyVerse = forwardRef<DailyVerseRef, DailyVerseProps>(({ modalOnly }, re
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const [content, setContent] = useState<DailyContent>({
-    arabic: verses[0].arabic,
-    translation: verses[0].translation,
-    reference: verses[0].reference,
+    arabic: '',
+    translation: '',
+    reference: '',
     isHadith: false,
   });
   const [sheetVisible, setSheetVisible] = useState(false);
@@ -119,33 +129,67 @@ const DailyVerse = forwardRef<DailyVerseRef, DailyVerseProps>(({ modalOnly }, re
   };
 
   useEffect(() => {
-    const today = new Date();
-    const dayOfYear = Math.floor(
-      (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) /
-      (1000 * 60 * 60 * 24)
-    );
+    let cancelled = false;
 
-    // During Ramadan, bias toward Ramadan-themed verses (always Quran)
-    if (isRamadan()) {
-      const ramadanVerses = verses.filter((v: VerseEntry) => v.theme === 'ramadan');
-      if (ramadanVerses.length > 0) {
-        const idx = dayOfYear % ramadanVerses.length;
-        const v = ramadanVerses[idx];
-        setContent({ arabic: v.arabic, translation: v.translation, reference: v.reference, isHadith: false });
-        return;
+    const loadDailyContent = async () => {
+      const [{ VERSES }, { HADITH_COLLECTION }] = await Promise.all([
+        import('../../constants'),
+        import('../../constants/hadithCollection'),
+      ]);
+      if (cancelled) return;
+
+      const today = new Date();
+      const dayOfYear = Math.floor(
+        (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) /
+        (1000 * 60 * 60 * 24)
+      );
+
+      // During Ramadan, bias toward Ramadan-themed verses (always Quran)
+      if (isRamadan()) {
+        const ramadanVerses = VERSES.filter((v: VerseEntry) => v.theme === 'ramadan');
+        if (ramadanVerses.length > 0) {
+          const idx = dayOfYear % ramadanVerses.length;
+          const verse = ramadanVerses[idx];
+          setContent({
+            arabic: verse.arabic,
+            translation: verse.translation,
+            reference: verse.reference,
+            isHadith: false,
+          });
+          return;
+        }
       }
-    }
 
-    // Alternate: even days = verse, odd days = hadith
-    if (dayOfYear % 2 === 0) {
-      const idx = Math.floor(dayOfYear / 2) % verses.length;
-      const v = verses[idx];
-      setContent({ arabic: v.arabic, translation: v.translation, reference: v.reference, isHadith: false });
-    } else {
-      const idx = Math.floor(dayOfYear / 2) % HADITH_COLLECTION.length;
-      const h = HADITH_COLLECTION[idx];
-      setContent({ arabic: h.arabic, translation: h.translation, reference: h.source, narrator: h.narrator, isHadith: true });
-    }
+      // Alternate: even days = verse, odd days = hadith
+      if (dayOfYear % 2 === 0) {
+        const idx = Math.floor(dayOfYear / 2) % VERSES.length;
+        const verse = VERSES[idx];
+        setContent({
+          arabic: verse.arabic,
+          translation: verse.translation,
+          reference: verse.reference,
+          isHadith: false,
+        });
+      } else {
+        const idx = Math.floor(dayOfYear / 2) % HADITH_COLLECTION.length;
+        const hadith = HADITH_COLLECTION[idx];
+        setContent({
+          arabic: hadith.arabic,
+          translation: hadith.translation,
+          reference: hadith.source,
+          narrator: hadith.narrator,
+          isHadith: true,
+        });
+      }
+    };
+
+    loadDailyContent().catch((error) => {
+      logger.error('Failed to load daily content:', error);
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const handleShare = async () => {

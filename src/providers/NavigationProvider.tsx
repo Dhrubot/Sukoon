@@ -164,6 +164,8 @@ export const NavigationProvider: React.FC<NavigationProviderProps> = ({ children
   }, []);
 
   const onNavigationReady = useCallback(() => {
+    void AnalyticsService.preload();
+    void PerformanceService.preload();
     const currentRoute = navigationRef.current?.getCurrentRoute();
     routeNameRef.current = currentRoute?.name;
     if (currentRoute?.name) {

@@ -6,6 +6,7 @@ import { AppNavigator } from '../navigation/AppNavigator';
 import { ServiceProvider } from '../providers/ServiceProvider';
 import { useNotificationRescheduler } from '../hooks/useNotificationRescheduler';
 import PerformanceService from '../services/PerformanceService';
+import CrashReportingService from '../services/CrashReportingService';
 
 export const AppInitializer: React.FC = () => {
   const {
@@ -21,6 +22,8 @@ export const AppInitializer: React.FC = () => {
 
   useEffect(() => {
     if (isLoading || error) return;
+
+    void CrashReportingService.preload();
 
     if (isFirstLaunch) {
       PerformanceService.markLaunchMilestoneOnce('onboarding_screen_rendered');

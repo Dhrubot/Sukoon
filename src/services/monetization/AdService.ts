@@ -1,23 +1,8 @@
 import { Platform } from 'react-native';
-import {
-  AdEventType,
-  RewardedAd,
-  RewardedAdEventType,
-  TestIds,
-  MobileAds,
-  MaxAdContentRating,
-} from 'react-native-google-mobile-ads';
+import type { RewardedAd } from 'react-native-google-mobile-ads';
 import StorageService from '../StorageService';
 import AnalyticsService from '../AnalyticsService';
 import logger from '../../utils/logger';
-
-// Rewarded Ad Unit IDs — users opt-in to watch a halal ad to support the app
-const REWARDED_AD_UNIT = __DEV__
-  ? TestIds.REWARDED
-  : Platform.select({
-      ios: 'ca-app-pub-5474984690525462/3839513900',
-      android: 'ca-app-pub-5474984690525462/5179116937',
-    });
 
 // Halal-safe keyword hints for AdMob ad targeting
 const HALAL_KEYWORDS = [
@@ -35,15 +20,52 @@ class AdService {
   private _retryCount = 0;
   private _maxRetries = 3;
   private _retryTimer: ReturnType<typeof setTimeout> | null = null;
+  private sdk: any | null | undefined;
+
+  private getSdk(): any | null {
+    if (this.sdk !== undefined) {
+      return this.sdk;
+    }
+
+    try {
+      const module = require('react-native-google-mobile-ads');
+      this.sdk = {
+        AdEventType: module.AdEventType,
+        RewardedAdEventType: module.RewardedAdEventType,
+        TestIds: module.TestIds,
+        MobileAds: module.MobileAds,
+        MaxAdContentRating: module.MaxAdContentRating,
+        RewardedAd: module.RewardedAd,
+      };
+    } catch (error) {
+      logger.warn('MobileAds SDK unavailable:', error);
+      this.sdk = null;
+    }
+
+    return this.sdk;
+  }
+
+  private getRewardedAdUnit(sdk: any): string | undefined {
+    if (__DEV__) {
+      return sdk.TestIds.REWARDED;
+    }
+
+    return Platform.select({
+      ios: 'ca-app-pub-5474984690525462/3839513900',
+      android: 'ca-app-pub-5474984690525462/5179116937',
+    });
+  }
 
   async initialize() {
     if (this._initialized) return true;
     try {
+      const sdk = this.getSdk();
+      if (!sdk) return false;
       // CRITICAL: SDK must be initialized before any ad requests
-      await MobileAds().initialize();
+      await sdk.MobileAds().initialize();
       logger.log('MobileAds SDK initialized');
-      await this.configureHalalFiltering();
-      this.loadRewardedAd();
+      await this.configureHalalFiltering(sdk);
+      await this.loadRewardedAd(sdk);
       this._initialized = true;
       return true;
     } catch (error) {
@@ -62,30 +84,35 @@ class AdService {
    *   AdMob > Blocking controls > Manage > Sensitive categories
    *   Block: Alcohol, Gambling, Dating, Sexual content, Political, Tobacco
    */
-  private async configureHalalFiltering() {
-    await MobileAds().setRequestConfiguration({
-      maxAdContentRating: MaxAdContentRating.G,
+  private async configureHalalFiltering(sdk: any) {
+    await sdk.MobileAds().setRequestConfiguration({
+      maxAdContentRating: sdk.MaxAdContentRating.G,
       tagForChildDirectedTreatment: false,
       tagForUnderAgeOfConsent: false,
       testDeviceIdentifiers: __DEV__ ? ['EMULATOR'] : [],
     });
   }
 
-  private loadRewardedAd() {
-    if (!REWARDED_AD_UNIT) return;
+  private async loadRewardedAd(existingSdk?: any) {
+    const sdk = existingSdk ?? this.getSdk();
+    if (!sdk) return;
 
-    this.rewardedAd = RewardedAd.createForAdRequest(REWARDED_AD_UNIT, {
+    const rewardedAdUnit = this.getRewardedAdUnit(sdk);
+    if (!rewardedAdUnit) return;
+
+    const rewardedAd = sdk.RewardedAd.createForAdRequest(rewardedAdUnit, {
       requestNonPersonalizedAdsOnly: true,
       keywords: HALAL_KEYWORDS,
     });
+    this.rewardedAd = rewardedAd;
 
-    this.rewardedAd.addAdEventListener(RewardedAdEventType.LOADED, () => {
+    (rewardedAd as any).addAdEventListener(sdk.RewardedAdEventType.LOADED, () => {
       this.isRewardedAdLoaded = true;
       this._retryCount = 0;
       logger.log('Rewarded ad loaded');
     });
 
-    this.rewardedAd.addAdEventListener(RewardedAdEventType.EARNED_REWARD, () => {
+    (rewardedAd as any).addAdEventListener(sdk.RewardedAdEventType.EARNED_REWARD, () => {
       logger.log('User earned ad reward — granting 24h premium');
       if (this.adRewardCallback) {
         this.adRewardCallback(true);
@@ -96,12 +123,12 @@ class AdService {
       AnalyticsService.logAdWatched();
     });
 
-    this.rewardedAd.addAdEventListener(AdEventType.CLOSED, () => {
+    (rewardedAd as any).addAdEventListener(sdk.AdEventType.CLOSED, () => {
       this.isRewardedAdLoaded = false;
-      this.loadRewardedAd(); // Pre-load next ad
+      void this.loadRewardedAd(); // Pre-load next ad
     });
 
-    this.rewardedAd.addAdEventListener(AdEventType.ERROR, (error) => {
+    (rewardedAd as any).addAdEventListener(sdk.AdEventType.ERROR, (error: unknown) => {
       logger.warn('Rewarded ad error:', error);
       this._lastError = String(error);
       this.isRewardedAdLoaded = false;
@@ -113,7 +140,7 @@ class AdService {
       this.retryLoadAd();
     });
 
-    this.rewardedAd.load();
+    rewardedAd.load();
   }
 
   /**
@@ -198,7 +225,7 @@ class AdService {
     this._retryCount++;
     logger.log(`Retrying ad load in ${delay / 1000}s (attempt ${this._retryCount}/${this._maxRetries})`);
     this._retryTimer = setTimeout(() => {
-      this.loadRewardedAd();
+      void this.loadRewardedAd();
     }, delay);
   }
 

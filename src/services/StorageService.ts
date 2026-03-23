@@ -15,7 +15,7 @@ import {
   MosqueModeSettings,
 } from "../types";
 import { createStorage, createUnencryptedStorage, MemoryStorage } from "./StorageAdapter";
-import { PRAYER_NAMES as PrayerName } from "../constants";
+import { PRAYER_NAMES as PrayerName } from "../constants/prayerNames";
 import AnalyticsService from './AnalyticsService';
 import { getLocalDateKey } from '../utils/dateHelpers';
 import logger from '../utils/logger';

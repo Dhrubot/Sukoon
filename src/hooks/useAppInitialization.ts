@@ -78,7 +78,7 @@ export const useAppInitialization = () => {
       }
 
       // Initialize notifications
-      await NotificationService.initialize();
+      await NotificationService.initialize({ requestPermissions: false });
       PerformanceService.markLaunchMilestone('notifications_initialized');
 
       // Check if prayer times need refreshing

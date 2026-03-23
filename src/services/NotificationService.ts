@@ -260,6 +260,41 @@ class NotificationService {
     logger.log('✅ Prayer times fetcher connected to NotificationService');
   }
 
+  private async resolvePermissionStatus(
+    requestIfNeeded: boolean
+  ): Promise<Notifications.PermissionStatus> {
+    if (!Device.isDevice) {
+      logger.log('📱 Notifications only work on physical devices');
+      NotificationTraceService.log('permission_request_skipped_simulator');
+      return 'denied' as Notifications.PermissionStatus;
+    }
+
+    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    NotificationTraceService.log('permission_status_checked', {
+      existingStatus,
+      requestIfNeeded,
+    });
+
+    if (!requestIfNeeded || existingStatus === 'granted') {
+      return existingStatus;
+    }
+
+    const { status } = await Notifications.requestPermissionsAsync({
+      ios: {
+        allowAlert: true,
+        allowBadge: true,
+        allowSound: true,
+      },
+    });
+
+    NotificationTraceService.log('permission_request_result', {
+      requestedFrom: existingStatus,
+      finalStatus: status,
+    });
+
+    return status;
+  }
+
   // Register a handler function that will be called when navigation is needed
   registerNavigationHandler(handler: ((prayer: PrayerName, action: string) => void) | null) {
     if (this.navigationHandler === handler) {
@@ -277,7 +312,7 @@ class NotificationService {
     logger.log(replacingHandler ? '♻️ Navigation handler replaced' : '✅ Navigation handler registered');
   }
 
-  async initialize(): Promise<boolean> {
+  async initialize(options?: { requestPermissions?: boolean }): Promise<boolean> {
     try {
       NotificationTraceService.log('initialize_started');
       if (this.initialized) {
@@ -285,12 +320,15 @@ class NotificationService {
         NotificationTraceService.log('initialize_reentered');
       }
 
-      // Request permissions
-      const hasPermission = await this.requestPermissions();
+      const permissionStatus = await this.resolvePermissionStatus(
+        options?.requestPermissions ?? true
+      );
+      const hasPermission = permissionStatus === 'granted';
       if (!hasPermission) {
-        logger.log('📵 Notification permissions not granted');
-        NotificationTraceService.log('initialize_permissions_missing');
-        return false;
+        logger.log(`📵 Notification permissions not granted (${permissionStatus})`);
+        NotificationTraceService.log('initialize_permissions_missing', {
+          permissionStatus,
+        });
       }
 
       // Set up Audio Mode
@@ -312,7 +350,7 @@ class NotificationService {
       this.initialized = true;
       NotificationTraceService.log('initialize_completed');
       logger.log('✅ NotificationService initialized');
-      return true;
+      return hasPermission;
     } catch (error) {
       NotificationTraceService.log('initialize_failed');
       logger.error('❌ Failed to initialize notifications:', error);
@@ -320,35 +358,9 @@ class NotificationService {
     }
   }
 
-  private async requestPermissions(): Promise<boolean> {
-    if (!Device.isDevice) {
-      logger.log('📱 Notifications only work on physical devices');
-      NotificationTraceService.log('permission_request_skipped_simulator');
-      return false;
-    }
-
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    NotificationTraceService.log('permission_status_checked', {
-      existingStatus,
-    });
-    let finalStatus = existingStatus;
-
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync({
-        ios: {
-          allowAlert: true,
-          allowBadge: true,
-          allowSound: true,
-        },
-      });
-      finalStatus = status;
-      NotificationTraceService.log('permission_request_result', {
-        requestedFrom: existingStatus,
-        finalStatus,
-      });
-    }
-
-    return finalStatus === 'granted';
+  async requestPermissionsFromUser(): Promise<boolean> {
+    const status = await this.resolvePermissionStatus(true);
+    return status === 'granted';
   }
 
   async getPermissionStatus(): Promise<Notifications.PermissionStatus> {

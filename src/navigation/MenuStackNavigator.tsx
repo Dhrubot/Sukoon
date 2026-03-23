@@ -2,17 +2,6 @@
 import React from 'react';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useTheme } from '../providers/ThemeProvider';
-import MenuScreen from '../screens/Menu/MenuScreen';
-import SettingsScreen from '../screens/Settings/SettingsScreen';
-import PrivacyPolicyScreen from '../screens/Settings/PrivacyPolicyScreen';
-import StatsScreen from '../screens/Stats/StatsScreen';
-import SupportScreen from '../screens/Support/SupportScreen';
-import SetupHealthScreen from '../screens/SetupHealth/SetupHealthScreen';
-import ReflectionGardenScreen from '../screens/ReflectionGarden/ReflectionGardenScreen';
-import AdhkarScreen from '../screens/Adhkar/AdhkarScreen';
-import TasbihScreen from '../screens/Tasbih/TasbihScreen';
-import DuaLibraryScreen from '../screens/DuaLibrary/DuaLibraryScreen';
-import TubaTreeInfoScreen from '../screens/ReflectionGarden/TubaTreeInfoScreen';
 
 export type MenuStackParamList = {
   MenuHome: undefined;
@@ -53,49 +42,55 @@ export const MenuStackNavigator: React.FC = () => {
     >
       <Stack.Screen
         name="MenuHome"
-        component={MenuScreen}
+        getComponent={() => require('../screens/Menu/MenuScreen').default}
         options={{ headerShown: false }}
       />
       <Stack.Screen
         name="DuaLibrary"
-        component={DuaLibraryScreen}
+        getComponent={() => require('../screens/DuaLibrary/DuaLibraryScreen').default}
         options={{ title: 'Dua Library' }}
       />
       <Stack.Screen
         name="Adhkar"
-        component={AdhkarScreen}
+        getComponent={() => require('../screens/Adhkar/AdhkarScreen').default}
         options={{ title: 'Morning & Evening Adhkar' }}
       />
       <Stack.Screen
         name="Tasbih"
-        component={TasbihScreen}
+        getComponent={() => require('../screens/Tasbih/TasbihScreen').default}
         options={{ title: 'Tasbih Counter' }}
       />
       <Stack.Screen
         name="MyJourney"
-        component={StatsScreen}
+        getComponent={() => require('../screens/Stats/StatsScreen').default}
         options={{ title: 'Prayer Insights' }}
       />
       <Stack.Screen
         name="ReflectionGarden"
-        component={ReflectionGardenScreen}
+        getComponent={() => require('../screens/ReflectionGarden/ReflectionGardenScreen').default}
         options={{ title: 'Tuba Tree' }}
       />
       <Stack.Screen
         name="TubaTreeInfo"
-        component={TubaTreeInfoScreen}
+        getComponent={() => require('../screens/ReflectionGarden/TubaTreeInfoScreen').default}
         options={{ title: 'About the Tree' }}
       />
-      <Stack.Screen name="Support" component={SupportScreen} />
-      <Stack.Screen name="Settings" component={SettingsScreen} />
+      <Stack.Screen
+        name="Support"
+        getComponent={() => require('../screens/Support/SupportScreen').default}
+      />
+      <Stack.Screen
+        name="Settings"
+        getComponent={() => require('../screens/Settings/SettingsScreen').default}
+      />
       <Stack.Screen
         name="PrivacyPolicy"
-        component={PrivacyPolicyScreen}
+        getComponent={() => require('../screens/Settings/PrivacyPolicyScreen').default}
         options={{ title: 'Privacy Policy' }}
       />
       <Stack.Screen
         name="SetupHealth"
-        component={SetupHealthScreen}
+        getComponent={() => require('../screens/SetupHealth/SetupHealthScreen').default}
         options={{ title: 'Setup & Health' }}
       />
     </Stack.Navigator>

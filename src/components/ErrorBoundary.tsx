@@ -2,7 +2,7 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import crashlytics from '@react-native-firebase/crashlytics';
+import CrashReportingService from '../services/CrashReportingService';
 import logger from '../utils/logger';
 
 interface Props {
@@ -35,17 +35,12 @@ class ErrorBoundary extends Component<Props, State> {
     
     logger.error('🚨 ErrorBoundary caught an error:', error);
     logger.error('Component stack:', errorInfo.componentStack ?? 'none');
-    
-    // Report to Firebase Crashlytics in production
-    try {
-      crashlytics().log('ErrorBoundary caught error');
-      if (errorInfo.componentStack) {
-        crashlytics().setAttribute('componentStack', errorInfo.componentStack);
-      }
-      crashlytics().recordError(error);
-    } catch (e) {
-      // Crashlytics not available (e.g., dev mode)
+
+    void CrashReportingService.log('ErrorBoundary caught error');
+    if (errorInfo.componentStack) {
+      void CrashReportingService.setAttribute('componentStack', errorInfo.componentStack);
     }
+    void CrashReportingService.recordError(error);
   }
 
   handleRetry = (): void => {

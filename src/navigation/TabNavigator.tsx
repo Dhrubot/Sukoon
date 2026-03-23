@@ -12,9 +12,6 @@ import {
 } from '../assets/icons';
 
 import HomeScreen from '../screens/Home/HomeScreen';
-import MosqueModeScreen from '../screens/MosqueMode/MosqueModeScreen';
-import QiblaFinderScreen from '../screens/QiblaFinder/QiblaFinderScreen';
-import { MenuStackNavigator } from './MenuStackNavigator';
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
@@ -101,7 +98,7 @@ export const TabNavigator: React.FC = () => {
       />
       <Tab.Screen
         name="QiblaFinder"
-        component={QiblaFinderScreen}
+        getComponent={() => require('../screens/QiblaFinder/QiblaFinderScreen').default}
         options={{
           tabBarLabel: 'Qibla',
           tabBarIcon: ({ color }) => (
@@ -111,7 +108,7 @@ export const TabNavigator: React.FC = () => {
       />
       <Tab.Screen
         name="MosqueMode"
-        component={MosqueModeScreen}
+        getComponent={() => require('../screens/MosqueMode/MosqueModeScreen').default}
         options={{
           tabBarLabel: 'Mosque',
           tabBarIcon: ({ color }) => (
@@ -121,7 +118,7 @@ export const TabNavigator: React.FC = () => {
       />
       <Tab.Screen
         name="Menu"
-        component={MenuStackNavigator}
+        getComponent={() => require('./MenuStackNavigator').MenuStackNavigator}
         options={{
           tabBarLabel: 'Tools',
           tabBarIcon: ({ color }) => (
