@@ -6,9 +6,11 @@
 const {
   withAndroidManifest,
   withDangerousMod,
+  withMainApplication,
 } = require('@expo/config-plugins');
 const path = require('path');
 const fs = require('fs');
+const { registerAndroidPackageInMainApplication } = require('./withAndroidPackageRegistration');
 
 const PKG = 'com.talukders.sukoon';
 const JAVA_PATH_SEGMENTS = ['android', 'app', 'src', 'main', 'java', 'com', 'talukders', 'sukoon'];
@@ -189,30 +191,20 @@ function withBootReceiverJava(config) {
       fs.writeFileSync(path.join(javaDir, 'BootPrefsModule.java'), BOOT_PREFS_MODULE_JAVA.trim());
       fs.writeFileSync(path.join(javaDir, 'BootPrefsPackage.java'), BOOT_PREFS_PACKAGE_JAVA.trim());
 
-      // Register BootPrefsPackage in MainApplication.java
-      const mainAppPath = path.join(
-        cfg.modRequest.platformProjectRoot, 'app', 'src', 'main', 'java', 'com', 'talukders', 'sukoon', 'MainApplication.java'
-      );
-      if (fs.existsSync(mainAppPath)) {
-        let mainApp = fs.readFileSync(mainAppPath, 'utf-8');
-        if (!mainApp.includes('BootPrefsPackage')) {
-          // Add import
-          mainApp = mainApp.replace(
-            'import com.facebook.react.ReactApplication;',
-            'import com.facebook.react.ReactApplication;\nimport com.talukders.sukoon.BootPrefsPackage;'
-          );
-          // Add to packages list
-          mainApp = mainApp.replace(
-            'packages.add(new com.facebook.react.shell.MainReactPackage());',
-            'packages.add(new com.facebook.react.shell.MainReactPackage());\n          packages.add(new BootPrefsPackage());'
-          );
-          fs.writeFileSync(mainAppPath, mainApp);
-        }
-      }
-
       return cfg;
     },
   ]);
+}
+
+function withBootPrefsPackage(config) {
+  return withMainApplication(config, (cfg) => {
+    cfg.modResults.contents = registerAndroidPackageInMainApplication(
+      cfg.modResults.contents,
+      'BootPrefsPackage'
+    );
+    console.log('✅ Registered BootPrefsPackage in MainApplication');
+    return cfg;
+  });
 }
 
 function withBootReceiverManifest(config) {
@@ -286,5 +278,6 @@ module.exports = function withBootReceiver(config) {
   config = withBootReceiverJava(config);
   config = withBootReceiverManifest(config);
   config = withWorkManagerDependency(config);
+  config = withBootPrefsPackage(config);
   return config;
 };

@@ -1,6 +1,7 @@
 // src/navigation/TabNavigator.tsx
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TabParamList } from '../types/navigation';
 import { useTheme } from '../providers/ThemeProvider';
 import { Icon } from '../components/common/Icon';
@@ -49,6 +50,9 @@ const MoreIcon: React.FC<{ color: string; size: number }> = ({ color, size }) =>
 
 export const TabNavigator: React.FC = () => {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
+  const tabBarBottomPadding = Math.max(insets.bottom, 12);
+  const tabBarHeight = 54 + tabBarBottomPadding + 6;
 
   return (
     <Tab.Navigator
@@ -64,9 +68,9 @@ export const TabNavigator: React.FC = () => {
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.1,
           shadowRadius: 8,
-          paddingBottom: 18,
+          paddingBottom: tabBarBottomPadding,
           paddingTop: 6,
-          height: 72,
+          height: tabBarHeight,
         },
         tabBarLabelStyle: {
           fontSize: theme.typography.fontSize.xs,

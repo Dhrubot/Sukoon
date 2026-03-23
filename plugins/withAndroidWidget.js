@@ -8,6 +8,7 @@ const {
 } = require('@expo/config-plugins');
 const path = require('path');
 const fs = require('fs');
+const { registerAndroidPackageInMainApplication } = require('./withAndroidPackageRegistration');
 
 const PKG = 'com.talukders.sukoon';
 const JAVA_PATH_SEGMENTS = ['android', 'app', 'src', 'main', 'java', 'com', 'talukders', 'sukoon'];
@@ -724,42 +725,10 @@ const withAndroidWidgetManifest = (config) => {
 
 const withAndroidWidgetPackageRegistration = (config) => {
   return withMainApplication(config, (config) => {
-    let contents = config.modResults.contents;
-    const isKotlin = contents.includes('fun getPackages()');
-
-    if (isKotlin) {
-      const imp = 'import com.talukders.sukoon.SukoonWidgetPackage';
-      if (!contents.includes(imp)) {
-        contents = contents.replace(
-          /(import expo\.modules\.ReactNativeHostWrapper)/,
-          `$1\n${imp}`
-        );
-      }
-      const add = 'packages.add(SukoonWidgetPackage())';
-      if (!contents.includes(add)) {
-        contents = contents.replace(
-          /(val packages = PackageList\(this\)\.packages)/,
-          `$1\n            ${add}`
-        );
-      }
-    } else {
-      const imp = 'import com.talukders.sukoon.SukoonWidgetPackage;';
-      if (!contents.includes(imp)) {
-        contents = contents.replace(
-          /(import com\.facebook\.react\.defaults\.DefaultReactNativeHost;)/,
-          `$1\n${imp}`
-        );
-      }
-      const add = 'packages.add(new SukoonWidgetPackage());';
-      if (!contents.includes(add)) {
-        contents = contents.replace(
-          /(protected List<ReactPackage> getPackages\(\) {[\s\S]*?return packages;)/,
-          (m) => m.replace('return packages;', `          ${add}\n          return packages;`)
-        );
-      }
-    }
-
-    config.modResults.contents = contents;
+    config.modResults.contents = registerAndroidPackageInMainApplication(
+      config.modResults.contents,
+      'SukoonWidgetPackage'
+    );
     console.log('✅ Registered SukoonWidgetPackage in MainApplication');
     return config;
   });

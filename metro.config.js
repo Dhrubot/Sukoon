@@ -2,6 +2,10 @@ const { getDefaultConfig } = require('expo/metro-config');
 
 const config = getDefaultConfig(__dirname);
 
+if (config.watcher && 'unstable_workerThreads' in config.watcher) {
+  delete config.watcher.unstable_workerThreads;
+}
+
 // Add SVG support
 config.transformer = {
   ...config.transformer,
