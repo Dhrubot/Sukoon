@@ -100,4 +100,33 @@ describe('RingerControlService', () => {
       'Could not open DND settings.'
     );
   });
+
+  it('re-reads NativeModules after startup instead of caching a missing module forever', async () => {
+    jest.resetModules();
+
+    const nativeModules: { RingerModeModule: null | { canModifyRingerMode: jest.Mock } } = {
+      RingerModeModule: null,
+    };
+
+    jest.doMock('react-native', () => ({
+      Platform: { OS: 'android' },
+      NativeModules: nativeModules,
+      Linking: { openSettings: jest.fn(async () => {}) },
+    }));
+    jest.doMock('../utils/logger', () => ({
+      __esModule: true,
+      default: { log: jest.fn(), warn: jest.fn(), error: jest.fn() },
+    }));
+
+    const service = require('../services/RingerControlService').default;
+
+    expect(service.isAvailable()).toBe(false);
+
+    nativeModules.RingerModeModule = {
+      canModifyRingerMode: jest.fn(async () => true),
+    };
+
+    expect(service.isAvailable()).toBe(true);
+    await expect(service.canModify()).resolves.toBe(true);
+  });
 });

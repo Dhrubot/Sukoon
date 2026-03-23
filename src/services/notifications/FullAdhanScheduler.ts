@@ -6,7 +6,9 @@ import { Platform, NativeModules } from 'react-native';
 import { PrayerName } from '../../types';
 import logger from '../../utils/logger';
 
-const { AdhanModule } = NativeModules;
+function getAdhanModule() {
+  return NativeModules.AdhanModule ?? null;
+}
 
 export type ExactAlarmStatus =
   | 'granted'
@@ -54,14 +56,15 @@ export async function scheduleFullAdhan(
   prayerName: PrayerName,
   displayName?: string
 ): Promise<void> {
-  if (Platform.OS !== 'android' || !AdhanModule) return;
+  const adhanModule = getAdhanModule();
+  if (Platform.OS !== 'android' || !adhanModule) return;
 
   try {
     const dayOffset = getDayOffset(prayerTime);
     const requestCode = getRequestCode(prayerName, dayOffset);
     const label = displayName || prayerName;
 
-    await AdhanModule.scheduleAdhan(
+    await adhanModule.scheduleAdhan(
       prayerTime.getTime(),
       label,
       requestCode
@@ -80,10 +83,11 @@ export async function scheduleFullAdhan(
  * Called when notifications are rebuilt or adhan is disabled.
  */
 export async function cancelAllFullAdhans(): Promise<void> {
-  if (Platform.OS !== 'android' || !AdhanModule) return;
+  const adhanModule = getAdhanModule();
+  if (Platform.OS !== 'android' || !adhanModule) return;
 
   try {
-    await AdhanModule.cancelAllAdhans();
+    await adhanModule.cancelAllAdhans();
     logger.log('🗑️ All full Adhan alarms cancelled');
   } catch (error) {
     logger.error('❌ Failed to cancel full Adhan alarms:', error);
@@ -94,10 +98,11 @@ export async function cancelAllFullAdhans(): Promise<void> {
  * Immediately stop any currently playing Adhan foreground service.
  */
 export async function stopFullAdhan(): Promise<void> {
-  if (Platform.OS !== 'android' || !AdhanModule) return;
+  const adhanModule = getAdhanModule();
+  if (Platform.OS !== 'android' || !adhanModule) return;
 
   try {
-    await AdhanModule.stopAdhan();
+    await adhanModule.stopAdhan();
     logger.log('⏹️ Full Adhan service stopped');
   } catch (error) {
     logger.error('❌ Failed to stop full Adhan service:', error);
@@ -111,12 +116,13 @@ export async function cancelFullAdhan(
   prayerName: PrayerName,
   prayerTime: Date
 ): Promise<void> {
-  if (Platform.OS !== 'android' || !AdhanModule) return;
+  const adhanModule = getAdhanModule();
+  if (Platform.OS !== 'android' || !adhanModule) return;
 
   try {
     const dayOffset = getDayOffset(prayerTime);
     const requestCode = getRequestCode(prayerName, dayOffset);
-    await AdhanModule.cancelAdhan(requestCode);
+    await adhanModule.cancelAdhan(requestCode);
     logger.log(`🗑️ Full Adhan cancelled for ${prayerName} (rc=${requestCode})`);
   } catch (error) {
     logger.error(`❌ Failed to cancel full Adhan for ${prayerName}:`, error);
@@ -124,11 +130,12 @@ export async function cancelFullAdhan(
 }
 
 export async function getExactAlarmStatus(): Promise<ExactAlarmStatus> {
+  const adhanModule = getAdhanModule();
   if (Platform.OS !== 'android') return 'unsupported';
-  if (!AdhanModule?.getExactAlarmStatus) return 'unavailable';
+  if (!adhanModule?.getExactAlarmStatus) return 'unavailable';
 
   try {
-    const status = await AdhanModule.getExactAlarmStatus();
+    const status = await adhanModule.getExactAlarmStatus();
     if (
       status === 'granted' ||
       status === 'fallback' ||

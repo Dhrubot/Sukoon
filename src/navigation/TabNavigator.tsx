@@ -1,5 +1,6 @@
 // src/navigation/TabNavigator.tsx
 import React from 'react';
+import { Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TabParamList } from '../types/navigation';
@@ -51,7 +52,10 @@ const MoreIcon: React.FC<{ color: string; size: number }> = ({ color, size }) =>
 export const TabNavigator: React.FC = () => {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
-  const tabBarBottomPadding = Math.max(insets.bottom, 12);
+  const androidNavInsetFallback = Platform.OS === 'android' && insets.bottom === 0 ? 28 : 0;
+  const tabBarBottomPadding = Platform.OS === 'android'
+    ? Math.max(insets.bottom + androidNavInsetFallback, 18)
+    : Math.max(insets.bottom, 12);
   const tabBarHeight = 54 + tabBarBottomPadding + 6;
 
   return (

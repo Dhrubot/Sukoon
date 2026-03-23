@@ -8,8 +8,6 @@ import logger from '../utils/logger';
 import StorageService from './StorageService';
 import { useStore } from '../store/useStore';
 
-const { SukoonLiveActivityBridge, LiveActivityModule } = NativeModules;
-
 const PRAYER_NAMES = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
 
 interface LiveActivityPayload {
@@ -36,8 +34,8 @@ class LiveActivityService {
    * Get the native bridge for the current platform.
    */
   private getBridge() {
-    if (Platform.OS === 'ios') return SukoonLiveActivityBridge;
-    if (Platform.OS === 'android') return LiveActivityModule;
+    if (Platform.OS === 'ios') return NativeModules.SukoonLiveActivityBridge ?? null;
+    if (Platform.OS === 'android') return NativeModules.LiveActivityModule ?? null;
     return null;
   }
 
