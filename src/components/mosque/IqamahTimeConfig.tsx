@@ -135,7 +135,6 @@ export const IqamahTimeConfig: React.FC = () => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>Iqamah Times</Text>
         <Text style={styles.subtitle}>
           {inputMode === 'offset'
             ? mosqueModePlatformUi.iqamahSubtitleOffset
