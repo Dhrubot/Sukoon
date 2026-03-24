@@ -157,7 +157,7 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
     <>
       <LinearGradient
         colors={getPrayerGradient()}
-        style={[styles.container, isFocusMode && { minHeight: height * 0.82 }]}
+        style={[styles.container, isFocusMode && { minHeight: height * 0.86 }]}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
       >
@@ -282,11 +282,11 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: {
-      minHeight: height * 0.72,
+      minHeight: height * 0.78,
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingTop: theme.spacing['4xl'],
-      paddingBottom: theme.spacing['3xl'] + 52,
+      paddingTop: theme.spacing['2xl'],
+      paddingBottom: theme.spacing['4xl'] + 72,
       paddingHorizontal: theme.spacing['2xl'],
       overflow: 'hidden',
     },

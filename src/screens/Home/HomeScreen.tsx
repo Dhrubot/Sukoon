@@ -136,7 +136,10 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
   const pendingRevealScrollRef = useRef(false);
 
   // Quick-log state
-  const [quickLogPrayer, setQuickLogPrayer] = useState<PrayerTime | null>(null);
+  const [quickLogPrayer, setQuickLogPrayer] = useState<{
+    prayer: PrayerTime;
+    isMakeUp: boolean;
+  } | null>(null);
   const route = useRoute<RouteProp<TabParamList, 'Home'>>();
   const addPrayerRecord = useStore((state) => state.addPrayerRecord);
 
@@ -147,11 +150,19 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
     if (!rawParam || !VALID_PRAYER_NAMES_SET.has(rawParam) || todayPrayerTimes.length === 0) return;
     const prayerName = rawParam as PrayerName;
 
-    const prayer = todayPrayerTimes.find(p => p.name === prayerName);
+    const prayerIndex = todayPrayerTimes.findIndex(p => p.name === prayerName);
+    const prayer = prayerIndex >= 0 ? todayPrayerTimes[prayerIndex] : undefined;
+    const nextPrayerInList =
+      prayerIndex >= 0 && prayerIndex < todayPrayerTimes.length - 1
+        ? todayPrayerTimes[prayerIndex + 1]
+        : null;
     const existing = todayPrayerRecords.find(r => r.prayer === prayerName);
 
     if (prayer && existing?.status !== 'prayed') {
-      setQuickLogPrayer(prayer);
+      setQuickLogPrayer({
+        prayer,
+        isMakeUp: isPrayerInMakeUpState(prayer, nextPrayerInList),
+      });
     }
 
     // Clear the param so it doesn't re-trigger
@@ -172,10 +183,24 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
     setSecondaryContentVisible(true);
   }, [hasValidLocation, prayerTimesLoading, userSettings?.mosqueMode?.enabled]);
 
-  const handleQuickLogTrigger = useCallback((prayer: PrayerTime) => {
+  const isPrayerInMakeUpState = useCallback((prayer: PrayerTime, nextPrayerInList?: PrayerTime | null) => {
+    const now = new Date();
+    if (prayer.time > now) return false;
+
+    if (prayer.name === 'Fajr' && todaySunrise && todaySunrise <= now) {
+      return true;
+    }
+
+    return !!nextPrayerInList && nextPrayerInList.time <= now;
+  }, [todaySunrise]);
+
+  const handleQuickLogTrigger = useCallback((prayer: PrayerTime, nextPrayerInList?: PrayerTime | null) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    setQuickLogPrayer(prayer);
-  }, []);
+    setQuickLogPrayer({
+      prayer,
+      isMakeUp: isPrayerInMakeUpState(prayer, nextPrayerInList),
+    });
+  }, [isPrayerInMakeUpState]);
 
   const handleUseCurrentLocation = useCallback(async () => {
     setIsSettingHomeLocation(true);
@@ -230,14 +255,16 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
   const handleQuickLogConfirm = useCallback(() => {
     if (!quickLogPrayer) return;
 
+    const { prayer } = quickLogPrayer;
+
     const dateKey = getLocalDateKey();
-    const existing = StorageService.getPrayerRecord(dateKey, quickLogPrayer.name);
+    const existing = StorageService.getPrayerRecord(dateKey, prayer.name);
 
     if (!existing || existing.status !== 'prayed') {
       const record: PrayerRecord = {
         id: `prayer_${Date.now()}`,
         date: dateKey,
-        prayer: quickLogPrayer.name,
+        prayer: prayer.name,
         status: 'prayed',
         prayedAt: new Date(),
         mindfulnessCompleted: false,
@@ -249,11 +276,11 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
       loadTodayRecords();
 
       // Update permanent tree growth state (quick-log defaults to mood 3 = sprout leaf)
-      TreeGrowthStateService.recordReflection(quickLogPrayer.name, 3, dateKey);
+      TreeGrowthStateService.recordReflection(prayer.name, 3, dateKey);
     }
 
     // Close reminder flow + cancel pending notifications
-    const prayerId = `${quickLogPrayer.name}-${dateKey}`;
+    const prayerId = `${prayer.name}-${dateKey}`;
     ReminderStateService.markPrayerCompleted(prayerId);
     NotificationService.cancelPrayerReminderFlow(prayerId).catch(() => {});
 
@@ -262,7 +289,7 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
   }, [quickLogPrayer, addPrayerRecord]);
 
   const handleQuickLogOpenFlow = useCallback(() => {
-    const prayer = quickLogPrayer;
+    const prayer = quickLogPrayer?.prayer;
     setQuickLogPrayer(null);
     if (prayer) {
       handlePrayerComplete(prayer);
@@ -929,7 +956,7 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
 
           {/* Today's Prayer Times */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{"Today's Prayers"}</Text>
+            {/* <Text style={styles.sectionTitle}>{"Today's Prayers"}</Text> */}
             <View style={styles.prayerListCard}>
               {todayPrayerTimes.map((prayer, index) => {
                 const record = todayPrayerRecords.find(
@@ -946,7 +973,7 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
                     record={record} 
                     compact
                     isLast={index === todayPrayerTimes.length - 1}
-                    onComplete={() => handleQuickLogTrigger(prayer)}
+                    onComplete={() => handleQuickLogTrigger(prayer, nextPrayerInList)}
                     onLongPress={() => handlePrayerComplete(prayer)}
                     nextPrayer={nextPrayerInList}
                   />
@@ -1027,7 +1054,8 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
       {!!quickLogPrayer && (
         <QuickLogSheet
           visible
-          prayerName={quickLogPrayer.name}
+          prayerName={quickLogPrayer.prayer.name}
+          isMakeUp={quickLogPrayer.isMakeUp}
           onConfirm={handleQuickLogConfirm}
           onOpenFlow={handleQuickLogOpenFlow}
           onDismiss={() => setQuickLogPrayer(null)}
@@ -1046,9 +1074,9 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   focusRevealButton: {
     alignItems: 'center',
-    paddingTop: theme.spacing.xs,
-    paddingBottom: 0,
-    marginTop: -10,
+    paddingTop: 0,
+    paddingBottom: theme.spacing.md,
+    marginTop: -12,
     backgroundColor: 'transparent',
   },
   focusRevealText: {

@@ -82,6 +82,7 @@ export default {
 
       "./plugins/withModularHeaders.js",
       "./plugins/withNodePath.js",
+      "./plugins/withAndroidImmersiveMode.js",
       "./plugins/withRingerMode.js",
       "./plugins/withFullAdhan.js",
       "./plugins/withWidget.js",
@@ -89,6 +90,15 @@ export default {
       "./plugins/withLiveActivity.js",
       "./plugins/withBootReceiver.js",
       "expo-asset",
+      [
+        "expo-splash-screen",
+        {
+          image: "./assets/icon.png",
+          resizeMode: "contain",
+          backgroundColor: "#00102a",
+          imageWidth: 180,
+        }
+      ],
       "expo-font",
       "expo-location",
       [

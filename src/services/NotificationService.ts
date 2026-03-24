@@ -1,7 +1,7 @@
 // src/services/NotificationService.ts
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
-import { Platform } from 'react-native';
+import { PermissionsAndroid, Platform } from 'react-native';
 import { PrayerTime, PrayerName, UserSettings, NotificationSchedulingReason } from '../types';
 import StorageService from './StorageService';
 import PrayerTimeService from './PrayerTimeService';
@@ -260,6 +260,45 @@ class NotificationService {
     logger.log('✅ Prayer times fetcher connected to NotificationService');
   }
 
+  private requiresAndroidNotificationRuntimePermission(): boolean {
+    return Platform.OS === 'android' && typeof Platform.Version === 'number' && Platform.Version >= 33;
+  }
+
+  private async getCurrentPermissionStatus(): Promise<Notifications.PermissionStatus> {
+    if (this.requiresAndroidNotificationRuntimePermission()) {
+      try {
+        const { status } = await Notifications.getPermissionsAsync();
+        if (status === 'granted' || status === 'denied') {
+          return status;
+        }
+      } catch {
+        // Fall through to direct Android permission check.
+      }
+
+      const granted = await PermissionsAndroid.check(
+        PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
+      );
+      return granted
+        ? ('granted' as Notifications.PermissionStatus)
+        : ('undetermined' as Notifications.PermissionStatus);
+    }
+
+    const { status } = await Notifications.getPermissionsAsync();
+    return status;
+  }
+
+  private async requestAndroidNotificationPermission(): Promise<Notifications.PermissionStatus> {
+    const result = await PermissionsAndroid.request(
+      PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
+    );
+
+    if (result === PermissionsAndroid.RESULTS.GRANTED) {
+      return 'granted' as Notifications.PermissionStatus;
+    }
+
+    return 'denied' as Notifications.PermissionStatus;
+  }
+
   private async resolvePermissionStatus(
     requestIfNeeded: boolean
   ): Promise<Notifications.PermissionStatus> {
@@ -269,7 +308,7 @@ class NotificationService {
       return 'denied' as Notifications.PermissionStatus;
     }
 
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
+    const existingStatus = await this.getCurrentPermissionStatus();
     NotificationTraceService.log('permission_status_checked', {
       existingStatus,
       requestIfNeeded,
@@ -279,13 +318,17 @@ class NotificationService {
       return existingStatus;
     }
 
-    const { status } = await Notifications.requestPermissionsAsync({
-      ios: {
-        allowAlert: true,
-        allowBadge: true,
-        allowSound: true,
-      },
-    });
+    const status = this.requiresAndroidNotificationRuntimePermission()
+      ? await this.requestAndroidNotificationPermission()
+      : (
+          await Notifications.requestPermissionsAsync({
+            ios: {
+              allowAlert: true,
+              allowBadge: true,
+              allowSound: true,
+            },
+          })
+        ).status;
 
     NotificationTraceService.log('permission_request_result', {
       requestedFrom: existingStatus,
@@ -365,8 +408,7 @@ class NotificationService {
 
   async getPermissionStatus(): Promise<Notifications.PermissionStatus> {
     try {
-      const { status } = await Notifications.getPermissionsAsync();
-      return status;
+      return await this.getCurrentPermissionStatus();
     } catch {
       return 'undetermined' as Notifications.PermissionStatus;
     }
@@ -1206,7 +1248,7 @@ class NotificationService {
     this.schedulingProgress = 0;
     try {
       // Check permission status before scheduling — handles revocation
-      const { status } = await Notifications.getPermissionsAsync();
+      const status = await this.getCurrentPermissionStatus();
       if (status !== 'granted') {
         logger.warn('🚫 Notification permission not granted (status: ' + status + '), skipping scheduling');
         StorageService.setValue('notification_permission_denied', 'true');
