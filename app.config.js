@@ -53,6 +53,7 @@ export default {
       permissions: [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
+        "POST_NOTIFICATIONS",
         "VIBRATE",
         "RECEIVE_BOOT_COMPLETED",
         "SCHEDULE_EXACT_ALARM",
@@ -81,6 +82,7 @@ export default {
 
       "./plugins/withModularHeaders.js",
       "./plugins/withNodePath.js",
+      "./plugins/withAndroidImmersiveMode.js",
       "./plugins/withRingerMode.js",
       "./plugins/withFullAdhan.js",
       "./plugins/withWidget.js",
@@ -88,6 +90,15 @@ export default {
       "./plugins/withLiveActivity.js",
       "./plugins/withBootReceiver.js",
       "expo-asset",
+      [
+        "expo-splash-screen",
+        {
+          image: "./assets/icon.png",
+          resizeMode: "contain",
+          backgroundColor: "#00102a",
+          imageWidth: 180,
+        }
+      ],
       "expo-font",
       "expo-location",
       [
@@ -162,7 +173,7 @@ export default {
     },
   },
   "react-native-google-mobile-ads": {
-    androidAppId: "ca-app-pub-5474984690525462~6816196886",
-    iosAppId: "ca-app-pub-5474984690525462~1671116769"
+    android_app_id: "ca-app-pub-5474984690525462~6816196886",
+    ios_app_id: "ca-app-pub-5474984690525462~1671116769"
   }
 };

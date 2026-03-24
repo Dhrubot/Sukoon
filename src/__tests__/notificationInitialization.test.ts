@@ -277,4 +277,112 @@ describe('NotificationService initialization', () => {
     expect(navigationHandler).toHaveBeenCalledWith('Fajr', 'default');
     expect(analytics.logEvent).toHaveBeenCalledTimes(1);
   });
+
+  it('can initialize notification plumbing without showing the OS permission prompt', async () => {
+    const requestPermissionsAsync = jest.fn(async () => ({ status: 'granted', granted: true }));
+    const initializeChannelsAndCategories = jest.fn(async () => {});
+
+    jest.doMock('expo-notifications', () => ({
+      getPermissionsAsync: jest.fn(async () => ({ status: 'undetermined', granted: false })),
+      requestPermissionsAsync,
+      getLastNotificationResponseAsync: jest.fn(async () => null),
+      scheduleNotificationAsync: jest.fn(async () => 'mock-id'),
+      cancelScheduledNotificationAsync: jest.fn(async () => {}),
+      cancelAllScheduledNotificationsAsync: jest.fn(async () => {}),
+      getAllScheduledNotificationsAsync: jest.fn(async () => []),
+      setNotificationHandler: jest.fn(),
+      setNotificationChannelAsync: jest.fn(async () => null),
+      setNotificationCategoryAsync: jest.fn(async () => null),
+      addNotificationReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
+      addNotificationResponseReceivedListener: jest.fn(() => ({ remove: jest.fn() })),
+      DEFAULT_ACTION_IDENTIFIER: 'expo.modules.notifications.actions.DEFAULT',
+      AndroidImportance: { MAX: 5, HIGH: 4, DEFAULT: 3, LOW: 2, MIN: 1 },
+    }));
+
+    jest.doMock('expo-device', () => ({ isDevice: true }));
+    jest.doMock('../services/StorageService', () => ({
+      __esModule: true,
+      default: {
+        getUserSettings: jest.fn(() => mockSettings),
+        getValue: jest.fn(() => undefined),
+        setValue: jest.fn(),
+        deleteValue: jest.fn(),
+        setUserSettings: jest.fn(),
+      },
+    }));
+    jest.doMock('../services/ReminderStateService', () => ({
+      __esModule: true,
+      default: {
+        cleanupOldStates: jest.fn(),
+        hasReachedMaxSnoozes: jest.fn(() => false),
+        incrementSnoozeCount: jest.fn(),
+        markPrayerCompleted: jest.fn(),
+        markPrayerSkipped: jest.fn(),
+      },
+    }));
+    jest.doMock('../services/PrayerTimeService', () => ({
+      __esModule: true,
+      default: { getPrayerDisplayName: jest.fn((name: string) => name) },
+    }));
+    jest.doMock('../services/MosqueModeService', () => ({
+      __esModule: true,
+      default: { handleNotificationResponse: jest.fn() },
+    }));
+    jest.doMock('../services/notifications/NotificationChannels', () => ({
+      NOTIFICATION_CATEGORIES: {
+        PRAYER_REMINDER: 'prayer-reminder',
+        PRE_PRAYER: 'pre-prayer',
+        POST_PRAYER_CHECK: 'post-prayer-check',
+        GRACE_PERIOD_WARNING: 'grace-period-warning',
+        TAHAJJUD_REMINDER: 'tahajjud-reminder',
+        JUMMAH_REMINDER: 'jummah-reminder',
+      },
+      initializeChannelsAndCategories,
+    }));
+    jest.doMock('../services/notifications/AdhanPlayer', () => ({
+      __esModule: true,
+      default: {
+        configureAudioMode: jest.fn(async () => {}),
+        play: jest.fn(),
+        stop: jest.fn(),
+        playing: false,
+      },
+    }));
+    jest.doMock('../services/notifications/FullAdhanScheduler', () => ({
+      scheduleFullAdhan: jest.fn(async () => {}),
+      cancelAllFullAdhans: jest.fn(async () => {}),
+      stopFullAdhan: jest.fn(),
+      getExactAlarmStatus: jest.fn(async () => 'granted'),
+    }));
+    jest.doMock('../services/notifications/HabitBuilderNotifications', () => ({
+      scheduleTier2PersistentReminders: jest.fn(async () => {}),
+      scheduleTier3GracePeriodWarning: jest.fn(async () => {}),
+    }));
+    jest.doMock('../services/AnalyticsService', () => ({
+      __esModule: true,
+      default: { logEvent: jest.fn(), logPrayerMissed: jest.fn() },
+    }));
+    jest.doMock('../services/NotificationLedger', () => ({
+      __esModule: true,
+      default: { recordDelivered: jest.fn(), recordTapped: jest.fn(), recordScheduled: jest.fn() },
+    }));
+    jest.doMock('../store/useStore', () => ({
+      useStore: { getState: jest.fn(() => ({ setPendingMosquePromptPrayer: jest.fn() })) },
+    }));
+    jest.doMock('../utils/logger', () => ({
+      __esModule: true,
+      default: { log: jest.fn(), warn: jest.fn(), error: jest.fn() },
+    }));
+    jest.doMock('../utils/locationValidation', () => ({
+      isValidCoordinates: jest.fn(() => true),
+    }));
+
+    const NotificationService = require('../services/NotificationService').default;
+
+    await expect(
+      NotificationService.initialize({ requestPermissions: false })
+    ).resolves.toBe(false);
+    expect(requestPermissionsAsync).not.toHaveBeenCalled();
+    expect(initializeChannelsAndCategories).toHaveBeenCalledTimes(1);
+  });
 });

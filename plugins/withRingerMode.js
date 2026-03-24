@@ -5,6 +5,7 @@ const {
 } = require('@expo/config-plugins');
 const path = require('path');
 const fs = require('fs');
+const { registerAndroidPackageInMainApplication } = require('./withAndroidPackageRegistration');
 
 // Java code for the RingerMode Module
 const RINGER_MODE_MODULE_JAVA = `package com.talukders.sukoon;
@@ -450,57 +451,11 @@ const withRingerModeFiles = (config) => {
 // Register the package in MainApplication (supports both Kotlin and Java)
 const withRingerModePackage = (config) => {
   return withMainApplication(config, (config) => {
-    const { modResults } = config;
-    let contents = modResults.contents;
-
-    const isKotlin = contents.includes('fun getPackages()');
-
-    if (isKotlin) {
-      // --- Kotlin MainApplication (Expo 51+) ---
-      const ktImport = 'import com.talukders.sukoon.RingerModePackage';
-      if (!contents.includes(ktImport)) {
-        // Add import after the last existing import line
-        contents = contents.replace(
-          /(import expo\.modules\.ReactNativeHostWrapper)/,
-          `$1\n${ktImport}`
-        );
-      }
-
-      const ktPackageAdd = 'packages.add(RingerModePackage())';
-      if (!contents.includes(ktPackageAdd)) {
-        // Insert before "return packages" inside getPackages()
-        contents = contents.replace(
-          /(val packages = PackageList\(this\)\.packages)/,
-          `$1\n            ${ktPackageAdd}`
-        );
-      }
-
-      console.log('✅ Registered RingerModePackage in MainApplication.kt (Kotlin)');
-    } else {
-      // --- Java MainApplication (legacy Expo) ---
-      const javaImport = 'import com.talukders.sukoon.RingerModePackage;';
-      if (!contents.includes(javaImport)) {
-        contents = contents.replace(
-          /(import com\.facebook\.react\.defaults\.DefaultReactNativeHost;)/,
-          `$1\n${javaImport}`
-        );
-      }
-
-      const javaPackageAdd = 'packages.add(new RingerModePackage());';
-      if (!contents.includes(javaPackageAdd)) {
-        contents = contents.replace(
-          /(protected List<ReactPackage> getPackages\(\) {[\s\S]*?return packages;)/,
-          (match) => match.replace(
-            'return packages;',
-            `          ${javaPackageAdd}\n          return packages;`
-          )
-        );
-      }
-
-      console.log('✅ Registered RingerModePackage in MainApplication.java (Java)');
-    }
-
-    modResults.contents = contents;
+    config.modResults.contents = registerAndroidPackageInMainApplication(
+      config.modResults.contents,
+      'RingerModePackage'
+    );
+    console.log('✅ Registered RingerModePackage in MainApplication');
     return config;
   });
 };

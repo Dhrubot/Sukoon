@@ -5,6 +5,7 @@ const {
 } = require('@expo/config-plugins');
 const path = require('path');
 const fs = require('fs');
+const { registerAndroidPackageInMainApplication } = require('./withAndroidPackageRegistration');
 
 // ─── Java: AdhanService (Foreground Service) ───────────────────────────────
 const ADHAN_SERVICE_JAVA = `package com.talukders.sukoon;
@@ -587,53 +588,11 @@ const withFullAdhanFiles = (config) => {
 // ─── Plugin: Register AdhanPackage in MainApplication ──────────────────────
 const withFullAdhanPackage = (config) => {
   return withMainApplication(config, (config) => {
-    const { modResults } = config;
-    let contents = modResults.contents;
-
-    const isKotlin = contents.includes('fun getPackages()');
-
-    if (isKotlin) {
-      const ktImport = 'import com.talukders.sukoon.AdhanPackage';
-      if (!contents.includes(ktImport)) {
-        contents = contents.replace(
-          /(import expo\.modules\.ReactNativeHostWrapper)/,
-          `$1\n${ktImport}`
-        );
-      }
-
-      const ktPackageAdd = 'packages.add(AdhanPackage())';
-      if (!contents.includes(ktPackageAdd)) {
-        contents = contents.replace(
-          /(val packages = PackageList\(this\)\.packages)/,
-          `$1\n            ${ktPackageAdd}`
-        );
-      }
-
-      console.log('✅ Registered AdhanPackage in MainApplication.kt');
-    } else {
-      const javaImport = 'import com.talukders.sukoon.AdhanPackage;';
-      if (!contents.includes(javaImport)) {
-        contents = contents.replace(
-          /(import com\.facebook\.react\.defaults\.DefaultReactNativeHost;)/,
-          `$1\n${javaImport}`
-        );
-      }
-
-      const javaPackageAdd = 'packages.add(new AdhanPackage());';
-      if (!contents.includes(javaPackageAdd)) {
-        contents = contents.replace(
-          /(protected List<ReactPackage> getPackages\(\) {[\s\S]*?return packages;)/,
-          (match) => match.replace(
-            'return packages;',
-            `          ${javaPackageAdd}\n          return packages;`
-          )
-        );
-      }
-
-      console.log('✅ Registered AdhanPackage in MainApplication.java');
-    }
-
-    modResults.contents = contents;
+    config.modResults.contents = registerAndroidPackageInMainApplication(
+      config.modResults.contents,
+      'AdhanPackage'
+    );
+    console.log('✅ Registered AdhanPackage in MainApplication');
     return config;
   });
 };

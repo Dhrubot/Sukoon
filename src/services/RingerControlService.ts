@@ -20,15 +20,24 @@ interface RingerModeModule {
 }
 
 class RingerControlService {
-  private module: RingerModeModule | null = null;
+  private hasLoggedMissingModule = false;
 
-  constructor() {
-    if (Platform.OS === 'android') {
-      this.module = NativeModules.RingerModeModule ?? null;
-      if (!this.module) {
-        logger.warn('RingerModeModule not available — native module not registered. Run expo prebuild --clean.');
-      }
+  private getModule(): RingerModeModule | null {
+    if (Platform.OS !== 'android') {
+      return null;
     }
+
+    const module = NativeModules.RingerModeModule ?? null;
+    if (!module && !this.hasLoggedMissingModule) {
+      this.hasLoggedMissingModule = true;
+      logger.warn('RingerModeModule not available — native module not registered. Run expo prebuild --clean.');
+    }
+
+    if (module && this.hasLoggedMissingModule) {
+      this.hasLoggedMissingModule = false;
+    }
+
+    return module;
   }
 
   /**
@@ -36,16 +45,17 @@ class RingerControlService {
    * UI should check this before offering DND-dependent features.
    */
   isAvailable(): boolean {
-    return Platform.OS === 'android' && this.module !== null;
+    return this.getModule() !== null;
   }
 
   /**
    * Check if the app has DND policy access (Android 6.0+).
    */
   async canModify(): Promise<boolean> {
-    if (!this.isAvailable()) return false;
+    const module = this.getModule();
+    if (!module) return false;
     try {
-      return await this.module!.canModifyRingerMode();
+      return await module.canModifyRingerMode();
     } catch (error) {
       logger.error('Failed to check DND permission:', error);
       return false;
@@ -56,14 +66,15 @@ class RingerControlService {
    * Set the device ringer mode.
    */
   async setRingerMode(mode: RingerMode): Promise<boolean> {
-    if (!this.isAvailable()) return false;
+    const module = this.getModule();
+    if (!module) return false;
     try {
       const canModify = await this.canModify();
       if (!canModify) {
         logger.warn('No DND permission — cannot set ringer mode');
         return false;
       }
-      await this.module!.setRingerMode(mode);
+      await module.setRingerMode(mode);
       logger.log(`Ringer mode set to: ${mode}`);
       return true;
     } catch (error) {
@@ -79,14 +90,15 @@ class RingerControlService {
     restoreMode: RingerMode,
     requestCodeBase: number
   ): Promise<boolean> {
-    if (!this.isAvailable()) return false;
+    const module = this.getModule();
+    if (!module) return false;
     try {
       const canModify = await this.canModify();
       if (!canModify) {
         logger.warn('No DND permission — cannot schedule mosque mode');
         return false;
       }
-      return await this.module!.scheduleMosqueMode(
+      return await module.scheduleMosqueMode(
         enableAtMs, restoreAtMs, enableMode, restoreMode, requestCodeBase
       );
     } catch (error) {
@@ -96,9 +108,10 @@ class RingerControlService {
   }
 
   async cancelMosqueMode(requestCodeBase: number): Promise<boolean> {
-    if (!this.isAvailable()) return false;
+    const module = this.getModule();
+    if (!module) return false;
     try {
-      return await this.module!.cancelMosqueMode(requestCodeBase);
+      return await module.cancelMosqueMode(requestCodeBase);
     } catch (error) {
       logger.error('Failed to cancel mosque mode:', error);
       return false;
@@ -112,11 +125,12 @@ class RingerControlService {
    */
   async openNotificationPolicyAccessSettings(): Promise<boolean> {
     if (Platform.OS !== 'android') return false;
+    const module = this.getModule();
 
     // Try native module first (uses getCurrentActivity — most reliable)
-    if (this.module) {
+    if (module) {
       try {
-        return await this.module.openNotificationPolicyAccessSettings();
+        return await module.openNotificationPolicyAccessSettings();
       } catch (error) {
         logger.warn('Native openNotificationPolicyAccessSettings failed, trying Linking fallback:', error);
       }
@@ -133,9 +147,10 @@ class RingerControlService {
   }
 
   async getRingerMode(): Promise<RingerMode | null> {
-    if (!this.isAvailable()) return null;
+    const module = this.getModule();
+    if (!module) return null;
     try {
-      return await this.module!.getRingerMode();
+      return await module.getRingerMode();
     } catch (error) {
       logger.error('Failed to get ringer mode:', error);
       return null;

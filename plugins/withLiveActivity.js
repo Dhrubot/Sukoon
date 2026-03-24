@@ -10,6 +10,7 @@ const {
 } = require('@expo/config-plugins');
 const path = require('path');
 const fs = require('fs');
+const { registerAndroidPackageInMainApplication } = require('./withAndroidPackageRegistration');
 
 const WIDGET_NAME = 'SukoonWidget';
 
@@ -995,53 +996,11 @@ const withLiveActivityAndroidFiles = (config) => {
  */
 const withLiveActivityPackage = (config) => {
   return withMainApplication(config, (config) => {
-    const { modResults } = config;
-    let contents = modResults.contents;
-
-    const isKotlin = contents.includes('fun getPackages()');
-
-    if (isKotlin) {
-      const ktImport = 'import com.talukders.sukoon.LiveActivityPackage';
-      if (!contents.includes(ktImport)) {
-        contents = contents.replace(
-          /(import expo\.modules\.ReactNativeHostWrapper)/,
-          `$1\n${ktImport}`
-        );
-      }
-
-      const ktPackageAdd = 'packages.add(LiveActivityPackage())';
-      if (!contents.includes(ktPackageAdd)) {
-        contents = contents.replace(
-          /(val packages = PackageList\(this\)\.packages)/,
-          `$1\n            ${ktPackageAdd}`
-        );
-      }
-
-      console.log('✅ Registered LiveActivityPackage in MainApplication.kt');
-    } else {
-      const javaImport = 'import com.talukders.sukoon.LiveActivityPackage;';
-      if (!contents.includes(javaImport)) {
-        contents = contents.replace(
-          /(import com\.facebook\.react\.defaults\.DefaultReactNativeHost;)/,
-          `$1\n${javaImport}`
-        );
-      }
-
-      const javaPackageAdd = 'packages.add(new LiveActivityPackage());';
-      if (!contents.includes(javaPackageAdd)) {
-        contents = contents.replace(
-          /(protected List<ReactPackage> getPackages\(\) {[\s\S]*?return packages;)/,
-          (match) => match.replace(
-            'return packages;',
-            `          ${javaPackageAdd}\n          return packages;`
-          )
-        );
-      }
-
-      console.log('✅ Registered LiveActivityPackage in MainApplication.java');
-    }
-
-    modResults.contents = contents;
+    config.modResults.contents = registerAndroidPackageInMainApplication(
+      config.modResults.contents,
+      'LiveActivityPackage'
+    );
+    console.log('✅ Registered LiveActivityPackage in MainApplication');
     return config;
   });
 };

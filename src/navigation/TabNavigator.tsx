@@ -1,6 +1,8 @@
 // src/navigation/TabNavigator.tsx
 import React from 'react';
+import { Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { TabParamList } from '../types/navigation';
 import { useTheme } from '../providers/ThemeProvider';
 import { Icon } from '../components/common/Icon';
@@ -10,9 +12,6 @@ import {
 } from '../assets/icons';
 
 import HomeScreen from '../screens/Home/HomeScreen';
-import MosqueModeScreen from '../screens/MosqueMode/MosqueModeScreen';
-import QiblaFinderScreen from '../screens/QiblaFinder/QiblaFinderScreen';
-import { MenuStackNavigator } from './MenuStackNavigator';
 
 const Tab = createBottomTabNavigator<TabParamList>();
 
@@ -49,6 +48,12 @@ const MoreIcon: React.FC<{ color: string; size: number }> = ({ color, size }) =>
 
 export const TabNavigator: React.FC = () => {
   const { theme } = useTheme();
+  const insets = useSafeAreaInsets();
+  const androidNavInsetFallback = Platform.OS === 'android' && insets.bottom === 0 ? 28 : 0;
+  const tabBarBottomPadding = Platform.OS === 'android'
+    ? Math.max(insets.bottom + androidNavInsetFallback, 18)
+    : Math.max(insets.bottom, 12);
+  const tabBarHeight = 54 + tabBarBottomPadding + 6;
 
   return (
     <Tab.Navigator
@@ -64,9 +69,9 @@ export const TabNavigator: React.FC = () => {
           shadowOffset: { width: 0, height: -2 },
           shadowOpacity: 0.1,
           shadowRadius: 8,
-          paddingBottom: 18,
+          paddingBottom: tabBarBottomPadding,
           paddingTop: 6,
-          height: 72,
+          height: tabBarHeight,
         },
         tabBarLabelStyle: {
           fontSize: theme.typography.fontSize.xs,
@@ -93,7 +98,7 @@ export const TabNavigator: React.FC = () => {
       />
       <Tab.Screen
         name="QiblaFinder"
-        component={QiblaFinderScreen}
+        getComponent={() => require('../screens/QiblaFinder/QiblaFinderScreen').default}
         options={{
           tabBarLabel: 'Qibla',
           tabBarIcon: ({ color }) => (
@@ -103,7 +108,7 @@ export const TabNavigator: React.FC = () => {
       />
       <Tab.Screen
         name="MosqueMode"
-        component={MosqueModeScreen}
+        getComponent={() => require('../screens/MosqueMode/MosqueModeScreen').default}
         options={{
           tabBarLabel: 'Mosque',
           tabBarIcon: ({ color }) => (
@@ -113,7 +118,7 @@ export const TabNavigator: React.FC = () => {
       />
       <Tab.Screen
         name="Menu"
-        component={MenuStackNavigator}
+        getComponent={() => require('./MenuStackNavigator').MenuStackNavigator}
         options={{
           tabBarLabel: 'Tools',
           tabBarIcon: ({ color }) => (

@@ -1,4 +1,3 @@
-import { getPerformance, trace as perfTrace } from '@react-native-firebase/perf';
 import { isPerfValidationEnabled } from '../config/runtimeConfig';
 import logger from '../utils/logger';
 
@@ -28,6 +27,26 @@ class PerformanceService {
   private activeTraces: Map<string, ActiveTrace> = new Map();
   private launchMarks: LaunchMark[] = [];
   private recentLaunchSummaries: LaunchSummary[] = [];
+  private performanceModule: any | null | undefined;
+
+  private getPerformanceModule(): any | null {
+    if (this.performanceModule !== undefined) {
+      return this.performanceModule;
+    }
+
+    try {
+      const module = require('@react-native-firebase/perf');
+      this.performanceModule = {
+        getPerformance: module.getPerformance,
+        trace: module.trace,
+      };
+    } catch (error) {
+      logger.warn('[Perf] Firebase Performance unavailable:', error);
+      this.performanceModule = null;
+    }
+
+    return this.performanceModule;
+  }
 
   private debugLog(...args: unknown[]) {
     if (!this.perfValidationEnabled) return;
@@ -94,10 +113,18 @@ class PerformanceService {
     return [...this.recentLaunchSummaries];
   }
 
+  async preload(): Promise<void> {
+    this.getPerformanceModule();
+  }
+
   async startTrace(name: string): Promise<() => Promise<void>> {
     try {
-      const perf = getPerformance();
-      const t = perfTrace(perf, name);
+      const performanceModule = this.getPerformanceModule();
+      if (!performanceModule) {
+        return async () => {};
+      }
+      const perf = performanceModule.getPerformance();
+      const t = performanceModule.trace(perf, name);
       await t.start();
       this.activeTraces.set(name, t);
       logger.log(`[Perf] Trace started: ${name}`);

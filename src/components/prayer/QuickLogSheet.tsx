@@ -21,6 +21,7 @@ const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 interface QuickLogSheetProps {
   visible: boolean;
   prayerName: PrayerName | null;
+  isMakeUp?: boolean;
   onConfirm: () => void;
   onOpenFlow: () => void;
   onDismiss: () => void;
@@ -29,6 +30,7 @@ interface QuickLogSheetProps {
 const QuickLogSheet: React.FC<QuickLogSheetProps> = ({
   visible,
   prayerName,
+  isMakeUp = false,
   onConfirm,
   onOpenFlow,
   onDismiss,
@@ -71,6 +73,11 @@ const QuickLogSheet: React.FC<QuickLogSheetProps> = ({
   const displayName = prayerName
     ? PrayerTimeService.getPrayerDisplayName(prayerName)
     : '';
+  const title = isMakeUp ? `Ready to make up ${displayName}?` : `Ready for ${displayName}?`;
+  const message = isMakeUp
+    ? `Step into a calm make-up prayer flow now. If you already prayed, you can log it in one tap below.`
+    : `Step into a calmer preparation flow now. If you already prayed, you can log it in one tap below.`;
+  const primaryLabel = isMakeUp ? `Make Up ${displayName}` : 'Prepare for Prayer';
 
   return (
     <Modal
@@ -98,28 +105,24 @@ const QuickLogSheet: React.FC<QuickLogSheetProps> = ({
         >
           <View style={styles.handle} />
 
-          <Text style={styles.title}>Did you already pray {displayName}?</Text>
+          <Text style={styles.title}>{title}</Text>
 
-          <Text style={styles.message}>
-            If yes, log it quietly. If not, step into a calmer preparation flow.
-          </Text>
+          <Text style={styles.message}>{message}</Text>
 
           <TouchableOpacity
             style={styles.primaryButton}
-            onPress={onConfirm}
+            onPress={onOpenFlow}
             activeOpacity={0.8}
           >
-            <Text style={styles.primaryButtonText}>
-              I already prayed
-            </Text>
+            <Text style={styles.primaryButtonText}>{primaryLabel}</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.secondaryButton}
-            onPress={onOpenFlow}
+            onPress={onConfirm}
             activeOpacity={0.7}
           >
-            <Text style={styles.secondaryButtonText}>Prepare for Prayer</Text>
+            <Text style={styles.secondaryButtonText}>I already prayed</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>
@@ -183,13 +186,15 @@ const createStyles = (theme: AppTheme) =>
     secondaryButton: {
       paddingVertical: 12,
       alignItems: 'center',
-      backgroundColor: theme.colors.background.primary ,
+      backgroundColor: theme.colors.background.primary,
       borderRadius: 16,
+      borderWidth: 1,
+      borderColor: theme.colors.border.primary,
     },
     secondaryButtonText: {
       fontSize: theme.typography.fontSize.lg,
-      fontFamily: theme.typography.fontFamily.body,
-      color: theme.colors.text.primary,
+      fontFamily: theme.typography.fontFamily.bodySemibold,
+      color: theme.colors.text.secondary,
     },
   });
 

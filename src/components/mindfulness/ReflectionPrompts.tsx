@@ -11,7 +11,14 @@ import * as Haptics from 'expo-haptics';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
-import { DUAS } from '../../constants';
+
+type DuaEntry = {
+  id: number;
+  title: string;
+  arabic: string;
+  translation: string;
+  occasion: string;
+};
 
 interface ReflectionPromptsProps {
   prayerName: string;
@@ -69,10 +76,11 @@ const ReflectionPrompts: React.FC<ReflectionPromptsProps> = ({
   const styles = useThemedStyles(createStyles);
   const [currentPrompt, setCurrentPrompt] = useState('');
   const [showQuickOptions, setShowQuickOptions] = useState(true);
+  const [contextualDua, setContextualDua] = useState<DuaEntry | null>(null);
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
   // Map prayer name to relevant dua occasions
-  const getContextualDua = () => {
+  const getContextualDua = (duas: DuaEntry[]) => {
     const occasionMap: Record<string, string[]> = {
       Fajr: ['fajr', 'before_prayer', 'morning'],
       Dhuhr: ['before_prayer'],
@@ -81,15 +89,15 @@ const ReflectionPrompts: React.FC<ReflectionPromptsProps> = ({
       Isha: ['before_prayer', 'evening'],
     };
     const occasions = occasionMap[prayerName] || ['before_prayer'];
-    const matching = DUAS.filter(d => occasions.includes(d.occasion));
+    const matching = duas.filter((dua) => occasions.includes(dua.occasion));
     if (matching.length === 0) return null;
     const index = new Date().getDate() % matching.length;
     return matching[index];
   };
 
-  const contextualDua = getContextualDua();
-
   useEffect(() => {
+    let cancelled = false;
+
     // Get prayer-specific prompts or use general ones
     const prompts = reflectionPrompts[prayerName as keyof typeof reflectionPrompts] || [
       "What are you grateful for in this moment?",
@@ -107,6 +115,20 @@ const ReflectionPrompts: React.FC<ReflectionPromptsProps> = ({
       duration: 500,
       useNativeDriver: true,
     }).start();
+
+    import('../../constants')
+      .then(({ DUAS }) => {
+        if (cancelled) return;
+        setContextualDua(getContextualDua(DUAS as DuaEntry[]));
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setContextualDua(null);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [prayerName]);
 
   const handleQuickReflection = (text: string) => {

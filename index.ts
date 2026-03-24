@@ -1,20 +1,14 @@
 import './src/setupFeatureFlags';
 import { registerRootComponent } from 'expo';
-import crashlytics from '@react-native-firebase/crashlytics';
-
 import './src/tasks/notificationRescheduleTask';
 
 import App from './App';
+import CrashReportingService from './src/services/CrashReportingService';
 
 // Global JS error handler — catches unhandled errors outside React's ErrorBoundary
 const defaultHandler = ErrorUtils.getGlobalHandler();
 ErrorUtils.setGlobalHandler((error: Error, isFatal?: boolean) => {
-  try {
-    crashlytics().log(`Global error handler: isFatal=${isFatal}`);
-    crashlytics().recordError(error);
-  } catch (_) {
-    // Crashlytics unavailable
-  }
+  CrashReportingService.recordGlobalError(error, isFatal);
   defaultHandler(error, isFatal);
 });
 

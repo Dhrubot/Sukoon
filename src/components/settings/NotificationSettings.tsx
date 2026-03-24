@@ -173,7 +173,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
 
   const handleToggleNotifications = async (value: boolean) => {
     if (value) {
-      const hasPermission = await NotificationService.initialize();
+      const hasPermission = await NotificationService.requestPermissionsFromUser();
       if (!hasPermission) {
         Alert.alert(
           'Permission Required',

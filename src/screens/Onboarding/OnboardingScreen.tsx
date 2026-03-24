@@ -8,13 +8,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as Location from 'expo-location';
-import * as Notifications from 'expo-notifications';
 
 import AnalyticsService from '../../services/AnalyticsService';
 import StorageService from '../../services/StorageService';
 import { useStore } from '../../store/useStore';
 import logger from '../../utils/logger';
 import LocationService from '../../services/LocationService';
+import NotificationService from '../../services/NotificationService';
 import { Location as AppLocation } from '../../types';
 import { LocationModal } from '../../components/LocationModal';
 import { applyRegionalCalculationMethod } from '../../utils/calculationMethodByRegion';
@@ -98,8 +98,8 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
 
   const requestNotificationPermission = async () => {
     try {
-      const { status } = await Notifications.requestPermissionsAsync();
-      setNotificationsEnabled(status === 'granted');
+      const granted = await NotificationService.requestPermissionsFromUser();
+      setNotificationsEnabled(granted);
     } catch (error) {
       logger.log('Error requesting notification permissions:', error);
       setNotificationsEnabled(false);

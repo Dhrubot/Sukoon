@@ -70,6 +70,29 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
       return;
     }
 
+    if (permissionStatus === 'undetermined') {
+      void (async () => {
+        const granted = await NotificationService.requestPermissionsFromUser();
+        const nextStatus = granted ? 'granted' : await NotificationService.getPermissionStatus();
+        setPermissionStatus(nextStatus);
+
+        if (granted) {
+          onNotificationPress();
+          return;
+        }
+
+        Alert.alert(
+          'Notifications Off',
+          'Sukoon needs notification access to send prayer reminders.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Open Settings', onPress: openAppSettings },
+          ]
+        );
+      })();
+      return;
+    }
+
     Alert.alert(
       'Notifications Blocked',
       'Enable notifications in your device settings to receive prayer reminders.',
