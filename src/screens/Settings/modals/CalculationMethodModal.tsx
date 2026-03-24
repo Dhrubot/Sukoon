@@ -220,12 +220,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderBottomColor: theme.colors.settings.modalBorder,
   },
   modalTitle: {
-    fontSize: theme.typography.fontSize.xl,
-    fontFamily: theme.typography.fontFamily.bodyBold,
+    fontSize: 22,
+    fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.settings.modalTitle,
   },
   modalClose: {
-    fontSize: theme.typography.fontSize.lg,
+    fontSize: 14,
     fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.settings.modalClose,
   },
@@ -244,8 +244,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderColor: theme.colors.settings.previewBorder,
   },
   previewTitle: {
-    fontSize: theme.typography.fontSize.lg,
-    fontFamily: theme.typography.fontFamily.bodyBold,
+    fontSize: 17,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.primary.DEFAULT,
     marginBottom: theme.spacing.md,
     textAlign: 'center',
@@ -261,17 +261,17 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     paddingVertical: theme.spacing.xs,
   },
   previewPrayerName: {
-    fontSize: theme.typography.fontSize.md,
-    fontFamily: theme.typography.fontFamily.bodySemibold,
+    fontSize: 14,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.settings.labelPrimary,
   },
   previewPrayerTime: {
-    fontSize: theme.typography.fontSize.md,
+    fontSize: 14,
     fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.primary.DEFAULT,
   },
   previewNote: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: 11,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.settings.labelMuted,
     textAlign: 'center',
@@ -281,7 +281,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginTop: theme.spacing.sm,
   },
   sectionTitle: {
-    fontSize: theme.typography.fontSize.lg,
+    fontSize: 17,
     fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.settings.labelPrimary,
     marginBottom: theme.spacing.md,
@@ -310,8 +310,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flex: 1,
   },
   methodText: {
-    fontSize: theme.typography.fontSize.lg,
-    fontFamily: theme.typography.fontFamily.bodySemibold,
+    fontSize: 14,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.settings.labelPrimary,
   },
   methodTextSelected: {
@@ -321,10 +321,11 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     color: theme.colors.settings.modalCloseDisabled,
   },
   methodDescription: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: 11,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.settings.labelMuted,
     marginTop: 2,
+    lineHeight: 16,
   },
   methodActions: {
     flexDirection: 'row',
@@ -347,7 +348,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     alignItems: 'center',
   },
   previewButtonText: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: 11,
     fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.primary.DEFAULT,
   },
@@ -360,16 +361,16 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderColor: theme.colors.settings.optionBorder,
   },
   infoTitle: {
-    fontSize: theme.typography.fontSize.md,
+    fontSize: 17,
     fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.settings.labelPrimary,
     marginBottom: theme.spacing.sm,
   },
   infoText: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: 14,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.settings.labelMuted,
-    lineHeight: 16,
+    lineHeight: 20,
     marginBottom: theme.spacing.xs + 2,
   },
 });

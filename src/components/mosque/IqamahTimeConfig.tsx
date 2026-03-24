@@ -211,7 +211,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginBottom: theme.spacing.xs + 2,
   },
   subtitle: {
-    fontSize: theme.typography.fontSize.md,
+    fontSize: 14,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     lineHeight: 20,
@@ -233,15 +233,16 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flex: 1,
   },
   prayerName: {
-    fontSize: theme.typography.fontSize.lg,
-    fontFamily: theme.typography.fontFamily.bodySemibold,
+    fontSize: 14,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.xs,
   },
   offsetText: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: 11,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
+    lineHeight: 16,
   },
   chevron: {
     fontSize: theme.typography.fontSize.lg,
@@ -258,7 +259,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderColor: theme.colors.mosqueMode.card.border,
   },
   pickerLabel: {
-    fontSize: theme.typography.fontSize.md,
+    fontSize: 14,
     fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.text.secondary,
     marginBottom: theme.spacing.sm,
@@ -281,7 +282,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderColor: theme.colors.mosqueMode.chip.activeBorder,
   },
   chipText: {
-    fontSize: theme.typography.fontSize.md,
+    fontSize: 14,
     fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.mosqueMode.chip.text,
   },
@@ -306,7 +307,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     backgroundColor: theme.colors.mosqueMode.segment.activeBg,
   },
   segmentButtonText: {
-    fontSize: theme.typography.fontSize.md,
+    fontSize: 14,
     fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.mosqueMode.segment.inactiveText,
   },
@@ -322,10 +323,10 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderColor: theme.colors.mosqueMode.hint.border,
   },
   hintText: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: 11,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.mosqueMode.hint.text,
     textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: 16,
   },
 });

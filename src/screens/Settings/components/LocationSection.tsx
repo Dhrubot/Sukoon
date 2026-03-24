@@ -136,18 +136,18 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flex: 1,
   },
   locationText: {
-    fontSize: theme.typography.fontSize.md,
+    fontSize: 14,
     color: theme.colors.settings.labelPrimary,
     fontFamily: theme.typography.fontFamily.bodyMedium,
   },
   coordinatesText: {
-    fontSize: theme.typography.fontSize.xs,
+    fontSize: 11,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.muted,
     marginTop: theme.spacing.xxs,
   },
   invalidText: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: 11,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.status.error,
     marginTop: theme.spacing.xxs,
@@ -168,7 +168,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     opacity: 0.6,
   },
   buttonText: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: 14,
     fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.settings.buttonPrimaryText,
   },
@@ -182,7 +182,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     alignItems: 'center',
   },
   manualButtonText: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: 14,
     fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.settings.buttonSecondaryText,
   },
@@ -195,18 +195,18 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderColor: theme.colors.settings.warningBorder,
   },
   warningText: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: 11,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.settings.warningText,
     textAlign: 'center',
-    lineHeight: 18,
+    lineHeight: 16,
   },
   settingsLink: {
     marginTop: theme.spacing.md - 2,
     alignItems: 'center',
   },
   settingsLinkText: {
-    fontSize: theme.typography.fontSize.md,
+    fontSize: 14,
     fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.primary.DEFAULT,
   },

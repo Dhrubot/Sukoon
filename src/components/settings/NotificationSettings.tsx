@@ -222,20 +222,6 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
     await persistSettings(nextNotifications, nextHabitBuilder);
   };
 
-  const testNotification = async () => {
-    await NotificationService.sendTestNotification();
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-  };
-
-  const showScheduledNotifications = async () => {
-    const scheduled = await NotificationService.getScheduledNotifications();
-    Alert.alert(
-      'Scheduled Reminders',
-      `You have ${scheduled.length} prayer reminders scheduled over the next 7 days.`,
-      [{ text: 'OK' }]
-    );
-  };
-
   const formatQuietTime = (time: string) => {
     const [hStr, mStr] = time.split(':');
     const h = parseInt(hStr, 10) || 0;
@@ -572,20 +558,6 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
             )}
           </View>
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Test Reminders</Text>
-            <TouchableOpacity style={styles.button} onPress={testNotification}>
-              <Text style={styles.buttonText}>Send Test Reminder</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.button, styles.secondaryButton]}
-              onPress={showScheduledNotifications}
-            >
-              <Text style={[styles.buttonText, styles.secondaryButtonText]}>
-                View Scheduled Reminders
-              </Text>
-            </TouchableOpacity>
-          </View>
         </>
       )}
 
@@ -646,20 +618,20 @@ const createStyles = (theme: AppTheme) =>
       marginRight: theme.spacing.lg,
     },
     settingLabel: {
-      fontSize: theme.typography.fontSize.lg,
+      fontSize: 14,
       fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.settings.labelPrimary,
       marginBottom: theme.spacing.xs,
     },
     settingDescription: {
-      fontSize: theme.typography.fontSize.md,
+      fontSize: 14,
       fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.settings.labelSecondary,
       lineHeight: 20,
     },
     sectionTitle: {
-      fontSize: theme.typography.fontSize.xl,
-      fontFamily: theme.typography.fontFamily.bodySemibold,
+      fontSize: 17,
+      fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.primary.DEFAULT,
       marginBottom: theme.spacing.sm,
     },
@@ -680,15 +652,15 @@ const createStyles = (theme: AppTheme) =>
       borderColor: theme.colors.settings.optionActiveBorder,
     },
     presetTitle: {
-      fontSize: theme.typography.fontSize.lg,
-      fontFamily: theme.typography.fontFamily.bodySemibold,
+      fontSize: 17,
+      fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.text.primary,
     },
     presetTitleActive: {
       color: theme.colors.primary.DEFAULT,
     },
     presetDescription: {
-      fontSize: theme.typography.fontSize.md,
+      fontSize: 14,
       fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.secondary,
       lineHeight: 20,
@@ -715,8 +687,8 @@ const createStyles = (theme: AppTheme) =>
       gap: theme.spacing.lg,
     },
     subsectionTitle: {
-      fontSize: theme.typography.fontSize.lg,
-      fontFamily: theme.typography.fontFamily.bodySemibold,
+      fontSize: 17,
+      fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.text.primary,
     },
     reminderOptions: {
@@ -737,7 +709,7 @@ const createStyles = (theme: AppTheme) =>
       borderColor: theme.colors.settings.optionActiveBorder,
     },
     reminderOptionText: {
-      fontSize: theme.typography.fontSize.md,
+      fontSize: 14,
       fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.settings.labelSecondary,
     },
@@ -767,12 +739,12 @@ const createStyles = (theme: AppTheme) =>
       paddingVertical: theme.spacing.md,
     },
     timePickerLabel: {
-      fontSize: theme.typography.fontSize.md,
+      fontSize: 14,
       fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.text.primary,
     },
     timePickerValue: {
-      fontSize: theme.typography.fontSize.md,
+      fontSize: 14,
       fontFamily: theme.typography.fontFamily.bodySemibold,
       color: theme.colors.primary.DEFAULT,
     },
@@ -789,39 +761,19 @@ const createStyles = (theme: AppTheme) =>
     },
     sliderLabel: {
       flex: 1,
-      fontSize: theme.typography.fontSize.md,
+      fontSize: 14,
       fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.text.primary,
       marginRight: theme.spacing.md,
     },
     sliderValue: {
-      fontSize: theme.typography.fontSize.md,
+      fontSize: 14,
       fontFamily: theme.typography.fontFamily.bodySemibold,
       color: theme.colors.primary.DEFAULT,
     },
     slider: {
       width: '100%',
       height: 36,
-    },
-    button: {
-      backgroundColor: theme.colors.settings.buttonPrimaryBg,
-      borderRadius: theme.borderRadius.sm,
-      paddingVertical: theme.spacing.md,
-      alignItems: 'center',
-      marginBottom: theme.spacing.md,
-    },
-    secondaryButton: {
-      backgroundColor: theme.colors.settings.buttonSecondaryBg,
-      borderWidth: 1,
-      borderColor: theme.colors.settings.buttonSecondaryBorder,
-    },
-    buttonText: {
-      fontSize: theme.typography.fontSize.lg,
-      fontFamily: theme.typography.fontFamily.bodySemibold,
-      color: theme.colors.settings.buttonPrimaryText,
-    },
-    secondaryButtonText: {
-      color: theme.colors.settings.buttonSecondaryText,
     },
   });
 

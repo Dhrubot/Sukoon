@@ -8,6 +8,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
+  useWindowDimensions,
 } from 'react-native';
 import DevTreeTester from '../../components/garden/DevTreeTester';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,6 +26,7 @@ import WeekTimeline from '../../components/garden/WeekTimeline';
 import ReflectionJournal from '../../components/garden/ReflectionJournal';
 import DawamBadge from '../../components/garden/DawamBadge';
 import LeafDetailSheet from '../../components/garden/LeafDetailSheet';
+import MiniTubaTree from '../../components/garden/MiniTubaTree';
 import { FARD_PRAYERS } from '../../constants/prayerRegistry';
 import { resolveTreePrayerColor } from '../../constants/tubaTree';
 
@@ -33,6 +35,7 @@ const ReflectionGardenScreen: React.FC = () => {
   const styles = useThemedStyles(createStyles);
   const ambientColors = [theme.colors.ambient.top, theme.colors.ambient.bottom] as const;
   const navigation = useNavigation();
+  const { width } = useWindowDimensions();
   const {
     plants,
     weekSummary,
@@ -91,6 +94,7 @@ const ReflectionGardenScreen: React.FC = () => {
     () => recentReflections.filter((reflection) => (reflection.text?.trim().length ?? 0) > 0).length,
     [recentReflections],
   );
+  const emptyTreeSize = Math.min(width * 0.42, 180);
 
   if (isLoading) {
     return (
@@ -115,7 +119,9 @@ const ReflectionGardenScreen: React.FC = () => {
       <SafeAreaView style={styles.container}>
         <LinearGradient colors={ambientColors} style={styles.gradient}>
           <ScrollView contentContainerStyle={styles.emptyContainer}>
-            <Text style={styles.emptyEmoji}>•</Text>
+            <View style={styles.emptyTreeWrap}>
+              <MiniTubaTree size={emptyTreeSize} activeBranches={0} />
+            </View>
             <Text style={styles.emptyTitle}>
               The Tuba Tree begins{'\n'}with a single return
             </Text>
@@ -385,9 +391,11 @@ const createStyles = (theme: AppTheme) =>
       paddingHorizontal: theme.spacing['4xl'],
       paddingTop: 80,
     },
-    emptyEmoji: {
-      fontSize: 72,
+    emptyTreeWrap: {
+      alignItems: 'center',
+      justifyContent: 'center',
       marginBottom: theme.spacing['2xl'],
+      minHeight: 140,
     },
     emptyTitle: {
       fontSize: theme.typography.fontSize['3xl'] + 2,

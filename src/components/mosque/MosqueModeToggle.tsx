@@ -206,15 +206,15 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginRight: theme.spacing.md,
   },
   title: {
-    fontSize: theme.typography.fontSize.lg,
-    fontFamily: theme.typography.fontFamily.bodySemibold,
+    fontSize: 17,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.xs,
   },
   description: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: 14,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
-    lineHeight: 18,
+    lineHeight: 20,
   },
 });

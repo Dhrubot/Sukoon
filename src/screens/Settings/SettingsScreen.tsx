@@ -35,6 +35,8 @@ import { getCachedHijriDate } from '../../utils/ramadan';
 import { NotificationDebugScreen } from '../Debug/NotificationDebugScreen';
 
 type SettingsModalKey = 'calculation' | 'hijri' | 'notification' | 'location' | null;
+const SHOW_APP_DATA_SECTION = false;
+const SHOW_SUPPORT_SUKOON = false;
 
 interface SettingsScreenProps {
   navigation: {
@@ -228,18 +230,20 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
           onClose={closeAllModals}
         />
 
-        {/* 5. App Data */}
-        <AppDataSection
-          onExportData={handleExportData}
-          onImportData={handleImportData}
-          onResetApp={handleResetApp}
-        />
+        {SHOW_APP_DATA_SECTION && (
+          <AppDataSection
+            onExportData={handleExportData}
+            onImportData={handleImportData}
+            onResetApp={handleResetApp}
+          />
+        )}
 
         {/* 7. About */}
         <AboutSection
           onPrivacyPolicy={() => handlePrivacyPolicy(navigation)}
           onSupport={() => navigation.navigate('Support')}
           onShowDebugInfo={__DEV__ ? showDebugInfo : undefined}
+          showSupport={SHOW_SUPPORT_SUKOON}
         />
 
           {/* Dev only debugger screen */}
@@ -347,23 +351,24 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     paddingBottom: theme.spacing.lg,
   },
   eyebrow: {
-    fontSize: theme.typography.fontSize.xs,
-    fontFamily: theme.typography.fontFamily.bodySemibold,
+    fontSize: theme.typography.fontSize.xs - 1,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.text.muted,
-    letterSpacing: 1.4,
-    marginBottom: theme.spacing.sm,
+    letterSpacing: 1.8,
+    marginBottom: 8,
     textTransform: 'uppercase',
   },
   title: {
-    fontSize: theme.typography.fontSize.md,
+    fontSize: 22,
     fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
   },
   subtitle: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: 14,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     marginTop: theme.spacing.xs,
+    lineHeight: 20,
   },
 
   // 🎯 NEW: Status section styles
