@@ -129,6 +129,7 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
   const catchUpSheetShownRef = useRef(false);
   const [showCatchUpSheet, setShowCatchUpSheet] = useState(false);
   const [showHijriNudgeSheet, setShowHijriNudgeSheet] = useState(false);
+  const dismissedHijriNudgeKeyRef = useRef<string | null>(null);
   const [showHomeLocationModal, setShowHomeLocationModal] = useState(false);
   const [isSettingHomeLocation, setIsSettingHomeLocation] = useState(false);
   const [showMosqueModeTip, setShowMosqueModeTip] = useState(false);
@@ -336,6 +337,20 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
   useEffect(() => {
     if (todayPrayerTimes.length === 0) return;
 
+    const nudge = getHijriNudgeEvent();
+    if (nudge) {
+      const nudgeKey = `${nudge.type}-${nudge.currentYear}-${nudge.currentDay}`;
+      setHijriNudge(nudge);
+      setMoonSightingEvent(null);
+      setAutoDeduceEvent(null);
+      if (!showHijriNudgeSheet && dismissedHijriNudgeKeyRef.current !== nudgeKey) {
+        setShowHijriNudgeSheet(true);
+      }
+      return;
+    }
+
+    setHijriNudge(null);
+
     // Auto-deduce end-of-month (Ramadan 30 → Eid, etc.)
     if (!autoDeduceEvent) {
       const deduce = getAutoDeduceEndOfMonthEvent();
@@ -367,17 +382,7 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
       }
     }
 
-    // Check for hijri nudge sheet (days 1-3 of critical months)
-    if (!moonSightingEvent) {
-      const nudge = getHijriNudgeEvent();
-      setHijriNudge(nudge);
-      if (nudge && !showHijriNudgeSheet) {
-        setShowHijriNudgeSheet(true);
-      }
-    } else {
-      setHijriNudge(null);
-    }
-  }, [todayPrayerTimes, currentTime]);
+  }, [todayPrayerTimes, currentTime, showHijriNudgeSheet, userSettings?.hijriAdjustment]);
 
   const loadTodayRecords = useCallback(() => {
     const today = format(new Date(), "yyyy-MM-dd");
@@ -1024,7 +1029,12 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
         <HijriNudgeSheet
           visible
           nudge={hijriNudge}
-          onDismissed={() => {
+          onDismissed={(reason) => {
+            if (reason === 'dismissed' && hijriNudge) {
+              dismissedHijriNudgeKeyRef.current = `${hijriNudge.type}-${hijriNudge.currentYear}-${hijriNudge.currentDay}`;
+            } else {
+              dismissedHijriNudgeKeyRef.current = null;
+            }
             setShowHijriNudgeSheet(false);
             setHijriNudge(null);
           }}

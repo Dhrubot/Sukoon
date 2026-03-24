@@ -16,6 +16,8 @@ export function applyIntensityPreset(
   switch (intensity) {
     case 'gentle':
       habitBuilder.enabled = false;
+      habitBuilder.persistentReminders.enabled = false;
+      habitBuilder.gracePeriodWarning.enabled = false;
       break;
     case 'balanced':
       habitBuilder.enabled = true;

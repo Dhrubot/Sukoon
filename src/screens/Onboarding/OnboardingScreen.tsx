@@ -42,6 +42,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome');
   const [locationData, setLocationData] = useState<AppLocation | null>(null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [asrJuristic, setAsrJuristic] = useState<'Standard' | 'Hanafi'>('Standard');
   const [displayName, setDisplayName] = useState('');
   const [isLocating, setIsLocating] = useState(false);
   const [locationFailed, setLocationFailed] = useState(false);
@@ -113,6 +114,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
     settings.calculationMethodManuallySelected = false;
     settings.notifications.enabled = notificationsEnabled;
     settings.name = displayName.trim();
+    settings.asrJuristic = asrJuristic;
 
     if (locationData) {
       settings.location = locationData;
@@ -170,7 +172,9 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
               progress={getProgress()}
               locationData={locationData}
               notificationsEnabled={notificationsEnabled}
+              asrJuristic={asrJuristic}
               displayName={displayName}
+              onAsrJuristicChange={setAsrJuristic}
               onDisplayNameChange={setDisplayName}
               onContinue={completeOnboarding}
             />

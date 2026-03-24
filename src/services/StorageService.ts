@@ -20,6 +20,7 @@ import AnalyticsService from './AnalyticsService';
 import { getLocalDateKey } from '../utils/dateHelpers';
 import logger from '../utils/logger';
 import { ONE_DAY_MS } from '../constants/time';
+import { applyIntensityPreset } from '../utils/notificationPresets';
 
 type FamilyData = Record<string, unknown>;
 
@@ -235,9 +236,9 @@ class StorageService {
         vibrationEnabled: true,
         beforePrayer: 10,
         reminderText: "Time for {prayer} prayer",
-        postPrayerCheck: true, // Legacy fallback path for balanced reminder style
+        postPrayerCheck: false,
         liveActivityEnabled: false,
-        intensity: 'balanced',
+        intensity: 'gentle',
       },
       prayerNotifications: {
         Fajr: true,
@@ -254,8 +255,8 @@ class StorageService {
 
   // Default Prayer Habit Builder settings
   private getDefaultHabitBuilderSettings(): HabitBuilderSettings {
-    return {
-      enabled: true, // Balanced support by default
+    const defaults: HabitBuilderSettings = {
+      enabled: true,
       persistentReminders: {
         enabled: true,
         firstCheckDelay: 20,
@@ -277,6 +278,9 @@ class StorageService {
         end: "04:00",
       },
     };
+
+    applyIntensityPreset(defaults, 'gentle');
+    return defaults;
   }
 
   // Default Mosque Mode settings

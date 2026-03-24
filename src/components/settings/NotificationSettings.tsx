@@ -30,9 +30,9 @@ interface NotificationSettingsProps {
 }
 
 const DEFAULT_HABIT_BUILDER: HabitBuilderSettings = {
-  enabled: true,
+  enabled: false,
   persistentReminders: {
-    enabled: true,
+    enabled: false,
     firstCheckDelay: 20,
     interval: 15,
     maxReminders: 1,
@@ -86,7 +86,7 @@ const buildLocalNotificationSettings = (
     vibrationEnabled: true,
     postPrayerCheck: true,
     reminderText: 'Time for {prayer} prayer',
-    intensity: 'balanced' as NotificationIntensity,
+    intensity: 'gentle' as NotificationIntensity,
     liveActivityEnabled: false,
   };
 
@@ -264,7 +264,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
             </Text>
             <View style={styles.presetList}>
               {PRESET_OPTIONS.map((option) => {
-                const active = (localSettings.intensity || 'balanced') === option.key;
+                const active = (localSettings.intensity || 'gentle') === option.key;
                 return (
                   <TouchableOpacity
                     key={option.key}

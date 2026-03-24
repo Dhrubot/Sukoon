@@ -17,14 +17,14 @@ import {
 import { useThemedStyles } from '../hooks/useThemedStyles';
 import { AppTheme } from '../theme';
 import { useStore } from '../store/useStore';
-import { HijriNudgeEvent, confirmMoonSighting } from '../utils/moonSighting';
+import { HijriNudgeEvent, finalizeHijriDateConfirmation } from '../utils/moonSighting';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 interface HijriNudgeSheetProps {
   visible: boolean;
   nudge: HijriNudgeEvent | null;
-  onDismissed: () => void;
+  onDismissed: (reason: 'acknowledged' | 'dismissed') => void;
 }
 
 const HijriNudgeSheet: React.FC<HijriNudgeSheetProps> = ({
@@ -71,8 +71,8 @@ const HijriNudgeSheet: React.FC<HijriNudgeSheetProps> = ({
   const handleAdjust = (offset: -1 | 0 | 1) => {
     if (!nudge) return;
     updateUserSettings({ hijriAdjustment: offset });
-    confirmMoonSighting(nudge.type, nudge.currentYear);
-    onDismissed();
+    finalizeHijriDateConfirmation(nudge, offset);
+    onDismissed('acknowledged');
   };
 
   if (!nudge) return null;
@@ -83,10 +83,10 @@ const HijriNudgeSheet: React.FC<HijriNudgeSheetProps> = ({
       transparent
       animationType="none"
       statusBarTranslucent
-      onRequestClose={onDismissed}
+      onRequestClose={() => onDismissed('dismissed')}
     >
       <View style={styles.modalContainer}>
-        <TouchableWithoutFeedback onPress={onDismissed}>
+        <TouchableWithoutFeedback onPress={() => onDismissed('dismissed')}>
           <Animated.View
             style={[styles.backdrop, { opacity: backdropAnim }]}
           />
