@@ -125,14 +125,14 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     marginBottom: theme.spacing.sm,
   },
   headerSubtitle: {
-    fontSize: theme.typography.fontSize.base,
+    fontSize: 14,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
-    lineHeight: 22,
+    lineHeight: 20,
   },
   sectionLabel: {
-    fontSize: theme.typography.fontSize.xs,
-    fontFamily: theme.typography.fontFamily.bodySemibold,
+    fontSize: theme.typography.fontSize.xs - 1,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.mosqueMode.sectionLabel,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
@@ -158,21 +158,21 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     gap: theme.spacing.md,
   },
   journeyTitle: {
-    fontSize: theme.typography.fontSize.xl,
-    fontFamily: theme.typography.fontFamily.bodySemibold,
+    fontSize: 17,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.text.primary,
   },
   journeyText: {
-    fontSize: theme.typography.fontSize.base,
+    fontSize: 14,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
-    lineHeight: 22,
+    lineHeight: 20,
   },
   journeySteps: {
     gap: theme.spacing.sm,
   },
   journeyStep: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: 14,
     fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.text.primary,
     lineHeight: 20,
@@ -184,12 +184,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     alignItems: 'center',
   },
   footerText: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: 11,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.mosqueMode.footer,
     textAlign: 'center',
     fontStyle: 'italic',
-    lineHeight: 20,
+    lineHeight: 16,
   },
 });
 

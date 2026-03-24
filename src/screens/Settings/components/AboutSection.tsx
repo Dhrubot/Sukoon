@@ -7,12 +7,14 @@ interface AboutSectionProps {
   onPrivacyPolicy: () => void;
   onSupport: () => void;
   onShowDebugInfo?: () => Promise<void>;
+  showSupport?: boolean;
 }
 
 export const AboutSection: React.FC<AboutSectionProps> = ({
   onPrivacyPolicy,
   onSupport,
   onShowDebugInfo,
+  showSupport = true,
 }) => {
   return (
   <SettingSection title="About">
@@ -20,11 +22,13 @@ export const AboutSection: React.FC<AboutSectionProps> = ({
       label="Privacy Policy"
       onPress={onPrivacyPolicy}
     />
-    <SettingRow
-      label="Support Sukoon"
-      subtitle="Optional sadaqah to help sustain the app"
-      onPress={onSupport}
-    />
+    {showSupport && (
+      <SettingRow
+        label="Support Sukoon"
+        subtitle="Optional sadaqah to help sustain the app"
+        onPress={onSupport}
+      />
+    )}
     {onShowDebugInfo && (
       <SettingRow
         label="Debug Information"

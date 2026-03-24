@@ -170,14 +170,15 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderRadius: 4,
   },
   title: {
-    fontSize: theme.typography.fontSize.lg,
-    fontFamily: theme.typography.fontFamily.bodyBold,
+    fontSize: 17,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.mosqueMode.banner.text,
   },
   description: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: 14,
     fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.mosqueMode.banner.textMuted,
+    lineHeight: 20,
   },
   button: {
     alignSelf: 'flex-start',
@@ -189,7 +190,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderColor: theme.colors.mosqueMode.banner.button,
   },
   buttonText: {
-    fontSize: theme.typography.fontSize.md,
+    fontSize: 14,
     fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.mosqueMode.banner.button,
   },

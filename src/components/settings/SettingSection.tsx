@@ -31,9 +31,9 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderColor: theme.colors.border.secondary,
   },
   sectionTitle: {
-    fontSize: theme.typography.fontSize.xs,
-    fontFamily: theme.typography.fontFamily.bodySemibold,
-    marginBottom: theme.spacing.md,
+    fontSize: theme.typography.fontSize.xs - 1,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
+    marginBottom: 8,
     letterSpacing: 1.8,
     textTransform: 'uppercase',
     color: theme.colors.text.muted,

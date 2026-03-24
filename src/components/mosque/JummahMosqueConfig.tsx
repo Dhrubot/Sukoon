@@ -264,16 +264,16 @@ const createStyles = (theme: AppTheme) =>
       marginRight: theme.spacing.md,
     },
     title: {
-      fontSize: theme.typography.fontSize.lg,
-      fontFamily: theme.typography.fontFamily.bodySemibold,
+      fontSize: 17,
+      fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.text.primary,
       marginBottom: theme.spacing.xs,
     },
     subtitle: {
-      fontSize: theme.typography.fontSize.sm,
+      fontSize: 14,
       fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.secondary,
-      lineHeight: 18,
+      lineHeight: 20,
     },
     options: {
       marginTop: theme.spacing.lg,
@@ -288,18 +288,19 @@ const createStyles = (theme: AppTheme) =>
       paddingVertical: theme.spacing.md - 2,
     },
     optionLabel: {
-      fontSize: theme.typography.fontSize.md,
+      fontSize: 14,
       fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.text.primary,
     },
     optionHint: {
-      fontSize: theme.typography.fontSize.xs,
+      fontSize: 11,
       fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.secondary,
       marginTop: theme.spacing.xxs,
+      lineHeight: 16,
     },
     optionValue: {
-      fontSize: theme.typography.fontSize.md,
+      fontSize: 14,
       fontFamily: theme.typography.fontFamily.bodySemibold,
       color: theme.colors.mosqueMode.jummah.accent,
     },
@@ -323,7 +324,7 @@ const createStyles = (theme: AppTheme) =>
       borderColor: theme.colors.mosqueMode.jummah.chipActiveBg,
     },
     chipText: {
-      fontSize: theme.typography.fontSize.md,
+      fontSize: 14,
       fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.mosqueMode.chip.text,
     },
@@ -355,7 +356,7 @@ const createStyles = (theme: AppTheme) =>
       backgroundColor: theme.colors.mosqueMode.jummah.segmentActiveBg,
     },
     segmentButtonText: {
-      fontSize: theme.typography.fontSize.sm,
+      fontSize: 14,
       fontFamily: theme.typography.fontFamily.bodySemibold,
       color: theme.colors.mosqueMode.segment.inactiveText,
     },

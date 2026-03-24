@@ -226,7 +226,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   label: {
     color: theme.colors.text.primary,
     fontFamily: theme.typography.fontFamily.bodyMedium,
-    fontSize: theme.typography.fontSize.md,
+    fontSize: 14,
     marginBottom: theme.spacing.xs,
   },
   row: {
@@ -243,6 +243,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     color: theme.colors.text.secondary,
     fontFamily: theme.typography.fontFamily.body,
     fontSize: 11,
+    lineHeight: 16,
   },
   textContainer: {
     flex: 1,
