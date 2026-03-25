@@ -36,8 +36,8 @@ export const mosqueModePlatformUi = {
     ? 'Set the exact iqamah time for each prayer'
     : 'Set the exact prayer start time so Sukoon can remind you at the right moment',
   iqamahHelpText: isMosqueModeAutoSilenceSupported
-    ? 'These times tell the app when your mosque actually starts the prayer.\n\nFor example:\n• If Fajr adhan is 5:10 AM\n• And your mosque starts at 5:20 AM\n• Set the offset to 10 minutes\n\nYour phone will go silent at 5:20 AM when iqamah starts.'
-    : 'These times tell Sukoon when your mosque actually starts the prayer.\n\nFor example:\n• If Fajr adhan is 5:10 AM\n• And your mosque starts at 5:20 AM\n• Set the offset to 10 minutes\n\nSukoon will remind you before iqamah so you can silence your phone yourself.',
+    ? "These times tell the app when your mosque actually starts the prayer.\n\nFor example:\n• If Fajr adhan is 5:10 AM\n• And your mosque starts congregation (Salat al-Jama'ah) at 5:20 AM\n• Set the offset to 10 minutes\n\nYour phone will go silent at 5:20 AM when iqamah starts."
+    : "These times tell Sukoon when your mosque actually starts the prayer.\n\nFor example:\n• If Fajr adhan is 5:10 AM\n• And your mosque starts congregation (Salat al-Jama'ah) at 5:20 AM\n• Set the offset to 10 minutes\n\nSukoon will remind you before iqamah so you can silence your phone yourself.",
   jummahSubtitle: isMosqueModeAutoSilenceSupported
     ? "Khutba + prayer — longer silent mode for Fridays"
     : "Friday reminder timing before khutbah and prayer",
