@@ -170,7 +170,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         >
           <View style={styles.header}>
             <Text style={styles.eyebrow}>Settings</Text>
-            <Text style={styles.title}>Prayer Preferences</Text>
+            {/* <Text style={styles.title}>Prayer Preferences</Text> */}
             <Text style={styles.subtitle}>Reminders, calculations, location, and quiet adjustments</Text>
           </View>
 
