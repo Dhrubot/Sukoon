@@ -77,14 +77,14 @@ const PRESET_OPTIONS: Array<{
 
 const buildLocalNotificationSettings = (
   notifications?: UserSettings['notifications'],
-) => {
+): UserSettings['notifications'] => {
   const defaults = {
     enabled: true,
     adhanEnabled: true,
     soundEnabled: true,
-    beforePrayer: 10,
+    beforePrayer: 0,
     vibrationEnabled: true,
-    postPrayerCheck: true,
+    postPrayerCheck: false,
     reminderText: 'Time for {prayer} prayer',
     intensity: 'gentle' as NotificationIntensity,
     liveActivityEnabled: false,
@@ -212,14 +212,8 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
   };
 
   const handleIntensityChange = async (intensity: NotificationIntensity) => {
-    const nextNotifications = {
-      ...localSettings,
-      intensity,
-      postPrayerCheck: intensity !== 'gentle',
-    };
-    const nextHabitBuilder = cloneHabitBuilder();
-    applyIntensityPreset(nextHabitBuilder, intensity);
-    await persistSettings(nextNotifications, nextHabitBuilder);
+    const preset = applyIntensityPreset(localSettings, cloneHabitBuilder(), intensity);
+    await persistSettings(preset.notifications, preset.habitBuilder);
   };
 
   const formatQuietTime = (time: string) => {

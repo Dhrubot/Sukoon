@@ -141,26 +141,29 @@ describe('MosqueModeService', () => {
     await expect(service.scheduleSilentMode(samplePrayer)).resolves.toBe(true);
 
     expect(mocks.scheduleMosqueMode).toHaveBeenCalledTimes(1);
-    expect(mocks.scheduleNotificationAsync).toHaveBeenCalledTimes(2);
-    expect(mocks.cancelScheduledNotificationAsync).toHaveBeenCalledWith('mosque-enable-Dhuhr-2026-03-18');
-    expect(mocks.cancelScheduledNotificationAsync).toHaveBeenCalledWith('mosque-restore-Dhuhr-2026-03-18');
+    expect(mocks.scheduleNotificationAsync).not.toHaveBeenCalled();
+    expect(mocks.cancelScheduledNotificationAsync).toHaveBeenCalledWith('mosque-reminder-Dhuhr-2026-03-18');
     expect(storageValues.get('mosque_mode_previous_ringer')).toBe('NORMAL');
     expect(storageValues.get('mosque_mode_active')).toContain('"prayer":"Dhuhr"');
+    expect(storageValues.get('mosque_mode_active')).toContain('"managedBySukoon":true');
   });
 
-  it('schedules iOS mosque reminders and respects the iOS notification cap', async () => {
+  it('schedules one iOS mosque reminder in auto mode and respects the iOS notification cap', async () => {
     const ios = loadService({
       platformOS: 'ios',
       scheduledCount: 0,
     });
-    await expect(ios.service.scheduleSilentMode(samplePrayer)).resolves.toBe(true);
-    expect(ios.mocks.scheduleNotificationAsync).toHaveBeenCalledTimes(2);
+    await ios.service.scheduleUpcomingMosqueModes([samplePrayer]);
+    expect(ios.mocks.scheduleNotificationAsync).toHaveBeenCalledTimes(1);
+    expect(ios.mocks.scheduleNotificationAsync.mock.calls[0][0]).toMatchObject({
+      identifier: 'mosque-reminder-Dhuhr-2026-03-18',
+    });
 
     const capped = loadService({
       platformOS: 'ios',
       scheduledCount: 80,
     });
-    await expect(capped.service.scheduleSilentMode(samplePrayer)).resolves.toBe(true);
+    await capped.service.scheduleUpcomingMosqueModes([samplePrayer]);
     expect(capped.mocks.scheduleNotificationAsync).not.toHaveBeenCalled();
   });
 
@@ -170,6 +173,7 @@ describe('MosqueModeService', () => {
       iqamahTime: '2026-03-18T12:00:00.000Z',
       restoreTime: '2026-03-18T12:20:00.000Z',
       scheduledAt: '2026-03-18T11:00:00.000Z',
+      managedBySukoon: true,
     });
     const { service, mocks, storageValues } = loadService({
       platformOS: 'android',
@@ -199,13 +203,33 @@ describe('MosqueModeService', () => {
 
     await service.cancelMosqueMode('Asr', new Date('2026-03-18T00:00:00.000Z'));
     expect(mocks.cancelMosqueMode).toHaveBeenCalledTimes(1);
+    expect(mocks.cancelScheduledNotificationAsync).toHaveBeenCalledWith('mosque-prompt-Asr-2026-03-18');
+    expect(mocks.cancelScheduledNotificationAsync).toHaveBeenCalledWith('mosque-reminder-Asr-2026-03-18');
     expect(mocks.cancelScheduledNotificationAsync).toHaveBeenCalledWith('mosque-enable-Asr-2026-03-18');
     expect(mocks.cancelScheduledNotificationAsync).toHaveBeenCalledWith('mosque-restore-Asr-2026-03-18');
-    expect(mocks.cancelScheduledNotificationAsync).toHaveBeenCalledWith('mosque-reminder-Asr-2026-03-18');
     expect(mocks.cancelScheduledNotificationAsync).toHaveBeenCalledWith('mosque-iqamah-Asr-2026-03-18');
 
     await expect(service.manuallyRestoreRinger()).resolves.toBe(true);
     expect(mocks.setRingerMode).toHaveBeenCalledWith('VIBRATE');
+  });
+
+  it('does not restore the ringer when mosque mode did not change it', async () => {
+    const activeState = JSON.stringify({
+      prayer: 'Asr',
+      iqamahTime: '2026-03-18T12:00:00.000Z',
+      restoreTime: '2026-03-18T12:20:00.000Z',
+      scheduledAt: '2026-03-18T11:00:00.000Z',
+      managedBySukoon: false,
+    });
+    const { service, mocks, storageValues } = loadService({
+      platformOS: 'android',
+      activeState,
+      previousRinger: 'NORMAL',
+    });
+
+    await expect(service.manuallyRestoreRinger()).resolves.toBe(true);
+    expect(mocks.setRingerMode).not.toHaveBeenCalled();
+    expect(storageValues.get('mosque_mode_active')).toBe('');
   });
 
   it('schedules prompt notifications or upcoming auto-silence depending on settings', async () => {
@@ -231,6 +255,10 @@ describe('MosqueModeService', () => {
 
     await autoMode.service.scheduleUpcomingMosqueModes([samplePrayer]);
     expect(autoMode.mocks.scheduleMosqueMode).toHaveBeenCalledTimes(1);
+    expect(autoMode.mocks.scheduleNotificationAsync).toHaveBeenCalledTimes(1);
+    expect(autoMode.mocks.scheduleNotificationAsync.mock.calls[0][0]).toMatchObject({
+      identifier: 'mosque-reminder-Dhuhr-2026-03-18',
+    });
 
     const iosAuto = loadService({
       platformOS: 'ios',
@@ -238,6 +266,20 @@ describe('MosqueModeService', () => {
     });
 
     await iosAuto.service.scheduleUpcomingMosqueModes([samplePrayer]);
-    expect(iosAuto.mocks.scheduleNotificationAsync).toHaveBeenCalledTimes(2);
+    expect(iosAuto.mocks.scheduleNotificationAsync).toHaveBeenCalledTimes(1);
+  });
+
+  it('skips Android ringer automation when the phone is already quiet', async () => {
+    const autoMode = loadService({
+      platformOS: 'android',
+      promptBeforeEnable: false,
+      ringerMode: 'SILENT',
+    });
+
+    await expect(autoMode.service.scheduleSilentMode(samplePrayer)).resolves.toBe(true);
+
+    expect(autoMode.mocks.scheduleMosqueMode).not.toHaveBeenCalled();
+    expect(autoMode.mocks.scheduleNotificationAsync).not.toHaveBeenCalled();
+    expect(autoMode.storageValues.get('mosque_mode_active')).toContain('"managedBySukoon":false');
   });
 });

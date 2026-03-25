@@ -227,6 +227,12 @@ describe('scheduleExtendedNotifications integration', () => {
     mockTestSettings.notifications.fullAdhanEnabled = false;
     mockTestSettings.notifications.adhanEnabled = true;
     mockTestSettings.notifications.soundEnabled = true;
+    mockTestSettings.notifications.beforePrayer = 10;
+    mockTestSettings.notifications.postPrayerCheck = false;
+    mockTestSettings.notifications.intensity = 'balanced';
+    mockTestSettings.habitBuilder.enabled = true;
+    mockTestSettings.habitBuilder.persistentReminders.enabled = true;
+    mockTestSettings.habitBuilder.gracePeriodWarning.enabled = true;
     Object.defineProperty(Platform, 'OS', { configurable: true, value: originalPlatform });
   });
 
@@ -362,5 +368,26 @@ describe('scheduleExtendedNotifications integration', () => {
 
     expect(mainPrayerNotification?.content.sound).toBe('default');
     expect(mainPrayerNotification?.trigger).toMatchObject({ channelId: CHANNELS.DEFAULT });
+  });
+
+  it('does not schedule pre-prayer notifications when gentle intensity is active', async () => {
+    mockTestSettings.notifications.intensity = 'gentle';
+    mockTestSettings.notifications.beforePrayer = 0;
+    mockTestSettings.notifications.postPrayerCheck = false;
+    mockTestSettings.habitBuilder.enabled = false;
+    mockTestSettings.habitBuilder.persistentReminders.enabled = false;
+    mockTestSettings.habitBuilder.gracePeriodWarning.enabled = false;
+
+    await NotificationService.scheduleExtendedNotifications();
+
+    const prePrayer = mockScheduledNotifications.filter(
+      (notification) => notification.content?.data?.type === 'pre-prayer'
+    );
+    const prayerTime = mockScheduledNotifications.filter(
+      (notification) => notification.content?.data?.type === 'prayer-time'
+    );
+
+    expect(prePrayer).toHaveLength(0);
+    expect(prayerTime.length).toBeGreaterThan(0);
   });
 });

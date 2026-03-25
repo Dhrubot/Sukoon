@@ -24,6 +24,8 @@ import { applyIntensityPreset } from '../utils/notificationPresets';
 
 type FamilyData = Record<string, unknown>;
 
+const GENTLE_PRESET_NORMALIZED_FLAG = 'gentle_preset_normalized_v1';
+
 class StorageService {
   // Encrypted storage for PII: user_settings, user_id, subscription,
   // premium, donations, family, onboarding, reflections, mindfulness
@@ -63,6 +65,8 @@ class StorageService {
       }
       this._pendingWrites = [];
     }
+
+    this.normalizeGentlePresetIfNeeded();
 
     // Diagnostic: check if we can actually read existing data
     const keyCount = this.storage.getAllKeys().length;
@@ -210,8 +214,110 @@ class StorageService {
     this.setUserSettings(updated as unknown as UserSettings);
   }
 
+  private buildLegacyGentleHabitBuilderProfile(): HabitBuilderSettings {
+    return {
+      enabled: false,
+      persistentReminders: {
+        enabled: false,
+        firstCheckDelay: 20,
+        interval: 15,
+        maxReminders: 1,
+      },
+      gracePeriodWarning: {
+        enabled: false,
+        minutesBeforeNext: 15,
+      },
+      snooze: {
+        allowedIntervals: [5, 10, 15, 30],
+        defaultInterval: 10,
+        maxSnoozesPerPrayer: 5,
+      },
+      quietHours: {
+        enabled: false,
+        start: '22:00',
+        end: '04:00',
+      },
+    };
+  }
+
+  private usesLegacyUntouchedGentlePreset(settings: UserSettings): boolean {
+    const notifications = settings.notifications;
+    const habitBuilder = settings.habitBuilder;
+    const legacyHabitBuilder = this.buildLegacyGentleHabitBuilderProfile();
+
+    return (
+      (notifications.intensity ?? 'gentle') === 'gentle' &&
+      notifications.beforePrayer === 10 &&
+      notifications.postPrayerCheck === false &&
+      habitBuilder.enabled === legacyHabitBuilder.enabled &&
+      habitBuilder.persistentReminders.enabled === legacyHabitBuilder.persistentReminders.enabled &&
+      habitBuilder.persistentReminders.firstCheckDelay === legacyHabitBuilder.persistentReminders.firstCheckDelay &&
+      habitBuilder.persistentReminders.interval === legacyHabitBuilder.persistentReminders.interval &&
+      habitBuilder.persistentReminders.maxReminders === legacyHabitBuilder.persistentReminders.maxReminders &&
+      habitBuilder.gracePeriodWarning.enabled === legacyHabitBuilder.gracePeriodWarning.enabled &&
+      habitBuilder.gracePeriodWarning.minutesBeforeNext === legacyHabitBuilder.gracePeriodWarning.minutesBeforeNext &&
+      JSON.stringify(habitBuilder.snooze.allowedIntervals) === JSON.stringify(legacyHabitBuilder.snooze.allowedIntervals) &&
+      habitBuilder.snooze.defaultInterval === legacyHabitBuilder.snooze.defaultInterval &&
+      habitBuilder.snooze.maxSnoozesPerPrayer === legacyHabitBuilder.snooze.maxSnoozesPerPrayer &&
+      habitBuilder.quietHours.enabled === legacyHabitBuilder.quietHours.enabled &&
+      habitBuilder.quietHours.start === legacyHabitBuilder.quietHours.start &&
+      habitBuilder.quietHours.end === legacyHabitBuilder.quietHours.end
+    );
+  }
+
+  private normalizeGentlePresetIfNeeded(): void {
+    if (this.publicStorage.getBoolean(GENTLE_PRESET_NORMALIZED_FLAG)) {
+      return;
+    }
+
+    const data = this.storage.getString('user_settings');
+    if (!data) {
+      this.publicStorage.set(GENTLE_PRESET_NORMALIZED_FLAG, true);
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(data) as UserSettings;
+      if (this.usesLegacyUntouchedGentlePreset(parsed)) {
+        const preset = applyIntensityPreset(
+          parsed.notifications,
+          parsed.habitBuilder,
+          'gentle'
+        );
+        const normalized = {
+          ...parsed,
+          notifications: preset.notifications,
+          habitBuilder: preset.habitBuilder,
+        };
+        this.setUserSettings(normalized);
+      }
+    } catch (error) {
+      logger.warn('⚠️ Failed to normalize gentle preset settings:', error);
+    } finally {
+      this.publicStorage.set(GENTLE_PRESET_NORMALIZED_FLAG, true);
+    }
+  }
+
   // Default settings for new users
   getDefaultSettings(): UserSettings {
+    const defaultNotifications: UserSettings['notifications'] = {
+      enabled: true,
+      adhanEnabled: true,
+      soundEnabled: true,
+      vibrationEnabled: true,
+      beforePrayer: 10,
+      reminderText: "Time for {prayer} prayer",
+      postPrayerCheck: false,
+      liveActivityEnabled: false,
+      intensity: 'gentle',
+    };
+    const defaultHabitBuilder = this.getDefaultHabitBuilderSettings();
+    const gentlePreset = applyIntensityPreset(
+      defaultNotifications,
+      defaultHabitBuilder,
+      'gentle'
+    );
+
     return {
       location: {
         latitude: 0,
@@ -229,17 +335,7 @@ class StorageService {
         Maghrib: 0,
         Isha: 0,
       },
-      notifications: {
-        enabled: true,
-        adhanEnabled: true,
-        soundEnabled: true,
-        vibrationEnabled: true,
-        beforePrayer: 10,
-        reminderText: "Time for {prayer} prayer",
-        postPrayerCheck: false,
-        liveActivityEnabled: false,
-        intensity: 'gentle',
-      },
+      notifications: gentlePreset.notifications,
       prayerNotifications: {
         Fajr: true,
         Dhuhr: true,
@@ -247,7 +343,7 @@ class StorageService {
         Maghrib: true,
         Isha: true,
       },
-      habitBuilder: this.getDefaultHabitBuilderSettings(),
+      habitBuilder: gentlePreset.habitBuilder,
       mosqueMode: this.getDefaultMosqueModeSettings(),
       theme: "auto",
     };
@@ -255,7 +351,7 @@ class StorageService {
 
   // Default Prayer Habit Builder settings
   private getDefaultHabitBuilderSettings(): HabitBuilderSettings {
-    const defaults: HabitBuilderSettings = {
+    return {
       enabled: true,
       persistentReminders: {
         enabled: true,
@@ -278,9 +374,6 @@ class StorageService {
         end: "04:00",
       },
     };
-
-    applyIntensityPreset(defaults, 'gentle');
-    return defaults;
   }
 
   // Default Mosque Mode settings
