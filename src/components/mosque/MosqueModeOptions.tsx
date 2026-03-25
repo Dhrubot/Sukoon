@@ -25,7 +25,7 @@ export const MosqueModeOptions: React.FC = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.sectionTitle}>{mosqueModePlatformUi.optionsSectionLabel === 'SILENT MODE OPTIONS' ? 'Silent Mode Options' : 'Reminder Options'}</Text>
+      {/* <Text style={styles.sectionTitle}>{mosqueModePlatformUi.optionsSectionLabel === 'SILENT MODE OPTIONS' ? 'Silent Mode Options' : 'Reminder Options'}</Text> */}
 
       {mosqueModePlatformUi.showsSilentModeControls && (
         <>

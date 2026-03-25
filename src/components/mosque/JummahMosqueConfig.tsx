@@ -17,6 +17,7 @@ import { useMosqueMode } from '../../hooks/useMosqueMode';
 import { usePrayerTimes } from '../../providers/PrayerTimesProvider';
 import TimeInput from '../common/TimeInput';
 import { mosqueModePlatformUi } from '../../utils/mosqueModePlatform';
+import { max } from 'date-fns';
 
 const DURATION_OPTIONS = [15, 20, 25, 30, 35, 40, 45, 50, 55, 60];
 const OFFSET_OPTIONS = [5, 10, 15, 20, 25, 30];
@@ -31,6 +32,7 @@ const JummahMosqueConfig: React.FC = () => {
   const [showDurationPicker, setShowDurationPicker] = useState(false);
   const [showOffsetPicker, setShowOffsetPicker] = useState(false);
   const [inputMode, setInputMode] = useState<InputMode>('offset');
+  const showSilentControls = mosqueModePlatformUi.showsSilentModeControls;
 
   const jummah = settings?.jummah ?? {
     enabled: true,
@@ -83,7 +85,7 @@ const JummahMosqueConfig: React.FC = () => {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Text style={styles.title}>Jumu'ah Settings</Text>
+          {/* <Text style={styles.title}>Jumu'ah Settings</Text> */}
           <Text style={styles.subtitle}>
             {mosqueModePlatformUi.jummahSubtitle}
           </Text>
@@ -151,7 +153,10 @@ const JummahMosqueConfig: React.FC = () => {
           )}
 
           {/* Iqamah Time — Offset / Exact toggle */}
-          <View style={styles.iqamahSection}>
+          <View style={[
+            styles.iqamahSection,
+            !showSilentControls && styles.iqamahSectionNoDivider,
+          ]}>
             <Text style={styles.optionLabel}>Jumu'ah Iqamah</Text>
 
             <View style={styles.segmentControl}>
@@ -274,6 +279,7 @@ const createStyles = (theme: AppTheme) =>
       fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.secondary,
       lineHeight: 20,
+      maxWidth: '80%',
     },
     options: {
       marginTop: theme.spacing.lg,
@@ -337,6 +343,11 @@ const createStyles = (theme: AppTheme) =>
       paddingTop: theme.spacing.sm,
       borderTopWidth: 1,
       borderTopColor: theme.colors.mosqueMode.jummah.accentDim,
+    },
+    iqamahSectionNoDivider: {
+      marginTop: 0,
+      paddingTop: 0,
+      borderTopWidth: 0,
     },
     segmentControl: {
       flexDirection: 'row',

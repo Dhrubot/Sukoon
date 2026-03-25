@@ -165,7 +165,7 @@ export const MosqueModeToggle: React.FC = () => {
     <View style={styles.container}>
       <View style={styles.content}>
         <View style={styles.textContainer}>
-          <Text style={styles.title}>Mosque Mode</Text>
+          {/* <Text style={styles.title}>Mosque Mode</Text> */}
           <Text style={[
             styles.description,
             !nativeAvailable && { color: theme.colors.status.error },
@@ -216,5 +216,6 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     lineHeight: 20,
+    maxWidth: '80%',
   },
 });
