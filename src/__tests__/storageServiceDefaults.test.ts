@@ -5,6 +5,7 @@ describe('StorageService defaults', () => {
     const settings = StorageService.getDefaultSettings();
 
     expect(settings.notifications.intensity).toBe('gentle');
+    expect(settings.notifications.beforePrayer).toBe(0);
     expect(settings.notifications.postPrayerCheck).toBe(false);
     expect(settings.habitBuilder.enabled).toBe(false);
     expect(settings.habitBuilder.persistentReminders.enabled).toBe(false);

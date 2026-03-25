@@ -1,5 +1,5 @@
 import { applyIntensityPreset } from '../utils/notificationPresets';
-import { HabitBuilderSettings } from '../types';
+import { HabitBuilderSettings, UserSettings } from '../types';
 
 const makeHabitBuilder = (): HabitBuilderSettings => ({
   enabled: true,
@@ -25,38 +25,61 @@ const makeHabitBuilder = (): HabitBuilderSettings => ({
   },
 });
 
+const makeNotifications = (): UserSettings['notifications'] => ({
+  enabled: true,
+  adhanEnabled: true,
+  soundEnabled: true,
+  vibrationEnabled: true,
+  beforePrayer: 10,
+  reminderText: 'Time for {prayer} prayer',
+  postPrayerCheck: true,
+  intensity: 'balanced',
+  liveActivityEnabled: false,
+});
+
 describe('applyIntensityPreset', () => {
-  it('disables extra follow-up support for gentle reminders', () => {
+  it('disables extra follow-up support and removes pre-prayer reminders for gentle', () => {
+    const notifications = makeNotifications();
     const habitBuilder = makeHabitBuilder();
 
-    applyIntensityPreset(habitBuilder, 'gentle');
+    const preset = applyIntensityPreset(notifications, habitBuilder, 'gentle');
 
-    expect(habitBuilder.enabled).toBe(false);
+    expect(preset.notifications.beforePrayer).toBe(0);
+    expect(preset.notifications.postPrayerCheck).toBe(false);
+    expect(preset.habitBuilder.enabled).toBe(false);
+    expect(preset.habitBuilder.persistentReminders.enabled).toBe(false);
+    expect(preset.habitBuilder.gracePeriodWarning.enabled).toBe(false);
   });
 
   it('configures balanced reminders for a light follow-up pattern', () => {
+    const notifications = makeNotifications();
     const habitBuilder = makeHabitBuilder();
 
-    applyIntensityPreset(habitBuilder, 'balanced');
+    const preset = applyIntensityPreset(notifications, habitBuilder, 'balanced');
 
-    expect(habitBuilder.enabled).toBe(true);
-    expect(habitBuilder.persistentReminders.enabled).toBe(true);
-    expect(habitBuilder.persistentReminders.maxReminders).toBe(1);
-    expect(habitBuilder.persistentReminders.firstCheckDelay).toBe(20);
-    expect(habitBuilder.gracePeriodWarning.enabled).toBe(false);
+    expect(preset.notifications.beforePrayer).toBe(10);
+    expect(preset.notifications.postPrayerCheck).toBe(true);
+    expect(preset.habitBuilder.enabled).toBe(true);
+    expect(preset.habitBuilder.persistentReminders.enabled).toBe(true);
+    expect(preset.habitBuilder.persistentReminders.maxReminders).toBe(1);
+    expect(preset.habitBuilder.persistentReminders.firstCheckDelay).toBe(20);
+    expect(preset.habitBuilder.gracePeriodWarning.enabled).toBe(false);
   });
 
   it('configures persistent reminders for stronger follow-up support', () => {
+    const notifications = makeNotifications();
     const habitBuilder = makeHabitBuilder();
 
-    applyIntensityPreset(habitBuilder, 'persistent');
+    const preset = applyIntensityPreset(notifications, habitBuilder, 'persistent');
 
-    expect(habitBuilder.enabled).toBe(true);
-    expect(habitBuilder.persistentReminders.enabled).toBe(true);
-    expect(habitBuilder.persistentReminders.maxReminders).toBe(3);
-    expect(habitBuilder.persistentReminders.firstCheckDelay).toBe(15);
-    expect(habitBuilder.persistentReminders.interval).toBe(15);
-    expect(habitBuilder.gracePeriodWarning.enabled).toBe(true);
-    expect(habitBuilder.gracePeriodWarning.minutesBeforeNext).toBe(15);
+    expect(preset.notifications.beforePrayer).toBe(10);
+    expect(preset.notifications.postPrayerCheck).toBe(true);
+    expect(preset.habitBuilder.enabled).toBe(true);
+    expect(preset.habitBuilder.persistentReminders.enabled).toBe(true);
+    expect(preset.habitBuilder.persistentReminders.maxReminders).toBe(3);
+    expect(preset.habitBuilder.persistentReminders.firstCheckDelay).toBe(15);
+    expect(preset.habitBuilder.persistentReminders.interval).toBe(15);
+    expect(preset.habitBuilder.gracePeriodWarning.enabled).toBe(true);
+    expect(preset.habitBuilder.gracePeriodWarning.minutesBeforeNext).toBe(15);
   });
 });

@@ -68,6 +68,9 @@ export const mosqueModePlatformUi = {
   promptNotificationBody: isMosqueModeAutoSilenceSupported
     ? 'Heading to the masjid? Tap to begin Mosque Mode.'
     : 'Heading to the mosque? Tap to set a reminder before iqamah.',
-  iosReminderBody: 'Silence your phone for prayer. Sukoon cannot enable Do Not Disturb for you.',
+  autoReminderBody: isMosqueModeAutoSilenceSupported
+    ? 'Mosque Mode will turn on at iqamah. Sukoon will quiet your phone automatically.'
+    : 'Iqamah starts soon. Silence your phone before prayer begins.',
+  iosReminderBody: 'Iqamah starts soon. Silence your phone before prayer begins.',
   iosIqamahBody: 'Iqamah is starting now. Please silence your phone for prayer.',
 };
