@@ -62,7 +62,7 @@ const MosqueModeScreen: React.FC = () => {
           <MosqueModeStatus />
 
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>MODE</Text>
+            <Text style={styles.sectionLabel}>MOSQUE MODE</Text>
             <MosqueModeToggle />
           </View>
 

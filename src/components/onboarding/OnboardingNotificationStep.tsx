@@ -35,11 +35,11 @@ export const OnboardingNotificationStep: React.FC<OnboardingNotificationStepProp
     >
       <View style={styles.card}>
         <Text style={styles.cardLabel}>WHAT YOU GET</Text>
-        <View style={styles.benefitRow}>
+        {/* <View style={styles.benefitRow}>
           <Text style={styles.benefitTitle}>Before prayer</Text>
           <Text style={styles.benefitText}>A gentle nudge so you can prepare with less rush.</Text>
         </View>
-        <View style={styles.divider} />
+        <View style={styles.divider} /> */}
         <View style={styles.benefitRow}>
           <Text style={styles.benefitTitle}>At prayer time</Text>
           <Text style={styles.benefitText}>A calm reminder anchored to your local prayer schedule.</Text>
