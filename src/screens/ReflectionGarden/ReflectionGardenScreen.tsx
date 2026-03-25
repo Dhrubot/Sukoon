@@ -29,6 +29,19 @@ import LeafDetailSheet from '../../components/garden/LeafDetailSheet';
 import MiniTubaTree from '../../components/garden/MiniTubaTree';
 import { FARD_PRAYERS } from '../../constants/prayerRegistry';
 import { resolveTreePrayerColor } from '../../constants/tubaTree';
+import Svg, { Path } from 'react-native-svg';
+
+const GardenIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 22V12M12 12C12 8 9 5 5 3c0 4 2 8 7 9M12 12c0-4 3-7 7-9 0 4-2 8-7 9"
+      stroke={color}
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
 
 const ReflectionGardenScreen: React.FC = () => {
   const { theme } = useTheme();
@@ -120,13 +133,13 @@ const ReflectionGardenScreen: React.FC = () => {
         <LinearGradient colors={ambientColors} style={styles.gradient}>
           <ScrollView contentContainerStyle={styles.emptyContainer}>
             <View style={styles.emptyTreeWrap}>
-              <MiniTubaTree size={emptyTreeSize} activeBranches={0} />
+              <GardenIcon size={emptyTreeSize} color={theme.colors.interactive.active} />
             </View>
             <Text style={styles.emptyTitle}>
               The Tuba Tree begins{'\n'}with a single return
             </Text>
             <Text style={styles.emptySubtitle}>
-              After your next prayer, you can leave a quiet note here. This space is private witness, not a score.
+              After your next prayer, you can see the first leaf grow.
             </Text>
             <TouchableOpacity
               style={[styles.emptyCta, { borderColor: theme.colors.primary.DEFAULT }]}
