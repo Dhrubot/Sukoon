@@ -58,22 +58,22 @@ const PRESET_OPTIONS: Array<{
   label: string;
   description: string;
 }> = [
-  {
-    key: 'gentle',
-    label: 'Gentle Return',
-    description: 'One quiet reminder with no extra follow-up.',
-  },
-  {
-    key: 'balanced',
-    label: 'Help Me Be On Time',
-    description: 'A little support when a prayer begins to slip.',
-  },
-  {
-    key: 'persistent',
-    label: 'Do Not Let Me Drift',
-    description: 'Stronger follow-up when you need firmer support.',
-  },
-];
+    {
+      key: 'gentle',
+      label: 'Gentle Return',
+      description: 'One quiet reminder with no extra follow-up.',
+    },
+    {
+      key: 'balanced',
+      label: 'Help Me Be On Time',
+      description: 'A little support when a prayer begins to slip.',
+    },
+    {
+      key: 'persistent',
+      label: 'Do Not Let Me Drift',
+      description: 'Stronger follow-up when you need firmer support.',
+    },
+  ];
 
 const buildLocalNotificationSettings = (
   notifications?: UserSettings['notifications'],
@@ -231,9 +231,9 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
       <View style={styles.section}>
         <View style={styles.settingRow}>
           <View style={styles.settingInfo}>
-            <Text style={styles.settingLabel}>Prayer Reminders</Text>
+            {/* <Text style={styles.settingLabel}>Prayer Reminders</Text> */}
             <Text style={styles.settingDescription}>
-              Receive prayer notifications in a calmer, simpler way.
+              Prayer Notifications
             </Text>
           </View>
           <Switch
@@ -252,10 +252,10 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
       {localSettings.enabled && (
         <>
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Reminder Style</Text>
-            <Text style={styles.settingDescription}>
+            <Text style={styles.eyebrow}>Reminder Style</Text>
+            {/* <Text style={styles.settingDescription}>
               Choose the kind of support you want around prayer.
-            </Text>
+            </Text> */}
             <View style={styles.presetList}>
               {PRESET_OPTIONS.map((option) => {
                 const active = (localSettings.intensity || 'gentle') === option.key;
@@ -311,7 +311,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                       style={[
                         styles.reminderOption,
                         localSettings.beforePrayer === minutes &&
-                          styles.reminderOptionActive,
+                        styles.reminderOptionActive,
                       ]}
                       onPress={() =>
                         handleNotificationUpdate({ beforePrayer: minutes })
@@ -321,7 +321,7 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
                         style={[
                           styles.reminderOptionText,
                           localSettings.beforePrayer === minutes &&
-                            styles.reminderOptionTextActive,
+                          styles.reminderOptionTextActive,
                         ]}
                       >
                         {minutes === 0 ? 'Off' : `${minutes} min`}
@@ -624,7 +624,7 @@ const createStyles = (theme: AppTheme) =>
       lineHeight: 20,
     },
     sectionTitle: {
-      fontSize: 17,
+      fontSize: 14,
       fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.primary.DEFAULT,
       marginBottom: theme.spacing.sm,
@@ -646,7 +646,7 @@ const createStyles = (theme: AppTheme) =>
       borderColor: theme.colors.settings.optionActiveBorder,
     },
     presetTitle: {
-      fontSize: 17,
+      fontSize: 14,
       fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.text.primary,
     },
@@ -681,7 +681,7 @@ const createStyles = (theme: AppTheme) =>
       gap: theme.spacing.lg,
     },
     subsectionTitle: {
-      fontSize: 17,
+      fontSize: 14,
       fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.text.primary,
     },
@@ -768,6 +768,14 @@ const createStyles = (theme: AppTheme) =>
     slider: {
       width: '100%',
       height: 36,
+    },
+    eyebrow: {
+      fontSize: theme.typography.fontSize.xs - 1,
+      fontFamily: theme.typography.fontFamily.bodyMedium,
+      color: theme.colors.text.muted,
+      letterSpacing: 1.8,
+      marginBottom: 8,
+      textTransform: 'uppercase',
     },
   });
 
