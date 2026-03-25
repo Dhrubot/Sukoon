@@ -416,6 +416,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontSize: 22,
     fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
+    marginTop: theme.spacing['2xl'],
   },
   headerSubtitle: {
     fontSize: theme.typography.fontSize.sm,
