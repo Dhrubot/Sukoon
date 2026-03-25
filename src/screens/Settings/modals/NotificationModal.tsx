@@ -35,7 +35,7 @@ export const NotificationModal: React.FC<NotificationModalProps> = ({
     <View style={styles.modalOverlay}>
       <View style={styles.modalContent}>
         <View style={styles.modalHeader}>
-          <Text style={styles.modalTitle}>Reminder Settings</Text>
+          <Text style={styles.eyebrow}>Reminder Settings</Text>
           <TouchableOpacity onPress={onClose}>
             <Text style={styles.modalClose}>Done</Text>
           </TouchableOpacity>
@@ -77,6 +77,14 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontSize: 22,
     fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
+  },
+  eyebrow: {
+    fontSize: theme.typography.fontSize.xs - 1,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
+    color: theme.colors.text.muted,
+    letterSpacing: 1.8,
+    marginBottom: 8,
+    textTransform: 'uppercase',
   },
   modalClose: {
     fontSize: 14,
