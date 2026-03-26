@@ -102,7 +102,7 @@ const TubaTreeInfoScreen: React.FC = () => {
             {
               n: '4',
               title: 'Consistency deepens the tree',
-              body: 'Your dawam (دوام), returning again and again, makes the canopy fuller and the roots steadier over time. Breaks do not erase the tree.',
+              body: 'Your dawam (دوام), returning again and again, makes the canopy fuller and the roots steadier over time.',
             },
           ].map((step) => (
             <View key={step.n} style={styles.growthStep}>
