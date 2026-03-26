@@ -138,8 +138,8 @@ const palette = {
 // the same emotional family so each prayer feels recognisable across themes.
 const canonicalPrayerGradients = {
   Fajr:    ['#0D1B4C', '#152E4A', '#1A3D5C'] as const,
-  Dhuhr:   ['#1A2F38', '#153A35', '#0D4F35'] as const,
-  Asr:     ['#2A2A1A', '#1F3222', '#1B3A2A'] as const,
+  Dhuhr:   ['#17365D', '#2F6C94', '#7acae4'] as const,
+  Asr:     ['#52657A', '#8FA1AE', '#E2B56C'] as const,
   Maghrib: ['#2D1530', '#231A3A', '#1A1F3A'] as const,
   Isha:    ['#12103A', '#0F1430', '#0A0D2E'] as const,
   Taraweeh: ['#1A1040', '#0F1A3A', '#0A2040'] as const,
@@ -154,8 +154,8 @@ const prayerGradients = {
   // the experience still feels coherent when the rest of the UI is brighter.
   light: {
     Fajr:     ['#132554', '#1B3352', '#224163'] as const,
-    Dhuhr:    ['#214036', '#1D4A3A', '#166045'] as const,
-    Asr:      ['#353322', '#293A29', '#234531'] as const,
+    Dhuhr:    ['#1E446D', '#3B7CA5', '#7acae4'] as const,
+    Asr:      ['#617486', '#A2B0BA', '#EDC687'] as const,
     Maghrib:  ['#3A1D3E', '#2F2447', '#23284B'] as const,
     Isha:     ['#18164A', '#141A3C', '#101437'] as const,
     Taraweeh: ['#221650', '#15204A', '#10264C'] as const,
@@ -932,8 +932,8 @@ const midnightPalette = {
 // ─── Midnight prayer gradients ───────────────────────────────────
 const midnightPrayerGradients = {
   Fajr:     ['#0A132F', '#0F1F46', '#14295A'] as const,
-  Dhuhr:    ['#102028', '#0D2722', '#10341F'] as const,
-  Asr:      ['#201E10', '#1A2414', '#162C1B'] as const,
+  Dhuhr:    ['#0F2744', '#214F70', '#6FB9D6'] as const,
+  Asr:      ['#425262', '#718392', '#C79858'] as const,
   Maghrib:  ['#210E20', '#1B1430', '#171A2C'] as const,
   Isha:     ['#0D0A28', '#0A0D20', '#070A1B'] as const,
   Taraweeh: ['#140C30', '#0D1230', '#0A1A32'] as const,
