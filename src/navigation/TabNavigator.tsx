@@ -120,7 +120,7 @@ export const TabNavigator: React.FC = () => {
         name="Menu"
         getComponent={() => require('./MenuStackNavigator').MenuStackNavigator}
         options={{
-          tabBarLabel: 'Tools',
+          tabBarLabel: 'More',
           tabBarIcon: ({ color }) => (
             <MoreIcon color={color} size={22} />
           ),

@@ -76,7 +76,7 @@ const MosqueModeScreen: React.FC = () => {
               <View style={styles.section}>
                 <Text style={styles.sectionLabel}>{"JUMU'AH SETTINGS"}</Text>
                 <Text style={styles.sectionHelper}>
-                  Keep Friday separate so khutbah and salah stay inside the same quiet window.
+                  Seperate settings for silence during khutbah and salah
                 </Text>
                 <JummahMosqueConfig />
               </View>
@@ -119,7 +119,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     paddingBottom: theme.spacing.sm,
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 17,
     fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.sm,

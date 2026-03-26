@@ -40,7 +40,7 @@ export const mosqueModePlatformUi = {
     : "These times tell Sukoon when your mosque actually starts the prayer.\n\nFor example:\n• If Fajr adhan is 5:10 AM\n• And your mosque starts congregation (Salat al-Jama'ah) at 5:20 AM\n• Set the offset to 10 minutes\n\nSukoon will remind you before iqamah so you can silence your phone yourself.",
   jummahSubtitle: isMosqueModeAutoSilenceSupported
     ? "Khutba + prayer — longer silent mode for Fridays"
-    : "Friday reminder timing before khutbah and prayer",
+    : "Friday mosque mode reminder before khutbah and prayer",
   jummahDurationLabel: isMosqueModeAutoSilenceSupported ? 'Silent Duration' : 'Reminder Timing',
   jummahDurationHint: isMosqueModeAutoSilenceSupported
     ? 'Includes khutba (~20 min) + prayer (~10 min)'
