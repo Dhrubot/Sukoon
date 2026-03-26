@@ -16,7 +16,7 @@ preview_id = "18be1cdb3c8e4eebbec31f0e7afbe3d6"
 [vars]
 ALADHAN_API_BASE = "https://api.aladhan.com/v1"
 NOMINATIM_API_BASE = "https://nominatim.openstreetmap.org"
-CITY_INDEX_VERSION = "v1"
+CITY_INDEX_VERSION = "v2"
 PRAYER_CACHE_TTL_SECONDS = "86400"
 HIJRI_CACHE_TTL_SECONDS = "86400"
 GEOCODE_CACHE_TTL_SECONDS = "604800"
