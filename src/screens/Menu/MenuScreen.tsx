@@ -265,7 +265,7 @@ const MenuScreen: React.FC = () => {
     {
       icon: ThemeIcon,
       title: 'App Theme',
-      subtitle: `Currently: ${themeMode === 'dark' ? 'Dark' : themeMode === 'light' ? 'Light' : 'Midnight'}`,
+      subtitle: `Currently: ${themeMode === 'dark' ? 'Twilight' : themeMode === 'light' ? 'Dawn' : 'Midnight'}`,
       screen: '',
       iconBg: withAlpha(theme.colors.interactive.active, 0.08),
       onPress: toggleTheme,
