@@ -286,7 +286,7 @@ const MenuScreen: React.FC = () => {
         style={styles.gradient}
       >
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Companion Tools</Text>
+          {/* <Text style={styles.headerTitle}>Companion Tools</Text> */}
           {/* <Text style={styles.headerSubtitle}>Secondary devotions and private reflection around prayer</Text> */}
         </View>
 
@@ -413,7 +413,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     paddingBottom: 18,
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 17,
     fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
     marginTop: theme.spacing['2xl'],

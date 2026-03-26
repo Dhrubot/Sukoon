@@ -170,7 +170,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     borderRadius: 4,
   },
   title: {
-    fontSize: 17,
+    fontSize: 14,
     fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.mosqueMode.banner.text,
   },
