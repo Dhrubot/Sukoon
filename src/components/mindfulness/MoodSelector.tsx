@@ -131,8 +131,8 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     alignItems: 'center',
   },
   moodButton: {
-    width: 64,
-    height: 64,
+    width: 56,
+    height: 56,
     borderRadius: 32,
     backgroundColor: theme.colors.mindfulness.inputBg,
     justifyContent: 'center',

@@ -23,6 +23,7 @@ import { AppTheme } from '../../theme';
 import { formatHijriDate, formatHijriDateSync } from '../../utils/hijriDate';
 import { useStore } from '../../store/useStore';
 import { isFriday, isRamadan, getRamadanDay } from '../../utils/ramadan';
+import { JummahResourceTopic } from '../../constants/jummahContent';
 
 const { height } = Dimensions.get('window');
 const HERO_MIN_HEIGHT = Platform.OS === 'ios' ? height * 0.72 : height * 0.78;
@@ -50,6 +51,7 @@ interface SanctuaryViewProps {
   isFocusMode?: boolean;
   mosqueModeInfo?: MosqueModeHeroInfo;
   onMosqueModeTap?: () => void;
+  onOpenJummahResource?: (topic: JummahResourceTopic) => void;
 }
 
 const SanctuaryView: React.FC<SanctuaryViewProps> = ({
@@ -68,6 +70,7 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
   isFocusMode = false,
   mosqueModeInfo,
   onMosqueModeTap,
+  onOpenJummahResource,
 }) => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
@@ -197,15 +200,27 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
         {/* Jumu'ah sunnah reminders */}
         {isJummah && !isAlreadyPrayed && (
           <View style={styles.sunnahRow}>
-            <View style={styles.sunnahChip}>
+            <TouchableOpacity
+              style={styles.sunnahChip}
+              onPress={() => onOpenJummahResource?.('kahf')}
+              activeOpacity={0.75}
+            >
               <Text style={styles.sunnahText}>Al-Kahf</Text>
-            </View>
-            <View style={styles.sunnahChip}>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.sunnahChip}
+              onPress={() => onOpenJummahResource?.('ghusl')}
+              activeOpacity={0.75}
+            >
               <Text style={styles.sunnahText}>Ghusl</Text>
-            </View>
-            <View style={styles.sunnahChip}>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.sunnahChip}
+              onPress={() => onOpenJummahResource?.('salawat')}
+              activeOpacity={0.75}
+            >
               <Text style={styles.sunnahText}>Salawat</Text>
-            </View>
+            </TouchableOpacity>
           </View>
         )}
 

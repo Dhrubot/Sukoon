@@ -27,6 +27,10 @@ import AnalyticsService from './AnalyticsService';
 import NotificationLedger from './NotificationLedger';
 import { useStore } from '../store/useStore';
 import NotificationTraceService from './NotificationTraceService';
+import {
+  getNotificationPersonalizationName,
+  prependNotificationName,
+} from '../utils/notificationPersonalization';
 
 // NOTIFICATION_CATEGORIES now imported from ./notifications/NotificationChannels
 
@@ -826,7 +830,7 @@ class NotificationService {
     const soundAsset = audioResolution.notificationSound;
     const androidChannel = audioResolution.androidChannelId;
 
-    const mainContent = this.getPrayerTimeContent(prayerName, prayer.name);
+    const mainContent = this.getPrayerTimeContent(prayerName, prayer.name, settings);
 
     await Notifications.scheduleNotificationAsync({
       content: {
@@ -889,7 +893,7 @@ class NotificationService {
       return;
     }
 
-    const content = this.getPrePrayerContent(prayerName, notifications.beforePrayer);
+    const content = this.getPrePrayerContent(prayerName, notifications.beforePrayer, settings);
 
     await Notifications.scheduleNotificationAsync({
       content: {
@@ -1014,11 +1018,15 @@ class NotificationService {
   async scheduleMindfulnessReminder(prayerName: PrayerName, delayMinutes: number = 30) {
     const reminderTime = new Date(Date.now() + delayMinutes * 60000);
     const displayName = PrayerTimeService.getPrayerDisplayName(prayerName);
+    const settings = StorageService.getUserSettings();
+    const personalizationName = getNotificationPersonalizationName(settings);
 
     await Notifications.scheduleNotificationAsync({
       content: {
         title: 'Prepare for prayer',
-        body: `Take a quiet moment before ${displayName} prayer`,
+        body: personalizationName
+          ? `${personalizationName}, take a quiet moment before ${displayName} prayer`
+          : `Take a quiet moment before ${displayName} prayer`,
         data: {
           prayer: prayerName,
           type: 'mindfulness-reminder',
@@ -1044,7 +1052,11 @@ class NotificationService {
     return Math.abs(hash) % length;
   }
 
-  private getPrePrayerContent(prayerName: string, minutes: number): NotificationContent {
+  private getPrePrayerContent(
+    prayerName: string,
+    minutes: number,
+    settings?: Pick<UserSettings, 'name'> | null
+  ): NotificationContent {
     const messages = [
       `${prayerName} prayer in ${minutes} minutes — time to prepare your heart`,
       `${minutes} minutes until ${prayerName}. Begin your mindful preparation`,
@@ -1057,12 +1069,16 @@ class NotificationService {
 
     return {
       title: `${prayerName} Prayer Soon`,
-      body: messages[idx],
+      body: prependNotificationName(messages[idx], settings),
       subtitle: 'Tap to begin mindfulness exercise',
     };
   }
 
-  private getPrayerTimeContent(displayName: string, prayerKey: string): NotificationContent {
+  private getPrayerTimeContent(
+    displayName: string,
+    prayerKey: string,
+    settings?: Pick<UserSettings, 'name'> | null
+  ): NotificationContent {
     const contextualMessages: Record<string, string[]> = {
       Fajr: [
         'Rise and shine! Start your day with prayer',
@@ -1098,18 +1114,22 @@ class NotificationService {
 
     return {
       title: `${displayName} Prayer Time`,
-      body: messages[idx],
+      body: prependNotificationName(messages[idx], settings),
     };
   }
 
   async snoozePrayerNotification(prayerName: PrayerName, minutes: number, prayerId?: string) {
     const snoozeTime = new Date(Date.now() + minutes * 60000);
     const displayName = PrayerTimeService.getPrayerDisplayName(prayerName);
+    const settings = StorageService.getUserSettings();
+    const personalizationName = getNotificationPersonalizationName(settings);
 
     await Notifications.scheduleNotificationAsync({
       content: {
         title: `Reminder: ${displayName} Prayer`,
-        body: `A gentle reminder for ${displayName} 🤲`,
+        body: personalizationName
+          ? `${personalizationName}, a gentle reminder for ${displayName} 🤲`
+          : `A gentle reminder for ${displayName} 🤲`,
         data: {
           prayer: prayerName,
           prayerId: prayerId || `${prayerName}-${format(new Date(), 'yyyy-MM-dd')}`,

@@ -9,6 +9,7 @@ import { CHANNELS, IOS_NOTIFICATION_CAP } from '../../constants/NotificationCons
 import { NOTIFICATION_CATEGORIES } from './NotificationChannels';
 import { format } from 'date-fns';
 import logger from '../../utils/logger';
+import { prependNotificationName } from '../../utils/notificationPersonalization';
 
 /**
  * Check if current time is within quiet hours.
@@ -121,7 +122,7 @@ export async function scheduleTier2PersistentReminders(
     await Notifications.scheduleNotificationAsync({
       content: {
         title: `${prayerDisplayName} prayer reminder`,
-        body: message,
+        body: prependNotificationName(message, settings),
         data: {
           prayerId,
           prayer: prayer.name,

@@ -224,6 +224,7 @@ describe('scheduleExtendedNotifications integration', () => {
     jest.clearAllMocks();
     mockScheduledNotifications.length = 0;
     Object.keys(mockStorageData).forEach((k) => delete mockStorageData[k]);
+    delete mockTestSettings.name;
     mockTestSettings.notifications.fullAdhanEnabled = false;
     mockTestSettings.notifications.adhanEnabled = true;
     mockTestSettings.notifications.soundEnabled = true;
@@ -277,6 +278,36 @@ describe('scheduleExtendedNotifications integration', () => {
     // Should have at least some Tier 1 notifications for future prayers
     // (exact count depends on how many prayers are still upcoming today)
     expect(tier1.length).toBeGreaterThan(0);
+  });
+
+  it('personalizes scheduled prayer copy when the user saved a name', async () => {
+    mockTestSettings.name = 'Amina';
+
+    await NotificationService.scheduleExtendedNotifications();
+
+    const personalizedPrayerNotifications = mockScheduledNotifications.filter(
+      (notification) =>
+        (notification.content?.data?.type === 'prayer-time' ||
+          notification.content?.data?.type === 'pre-prayer') &&
+        notification.content.body.includes('Amina,')
+    );
+
+    expect(personalizedPrayerNotifications.length).toBeGreaterThan(0);
+  });
+
+  it('skips placeholder names when scheduling prayer copy', async () => {
+    mockTestSettings.name = 'Default friend';
+
+    await NotificationService.scheduleExtendedNotifications();
+
+    const placeholderInCopy = mockScheduledNotifications.some(
+      (notification) =>
+        (notification.content?.data?.type === 'prayer-time' ||
+          notification.content?.data?.type === 'pre-prayer') &&
+        notification.content.body.includes('Default friend')
+    );
+
+    expect(placeholderInCopy).toBe(false);
   });
 
   it('saves fingerprint after successful scheduling', async () => {

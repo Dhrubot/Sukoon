@@ -46,6 +46,7 @@ import NotificationService from "../../services/NotificationService";
 import ReminderStateService from "../../services/ReminderStateService";
 import TreeGrowthStateService from "../../services/TreeGrowthStateService";
 import { getLocalDateKey } from "../../utils/dateHelpers";
+import { StillnessLeafSvg } from "../../assets/icons/prayer";
 
 type FlowStep =
   | "transition"
@@ -877,7 +878,13 @@ const MindfulnessFlow: React.FC = () => {
           },
         ]}
       >
-        <Animated.Text style={[styles.completeEmoji, { opacity: stillnessPulse }]}>•</Animated.Text>
+        <Animated.View style={[styles.completeGlyph, { opacity: stillnessPulse }]}>
+          <StillnessLeafSvg
+            size={88}
+            color={theme.colors.mindfulness.accent}
+            secondaryColor={theme.colors.mindfulness.textPrimary}
+          />
+        </Animated.View>
         <Text style={styles.completeTitle}>Prayer completed</Text>
         <Text style={styles.completeText}>
           You stepped away, prayed {displayName}, and returned with intention.
@@ -1124,8 +1131,11 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: theme.spacing['4xl'],
   },
-  completeEmoji: {
-    fontSize: 80,
+  completeGlyph: {
+    width: 88,
+    height: 88,
+    alignItems: "center",
+    justifyContent: "center",
     marginBottom: theme.spacing['2xl'],
   },
   completeTitle: {
