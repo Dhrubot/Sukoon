@@ -5,6 +5,7 @@ import SwiftUI
 struct SukoonWidgetBundle: WidgetBundle {
     var body: some Widget {
         SukoonWidget()
+        SukoonAccessoryWidget()
         if #available(iOS 16.2, *) {
             SukoonLiveActivity()
         }

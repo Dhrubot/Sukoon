@@ -378,7 +378,6 @@ struct SmallWidgetView: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(WidgetCardBackground(palette: palette))
     }
 }
 
@@ -482,7 +481,6 @@ struct MediumWidgetView: View {
         }
         .padding(14)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .background(WidgetCardBackground(palette: palette))
     }
 }
 
@@ -591,7 +589,7 @@ struct AccessoryRectangularView: View {
 
 // MARK: - Widget Entry View
 
-struct WidgetEntryView: View {
+struct HomeWidgetEntryView: View {
     @Environment(\.widgetFamily) private var family
     let entry: SukoonEntry
 
@@ -599,14 +597,24 @@ struct WidgetEntryView: View {
         switch family {
         case .systemMedium:
             MediumWidgetView(snapshot: entry.snapshot)
+        default:
+            SmallWidgetView(snapshot: entry.snapshot)
+        }
+    }
+}
+
+struct LockWidgetEntryView: View {
+    @Environment(\.widgetFamily) private var family
+    let entry: SukoonEntry
+
+    var body: some View {
+        switch family {
         case .accessoryInline:
             AccessoryInlineView(snapshot: entry.snapshot)
         case .accessoryCircular:
             AccessoryCircularView(snapshot: entry.snapshot)
-        case .accessoryRectangular:
-            AccessoryRectangularView(snapshot: entry.snapshot)
         default:
-            SmallWidgetView(snapshot: entry.snapshot)
+            AccessoryRectangularView(snapshot: entry.snapshot)
         }
     }
 }
@@ -619,15 +627,30 @@ struct SukoonWidget: Widget {
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: SukoonProvider()) { entry in
             if #available(iOS 17.0, *) {
-                WidgetEntryView(entry: entry)
-                    .containerBackground(for: .widget) { }
+                HomeWidgetEntryView(entry: entry)
+                    .containerBackground(for: .widget) {
+                        WidgetCardBackground(palette: WidgetPalette.resolve(entry.snapshot.themeMode))
+                    }
             } else {
-                WidgetEntryView(entry: entry)
-                    .background(Color.clear)
+                HomeWidgetEntryView(entry: entry)
+                    .background(WidgetCardBackground(palette: WidgetPalette.resolve(entry.snapshot.themeMode)))
             }
         }
         .configurationDisplayName("Prayer Rhythm")
         .description("Quietly keep the next prayer and today’s times close at hand.")
-        .supportedFamilies([.systemSmall, .systemMedium, .accessoryInline, .accessoryCircular, .accessoryRectangular])
+        .supportedFamilies([.systemSmall, .systemMedium])
+    }
+}
+
+struct SukoonAccessoryWidget: Widget {
+    let kind = "SukoonAccessoryWidget"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: SukoonProvider()) { entry in
+            LockWidgetEntryView(entry: entry)
+        }
+        .configurationDisplayName("Prayer Rhythm Lock")
+        .description("See the next prayer quietly from your Lock Screen.")
+        .supportedFamilies([.accessoryInline, .accessoryCircular, .accessoryRectangular])
     }
 }
