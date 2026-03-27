@@ -101,6 +101,16 @@ describe('PrayerTimeService.getPrayerTimesList', () => {
     expect(adjustedFajr.time.getTime() - baseFajr.time.getTime()).toBe(5 * 60000);
   });
 
+  it("renders Friday Dhuhr as Jumu'ah when given the prayer date", () => {
+    expect(
+      PrayerTimeService.getPrayerDisplayName('Dhuhr', 'en', new Date('2026-03-20T12:05:00.000Z'))
+    ).toBe("Jumu'ah");
+
+    expect(
+      PrayerTimeService.getPrayerDisplayName('Dhuhr', 'en', new Date('2026-03-19T12:05:00.000Z'))
+    ).toBe('Dhuhr');
+  });
+
   it('uses high-latitude night portions when offline fallback is needed', async () => {
     (global.fetch as jest.Mock) = jest.fn(() => Promise.reject(new Error('offline')));
 

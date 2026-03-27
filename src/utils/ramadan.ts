@@ -163,10 +163,10 @@ export function getRamadanDay(): number | null {
 }
 
 /**
- * Check if today is Friday (for Jumah support).
+ * Check whether a given date falls on Friday (for Jumu'ah support).
  */
-export function isFriday(): boolean {
-  return new Date().getDay() === 5;
+export function isFriday(date: Date = new Date()): boolean {
+  return date.getDay() === 5;
 }
 
 // ─── Eid Detection ──────────────────────────────────────────────

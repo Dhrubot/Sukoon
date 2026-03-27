@@ -106,7 +106,7 @@ export async function scheduleTier2PersistentReminders(
 
     const urgency = i === 1 ? 'first' : i === maxReminders ? 'final' : 'middle';
     const messages = getTier2Messages(urgency);
-    const prayerDisplayName = PrayerTimeService.getPrayerDisplayName(prayer.name);
+    const prayerDisplayName = PrayerTimeService.getPrayerDisplayName(prayer.name, 'en', prayer.time);
     const message = messages[Math.floor(Math.random() * messages.length)]
       .replace('{prayer}', prayerDisplayName);
 
@@ -181,10 +181,10 @@ export async function scheduleTier3GracePeriodWarning(
     return;
   }
 
-  const prayerDisplayName = PrayerTimeService.getPrayerDisplayName(prayer.name);
+  const prayerDisplayName = PrayerTimeService.getPrayerDisplayName(prayer.name, 'en', prayer.time);
   const deadlineLabel = deadline && deadline < nextPrayer.time
     ? 'Sunrise'
-    : PrayerTimeService.getPrayerDisplayName(nextPrayer.name);
+    : PrayerTimeService.getPrayerDisplayName(nextPrayer.name, 'en', nextPrayer.time);
 
   const tier3Identifier = `tier3-${prayerId}`;
   if (existingIdentifiers?.has(tier3Identifier)) return;

@@ -865,10 +865,11 @@ export class PrayerTimeService {
    */
   getPrayerDisplayName(
     prayer: PrayerName,
-    language: "en" | "ar" = "en"
+    language: "en" | "ar" = "en",
+    referenceDate: Date = new Date()
   ): string {
     // On Fridays, Jumu'ah replaces Dhuhr
-    if (prayer === "Dhuhr" && isFriday()) {
+    if (prayer === "Dhuhr" && isFriday(referenceDate)) {
       return language === "ar" ? "الجمعة" : "Jumu'ah";
     }
 
