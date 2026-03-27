@@ -73,6 +73,7 @@ describe('JummahNotificationService', () => {
   const prayers = [
     { name: 'Fajr', time: new Date('2026-03-20T05:00:00.000Z'), isNext: false },
     { name: 'Dhuhr', time: new Date('2026-03-20T13:00:00.000Z'), isNext: true },
+    { name: 'Asr', time: new Date('2026-03-20T16:00:00.000Z'), isNext: false },
     { name: 'Maghrib', time: new Date('2026-03-20T18:00:00.000Z'), isNext: false },
   ];
 
@@ -89,7 +90,7 @@ describe('JummahNotificationService', () => {
 
     expect(mocks.cancelScheduledNotificationAsync).toHaveBeenCalledTimes(1);
     expect(mocks.cancelScheduledNotificationAsync).toHaveBeenCalledWith('jummah-old-1');
-    expect(mocks.scheduleNotificationAsync).toHaveBeenCalledTimes(4);
+    expect(mocks.scheduleNotificationAsync).toHaveBeenCalledTimes(5);
 
     const identifiers = mocks.scheduleNotificationAsync.mock.calls.map(
       ([request]: [{ identifier: string }]) => request.identifier
@@ -98,6 +99,7 @@ describe('JummahNotificationService', () => {
       'jummah-morning-2026-03-20',
       'jummah-preparation-2026-03-20',
       'jummah-prayer-2026-03-20',
+      'jummah-dua-window-2026-03-20',
       'jummah-dua-2026-03-20',
     ]);
     expect(mocks.setValue).toHaveBeenCalledWith('jummah_last_scheduled', '2026-03-20');

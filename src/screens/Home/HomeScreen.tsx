@@ -41,6 +41,7 @@ import RamadanTimesCard from "../../components/prayer/RamadanTimesCard";
 import OptionalPrayersSection from "../../components/prayer/OptionalPrayersSection";
 import QuickLogSheet from "../../components/prayer/QuickLogSheet";
 import CatchUpSheet from "../../components/prayer/CatchUpSheet";
+import JummahSunnahSheet from "../../components/prayer/JummahSunnahSheet";
 import HijriNudgeSheet from "../../components/HijriNudgeSheet";
 import AutoDeduceSheet from "../../components/AutoDeduceSheet";
 import { LocationModal } from "../../components/LocationModal";
@@ -62,6 +63,7 @@ import { getLocalDateKey } from "../../utils/dateHelpers";
 import MoonSightingPrompt from "../../components/MoonSightingPrompt";
 import { withAlpha } from "../../utils/color";
 import { mosqueModePlatformUi } from "../../utils/mosqueModePlatform";
+import { JummahResourceTopic } from "../../constants/jummahContent";
 
 import { HERO_ADVANCE_MINUTES } from "../../constants/NotificationConstants";
 const MOSQUE_MODE_TIP_SEEN_KEY = 'mosque_mode_tip_seen';
@@ -133,6 +135,7 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
   const [showHomeLocationModal, setShowHomeLocationModal] = useState(false);
   const [isSettingHomeLocation, setIsSettingHomeLocation] = useState(false);
   const [showMosqueModeTip, setShowMosqueModeTip] = useState(false);
+  const [jummahSheetTopic, setJummahSheetTopic] = useState<JummahResourceTopic | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const pendingRevealScrollRef = useRef(false);
 
@@ -202,6 +205,14 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
       isMakeUp: isPrayerInMakeUpState(prayer, nextPrayerInList),
     });
   }, [isPrayerInMakeUpState]);
+
+  const openJummahSheet = useCallback((topic: JummahResourceTopic) => {
+    setJummahSheetTopic(topic);
+  }, []);
+
+  const closeJummahSheet = useCallback(() => {
+    setJummahSheetTopic(null);
+  }, []);
 
   const handleUseCurrentLocation = useCallback(async () => {
     setIsSettingHomeLocation(true);
@@ -841,6 +852,7 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
             isFocusMode={isHeroImmersive}
             mosqueModeInfo={mosqueModeHeroInfo ?? undefined}
             onMosqueModeTap={() => navigation.navigate('MosqueMode' as never)}
+            onOpenJummahResource={openJummahSheet}
           />
         )}
 
@@ -995,6 +1007,12 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
           </View>
         )}
       </ScrollView>
+
+      <JummahSunnahSheet
+        visible={jummahSheetTopic !== null}
+        topic={jummahSheetTopic}
+        onDismiss={closeJummahSheet}
+      />
 
       {/* 4c: Mosque mode activation overlay */}
       <MosqueModeOverlay />

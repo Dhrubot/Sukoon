@@ -80,6 +80,17 @@ const DUA_MESSAGES: { title: string; body: string }[] = [
   },
 ];
 
+const EARLY_DUA_MESSAGES: { title: string; body: string }[] = [
+  {
+    title: 'Hold Your Dua for Friday',
+    body: 'Keep your dua list close today. Many scholars placed the hour of response late on Friday, especially after \'Asr.',
+  },
+  {
+    title: 'Prepare for the Accepted Hour',
+    body: 'Jumu\'ah carries a blessed hour in which dua is answered. Return to your duas after \'Asr with presence and hope.',
+  },
+];
+
 class JummahNotificationServiceClass {
   /**
    * Main entry point: schedule all Friday notifications.
@@ -111,6 +122,7 @@ class JummahNotificationServiceClass {
       await this.cancelExisting();
 
       const dhuhr = todayPrayerTimes.find(p => p.name === 'Dhuhr');
+      const asr = todayPrayerTimes.find(p => p.name === 'Asr');
       const maghrib = todayPrayerTimes.find(p => p.name === 'Maghrib');
       const fajr = todayPrayerTimes.find(p => p.name === 'Fajr');
 
@@ -162,6 +174,18 @@ class JummahNotificationServiceClass {
       }
 
       // 4. Last-hour dua reminder (1 hour before Maghrib)
+      if (asr && maghrib) {
+        const earlyDuaTime = new Date(asr.time.getTime() + 15 * 60 * 1000);
+        if (earlyDuaTime > now && earlyDuaTime < maghrib.time) {
+          await this.scheduleNotification(
+            'dua-window',
+            earlyDuaTime,
+            this.pickRandom(EARLY_DUA_MESSAGES),
+          );
+        }
+      }
+
+      // 5. Last-hour dua reminder (1 hour before Maghrib)
       if (maghrib) {
         const duaTime = new Date(maghrib.time.getTime() - 60 * 60 * 1000);
         if (duaTime > now) {
