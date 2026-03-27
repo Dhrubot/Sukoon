@@ -128,7 +128,7 @@ const createStyles = (theme: AppTheme) =>
     },
     sunnahChip: {
       backgroundColor: 'rgba(212, 175, 55, 0.15)',
-      borderRadius: theme.borderRadius.md,
+      borderRadius: theme.borderRadius.lg,
       paddingHorizontal: theme.spacing.md - 2,
       paddingVertical: theme.spacing.xs + 1,
       borderWidth: 1,

@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="widget_small_desc">Hijri date for today</string>
+    <string name="widget_medium_desc">Next prayer, gentle guidance, and today’s prayer rhythm</string>
+</resources>

@@ -301,15 +301,13 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
       lastLoadedLocationRef.current = `${freshLocation.latitude.toFixed(3)},${freshLocation.longitude.toFixed(3)}`;
       logger.log('✅ Prayer times loaded successfully');
 
-      // Push data to iOS widget
+      // Push snapshot to widgets
       const todayStr = getLocalDateKey();
       const todayRecords = StorageService.getDayPrayerRecords(todayStr);
-      const dawam = StorageService.getCurrentDawam();
       WidgetService.updateWidgetData(
         todayResult.prayerTimes,
         todayRecords,
-        nextPrayer,
-        dawam
+        nextPrayer
       );
 
       // Update Live Activity (iOS lock screen / Android ongoing notification)
@@ -378,6 +376,7 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
     // Update Live Activity on every tick (progress bar + phase transitions)
     const todayStr = getLocalDateKey();
     const todayRecords = StorageService.getDayPrayerRecords(todayStr);
+    WidgetService.refreshFromStore().catch(() => {});
     LiveActivityService.update(todayPrayerTimes, todayRecords, updated ?? nextPrayer);
   };
 

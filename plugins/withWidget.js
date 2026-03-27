@@ -13,594 +13,8 @@ const APP_GROUP = 'group.com.talukders.sukoon';
 const WIDGET_NAME = 'SukoonWidget';
 const WIDGET_BUNDLE_ID = 'com.talukders.sukoon.SukoonWidget';
 const DEPLOYMENT_TARGET = '16.0';
-
-// ─────────────────────────────────────────────────────────
-// NATIVE BRIDGE: Swift module (added to MAIN app target)
-// Allows React Native to write data to App Group UserDefaults
-// and trigger WidgetKit timeline reloads.
-// ─────────────────────────────────────────────────────────
-
-const BRIDGE_SWIFT = `import Foundation
-import WidgetKit
-
-@objc(SukoonWidgetBridge)
-class SukoonWidgetBridge: NSObject {
-
-  private static let appGroup = "${APP_GROUP}"
-
-  @objc
-  func setWidgetData(_ jsonString: String,
-                     resolve: @escaping RCTPromiseResolveBlock,
-                     reject: @escaping RCTPromiseRejectBlock) {
-    guard let defaults = UserDefaults(suiteName: SukoonWidgetBridge.appGroup) else {
-      reject("APP_GROUP_ERROR", "Cannot access App Group UserDefaults", nil)
-      return
-    }
-    defaults.set(jsonString, forKey: "widgetData")
-    defaults.synchronize()
-    resolve(true)
-  }
-
-  @objc
-  func reloadWidgets(_ resolve: @escaping RCTPromiseResolveBlock,
-                     reject: @escaping RCTPromiseRejectBlock) {
-    if #available(iOS 14.0, *) {
-      WidgetCenter.shared.reloadAllTimelines()
-    }
-    resolve(true)
-  }
-
-  @objc
-  static func requiresMainQueueSetup() -> Bool {
-    return false
-  }
-}
-`;
-
-const BRIDGE_OBJC = `#import <React/RCTBridgeModule.h>
-
-@interface RCT_EXTERN_MODULE(SukoonWidgetBridge, NSObject)
-
-RCT_EXTERN_METHOD(setWidgetData:(NSString *)jsonString
-                  resolve:(RCTPromiseResolveBlock)resolve
-                  reject:(RCTPromiseRejectBlock)reject)
-
-RCT_EXTERN_METHOD(reloadWidgets:(RCTPromiseResolveBlock)resolve
-                  reject:(RCTPromiseRejectBlock)reject)
-
-@end
-`;
-
-// ─────────────────────────────────────────────────────────
-// WIDGET EXTENSION: SwiftUI views + WidgetKit provider
-// ─────────────────────────────────────────────────────────
-
-const WIDGET_SWIFT = `import WidgetKit
-import SwiftUI
-
-// MARK: - Data Models
-
-struct PrayerInfo: Codable, Identifiable {
-    let name: String
-    let time: String
-    let status: String
-    var id: String { name }
-}
-
-struct WidgetPrayerData: Codable {
-    let prayerTimes: [PrayerInfo]
-    let nextPrayerName: String
-    let nextPrayerTime: String
-    let completedCount: Int
-    let totalPrayers: Int
-    let streak: Int
-    let hijriDate: String
-    let dailyVerse: String
-    let dailyVerseRef: String
-    let lastUpdated: String
-
-    enum CodingKeys: String, CodingKey {
-        case prayerTimes, nextPrayerName, nextPrayerTime
-        case completedCount, totalPrayers, streak
-        case hijriDate, dailyVerse, dailyVerseRef, lastUpdated
-    }
-
-    init(from decoder: Decoder) throws {
-        let c = try decoder.container(keyedBy: CodingKeys.self)
-        prayerTimes = try c.decode([PrayerInfo].self, forKey: .prayerTimes)
-        nextPrayerName = try c.decode(String.self, forKey: .nextPrayerName)
-        nextPrayerTime = try c.decode(String.self, forKey: .nextPrayerTime)
-        completedCount = try c.decode(Int.self, forKey: .completedCount)
-        totalPrayers = try c.decode(Int.self, forKey: .totalPrayers)
-        streak = try c.decode(Int.self, forKey: .streak)
-        hijriDate = (try? c.decode(String.self, forKey: .hijriDate)) ?? ""
-        dailyVerse = (try? c.decode(String.self, forKey: .dailyVerse)) ?? ""
-        dailyVerseRef = (try? c.decode(String.self, forKey: .dailyVerseRef)) ?? ""
-        lastUpdated = try c.decode(String.self, forKey: .lastUpdated)
-    }
-
-    init(prayerTimes: [PrayerInfo], nextPrayerName: String, nextPrayerTime: String,
-         completedCount: Int, totalPrayers: Int, streak: Int,
-         hijriDate: String = "", dailyVerse: String = "", dailyVerseRef: String = "",
-         lastUpdated: String) {
-        self.prayerTimes = prayerTimes
-        self.nextPrayerName = nextPrayerName
-        self.nextPrayerTime = nextPrayerTime
-        self.completedCount = completedCount
-        self.totalPrayers = totalPrayers
-        self.streak = streak
-        self.hijriDate = hijriDate
-        self.dailyVerse = dailyVerse
-        self.dailyVerseRef = dailyVerseRef
-        self.lastUpdated = lastUpdated
-    }
-}
-
-// MARK: - Colors
-
-struct SukoonColors {
-    // Primary accent — sage green500 (#2D8B6F) warm, organic, Jannah green
-    static let sage       = Color(red: 0.176, green: 0.545, blue: 0.435)
-    // Gold accent — gold400 (#D4AF37) for current/active state
-    static let gold       = Color(red: 0.831, green: 0.686, blue: 0.216)
-    // Missed state — pre-baked RGBA to avoid .opacity() issues in widget extensions
-    static let missedRed  = Color(red: 0.562, green: 0.160, blue: 0.160)
-}
-
-// MARK: - Timeline Provider
-
-struct SukoonProvider: TimelineProvider {
-    private let appGroup = "${APP_GROUP}"
-
-    func placeholder(in context: Context) -> SukoonEntry {
-        SukoonEntry(date: Date(), data: Self.sampleData())
-    }
-
-    func getSnapshot(in context: Context, completion: @escaping (SukoonEntry) -> Void) {
-        let data = loadData() ?? Self.sampleData()
-        completion(SukoonEntry(date: Date(), data: data))
-    }
-
-    func getTimeline(in context: Context, completion: @escaping (Timeline<SukoonEntry>) -> Void) {
-        let data = loadData() ?? Self.sampleData()
-        let entry = SukoonEntry(date: Date(), data: data)
-        let next = Calendar.current.date(byAdding: .minute, value: 15, to: Date())!
-        completion(Timeline(entries: [entry], policy: .after(next)))
-    }
-
-    private func loadData() -> WidgetPrayerData? {
-        guard let defaults = UserDefaults(suiteName: appGroup),
-              let json = defaults.string(forKey: "widgetData"),
-              let raw = json.data(using: .utf8) else { return nil }
-        return try? JSONDecoder().decode(WidgetPrayerData.self, from: raw)
-    }
-
-    static func sampleData() -> WidgetPrayerData {
-        WidgetPrayerData(
-            prayerTimes: [
-                PrayerInfo(name: "Fajr",    time: "2025-01-15T05:15:00Z", status: "prayed"),
-                PrayerInfo(name: "Dhuhr",   time: "2025-01-15T12:30:00Z", status: "prayed"),
-                PrayerInfo(name: "Asr",     time: "2025-01-15T15:45:00Z", status: "current"),
-                PrayerInfo(name: "Maghrib", time: "2025-01-15T18:10:00Z", status: "upcoming"),
-                PrayerInfo(name: "Isha",    time: "2025-01-15T19:40:00Z", status: "upcoming"),
-            ],
-            nextPrayerName: "Asr",
-            nextPrayerTime: "2025-01-15T15:45:00Z",
-            completedCount: 2,
-            totalPrayers: 5,
-            streak: 7,
-            hijriDate: "15 Rajab 1447",
-            dailyVerse: "Indeed, prayer prohibits immorality and wrongdoing",
-            dailyVerseRef: "29:45",
-            lastUpdated: "2025-01-15T12:00:00Z"
-        )
-    }
-}
-
-// MARK: - Timeline Entry
-
-struct SukoonEntry: TimelineEntry {
-    let date: Date
-    let data: WidgetPrayerData
-}
-
-// MARK: - Helper
-
-struct DateHelper {
-    static let isoFormatterFrac: ISO8601DateFormatter = {
-        let f = ISO8601DateFormatter()
-        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return f
-    }()
-
-    static let isoFormatter: ISO8601DateFormatter = {
-        let f = ISO8601DateFormatter()
-        f.formatOptions = [.withInternetDateTime]
-        return f
-    }()
-
-    static let timeFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "h:mm a"
-        return f
-    }()
-
-    static func parseISO(_ iso: String) -> Date? {
-        if iso.isEmpty { return nil }
-        if let d = isoFormatterFrac.date(from: iso) { return d }
-        return isoFormatter.date(from: iso)
-    }
-
-    static func formatTime(_ iso: String) -> String {
-        guard let date = parseISO(iso) else { return "--:--" }
-        return timeFormatter.string(from: date)
-    }
-}
-
-// MARK: - Small Widget
-
-struct SmallWidgetView: View {
-    let data: WidgetPrayerData
-
-    private var nextDate: Date? { DateHelper.parseISO(data.nextPrayerTime) }
-
-    var body: some View {
-        VStack(spacing: 4) {
-            Spacer(minLength: 0)
-
-            // Prayer name
-            Text(data.nextPrayerName.isEmpty ? "\u2014" : data.nextPrayerName)
-                .font(.system(size: 26, weight: .semibold, design: .rounded))
-                .foregroundColor(.primary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
-
-            // Time
-            Text(DateHelper.formatTime(data.nextPrayerTime))
-                .font(.system(size: 15, weight: .medium))
-                .foregroundColor(.secondary)
-
-            Spacer().frame(height: 2)
-
-            // Countdown
-            if let nd = nextDate, nd > Date() {
-                Text(nd, style: .relative)
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(SukoonColors.sage)
-            } else {
-                Text("Now")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(SukoonColors.sage)
-            }
-
-            Spacer(minLength: 0)
-
-            // Progress dots at bottom
-            HStack(spacing: 6) {
-                ForEach(data.prayerTimes) { p in
-                    prayerDot(status: p.status)
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    @ViewBuilder
-    private func prayerDot(status: String) -> some View {
-        if status == "prayed" {
-            Circle().fill(SukoonColors.sage)
-                .frame(width: 8, height: 8)
-        } else if status == "current" {
-            Circle().fill(SukoonColors.gold)
-                .frame(width: 8, height: 8)
-        } else if status == "missed" {
-            Circle().stroke(SukoonColors.missedRed, lineWidth: 1.5)
-                .frame(width: 8, height: 8)
-        } else {
-            Circle().stroke(.secondary, lineWidth: 1)
-                .frame(width: 8, height: 8)
-        }
-    }
-}
-
-// MARK: - Medium Widget
-
-struct MediumWidgetView: View {
-    let data: WidgetPrayerData
-
-    private var nextDate: Date? { DateHelper.parseISO(data.nextPrayerTime) }
-
-    var body: some View {
-        VStack(spacing: 0) {
-            // Top: prayer info + dots
-            HStack(alignment: .center) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(data.nextPrayerName.isEmpty ? "\u2014" : data.nextPrayerName)
-                        .font(.system(size: 26, weight: .semibold, design: .rounded))
-                        .foregroundColor(SukoonColors.sage)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.7)
-
-                    HStack(spacing: 6) {
-                        Text(DateHelper.formatTime(data.nextPrayerTime))
-                            .font(.system(size: 14, weight: .medium))
-                            .foregroundColor(.primary)
-
-                        if let nd = nextDate, nd > Date() {
-                            Text(nd, style: .relative)
-                                .font(.system(size: 13, weight: .medium))
-                                .foregroundColor(SukoonColors.sage)
-                        } else {
-                            Text("Now")
-                                .font(.system(size: 13, weight: .semibold))
-                                .foregroundColor(SukoonColors.sage)
-                        }
-                    }
-                }
-
-                Spacer()
-
-                // Inline progress dots
-                HStack(spacing: 5) {
-                    ForEach(data.prayerTimes) { p in
-                        mediumDot(status: p.status)
-                    }
-                }
-            }
-
-            Spacer(minLength: 6)
-
-            // Divider
-            Rectangle()
-                .fill(.quaternary)
-                .frame(height: 0.5)
-
-            Spacer(minLength: 6)
-
-            // Verse (from RN data, with fallback)
-            VStack(spacing: 3) {
-                if !data.dailyVerse.isEmpty {
-                    Text("“\\(data.dailyVerse)”")
-                        .font(.system(size: 12, weight: .regular))
-                        .foregroundColor(.secondary)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.center)
-
-                    HStack(spacing: 4) {
-                        Text("— \\(data.dailyVerseRef)")
-                            .font(.system(size: 10, weight: .medium))
-                            .foregroundColor(Color.secondary.opacity(0.6))
-                        if !data.hijriDate.isEmpty {
-                            Text("· \\(data.hijriDate)")
-                                .font(.system(size: 10, weight: .medium))
-                                .foregroundColor(Color.secondary.opacity(0.6))
-                        }
-                    }
-                } else {
-                    Text("“In the remembrance of Allah do hearts find rest”")
-                        .font(.system(size: 12, weight: .regular))
-                        .foregroundColor(.secondary)
-                        .lineLimit(2)
-                        .multilineTextAlignment(.center)
-
-                    Text("— 13:28")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundColor(Color.secondary.opacity(0.6))
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    @ViewBuilder
-    private func mediumDot(status: String) -> some View {
-        if status == "prayed" {
-            Circle().fill(SukoonColors.sage)
-                .frame(width: 9, height: 9)
-        } else if status == "current" {
-            Circle().fill(SukoonColors.gold)
-                .frame(width: 9, height: 9)
-        } else if status == "missed" {
-            Circle().stroke(SukoonColors.missedRed, lineWidth: 1.5)
-                .frame(width: 9, height: 9)
-        } else {
-            Circle().stroke(.secondary, lineWidth: 1)
-                .frame(width: 9, height: 9)
-        }
-    }
-}
-
-// MARK: - Lock Screen: Inline
-
-struct AccessoryInlineView: View {
-    let data: WidgetPrayerData
-
-    var body: some View {
-        HStack(spacing: 4) {
-            Image(systemName: "moon.stars.fill")
-            Text(data.nextPrayerName.isEmpty ? "—" : "\\(data.nextPrayerName) · \\(DateHelper.formatTime(data.nextPrayerTime))")
-        }
-    }
-}
-
-// MARK: - Lock Screen: Circular
-
-struct AccessoryCircularView: View {
-    let data: WidgetPrayerData
-
-    private var progress: Double {
-        guard data.totalPrayers > 0 else { return 0 }
-        return Double(data.completedCount) / Double(data.totalPrayers)
-    }
-
-    var body: some View {
-        Gauge(value: progress) {
-            Image(systemName: "moon.stars.fill")
-        } currentValueLabel: {
-            Text("\\(data.completedCount)")
-                .font(.system(size: 20, weight: .bold, design: .rounded))
-        }
-        .gaugeStyle(.accessoryCircular)
-    }
-}
-
-// MARK: - Lock Screen: Rectangular
-
-struct AccessoryRectangularView: View {
-    let data: WidgetPrayerData
-
-    private var nextDate: Date? { DateHelper.parseISO(data.nextPrayerTime) }
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
-            Text("NEXT PRAYER")
-                .font(.system(size: 10, weight: .semibold))
-                .textCase(.uppercase)
-                .opacity(0.6)
-
-            HStack(spacing: 6) {
-                Text(data.nextPrayerName.isEmpty ? "\u2014" : data.nextPrayerName)
-                    .font(.system(size: 16, weight: .bold, design: .serif))
-                    .lineLimit(1)
-
-                Text(DateHelper.formatTime(data.nextPrayerTime))
-                    .font(.system(size: 14, weight: .medium))
-                    .opacity(0.8)
-            }
-
-            HStack(spacing: 4) {
-                ForEach(data.prayerTimes) { p in
-                    lockScreenDot(status: p.status)
-                }
-
-                Spacer(minLength: 0)
-
-                if let nd = nextDate, nd > Date() {
-                    Text(nd, style: .relative)
-                        .font(.system(size: 10, weight: .medium))
-                        .opacity(0.6)
-                        .lineLimit(1)
-                }
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func lockScreenDot(status: String) -> some View {
-        if status == "prayed" {
-            Circle().fill(.primary)
-                .frame(width: 6, height: 6)
-        } else if status == "current" {
-            Circle().fill(.primary)
-                .frame(width: 6, height: 6)
-                .opacity(0.8)
-        } else if status == "missed" {
-            Circle().stroke(.primary, lineWidth: 1.5)
-                .frame(width: 6, height: 6)
-                .opacity(0.5)
-        } else {
-            Circle().stroke(.primary, lineWidth: 1)
-                .frame(width: 6, height: 6)
-                .opacity(0.3)
-        }
-    }
-}
-
-// MARK: - Widget Definition
-
-struct SukoonWidget: Widget {
-    let kind = "SukoonWidget"
-
-    var body: some WidgetConfiguration {
-        StaticConfiguration(kind: kind, provider: SukoonProvider()) { entry in
-            if #available(iOS 17.0, *) {
-                WidgetEntryView(entry: entry)
-                    .containerBackground(for: .widget) { }
-            } else {
-                WidgetEntryView(entry: entry)
-                    .background(.ultraThinMaterial)
-            }
-        }
-        .configurationDisplayName("Prayer Times")
-        .description("Your next prayer, daily progress, and a Quranic reminder.")
-        .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular, .accessoryRectangular, .accessoryInline])
-    }
-}
-
-struct WidgetEntryView: View {
-    @Environment(\\.widgetFamily) var family
-    let entry: SukoonEntry
-
-    var body: some View {
-        switch family {
-        case .systemMedium:
-            MediumWidgetView(data: entry.data)
-        case .accessoryInline:
-            AccessoryInlineView(data: entry.data)
-        case .accessoryCircular:
-            AccessoryCircularView(data: entry.data)
-        case .accessoryRectangular:
-            AccessoryRectangularView(data: entry.data)
-        default:
-            SmallWidgetView(data: entry.data)
-        }
-    }
-}
-`;
-
-const WIDGET_BUNDLE_SWIFT = `import WidgetKit
-import SwiftUI
-
-@main
-struct SukoonWidgetBundle: WidgetBundle {
-    var body: some Widget {
-        SukoonWidget()
-    }
-}
-`;
-
-const WIDGET_INFO_PLIST = `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-	<key>CFBundleDevelopmentRegion</key>
-	<string>$(DEVELOPMENT_LANGUAGE)</string>
-	<key>CFBundleDisplayName</key>
-	<string>Sukoon Widget</string>
-	<key>CFBundleExecutable</key>
-	<string>$(EXECUTABLE_NAME)</string>
-	<key>CFBundleIdentifier</key>
-	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
-	<key>CFBundleInfoDictionaryVersion</key>
-	<string>6.0</string>
-	<key>CFBundleName</key>
-	<string>$(PRODUCT_NAME)</string>
-	<key>CFBundlePackageType</key>
-	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
-	<key>CFBundleShortVersionString</key>
-	<string>$(MARKETING_VERSION)</string>
-	<key>CFBundleVersion</key>
-	<string>$(CURRENT_PROJECT_VERSION)</string>
-	<key>NSExtension</key>
-	<dict>
-		<key>NSExtensionPointIdentifier</key>
-		<string>com.apple.widgetkit-extension</string>
-	</dict>
-</dict>
-</plist>
-`;
-
-const WIDGET_ENTITLEMENTS = `<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-	<key>com.apple.security.application-groups</key>
-	<array>
-		<string>${APP_GROUP}</string>
-	</array>
-</dict>
-</plist>
-`;
+const templatePath = (...parts) => path.join(__dirname, 'templates', ...parts);
+const readTemplate = (...parts) => fs.readFileSync(templatePath(...parts), 'utf-8');
 
 // ─────────────────────────────────────────────────────────
 // PLUGIN STEPS
@@ -642,14 +56,14 @@ const withWidgetFiles = (config) => {
 
       fs.writeFileSync(
         path.join(mainAppPath, 'SukoonWidgetBridge.swift'),
-        BRIDGE_SWIFT,
+        readTemplate('ios', 'app', 'SukoonWidgetBridge.swift'),
         'utf-8'
       );
       console.log('✅ Created SukoonWidgetBridge.swift');
 
       fs.writeFileSync(
         path.join(mainAppPath, 'SukoonWidgetBridge.m'),
-        BRIDGE_OBJC,
+        readTemplate('ios', 'app', 'SukoonWidgetBridge.m'),
         'utf-8'
       );
       console.log('✅ Created SukoonWidgetBridge.m');
@@ -672,28 +86,28 @@ const withWidgetFiles = (config) => {
 
       fs.writeFileSync(
         path.join(widgetPath, 'SukoonWidget.swift'),
-        WIDGET_SWIFT,
+        readTemplate('ios', 'widget', 'SukoonWidget.swift'),
         'utf-8'
       );
       console.log('✅ Created SukoonWidget.swift');
 
       fs.writeFileSync(
         path.join(widgetPath, 'SukoonWidgetBundle.swift'),
-        WIDGET_BUNDLE_SWIFT,
+        readTemplate('ios', 'widget', 'SukoonWidgetBundle.swift'),
         'utf-8'
       );
       console.log('✅ Created SukoonWidgetBundle.swift');
 
       fs.writeFileSync(
         path.join(widgetPath, 'Info.plist'),
-        WIDGET_INFO_PLIST,
+        readTemplate('ios', 'widget', 'Info.plist'),
         'utf-8'
       );
       console.log('✅ Created Widget Info.plist');
 
       fs.writeFileSync(
         path.join(widgetPath, `${WIDGET_NAME}.entitlements`),
-        WIDGET_ENTITLEMENTS,
+        readTemplate('ios', 'widget', 'SukoonWidget.entitlements'),
         'utf-8'
       );
       console.log('✅ Created Widget entitlements');
@@ -810,6 +224,7 @@ const withWidgetTarget = (config) => {
     const widgetSourceFiles = [
       { name: 'SukoonWidget.swift',       path: 'SukoonWidget.swift' },
       { name: 'SukoonWidgetBundle.swift',  path: 'SukoonWidgetBundle.swift' },
+      { name: 'SukoonLiveActivity.swift',  path: 'SukoonLiveActivity.swift' },
     ];
 
     for (const file of widgetSourceFiles) {
@@ -904,8 +319,10 @@ const withWidgetTarget = (config) => {
     const fwPhaseUuid = genUuid();
     const swiftuiRefUuid = genUuid();
     const widgetkitRefUuid = genUuid();
+    const activityKitRefUuid = genUuid();
     const swiftuiBuildFileUuid = genUuid();
     const widgetkitBuildFileUuid = genUuid();
+    const activityKitBuildFileUuid = genUuid();
 
     // File references for system frameworks
     if (!objects['PBXFileReference']) objects['PBXFileReference'] = {};
@@ -925,6 +342,14 @@ const withWidgetTarget = (config) => {
       sourceTree: 'SDKROOT',
     };
     objects['PBXFileReference'][`${widgetkitRefUuid}_comment`] = 'WidgetKit.framework';
+    objects['PBXFileReference'][activityKitRefUuid] = {
+      isa: 'PBXFileReference',
+      lastKnownFileType: 'wrapper.framework',
+      name: 'ActivityKit.framework',
+      path: 'System/Library/Frameworks/ActivityKit.framework',
+      sourceTree: 'SDKROOT',
+    };
+    objects['PBXFileReference'][`${activityKitRefUuid}_comment`] = 'ActivityKit.framework';
 
     // Build files linking frameworks to widget target
     objects['PBXBuildFile'][swiftuiBuildFileUuid] = {
@@ -939,6 +364,12 @@ const withWidgetTarget = (config) => {
       fileRef_comment: 'WidgetKit.framework',
     };
     objects['PBXBuildFile'][`${widgetkitBuildFileUuid}_comment`] = 'WidgetKit.framework in Frameworks';
+    objects['PBXBuildFile'][activityKitBuildFileUuid] = {
+      isa: 'PBXBuildFile',
+      fileRef: activityKitRefUuid,
+      fileRef_comment: 'ActivityKit.framework',
+    };
+    objects['PBXBuildFile'][`${activityKitBuildFileUuid}_comment`] = 'ActivityKit.framework in Frameworks';
 
     // Create PBXFrameworksBuildPhase for widget target
     if (!objects['PBXFrameworksBuildPhase']) objects['PBXFrameworksBuildPhase'] = {};
@@ -948,6 +379,7 @@ const withWidgetTarget = (config) => {
       files: [
         { value: swiftuiBuildFileUuid, comment: 'SwiftUI.framework in Frameworks' },
         { value: widgetkitBuildFileUuid, comment: 'WidgetKit.framework in Frameworks' },
+        { value: activityKitBuildFileUuid, comment: 'ActivityKit.framework in Frameworks' },
       ],
       runOnlyForDeploymentPostprocessing: 0,
     };
@@ -968,10 +400,11 @@ const withWidgetTarget = (config) => {
       if (fwGroup.children) {
         fwGroup.children.push({ value: swiftuiRefUuid, comment: 'SwiftUI.framework' });
         fwGroup.children.push({ value: widgetkitRefUuid, comment: 'WidgetKit.framework' });
+        fwGroup.children.push({ value: activityKitRefUuid, comment: 'ActivityKit.framework' });
       }
     }
 
-    console.log('✅ Created Frameworks build phase for widget with SwiftUI + WidgetKit');
+    console.log('✅ Created Frameworks build phase for widget with SwiftUI + WidgetKit + ActivityKit');
 
     // --- 8. Configure the "Copy Files" phase addTarget() already created ---
     // addTarget() creates a PBXCopyFilesBuildPhase ("Copy Files") on the main
