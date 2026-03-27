@@ -16,6 +16,7 @@ interface LiveActivityPayload {
   phase: 'pre_adhan' | 'fiqh_window' | 'prayed';
   progress: number;
   prayerStatuses: string[];
+  prayerAccentKeys: string[];
   prayerNames: string[];
 }
 
@@ -50,18 +51,18 @@ class LiveActivityService {
     if (!nextPrayer || prayerTimes.length === 0) return null;
 
     const now = new Date();
+    const isPrayerTimePassed = nextPrayer.time <= now;
 
     // Determine prayer statuses for dots
     const prayerStatuses = prayerTimes.map((p) => {
       const record = records.find((r) => r.prayer === p.name);
       if (record?.status === 'prayed') return 'prayed';
-      if (p.name === nextPrayer.name) return 'current';
+      if (p.name === nextPrayer.name) return isPrayerTimePassed ? 'current' : 'next';
       if (p.time < now) return 'missed';
       return 'upcoming';
     });
 
     // Determine phase and countdown target
-    const isPrayerTimePassed = nextPrayer.time <= now;
     const nextIdx = prayerTimes.findIndex((p) => p.name === nextPrayer.name);
     const nextChronoPrayer = nextIdx < prayerTimes.length - 1
       ? prayerTimes[nextIdx + 1]
@@ -108,6 +109,7 @@ class LiveActivityService {
       phase,
       progress,
       prayerStatuses,
+      prayerAccentKeys: prayerTimes.map((p) => p.name.toLowerCase()),
       prayerNames: PRAYER_NAMES,
     };
   }
