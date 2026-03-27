@@ -813,7 +813,7 @@ class NotificationService {
     const { notifications, prayerNotifications } = settings;
     if (prayerNotifications && !prayerNotifications[prayer.name]) return false;
 
-    const prayerName = PrayerTimeService.getPrayerDisplayName(prayer.name);
+    const prayerName = PrayerTimeService.getPrayerDisplayName(prayer.name, 'en', prayer.time);
     const dateStr = format(prayer.time, 'yyyy-MM-dd');
     const prayerId = `${prayer.name}-${dateStr}`;
     const prayerIdentifier = `prayer-${prayer.name}-${dateStr}`;
@@ -830,7 +830,7 @@ class NotificationService {
     const soundAsset = audioResolution.notificationSound;
     const androidChannel = audioResolution.androidChannelId;
 
-    const mainContent = this.getPrayerTimeContent(prayerName, prayer.name, settings);
+    const mainContent = this.getPrayerTimeContent(prayerName, prayer.name, settings, prayer.time);
 
     await Notifications.scheduleNotificationAsync({
       content: {
@@ -861,7 +861,7 @@ class NotificationService {
 
     // Schedule native full Adhan alarm (Android foreground service)
     if (audioResolution.shouldScheduleNativeFullAdhan) {
-      const displayName = PrayerTimeService.getPrayerDisplayName(prayer.name);
+      const displayName = PrayerTimeService.getPrayerDisplayName(prayer.name, 'en', prayer.time);
       await scheduleFullAdhan(prayer.time, prayer.name, displayName);
     }
 
@@ -878,7 +878,7 @@ class NotificationService {
     if (prayerNotifications && !prayerNotifications[prayer.name]) return;
     if (notifications.beforePrayer <= 0) return;
 
-    const prayerName = PrayerTimeService.getPrayerDisplayName(prayer.name);
+    const prayerName = PrayerTimeService.getPrayerDisplayName(prayer.name, 'en', prayer.time);
     const dateStr = format(prayer.time, 'yyyy-MM-dd');
     const prayerId = `${prayer.name}-${dateStr}`;
     const preNotificationTime = new Date(prayer.time.getTime() - notifications.beforePrayer * 60000);
@@ -893,7 +893,7 @@ class NotificationService {
       return;
     }
 
-    const content = this.getPrePrayerContent(prayerName, notifications.beforePrayer, settings);
+    const content = this.getPrePrayerContent(prayerName, notifications.beforePrayer, settings, prayer.time);
 
     await Notifications.scheduleNotificationAsync({
       content: {
@@ -934,7 +934,7 @@ class NotificationService {
     const { prayerNotifications } = settings;
     if (prayerNotifications && !prayerNotifications[prayer.name]) return;
 
-    const prayerName = PrayerTimeService.getPrayerDisplayName(prayer.name);
+    const prayerName = PrayerTimeService.getPrayerDisplayName(prayer.name, 'en', prayer.time);
     const dateStr = format(prayer.time, 'yyyy-MM-dd');
     const prayerId = `${prayer.name}-${dateStr}`;
     const deadline = prayer.name === 'Fajr' && sunrise ? sunrise : nextPrayer?.time || undefined;
@@ -1055,7 +1055,8 @@ class NotificationService {
   private getPrePrayerContent(
     prayerName: string,
     minutes: number,
-    settings?: Pick<UserSettings, 'name'> | null
+    settings?: Pick<UserSettings, 'name'> | null,
+    referenceDate: Date = new Date()
   ): NotificationContent {
     const messages = [
       `${prayerName} prayer in ${minutes} minutes — time to prepare your heart`,
@@ -1064,7 +1065,7 @@ class NotificationService {
       `${prayerName} in ${minutes} minutes — a moment of stillness awaits`,
     ];
 
-    const dateKey = format(new Date(), 'yyyy-MM-dd');
+    const dateKey = format(referenceDate, 'yyyy-MM-dd');
     const idx = this.deterministicIndex(`${prayerName}-pre-${dateKey}`, messages.length);
 
     return {
@@ -1077,8 +1078,10 @@ class NotificationService {
   private getPrayerTimeContent(
     displayName: string,
     prayerKey: string,
-    settings?: Pick<UserSettings, 'name'> | null
+    settings?: Pick<UserSettings, 'name'> | null,
+    referenceDate: Date = new Date()
   ): NotificationContent {
+    const isJummah = prayerKey === 'Dhuhr' && displayName === "Jumu'ah";
     const contextualMessages: Record<string, string[]> = {
       Fajr: [
         'Rise and shine! Start your day with prayer',
@@ -1086,9 +1089,17 @@ class NotificationService {
         'The dawn prayer awaits you ☀️',
       ],
       Dhuhr: [
-        'Take a break from the world, connect with Allah',
-        'Pause your day for Dhuhr prayer 🌞',
-        'Time for the midday prayer ☀️',
+        ...(isJummah
+          ? [
+              "Set aside the world and answer the call to Jumu'ah",
+              "Hasten to the remembrance of Allah for Jumu'ah",
+              "Jumu'ah time has arrived",
+            ]
+          : [
+              'Take a break from the world, connect with Allah',
+              'Pause your day for Dhuhr prayer 🌞',
+              'Time for the midday prayer ☀️',
+            ]),
       ],
       Asr: [
         'The afternoon prayer brings peace to your day 🌤',
@@ -1109,7 +1120,7 @@ class NotificationService {
 
     const messages = contextualMessages[prayerKey] || [`Time for ${displayName} prayer 🕌`];
 
-    const dateKey = format(new Date(), 'yyyy-MM-dd');
+    const dateKey = format(referenceDate, 'yyyy-MM-dd');
     const idx = this.deterministicIndex(`${prayerKey}-main-${dateKey}`, messages.length);
 
     return {

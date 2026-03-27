@@ -238,4 +238,11 @@ describe('ramadan utilities', () => {
     jest.setSystemTime(new Date('2026-03-19T09:00:00.000Z'));
     expect(isFriday()).toBe(false);
   });
+
+  it('accepts an explicit date when checking Friday', () => {
+    const { isFriday } = loadRamadanModule();
+
+    expect(isFriday(new Date('2026-03-20T09:00:00.000Z'))).toBe(true);
+    expect(isFriday(new Date('2026-03-19T09:00:00.000Z'))).toBe(false);
+  });
 });
