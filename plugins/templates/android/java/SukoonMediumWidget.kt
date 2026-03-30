@@ -1,22 +1,22 @@
 package com.talukders.sukoon
 
 import android.content.Context
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
-import java.util.TimeZone
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceModifier
+import androidx.glance.Image
 import androidx.glance.ImageProvider
+import androidx.glance.LocalSize
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.actionStartActivity
-import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
 import androidx.glance.background
+import androidx.glance.appwidget.cornerRadius
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Box
 import androidx.glance.layout.Column
@@ -28,10 +28,9 @@ import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.size
 import androidx.glance.layout.width
-import androidx.glance.text.Text
 import androidx.glance.text.FontWeight
+import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
-import androidx.glance.Image
 import androidx.glance.unit.ColorProvider
 
 class SukoonMediumWidget : GlanceAppWidgetReceiver() {
@@ -39,145 +38,211 @@ class SukoonMediumWidget : GlanceAppWidgetReceiver() {
 }
 
 private class PrayerDashboardWidget : GlanceAppWidget() {
-    override val sizeMode = SizeMode.Single
+    override val sizeMode = SizeMode.Responsive(mediumWidgetSizes)
 
     override suspend fun provideGlance(context: Context, id: androidx.glance.GlanceId) {
         val snapshot = SukoonWidgetSnapshotStore.load(context)
         val palette = SukoonWidgetTheme.palette(snapshot.themeMode)
         val accent = SukoonWidgetTheme.prayerAccent(snapshot.nextPrayer?.name?.lowercase() ?: "asr")
-        val progress = if (snapshot.nextPrayer == null) {
-            0.12f
-        } else {
-            ((180 - snapshot.nextPrayer.remainingMinutes.coerceAtMost(180)).coerceAtLeast(18) / 180f)
-        }
-        val ringBitmap = SukoonWidgetBitmaps.countdownRing(progress, accent, palette.ringTrack)
+        val chromeAccent = palette.timer
+        val progress = widgetCountdownProgress(snapshot.nextPrayer)
 
         provideContent {
-            Column(
+            val size = LocalSize.current
+            val layout = mediumWidgetLayout(size)
+            val hijriText = hijriChipText(snapshot)
+            val footerItemWidth = mediumFooterItemWidth(size, layout)
+            val ringBitmap = SukoonWidgetBitmaps.countdownRing(
+                progress = progress,
+                accent = chromeAccent,
+                track = palette.ringTrack,
+                sizePx = layout.ringBitmapSizePx,
+                strokeRatio = layout.ringStrokeRatio,
+                minProgress = 0.04f,
+            )
+            val cardBitmap = SukoonWidgetBitmaps.cardBackground(
+                widthPx = layout.cardWidthPx,
+                heightPx = layout.cardHeightPx,
+                palette = palette,
+                accent = chromeAccent,
+            )
+
+            Box(
                 modifier = GlanceModifier
                     .fillMaxSize()
-                    .background(ColorProvider(palette.background))
-                    .cornerRadius(24.dp)
-                    .clickable(actionStartActivity(SukoonWidgetIntents.openApp(context)))
-                    .padding(16.dp),
+                    .clickable(actionStartActivity(SukoonWidgetIntents.openApp(context))),
+                contentAlignment = Alignment.TopStart,
             ) {
-                Row(
-                    modifier = GlanceModifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.Vertical.CenterVertically,
-                ) {
-                    Text(
-                        text = "Sukoon",
-                        style = TextStyle(
-                            color = ColorProvider(palette.label),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Medium,
-                        )
-                    )
+                Image(
+                    provider = ImageProvider(cardBitmap),
+                    contentDescription = null,
+                    modifier = GlanceModifier.fillMaxSize(),
+                )
 
-                    Spacer(modifier = GlanceModifier.width(12.dp))
-
-                    Text(
-                        text = snapshot.hijri.shortLabel.ifBlank { "Today" },
-                        style = TextStyle(
-                            color = ColorProvider(palette.chipText),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Medium,
+                Column(
+                    modifier = GlanceModifier
+                        .fillMaxSize()
+                        .padding(
+                            start = layout.contentPadding,
+                            top = layout.topSafeInset,
+                            end = layout.contentPadding,
+                            bottom = layout.contentPadding,
                         ),
-                        modifier = GlanceModifier
-                            .background(ColorProvider(palette.chipBackground))
-                            .cornerRadius(14.dp)
-                            .padding(8.dp, 4.dp, 8.dp, 4.dp),
-                        maxLines = 1
-                    )
-                }
-
-                Spacer(modifier = GlanceModifier.height(12.dp))
-
-                Row(
-                    modifier = GlanceModifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.Vertical.CenterVertically,
                 ) {
-                    Column {
+                    Row(
+                        modifier = GlanceModifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.Vertical.CenterVertically,
+                    ) {
                         Text(
-                            text = snapshot.nextPrayer?.name ?: "—",
+                            text = "Next Prayer",
                             style = TextStyle(
-                                color = ColorProvider(palette.primaryText),
-                                fontSize = 28.sp,
-                                fontWeight = FontWeight.Bold,
-                            ),
-                            maxLines = 1
-                        )
-
-                        Spacer(modifier = GlanceModifier.height(3.dp))
-
-                        Text(
-                            text = snapshot.nextPrayer?.arabicName ?: "—",
-                            style = TextStyle(
-                                color = ColorProvider(palette.secondaryText),
-                                fontSize = 13.sp,
-                            ),
-                            maxLines = 1
-                        )
-
-                        Spacer(modifier = GlanceModifier.height(8.dp))
-
-                        Text(
-                            text = snapshot.supportiveLine,
-                            style = TextStyle(
-                                color = ColorProvider(palette.secondaryText),
-                                fontSize = 12.sp,
+                                color = ColorProvider(palette.label),
+                                fontSize = layout.headerFontSize.sp,
                                 fontWeight = FontWeight.Medium,
                             ),
-                            maxLines = 2
-                        )
-                    }
-
-                    Spacer(modifier = GlanceModifier.width(12.dp))
-
-                    Box(
-                        modifier = GlanceModifier.size(92.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Image(
-                            provider = ImageProvider(ringBitmap),
-                            contentDescription = null,
-                            modifier = GlanceModifier.size(92.dp)
+                            maxLines = 1,
                         )
 
-                        Column(
-                            horizontalAlignment = Alignment.Horizontal.CenterHorizontally,
-                            verticalAlignment = Alignment.Vertical.CenterVertically,
+                        Box(
+                            modifier = GlanceModifier.fillMaxWidth(),
+                            contentAlignment = Alignment.CenterEnd,
                         ) {
                             Text(
-                                text = formatRemaining(snapshot.nextPrayer?.remainingMinutes),
+                                text = hijriText,
                                 style = TextStyle(
-                                    color = ColorProvider(palette.primaryText),
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                )
-                            )
-                            Spacer(modifier = GlanceModifier.height(2.dp))
-                            Text(
-                                text = formatTime(snapshot.nextPrayer?.timeISO),
-                                style = TextStyle(
-                                    color = ColorProvider(palette.secondaryText),
-                                    fontSize = 10.sp,
-                                )
+                                    color = ColorProvider(palette.primaryText.copy(alpha = 0.66f)),
+                                    fontSize = layout.chipFontSize.sp,
+                                    fontWeight = FontWeight.Medium,
+                                ),
+                                modifier = GlanceModifier
+                                    .background(ColorProvider(palette.chipBackground))
+                                    .cornerRadius(layout.chipCornerRadius)
+                                    .padding(
+                                        layout.chipHorizontalPadding,
+                                        layout.chipVerticalPadding,
+                                        layout.chipHorizontalPadding,
+                                        layout.chipVerticalPadding,
+                                    ),
+                                maxLines = 1,
                             )
                         }
                     }
-                }
 
-                Spacer(modifier = GlanceModifier.height(12.dp))
+                    Spacer(modifier = GlanceModifier.height(layout.heroTopSpacing))
 
-                Row(
-                    modifier = GlanceModifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.Vertical.CenterVertically,
-                ) {
-                    snapshot.prayers.forEachIndexed { index, prayer ->
-                        PrayerStateColumn(prayer = prayer, palette = palette)
-                        if (index < snapshot.prayers.lastIndex) {
-                            Spacer(modifier = GlanceModifier.width(10.dp))
+                    Row(
+                        modifier = GlanceModifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.Vertical.CenterVertically,
+                    ) {
+                        Column(
+                            modifier = GlanceModifier.width(layout.leftColumnWidth),
+                        ) {
+                            Text(
+                                text = snapshot.nextPrayer?.name ?: "—",
+                                style = TextStyle(
+                                    color = ColorProvider(palette.primaryText),
+                                    fontSize = layout.prayerFontSize.sp,
+                                    fontWeight = FontWeight.Bold,
+                                ),
+                                maxLines = 1,
+                            )
+
+                            Spacer(modifier = GlanceModifier.height(layout.timeTopSpacing))
+
+                            Text(
+                                text = formatWidgetTime(snapshot.nextPrayer?.timeISO),
+                                style = TextStyle(
+                                    color = ColorProvider(palette.secondaryText.copy(alpha = 0.9f)),
+                                    fontSize = layout.timeFontSize.sp,
+                                    fontWeight = FontWeight.Medium,
+                                ),
+                                maxLines = 1,
+                            )
+
+                            Spacer(modifier = GlanceModifier.height(layout.arabicTopSpacing))
+
+                            Text(
+                                text = snapshot.nextPrayer?.arabicName ?: "—",
+                                style = TextStyle(
+                                    color = ColorProvider(palette.mutedText.copy(alpha = 0.9f)),
+                                    fontSize = layout.arabicFontSize.sp,
+                                ),
+                                maxLines = 1,
+                            )
+                        }
+
+                        Box(
+                            modifier = GlanceModifier.fillMaxWidth(),
+                            contentAlignment = Alignment.CenterEnd,
+                        ) {
+                            Box(
+                                modifier = GlanceModifier
+                                    .size(layout.ringSize),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                Image(
+                                    provider = ImageProvider(ringBitmap),
+                                    contentDescription = null,
+                                    modifier = GlanceModifier.size(layout.ringSize),
+                                )
+
+                                Column(
+                                    horizontalAlignment = Alignment.Horizontal.CenterHorizontally,
+                                    verticalAlignment = Alignment.Vertical.CenterVertically,
+                                ) {
+                                    Text(
+                                        text = formatWidgetCountdownLiteral(snapshot.nextPrayer?.remainingMinutes),
+                                        style = TextStyle(
+                                            color = ColorProvider(palette.primaryText),
+                                            fontSize = layout.remainingFontSize.sp,
+                                            fontWeight = FontWeight.Bold,
+                                        ),
+                                        maxLines = 1,
+                                    )
+
+                                    Spacer(modifier = GlanceModifier.height(1.dp))
+
+                                    Text(
+                                        text = "remaining",
+                                        style = TextStyle(
+                                            color = ColorProvider(palette.secondaryText.copy(alpha = 0.8f)),
+                                            fontSize = layout.ringLabelFontSize.sp,
+                                        ),
+                                        maxLines = 1,
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = GlanceModifier.height(layout.dividerTopSpacing))
+
+                    Box(
+                        modifier = GlanceModifier
+                            .fillMaxWidth()
+                            .height(1.dp)
+                            .background(ColorProvider(palette.border)),
+                    ) {}
+
+                    Spacer(modifier = GlanceModifier.height(layout.dividerBottomSpacing))
+
+                    Row(
+                        modifier = GlanceModifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.Top,
+                    ) {
+                        snapshot.prayers.take(5).forEachIndexed { index, prayer ->
+                            PrayerRhythmItem(
+                                prayer = prayer,
+                                palette = palette,
+                                baseSize = layout.footerDotSize,
+                                activeSize = layout.footerActiveDotSize,
+                                innerPadding = layout.footerDotInnerPadding,
+                                labelFontSize = layout.footerLabelFontSize,
+                                itemWidth = footerItemWidth,
+                            )
+                            if (index < 4) {
+                                Spacer(modifier = GlanceModifier.width(layout.footerItemGap))
+                            }
                         }
                     }
                 }
@@ -187,67 +252,65 @@ private class PrayerDashboardWidget : GlanceAppWidget() {
 }
 
 @androidx.compose.runtime.Composable
-private fun PrayerStateColumn(prayer: AndroidWidgetPrayer, palette: AndroidWidgetPalette) {
+private fun PrayerRhythmItem(
+    prayer: AndroidWidgetPrayer,
+    palette: AndroidWidgetPalette,
+    baseSize: androidx.compose.ui.unit.Dp,
+    activeSize: androidx.compose.ui.unit.Dp,
+    innerPadding: androidx.compose.ui.unit.Dp,
+    labelFontSize: Int,
+    itemWidth: androidx.compose.ui.unit.Dp,
+) {
     val accent = SukoonWidgetTheme.prayerAccent(prayer.accentKey)
-    val dotColor = when (prayer.status) {
-        "prayed" -> accent
-        "current", "next" -> accent
-        "upcoming" -> accent.copy(alpha = 0.26f)
-        "missed" -> accent.copy(alpha = 0.18f)
-        else -> palette.mutedText
+    val isActive = prayer.status == "current" || prayer.status == "next"
+    val isMissed = prayer.status == "missed"
+    val dotSize = if (isActive) activeSize else baseSize
+    val haloColor = when {
+        isActive -> accent.copy(alpha = 0.18f)
+        isMissed -> accent.copy(alpha = 0.3f)
+        else -> Color.Transparent
     }
-    val labelColor = if (prayer.status == "current" || prayer.status == "next") accent else palette.secondaryText
+    val fillColor = when (prayer.status) {
+        "prayed" -> accent.copy(alpha = 0.48f)
+        "current", "next" -> accent
+        "upcoming" -> accent.copy(alpha = 0.38f)
+        "missed" -> palette.surface.copy(alpha = 0.92f)
+        else -> palette.mutedText.copy(alpha = 0.3f)
+    }
+    val labelColor = if (isActive) accent else palette.mutedText
+    val dotInnerPadding = if (isMissed) innerPadding + 1.dp else innerPadding
 
-    Column(horizontalAlignment = Alignment.Horizontal.CenterHorizontally) {
+    Column(
+        modifier = GlanceModifier.width(itemWidth),
+        horizontalAlignment = Alignment.Horizontal.CenterHorizontally,
+        verticalAlignment = Alignment.Top,
+    ) {
         Box(
             modifier = GlanceModifier
-                .size(9.dp)
-                .background(ColorProvider(dotColor))
+                .size(dotSize)
+                .background(ColorProvider(haloColor))
                 .cornerRadius(99.dp)
-        ) {}
+                .padding(dotInnerPadding),
+            contentAlignment = Alignment.Center,
+        ) {
+            Box(
+                modifier = GlanceModifier
+                    .fillMaxSize()
+                    .background(ColorProvider(fillColor))
+                    .cornerRadius(99.dp),
+            ) {}
+        }
 
-        Spacer(modifier = GlanceModifier.height(4.dp))
+        Spacer(modifier = GlanceModifier.height(6.dp))
 
         Text(
-            text = prayer.name,
+            text = shortPrayerLabel(prayer),
             style = TextStyle(
-                color = ColorProvider(labelColor),
-                fontSize = 10.sp,
-                fontWeight = if (prayer.status == "current" || prayer.status == "next") FontWeight.Bold else FontWeight.Medium,
+                color = ColorProvider(labelColor.copy(alpha = if (isActive) 1f else 0.72f)),
+                fontSize = labelFontSize.sp,
+                fontWeight = if (isActive) FontWeight.Medium else FontWeight.Normal,
             ),
-            maxLines = 1
+            maxLines = 1,
         )
     }
-}
-
-private fun formatRemaining(remainingMinutes: Int?): String {
-    if (remainingMinutes == null) return "—"
-    if (remainingMinutes <= 0) return "Now"
-    val hours = remainingMinutes / 60
-    val minutes = remainingMinutes % 60
-    return if (hours > 0) "${hours}h ${minutes}m" else "${minutes}m"
-}
-
-private fun formatTime(iso: String?): String {
-    if (iso.isNullOrEmpty()) return "--:--"
-    val date = parseIso(iso) ?: return "--:--"
-    return SimpleDateFormat("h:mm a", Locale.getDefault()).format(date)
-}
-
-private fun parseIso(iso: String): Date? {
-    val patterns = arrayOf(
-        "yyyy-MM-dd'T'HH:mm:ss.SSS'Z'",
-        "yyyy-MM-dd'T'HH:mm:ss'Z'",
-    )
-
-    patterns.forEach { pattern ->
-        try {
-            val formatter = SimpleDateFormat(pattern, Locale.US)
-            formatter.timeZone = TimeZone.getTimeZone("UTC")
-            return formatter.parse(iso)
-        } catch (_: Exception) {
-        }
-    }
-
-    return null
 }

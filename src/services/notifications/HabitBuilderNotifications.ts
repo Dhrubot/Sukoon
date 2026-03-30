@@ -10,6 +10,7 @@ import { NOTIFICATION_CATEGORIES } from './NotificationChannels';
 import { format } from 'date-fns';
 import logger from '../../utils/logger';
 import { prependNotificationName } from '../../utils/notificationPersonalization';
+import { scheduleLocalNotificationAsync } from './scheduleLocalNotification';
 
 /**
  * Check if current time is within quiet hours.
@@ -119,7 +120,7 @@ export async function scheduleTier2PersistentReminders(
       break; // No point continuing if cap is hit
     }
 
-    await Notifications.scheduleNotificationAsync({
+    await scheduleLocalNotificationAsync({
       content: {
         title: `${prayerDisplayName} prayer reminder`,
         body: prependNotificationName(message, settings),
@@ -131,7 +132,6 @@ export async function scheduleTier2PersistentReminders(
           scheduledAt: new Date().toISOString(),
         },
         categoryIdentifier: NOTIFICATION_CATEGORIES.POST_PRAYER_CHECK,
-        sound: 'default',
       },
       trigger: {
         type: 'date',
@@ -195,7 +195,7 @@ export async function scheduleTier3GracePeriodWarning(
     return;
   }
 
-  await Notifications.scheduleNotificationAsync({
+  await scheduleLocalNotificationAsync({
     content: {
       title: `${prayerDisplayName} window ending soon`,
       body: `${deadlineLabel} ${deadline && deadline < nextPrayer.time ? 'is' : 'begins'} in ${minutesBeforeNext} minutes. Return to ${prayerDisplayName} if you can.`,
@@ -207,7 +207,6 @@ export async function scheduleTier3GracePeriodWarning(
         scheduledAt: new Date().toISOString(),
       },
       categoryIdentifier: NOTIFICATION_CATEGORIES.GRACE_PERIOD_WARNING,
-      sound: 'default',
     },
     trigger: {
       type: 'date',

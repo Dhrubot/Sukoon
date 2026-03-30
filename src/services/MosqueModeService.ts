@@ -9,6 +9,7 @@ import type { RingerMode } from './RingerControlService';
 import type { MosqueModeSettings, PrayerName, PrayerTime } from '../types';
 import logger from '../utils/logger';
 import { mosqueModePlatformUi } from '../utils/mosqueModePlatform';
+import { scheduleLocalNotificationAsync } from './notifications/scheduleLocalNotification';
 
 // Storage keys for mosque mode state
 const STORAGE_KEYS = {
@@ -144,7 +145,7 @@ class MosqueModeService {
       Math.round((iqamahTime.getTime() - reminderTime.getTime()) / (1000 * 60)),
     );
 
-    await Notifications.scheduleNotificationAsync({
+    await scheduleLocalNotificationAsync({
       content: {
         title: `${prayer.name} Iqamah in ${minsUntilIqamah} min`,
         body: mode === 'prompt'
@@ -155,7 +156,6 @@ class MosqueModeService {
           prayer: prayer.name,
           iqamahTime: iqamahTime.toISOString(),
         },
-        sound: 'default',
       },
       trigger: {
         type: 'date',
@@ -285,7 +285,7 @@ class MosqueModeService {
         requestCodeBase
       );
 
-      await Notifications.scheduleNotificationAsync({
+      await scheduleLocalNotificationAsync({
         content: {
           title: 'Mosque Mode Test',
           body: scheduled ? 'Test scheduled for 1 minute from now.' : 'Could not schedule. Please grant Do Not Disturb access.',

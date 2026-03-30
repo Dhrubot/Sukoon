@@ -12,9 +12,7 @@ import MosqueModeService from '../services/MosqueModeService';
 import { Location } from "../types";
 import { NOTIFICATION_RESCHEDULE_TASK } from '../tasks/notificationRescheduleTask';
 
-import SubscriptionService from '../services/monetization/SubscriptionService';
 import AdService from '../services/monetization/AdService';
-import DonationService from '../services/monetization/DonationService';
 import AnalyticsService from '../services/AnalyticsService';
 import RamadanCountdownService from '../services/RamadanCountdownService';
 import JummahNotificationService from '../services/JummahNotificationService';
@@ -47,7 +45,6 @@ export const useServiceInitialization = () => {
           await Promise.all([
             // SubscriptionService.initialize(),
             // AdService.initialize(),
-            DonationService.initialize(),
             LocationService.initialize(),
           ]);
 
@@ -75,9 +72,7 @@ export const useServiceInitialization = () => {
       cancelled = true;
       interactionHandle.cancel();
       logger.log("🧹 Cleaning up services...");
-      SubscriptionService.cleanup();
       AdService.cleanup();
-      DonationService.cleanup();
       LocationService.cleanup();
     };
   }, []);

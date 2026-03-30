@@ -12,6 +12,7 @@ import StorageService from './StorageService';
 import logger from '../utils/logger';
 import { getLocalDateKey } from '../utils/dateHelpers';
 import { PrayerTime } from '../types';
+import { scheduleLocalNotificationAsync } from './notifications/scheduleLocalNotification';
 
 const NOTIFICATION_PREFIX = 'jummah';
 const STORAGE_KEY_LAST_SCHEDULED = 'jummah_last_scheduled';
@@ -220,12 +221,11 @@ class JummahNotificationServiceClass {
 
     const identifier = `${NOTIFICATION_PREFIX}-${type}-${getLocalDateKey()}`;
 
-    await Notifications.scheduleNotificationAsync({
+    await scheduleLocalNotificationAsync({
       content: {
         title: message.title,
         body: message.body,
         data: { type: `jummah-${type}` },
-        sound: 'default',
         categoryIdentifier: NOTIFICATION_CATEGORIES.JUMMAH_REMINDER,
       },
       trigger: {

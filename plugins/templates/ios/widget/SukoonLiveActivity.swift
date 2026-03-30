@@ -43,11 +43,18 @@ private struct LADateHelper {
 private struct LAColors {
     static let gold = Color(red: 0.831, green: 0.686, blue: 0.216)
     static let teal = Color(red: 0.176, green: 0.831, blue: 0.749)
+    static let night = Color(red: 0.035, green: 0.051, blue: 0.094)
     static let text = Color(red: 0.95, green: 0.93, blue: 0.89)
     static let secondary = Color.white.opacity(0.72)
+    static let mutedText = Color(red: 0.478, green: 0.518, blue: 0.600)
     static let backgroundTop = Color(red: 0.07, green: 0.11, blue: 0.19)
     static let backgroundBottom = Color(red: 0.03, green: 0.05, blue: 0.10)
     static let border = Color.white.opacity(0.10)
+    static let buttonBorder = Color.white.opacity(0.12)
+    static let prepareFill = teal
+    static let prepareText = night
+    static let prayedFill = night
+    static let prayedText = mutedText
 
     static func accent(for key: String) -> Color {
         switch key {
@@ -118,11 +125,54 @@ private struct PrayerProgressBar: View {
                     .frame(height: height)
 
                 RoundedRectangle(cornerRadius: height / 2)
-                    .fill(LAColors.gold)
+                    .fill(LAColors.prepareFill)
                     .frame(width: geo.size.width * min(max(CGFloat(progress), 0), 1), height: height)
             }
         }
         .frame(height: height)
+    }
+}
+
+private struct ActivityActionLabel: View {
+    let title: String
+    let variant: Variant
+
+    enum Variant {
+        case primary
+        case secondary
+    }
+
+    var body: some View {
+        Text(title)
+            .font(.system(size: 13, weight: .semibold))
+            .foregroundColor(variant == .primary ? LAColors.prepareText : LAColors.prayedText)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 6)
+            .background(variant == .primary ? LAColors.prepareFill : LAColors.prayedFill)
+            .overlay(
+                Capsule()
+                    .stroke(variant == .secondary ? LAColors.buttonBorder : Color.clear, lineWidth: 1)
+            )
+            .clipShape(Capsule())
+    }
+}
+
+private struct CompactActivityActionLabel: View {
+    let title: String
+    let variant: ActivityActionLabel.Variant
+
+    var body: some View {
+        Text(title)
+            .font(.system(size: 11, weight: .semibold))
+            .foregroundColor(variant == .primary ? LAColors.prepareText : LAColors.prayedText)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(variant == .primary ? LAColors.prepareFill : LAColors.prayedFill)
+            .overlay(
+                Capsule()
+                    .stroke(variant == .secondary ? LAColors.buttonBorder : Color.clear, lineWidth: 1)
+            )
+            .clipShape(Capsule())
     }
 }
 
@@ -136,6 +186,20 @@ private struct ActivitySupportiveCopy {
         default:
             return "Prepare for the next salah"
         }
+    }
+}
+
+private struct ActivityTopStatusCopy {
+    static func line(prayerName: String, hasFutureTarget: Bool) -> String {
+        if hasFutureTarget {
+            return ""
+        }
+
+        if prayerName == "Isha" {
+            return "Until Fajr tomorrow"
+        }
+
+        return "Now"
     }
 }
 
@@ -182,23 +246,11 @@ struct SukoonLiveActivity: Widget {
                     if context.state.phase == "fiqh_window" {
                         HStack(spacing: 12) {
                             Link(destination: URL(string: "sukoon://prepare?prayer=\(context.state.prayerName)")!) {
-                                Text("Prepare")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 6)
-                                    .background(LAColors.gold.opacity(0.78))
-                                    .clipShape(Capsule())
+                                ActivityActionLabel(title: "Prepare", variant: .primary)
                             }
 
                             Link(destination: URL(string: "sukoon://prayed?prayer=\(context.state.prayerName)")!) {
-                                Text("Prayed")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 6)
-                                    .background(LAColors.teal)
-                                    .clipShape(Capsule())
+                                ActivityActionLabel(title: "Prayed", variant: .secondary)
                             }
                         }
                         .padding(.top, 4)
@@ -253,7 +305,12 @@ struct SukoonLiveActivity: Widget {
                             .foregroundColor(LAColors.secondary)
                     }
                 } else {
-                    Text(ActivitySupportiveCopy.line(for: context.state.phase))
+                    Text(
+                        ActivityTopStatusCopy.line(
+                            prayerName: context.state.prayerName,
+                            hasFutureTarget: false
+                        )
+                    )
                         .font(.system(size: 14, weight: .semibold))
                         .foregroundColor(LAColors.gold)
                 }
@@ -288,23 +345,11 @@ struct SukoonLiveActivity: Widget {
                 if context.state.phase == "fiqh_window" {
                     HStack(spacing: 8) {
                         Link(destination: URL(string: "sukoon://prepare?prayer=\(context.state.prayerName)")!) {
-                            Text("Prepare")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 4)
-                                .background(LAColors.gold.opacity(0.78))
-                                .clipShape(Capsule())
+                            CompactActivityActionLabel(title: "Prepare", variant: .primary)
                         }
 
                         Link(destination: URL(string: "sukoon://prayed?prayer=\(context.state.prayerName)")!) {
-                            Text("Prayed")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 4)
-                                .background(LAColors.teal)
-                                .clipShape(Capsule())
+                            CompactActivityActionLabel(title: "Prayed", variant: .secondary)
                         }
                     }
                 }

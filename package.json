@@ -49,7 +49,6 @@
     "expo-file-system": "~55.0.11",
     "expo-font": "~55.0.4",
     "expo-haptics": "~55.0.9",
-    "expo-iap": "^3.4.10",
     "expo-keep-awake": "~55.0.4",
     "expo-linear-gradient": "~55.0.9",
     "expo-location": "~55.1.4",

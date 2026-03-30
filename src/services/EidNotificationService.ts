@@ -13,6 +13,7 @@ import {
 import StorageService from './StorageService';
 import logger from '../utils/logger';
 import { getLocalDateKey } from '../utils/dateHelpers';
+import { scheduleLocalNotificationAsync } from './notifications/scheduleLocalNotification';
 
 const NOTIFICATION_PREFIX = 'eid';
 const STORAGE_KEY_LAST_SCHEDULED = 'eid_notif_last_scheduled';
@@ -197,12 +198,11 @@ class EidNotificationServiceClass {
       }
     }
 
-    await Notifications.scheduleNotificationAsync({
+    await scheduleLocalNotificationAsync({
       content: {
         title: content.title,
         body: content.body,
         data: { type: 'eid' },
-        sound: 'default',
       },
       trigger: {
         type: 'date',

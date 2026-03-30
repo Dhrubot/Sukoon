@@ -15,7 +15,8 @@ import Svg, { Path } from 'react-native-svg';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
-import { isRamadan } from '../../utils/ramadan';
+import { DailyContent, resolveDailyContent } from '../../utils/dailyContent';
+import { getLocalDateKey } from '../../utils/dateHelpers';
 import logger from '../../utils/logger';
 
 // Quran/Book Icon Component
@@ -46,29 +47,6 @@ const QuranIcon: React.FC<{ color: string; size: number }> = ({ color, size }) =
   </Svg>
 );
 
-type VerseEntry = {
-  id: number;
-  arabic: string;
-  translation: string;
-  reference: string;
-  theme: string;
-};
-
-type HadithEntry = {
-  arabic: string;
-  translation: string;
-  source: string;
-  narrator?: string;
-};
-
-interface DailyContent {
-  arabic: string;
-  translation: string;
-  reference: string;
-  narrator?: string;
-  isHadith: boolean;
-}
-
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 
 export interface DailyVerseRef {
@@ -91,12 +69,29 @@ const DailyVerse = forwardRef<DailyVerseRef, DailyVerseProps>(({ modalOnly }, re
   const [sheetVisible, setSheetVisible] = useState(false);
   const slideAnim = useRef(new Animated.Value(SCREEN_HEIGHT)).current;
   const backdropAnim = useRef(new Animated.Value(0)).current;
+  const loadedForDateRef = useRef<string | null>(null);
+
+  const ensureContentLoaded = React.useCallback(() => {
+    const now = new Date();
+    const todayKey = getLocalDateKey(now);
+    if (loadedForDateRef.current === todayKey) {
+      return;
+    }
+
+    try {
+      setContent(resolveDailyContent(now));
+      loadedForDateRef.current = todayKey;
+    } catch (error) {
+      logger.error('Failed to load daily content:', error);
+    }
+  }, []);
 
   useImperativeHandle(ref, () => ({
     openSheet,
   }));
 
   const openSheet = () => {
+    ensureContentLoaded();
     setSheetVisible(true);
     Animated.parallel([
       Animated.spring(slideAnim, {
@@ -129,68 +124,10 @@ const DailyVerse = forwardRef<DailyVerseRef, DailyVerseProps>(({ modalOnly }, re
   };
 
   useEffect(() => {
-    let cancelled = false;
-
-    const loadDailyContent = async () => {
-      const [{ VERSES }, { HADITH_COLLECTION }] = await Promise.all([
-        import('../../constants'),
-        import('../../constants/hadithCollection'),
-      ]);
-      if (cancelled) return;
-
-      const today = new Date();
-      const dayOfYear = Math.floor(
-        (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) /
-        (1000 * 60 * 60 * 24)
-      );
-
-      // During Ramadan, bias toward Ramadan-themed verses (always Quran)
-      if (isRamadan()) {
-        const ramadanVerses = VERSES.filter((v: VerseEntry) => v.theme === 'ramadan');
-        if (ramadanVerses.length > 0) {
-          const idx = dayOfYear % ramadanVerses.length;
-          const verse = ramadanVerses[idx];
-          setContent({
-            arabic: verse.arabic,
-            translation: verse.translation,
-            reference: verse.reference,
-            isHadith: false,
-          });
-          return;
-        }
-      }
-
-      // Alternate: even days = verse, odd days = hadith
-      if (dayOfYear % 2 === 0) {
-        const idx = Math.floor(dayOfYear / 2) % VERSES.length;
-        const verse = VERSES[idx];
-        setContent({
-          arabic: verse.arabic,
-          translation: verse.translation,
-          reference: verse.reference,
-          isHadith: false,
-        });
-      } else {
-        const idx = Math.floor(dayOfYear / 2) % HADITH_COLLECTION.length;
-        const hadith = HADITH_COLLECTION[idx];
-        setContent({
-          arabic: hadith.arabic,
-          translation: hadith.translation,
-          reference: hadith.source,
-          narrator: hadith.narrator,
-          isHadith: true,
-        });
-      }
-    };
-
-    loadDailyContent().catch((error) => {
-      logger.error('Failed to load daily content:', error);
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+    if (!modalOnly) {
+      ensureContentLoaded();
+    }
+  }, [ensureContentLoaded, modalOnly]);
 
   const handleShare = async () => {
     const narratorLine = content.narrator ? `\nNarrated by ${content.narrator}` : '';

@@ -205,6 +205,33 @@ enum WidgetDateHelper {
     }
 }
 
+enum WidgetCountdownCopy {
+    static func compact(_ remainingMinutes: Int?) -> String {
+        guard let remainingMinutes else { return "Now" }
+        let minutes = max(remainingMinutes, 0)
+        if minutes <= 0 { return "Now" }
+        if minutes < 60 { return "\(minutes)m" }
+
+        let hours = minutes / 60
+        let remainder = minutes % 60
+        if remainder == 0 { return "\(hours)h" }
+        return "\(hours)h \(remainder)m"
+    }
+
+    static func circular(_ remainingMinutes: Int?) -> String {
+        guard let remainingMinutes else { return "Now" }
+        let minutes = max(remainingMinutes, 0)
+        if minutes <= 0 { return "Now" }
+        if minutes < 60 { return "\(minutes)m" }
+        return "\(minutes / 60)h"
+    }
+
+    static func prefixed(_ remainingMinutes: Int?) -> String {
+        let compactValue = compact(remainingMinutes)
+        return compactValue == "Now" ? compactValue : "in \(compactValue)"
+    }
+}
+
 // MARK: - Shared Views
 
 struct WidgetCardBackground: View {
@@ -292,26 +319,33 @@ struct CountdownRing: View {
     var body: some View {
         ZStack {
             Circle()
-                .stroke(palette.ringTrack, lineWidth: 8)
+                .stroke(palette.ringTrack, lineWidth: 3.5)
+
+            Circle()
+                .trim(from: 0, to: min(max(progress, 0.06), 1.0))
+                .stroke(accent.opacity(0.18), style: StrokeStyle(lineWidth: 8, lineCap: .round))
+                .rotationEffect(.degrees(-90))
 
             Circle()
                 .trim(from: 0, to: min(max(progress, 0.06), 1.0))
                 .stroke(
                     AngularGradient(colors: [accent.opacity(0.65), accent, accent.opacity(0.82)], center: .center),
-                    style: StrokeStyle(lineWidth: 8, lineCap: .round)
+                    style: StrokeStyle(lineWidth: 3.5, lineCap: .round)
                 )
                 .rotationEffect(.degrees(-90))
 
-            VStack(spacing: 3) {
+            VStack(spacing: 2) {
                 Text(title)
-                    .font(.system(size: 18, weight: .semibold, design: .serif))
+                    .font(.system(size: 15, weight: .semibold, design: .serif))
                     .foregroundColor(palette.primaryText)
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
 
                 Text(subtitle)
-                    .font(.system(size: 11, weight: .medium))
+                    .font(.system(size: 10.5, weight: .medium))
                     .foregroundColor(palette.secondaryText)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
             }
         }
     }
@@ -324,6 +358,7 @@ struct SmallWidgetView: View {
 
     private var palette: WidgetPalette { WidgetPalette.resolve(snapshot.themeMode) }
     private var accent: Color { PrayerAccent.color(for: snapshot.nextPrayer?.name.lowercased() ?? "asr") }
+    private var timeLabel: String { WidgetDateHelper.formatTime(snapshot.nextPrayer?.timeISO ?? "") }
 
     private var ringProgress: Double {
         guard let nextPrayer = snapshot.nextPrayer else { return 0.18 }
@@ -331,22 +366,29 @@ struct SmallWidgetView: View {
         return min(max(Double(180 - min(minutes, 180)) / 180.0, 0.16), 1.0)
     }
 
+    private var countdownText: String {
+        guard let nextPrayer = snapshot.nextPrayer else { return "Now" }
+        let minutes = max(nextPrayer.remainingMinutes, 0)
+        if minutes <= 0 { return "Now" }
+        let hours = minutes / 60
+        let remaining = minutes % 60
+        if hours > 0 {
+            return remaining == 0 ? "\(hours)h" : "\(hours)h \(remaining)m"
+        }
+        return "\(minutes)m"
+    }
+
     var body: some View {
-        VStack(spacing: 10) {
+        VStack(spacing: 0) {
             HStack {
                 Text("Next Prayer")
                     .font(.system(size: 10, weight: .semibold))
                     .textCase(.uppercase)
                     .foregroundColor(palette.label)
-                Spacer()
-                Text(snapshot.hijri.shortLabel)
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundColor(palette.chipText)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(palette.chipBackground)
-                    .clipShape(Capsule())
+                Spacer(minLength: 0)
             }
+
+            Spacer(minLength: 8)
 
             ZStack {
                 CountdownRing(
@@ -354,29 +396,20 @@ struct SmallWidgetView: View {
                     accent: accent,
                     progress: ringProgress,
                     title: snapshot.nextPrayer?.name ?? "—",
-                    subtitle: WidgetDateHelper.formatTime(snapshot.nextPrayer?.timeISO ?? "")
+                    subtitle: countdownText
                 )
-                .frame(width: 92, height: 92)
-
-                VStack {
-                    Spacer()
-                    CountdownLabel(
-                        targetISO: snapshot.nextPrayer?.timeISO ?? "",
-                        color: palette.timer,
-                        font: .system(size: 11, weight: .semibold)
-                    )
-                    .offset(y: 27)
-                }
+                .frame(width: 88, height: 88)
             }
-            .frame(maxHeight: .infinity)
+            .frame(maxWidth: .infinity)
 
-            HStack(spacing: 7) {
-                ForEach(snapshot.prayers) { prayer in
-                    PrayerStatusDot(prayer: prayer)
-                }
-            }
+            Spacer(minLength: 8)
+
+            Text(timeLabel)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundColor(palette.secondaryText)
+                .frame(maxWidth: .infinity)
         }
-        .padding(14)
+        .padding(13)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
@@ -389,31 +422,56 @@ struct PrayerScheduleRow: View {
     let isNext: Bool
 
     private var accent: Color { PrayerAccent.color(for: prayer.accentKey) }
+    private var rowOpacity: Double {
+        switch prayer.status {
+        case "upcoming":
+            return 0.48
+        case "missed":
+            return 0.62
+        default:
+            return 1.0
+        }
+    }
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 7) {
             PrayerStatusDot(prayer: prayer)
 
             Text(prayer.name)
-                .font(.system(size: 13, weight: isNext ? .semibold : .medium))
+                .font(.system(size: 12, weight: isNext ? .semibold : .medium))
                 .foregroundColor(isNext ? accent : palette.primaryText)
+                .lineLimit(1)
 
             if isNext {
                 Text("NEXT")
                     .font(.system(size: 8, weight: .semibold))
                     .foregroundColor(palette.chipText)
                     .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
+                    .padding(.vertical, 2)
                     .background(accent.opacity(0.18))
                     .clipShape(Capsule())
             }
 
-            Spacer()
+            Spacer(minLength: 6)
 
             Text(WidgetDateHelper.formatTime(prayer.timeISO))
-                .font(.system(size: 11, weight: isNext ? .semibold : .medium))
+                .font(.system(size: 10.5, weight: isNext ? .semibold : .medium))
                 .foregroundColor(isNext ? accent.opacity(0.92) : palette.secondaryText)
+                .lineLimit(1)
         }
+        .padding(.vertical, 4)
+        .opacity(rowOpacity)
+    }
+}
+
+struct PrayerRowDivider: View {
+    let palette: WidgetPalette
+
+    var body: some View {
+        Rectangle()
+            .fill(palette.border.opacity(0.45))
+            .frame(height: 1)
+            .frame(maxWidth: .infinity)
     }
 }
 
@@ -422,35 +480,41 @@ struct MediumWidgetView: View {
 
     private var palette: WidgetPalette { WidgetPalette.resolve(snapshot.themeMode) }
     private var nextPrayerName: String { snapshot.nextPrayer?.name ?? "" }
+    private var hijriChipLabel: String {
+        guard snapshot.hijri.day > 0, !snapshot.hijri.monthEn.isEmpty, snapshot.hijri.year > 0 else {
+            return snapshot.hijri.shortLabel
+        }
+        return "\(snapshot.hijri.day) \(snapshot.hijri.monthEn) \(snapshot.hijri.year)"
+    }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Today’s Prayers")
-                        .font(.system(size: 10, weight: .semibold))
-                        .textCase(.uppercase)
-                        .foregroundColor(palette.label)
+        VStack(alignment: .leading, spacing: 0) {
+            HStack {
+                Text("Today’s Prayers")
+                    .font(.system(size: 10, weight: .semibold))
+                    .textCase(.uppercase)
+                    .foregroundColor(palette.label)
 
-                    Text(snapshot.supportiveLine)
-                        .font(.system(size: 15, weight: .semibold, design: .serif))
-                        .foregroundColor(palette.primaryText)
-                        .lineLimit(2)
-                }
+                Spacer(minLength: 8)
 
-                Spacer()
-
-                Text(snapshot.hijri.shortLabel)
+                Text(hijriChipLabel)
                     .font(.system(size: 10, weight: .medium))
                     .foregroundColor(palette.chipText)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 5)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.84)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 4)
                     .background(palette.chipBackground)
                     .clipShape(Capsule())
             }
+            .padding(.bottom, 4)
 
-            VStack(spacing: 7) {
-                ForEach(snapshot.prayers) { prayer in
+            VStack(spacing: 0) {
+                ForEach(Array(snapshot.prayers.enumerated()), id: \.element.id) { index, prayer in
+                    if index > 0 {
+                        PrayerRowDivider(palette: palette)
+                    }
+
                     PrayerScheduleRow(
                         prayer: prayer,
                         palette: palette,
@@ -458,28 +522,9 @@ struct MediumWidgetView: View {
                     )
                 }
             }
-
-            Spacer(minLength: 0)
-
-            HStack(spacing: 8) {
-                Text(snapshot.nextPrayer?.arabicName ?? "—")
-                    .font(.system(size: 12, weight: .regular, design: .serif))
-                    .foregroundColor(palette.secondaryText)
-
-                Spacer()
-
-                Text(WidgetDateHelper.formatTime(snapshot.nextPrayer?.timeISO ?? ""))
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundColor(palette.primaryText)
-
-                CountdownLabel(
-                    targetISO: snapshot.nextPrayer?.timeISO ?? "",
-                    color: palette.timer,
-                    font: .system(size: 12, weight: .semibold)
-                )
-            }
         }
-        .padding(14)
+        .padding(.horizontal, 13)
+        .padding(.vertical, 11)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 }
@@ -489,14 +534,25 @@ struct MediumWidgetView: View {
 struct AccessoryInlineView: View {
     let snapshot: WidgetSnapshot
 
+    private var accent: Color { PrayerAccent.color(for: snapshot.nextPrayer?.name.lowercased() ?? "asr") }
+    private var prayerLabel: String { snapshot.nextPrayer?.name ?? "—" }
+    private var timeLabel: String { WidgetDateHelper.formatTime(snapshot.nextPrayer?.timeISO ?? "") }
+    private var countdownLabel: String { WidgetCountdownCopy.compact(snapshot.nextPrayer?.remainingMinutes) }
+
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 5) {
             Circle()
-                .fill(PrayerAccent.color(for: snapshot.nextPrayer?.name.lowercased() ?? "asr"))
+                .fill(accent)
                 .frame(width: 6, height: 6)
-            Text(snapshot.nextPrayer?.name ?? "—")
+            Text("\(prayerLabel) · \(timeLabel)")
+                .font(.system(size: 10.5, weight: .medium))
+                .lineLimit(1)
             Text("·")
-            Text(WidgetDateHelper.formatTime(snapshot.nextPrayer?.timeISO ?? ""))
+                .foregroundColor(.secondary.opacity(0.7))
+            Text(countdownLabel)
+                .font(.system(size: 9.5, weight: .medium))
+                .foregroundColor(.secondary)
+                .lineLimit(1)
         }
     }
 }
@@ -504,43 +560,42 @@ struct AccessoryInlineView: View {
 struct AccessoryCircularView: View {
     let snapshot: WidgetSnapshot
 
-    private var palette: WidgetPalette { WidgetPalette.resolve(snapshot.themeMode) }
     private var accent: Color { PrayerAccent.color(for: snapshot.nextPrayer?.name.lowercased() ?? "asr") }
     private var progress: Double {
         guard let nextPrayer = snapshot.nextPrayer else { return 0.12 }
         let minutes = max(nextPrayer.remainingMinutes, 0)
         return min(max(Double(180 - min(minutes, 180)) / 180.0, 0.12), 1.0)
     }
+    private var countdownLabel: String { WidgetCountdownCopy.circular(snapshot.nextPrayer?.remainingMinutes) }
 
     var body: some View {
         ZStack {
             Circle()
-                .stroke(palette.ringTrack, lineWidth: 5)
+                .stroke(Color.primary.opacity(0.16), lineWidth: 2.5)
             Circle()
                 .trim(from: 0, to: progress)
-                .stroke(accent, style: StrokeStyle(lineWidth: 5, lineCap: .round))
+                .stroke(accent.opacity(0.16), style: StrokeStyle(lineWidth: 6, lineCap: .round))
+                .rotationEffect(.degrees(-90))
+            Circle()
+                .trim(from: 0, to: progress)
+                .stroke(accent, style: StrokeStyle(lineWidth: 2.8, lineCap: .round))
                 .rotationEffect(.degrees(-90))
 
-            VStack(spacing: 1) {
-                Text(String(snapshot.nextPrayer?.name.prefix(1) ?? "—"))
-                    .font(.system(size: 13, weight: .bold, design: .serif))
-                Text(accessoryCountdownLabel)
-                    .font(.system(size: 8, weight: .medium))
-                    .foregroundColor(.secondary)
-            }
+            Text(countdownLabel)
+                .font(.system(size: 9.5, weight: .semibold))
+                .foregroundColor(.primary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
         }
-    }
-
-    private var accessoryCountdownLabel: String {
-        guard let nextPrayer = snapshot.nextPrayer else { return "—" }
-        if nextPrayer.remainingMinutes <= 0 { return "Now" }
-        if nextPrayer.remainingMinutes < 60 { return "\(nextPrayer.remainingMinutes)m" }
-        return "\(nextPrayer.remainingMinutes / 60)h"
     }
 }
 
 struct AccessoryRectangularView: View {
     let snapshot: WidgetSnapshot
+
+    private var accent: Color { PrayerAccent.color(for: snapshot.nextPrayer?.name.lowercased() ?? "asr") }
+    private var prayerLabel: String { snapshot.nextPrayer?.name ?? "—" }
+    private var headline: String { "\(prayerLabel) · \(WidgetCountdownCopy.prefixed(snapshot.nextPrayer?.remainingMinutes))" }
 
     private var nextTwoPrayers: [WidgetPrayer] {
         guard let nextPrayer = snapshot.nextPrayer,
@@ -553,36 +608,36 @@ struct AccessoryRectangularView: View {
         return Array(snapshot.prayers[start..<end])
     }
 
+    private var nextTwoSummary: String {
+        let value = nextTwoPrayers.map { "\($0.name) \(WidgetDateHelper.formatTime($0.timeISO))" }.joined(separator: " · ")
+        if !value.isEmpty { return value }
+        return WidgetDateHelper.formatTime(snapshot.nextPrayer?.timeISO ?? "")
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 3) {
-            HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 7) {
                 Circle()
-                    .fill(PrayerAccent.color(for: snapshot.nextPrayer?.name.lowercased() ?? "asr"))
+                    .fill(accent)
                     .frame(width: 7, height: 7)
 
-                Text(snapshot.nextPrayer?.name ?? "—")
-                    .font(.system(size: 14, weight: .bold, design: .serif))
+                Text(headline)
+                    .font(.system(size: 11, weight: .semibold))
                     .lineLimit(1)
+                    .foregroundColor(.primary)
 
                 Spacer(minLength: 4)
 
-                CountdownLabel(
-                    targetISO: snapshot.nextPrayer?.timeISO ?? "",
-                    color: .secondary,
-                    font: .system(size: 10, weight: .semibold)
-                )
+                Text("NEXT")
+                    .font(.system(size: 8.5, weight: .medium))
+                    .tracking(0.4)
+                    .foregroundColor(.secondary)
             }
 
-            Text(WidgetDateHelper.formatTime(snapshot.nextPrayer?.timeISO ?? ""))
-                .font(.system(size: 12, weight: .medium))
+            Text(nextTwoSummary)
+                .font(.system(size: 9.5, weight: .medium))
                 .foregroundColor(.secondary)
-
-            if !nextTwoPrayers.isEmpty {
-                Text(nextTwoPrayers.map { "\($0.name) \(WidgetDateHelper.formatTime($0.timeISO))" }.joined(separator: " · "))
-                    .font(.system(size: 9, weight: .medium))
-                    .foregroundColor(.secondary.opacity(0.8))
-                    .lineLimit(1)
-            }
+                .lineLimit(1)
         }
     }
 }
@@ -647,7 +702,14 @@ struct SukoonAccessoryWidget: Widget {
 
     var body: some WidgetConfiguration {
         StaticConfiguration(kind: kind, provider: SukoonProvider()) { entry in
-            LockWidgetEntryView(entry: entry)
+            if #available(iOS 17.0, *) {
+                LockWidgetEntryView(entry: entry)
+                    .containerBackground(for: .widget) {
+                        Color.clear
+                    }
+            } else {
+                LockWidgetEntryView(entry: entry)
+            }
         }
         .configurationDisplayName("Prayer Rhythm Lock")
         .description("See the next prayer quietly from your Lock Screen.")

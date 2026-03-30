@@ -1,10 +1,7 @@
-import { ErrorCode, Product, Purchase, PurchaseError } from 'expo-iap';
-import IAPManager from './IAPManager';
 import StorageService from '../StorageService';
 import { Donation } from '../../types';
 import logger from '../../utils/logger';
 
-// Donation product IDs — all go through IAP (store policy compliance)
 const DONATION_PRODUCTS = {
   COFFEE: 'com.talukders.sukoon.donate.coffee',
   MEAL: 'com.talukders.sukoon.donate.meal',
@@ -12,7 +9,6 @@ const DONATION_PRODUCTS = {
   MAJOR: 'com.talukders.sukoon.donate.major',
 };
 
-// Donation tiers
 export const DONATION_TIERS = [
   {
     id: 'coffee',
@@ -49,74 +45,21 @@ export const DONATION_TIERS = [
 ];
 
 class DonationService {
-  private donationProducts: Product[] = [];
-
-  async initialize() {
-    try {
-      // Register donation purchase handler with IAPManager
-      IAPManager.registerDonationHandler(this.processDonation.bind(this));
-
-      // Load donation products via IAPManager
-      const products = await IAPManager.getProducts(
-        Object.values(DONATION_PRODUCTS),
-      );
-
-      this.donationProducts = products;
-      return true;
-    } catch (error) {
-      logger.error('Failed to initialize donations:', error);
-      return false;
-    }
-  }
-
-  private async processDonation(purchase: Purchase) {
-    try {
-      // Record donation
-      const donation: Donation = {
-        id: purchase.transactionId ?? `${purchase.productId}-${purchase.transactionDate}`,
-        amount: this.getAmountForProduct(purchase.productId),
-        currency: 'USD',
-        date: new Date(purchase.transactionDate),
-        productId: purchase.productId,
-        status: 'completed',
-      };
-
-      // Save donation record
-      StorageService.saveDonation(donation);
-
-      // Acknowledge the donation (consumable) via IAPManager
-      await IAPManager.finishTransaction(purchase, true);
-
-      // Show thank you
-      this.showThankYou(donation);
-    } catch (error) {
-      logger.error('Failed to process donation:', error);
-    }
-  }
-
-  private getAmountForProduct(productId: string): number {
-    const tier = DONATION_TIERS.find(t => t.productId === productId);
-    return tier?.amount || 0;
+  async initialize(): Promise<boolean> {
+    logger.log('DonationService: donations are disabled');
+    return false;
   }
 
   async makeDonation(tierId: string): Promise<boolean> {
-    try {
-      const tier = DONATION_TIERS.find(t => t.id === tierId);
-      if (!tier) {
-        throw new Error('Invalid donation tier');
-      }
+    const tier = DONATION_TIERS.find((item) => item.id === tierId);
 
-      // All tiers go through IAP (store policy compliance)
-      await IAPManager.requestPurchase(tier.productId);
-      return true;
-    } catch (error) {
-      if ((error as PurchaseError).code === ErrorCode.UserCancelled) {
-        logger.log('User cancelled donation');
-      } else {
-        logger.error('Donation error:', error);
-      }
+    if (!tier) {
+      logger.warn('DonationService: invalid donation tier requested');
       return false;
     }
+
+    logger.warn(`DonationService: donation request ignored for ${tier.productId}`);
+    return false;
   }
 
   async getDonationHistory(): Promise<Donation[]> {
@@ -128,32 +71,19 @@ class DonationService {
     return donations.reduce((total, donation) => total + donation.amount, 0);
   }
 
-  private showThankYou(donation: Donation) {
-    // This will be handled by the UI layer
-    // Could show a modal, notification, or special animation
-    logger.log('Thank you for your donation!', donation);
-  }
-
-  // Note: External payment links (PayPal, Crypto) removed for App Store / Google Play compliance.
-  // Both stores prohibit in-app links to alternative payment methods for digital goods/tips.
-  // External donation options can be mentioned on the website or via email communications.
-
-  // Zakat calculator integration
   calculateZakat(assets: number, liabilities: number): {
     nisab: number;
     zakatable: number;
     zakatDue: number;
     isEligible: boolean;
   } {
-    // Nisab (minimum wealth) - traditionally 87.48g of gold or 612.36g of silver
-    // Using silver nisab as it benefits more people
-    const silverPricePerGram = 0.80; // Update with current price
+    const silverPricePerGram = 0.8;
     const nisabInGrams = 612.36;
     const nisab = nisabInGrams * silverPricePerGram;
 
     const netWealth = assets - liabilities;
     const isEligible = netWealth >= nisab;
-    const zakatDue = isEligible ? netWealth * 0.025 : 0; // 2.5%
+    const zakatDue = isEligible ? netWealth * 0.025 : 0;
 
     return {
       nisab,
@@ -163,7 +93,6 @@ class DonationService {
     };
   }
 
-  // Sadaqah suggestions based on user's prayer consistency
   getSadaqahSuggestion(prayerCompletionRate: number): {
     amount: number;
     message: string;
@@ -171,28 +100,28 @@ class DonationService {
     if (prayerCompletionRate >= 90) {
       return {
         amount: 10,
-        message: "Ma sha Allah! Your consistency deserves generous sadaqah",
-      };
-    } else if (prayerCompletionRate >= 70) {
-      return {
-        amount: 5,
-        message: "Great progress! Consider sadaqah to strengthen your journey",
-      };
-    } else {
-      return {
-        amount: 2,
-        message: "Every bit counts! Start small and grow with your prayers",
+        message: 'Ma sha Allah! Your consistency deserves generous sadaqah',
       };
     }
+
+    if (prayerCompletionRate >= 70) {
+      return {
+        amount: 5,
+        message: 'Great progress! Consider sadaqah to strengthen your journey',
+      };
+    }
+
+    return {
+      amount: 2,
+      message: 'Every bit counts! Start small and grow with your prayers',
+    };
   }
 
-  getDonationProducts(): Product[] {
-    return this.donationProducts;
+  getDonationProducts(): [] {
+    return [];
   }
 
-  cleanup() {
-    // IAPManager owns the listener lifecycle
-  }
+  cleanup() {}
 }
 
 export default new DonationService();
