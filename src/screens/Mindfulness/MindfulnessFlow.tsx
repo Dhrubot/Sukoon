@@ -16,7 +16,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { LinearGradient } from "expo-linear-gradient";
 import { useNavigation, useRoute, RouteProp } from "@react-navigation/native";
 import * as Haptics from "expo-haptics";
-import { useKeepAwake } from "expo-keep-awake";
 import { useShallow } from "zustand/react/shallow";
 
 // Components
@@ -30,6 +29,7 @@ import { getRandomKhushuQuote } from "../../constants/khushuQuotes";
 import { useStore } from "../../store/useStore";
 import { useTheme } from "../../providers/ThemeProvider";
 import { useThemedStyles } from "../../hooks/useThemedStyles";
+import { useFocusKeepAwake } from "../../hooks/useFocusKeepAwake";
 import { AppTheme } from "../../theme";
 import StorageService from "../../services/StorageService";
 import PrayerTimeService from "../../services/PrayerTimeService";
@@ -58,8 +58,10 @@ type FlowStep =
   | "reflection"
   | "complete";
 
+const MINDFULNESS_KEEP_AWAKE_TAG = "mindfulness-flow";
+
 const MindfulnessFlow: React.FC = () => {
-  useKeepAwake(); // Keep screen on during prayer — no dimming mid-salah
+  useFocusKeepAwake(MINDFULNESS_KEEP_AWAKE_TAG);
   const navigation = useNavigation();
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);

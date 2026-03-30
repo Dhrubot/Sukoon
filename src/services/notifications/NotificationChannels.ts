@@ -58,7 +58,6 @@ export async function setupNotificationChannels(): Promise<void> {
     importance: Notifications.AndroidImportance.HIGH,
     vibrationPattern: [0, 250, 250, 250],
     lightColor: '#1B5E3F',
-    sound: 'default',
     bypassDnd: false,
     showBadge: true,
   });
@@ -92,7 +91,6 @@ export async function setupNotificationChannels(): Promise<void> {
     importance: Notifications.AndroidImportance.DEFAULT,
     vibrationPattern: [0, 100, 100, 100],
     lightColor: '#D4AF37',
-    sound: 'default',
   });
 
   await Notifications.setNotificationChannelAsync(CHANNELS.MINDFULNESS, {
@@ -109,7 +107,6 @@ export async function setupNotificationChannels(): Promise<void> {
     importance: Notifications.AndroidImportance.HIGH,
     vibrationPattern: [0, 250, 250, 250],
     lightColor: '#FF6B6B',
-    sound: 'default',
     bypassDnd: false,
     showBadge: true,
   });
@@ -129,7 +126,6 @@ export async function setupNotificationChannels(): Promise<void> {
     importance: Notifications.AndroidImportance.DEFAULT,
     vibrationPattern: [0, 100],
     lightColor: '#D4AF37',
-    sound: 'default',
   });
 
   await Notifications.setNotificationChannelAsync(CHANNELS.RAMADAN_COUNTDOWN, {
@@ -138,7 +134,6 @@ export async function setupNotificationChannels(): Promise<void> {
     importance: Notifications.AndroidImportance.DEFAULT,
     vibrationPattern: [0, 100],
     lightColor: '#D4AF37',
-    sound: 'default',
   });
 
   logger.log('✅ Notification channels set up with versioning');

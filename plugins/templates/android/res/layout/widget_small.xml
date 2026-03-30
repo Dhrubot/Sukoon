@@ -5,57 +5,54 @@
     android:layout_height="match_parent"
     android:background="@drawable/widget_bg"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:paddingLeft="14dp"
+    android:paddingTop="18dp"
+    android:paddingRight="14dp"
+    android:paddingBottom="14dp">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="Hijri Date"
-        android:textAllCaps="true"
-        android:textColor="#C9A84C"
+        android:text="NEXT PRAYER"
+        android:textColor="#81C784"
         android:textSize="10sp"
-        android:textStyle="bold" />
+        android:textStyle="bold"
+        android:textAllCaps="false"
+        android:maxLines="1" />
 
-    <FrameLayout
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_weight="1">
+        android:layout_weight="1"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:paddingTop="8dp">
 
-        <LinearLayout
+        <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical"
-            android:orientation="vertical">
+            android:text="Asr"
+            android:textColor="#F0ECE4"
+            android:textSize="26sp"
+            android:textStyle="bold" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="27"
-                android:textColor="#F0ECE4"
-                android:textSize="40sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="رجب"
-                android:textColor="#E8C97A"
-                android:textSize="16sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="4dp"
-                android:text="27 Rajab"
-                android:textColor="#B7C0CC"
-                android:textSize="11sp" />
-        </LinearLayout>
-    </FrameLayout>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="4dp"
+            android:text="1h 23m"
+            android:textColor="#CCFFFFFF"
+            android:textSize="11sp"
+            android:textStyle="bold" />
+    </LinearLayout>
 
     <TextView
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="Quietly keep today close"
-        android:textColor="#7FFFFFFF"
-        android:textSize="10sp" />
+        android:gravity="center_horizontal"
+        android:text="4:38 PM"
+        android:textColor="#F0ECE4"
+        android:textSize="16sp"
+        android:textStyle="bold"
+        android:maxLines="1" />
 </LinearLayout>

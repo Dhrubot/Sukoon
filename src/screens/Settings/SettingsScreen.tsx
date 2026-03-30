@@ -241,7 +241,6 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         {/* 7. About */}
         <AboutSection
           onPrivacyPolicy={() => handlePrivacyPolicy(navigation)}
-          onSupport={() => navigation.navigate('Support')}
           onShowDebugInfo={__DEV__ ? showDebugInfo : undefined}
           showSupport={SHOW_SUPPORT_SUKOON}
         />

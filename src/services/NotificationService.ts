@@ -31,6 +31,7 @@ import {
   getNotificationPersonalizationName,
   prependNotificationName,
 } from '../utils/notificationPersonalization';
+import { scheduleLocalNotificationAsync } from './notifications/scheduleLocalNotification';
 
 // NOTIFICATION_CATEGORIES now imported from ./notifications/NotificationChannels
 
@@ -832,7 +833,7 @@ class NotificationService {
 
     const mainContent = this.getPrayerTimeContent(prayerName, prayer.name, settings, prayer.time);
 
-    await Notifications.scheduleNotificationAsync({
+    await scheduleLocalNotificationAsync({
       content: {
         ...mainContent,
         data: {
@@ -895,7 +896,7 @@ class NotificationService {
 
     const content = this.getPrePrayerContent(prayerName, notifications.beforePrayer, settings, prayer.time);
 
-    await Notifications.scheduleNotificationAsync({
+    await scheduleLocalNotificationAsync({
       content: {
         ...content,
         data: {
@@ -954,7 +955,7 @@ class NotificationService {
       return;
     }
 
-    await Notifications.scheduleNotificationAsync({
+    await scheduleLocalNotificationAsync({
       content: {
         title: `${prayerName} Prayer`,
         body: 'Tap to mark your prayer and add a reflection',
@@ -992,7 +993,7 @@ class NotificationService {
         logger.log(`🚫 iOS cap reached, skipping keep-alive notification`);
         return;
       }
-      await Notifications.scheduleNotificationAsync({
+      await scheduleLocalNotificationAsync({
         content: {
           title: 'Assalamu Alaikum',
           body: 'Open Sukoon occasionally so prayer reminders can stay active.',
@@ -1021,7 +1022,7 @@ class NotificationService {
     const settings = StorageService.getUserSettings();
     const personalizationName = getNotificationPersonalizationName(settings);
 
-    await Notifications.scheduleNotificationAsync({
+    await scheduleLocalNotificationAsync({
       content: {
         title: 'Prepare for prayer',
         body: personalizationName
@@ -1085,8 +1086,8 @@ class NotificationService {
     const contextualMessages: Record<string, string[]> = {
       Fajr: [
         'Rise and shine! Start your day with prayer',
-        'A blessed morning begins with Fajr 🌙',
-        'The dawn prayer awaits you ☀️',
+        'A blessed morning begins with Fajr',
+        'The dawn prayer awaits you',
       ],
       Dhuhr: [
         ...(isJummah
@@ -1097,14 +1098,14 @@ class NotificationService {
             ]
           : [
               'Take a break from the world, connect with Allah',
-              'Pause your day for Dhuhr prayer 🌞',
-              'Time for the midday prayer ☀️',
+              'Pause your day for Dhuhr prayer',
+              'Time for the midday prayer',
             ]),
       ],
       Asr: [
-        'The afternoon prayer brings peace to your day 🌤',
+        'The afternoon prayer brings peace to your day',
         'Take a moment for Asr prayer 🍃',
-        'Refresh your soul with the afternoon prayer 🌿',
+        'Refresh your soul with the afternoon prayer',
       ],
       Maghrib: [
         'As the sun sets, turn to prayer',
@@ -1112,13 +1113,13 @@ class NotificationService {
         'The sunset prayer is here',
       ],
       Isha: [
-        'End your day in peace with Isha 🌙',
-        'The night prayer brings tranquility 💫',
-        'Close your day with the final prayer ⭐',
+        'End your day in peace with Isha',
+        'The night prayer brings tranquility',
+        'Close your day with the final prayer',
       ],
     };
 
-    const messages = contextualMessages[prayerKey] || [`Time for ${displayName} prayer 🕌`];
+    const messages = contextualMessages[prayerKey] || [`Time for ${displayName} prayer`];
 
     const dateKey = format(referenceDate, 'yyyy-MM-dd');
     const idx = this.deterministicIndex(`${prayerKey}-main-${dateKey}`, messages.length);
@@ -1135,19 +1136,18 @@ class NotificationService {
     const settings = StorageService.getUserSettings();
     const personalizationName = getNotificationPersonalizationName(settings);
 
-    await Notifications.scheduleNotificationAsync({
+    await scheduleLocalNotificationAsync({
       content: {
         title: `Reminder: ${displayName} Prayer`,
         body: personalizationName
-          ? `${personalizationName}, a gentle reminder for ${displayName} 🤲`
-          : `A gentle reminder for ${displayName} 🤲`,
+          ? `${personalizationName}, a gentle reminder for ${displayName}`
+          : `A gentle reminder for ${displayName}`,
         data: {
           prayer: prayerName,
           prayerId: prayerId || `${prayerName}-${format(new Date(), 'yyyy-MM-dd')}`,
           type: 'snoozed',
           scheduledAt: new Date().toISOString(),
         },
-        sound: 'default',
         categoryIdentifier: NOTIFICATION_CATEGORIES.POST_PRAYER_CHECK, // Use Tier 2 category
       },
       trigger: {
@@ -1159,7 +1159,7 @@ class NotificationService {
       } as Notifications.NotificationTriggerInput,
       identifier: `snooze-${prayerName}-${Date.now()}`,
     });
-    logger.log(`⏰ Snooze scheduled for ${displayName} in ${minutes} min`);
+    logger.log(`Snooze scheduled for ${displayName} in ${minutes} min`);
   }
 
   async cancelPrayerNotifications(prayerName: PrayerName) {
@@ -1535,7 +1535,7 @@ class NotificationService {
   }
 
   async sendTestNotification() {
-    await Notifications.scheduleNotificationAsync({
+    await scheduleLocalNotificationAsync({
       content: {
         title: 'Test Notification',
         body: 'Alhamdulillah! Prayer notifications are working perfectly 🎉',
@@ -1633,7 +1633,7 @@ class NotificationService {
   // 🧪 NEW: Dedicated Adhan Test
   async sendTestAdhanNotification() {
     logger.log('🔔 Sending Test Adhan...');
-    await Notifications.scheduleNotificationAsync({
+    await scheduleLocalNotificationAsync({
       content: {
         title: 'Adhan Test',
         body: 'This should play the full Adhan sound.',
@@ -1723,7 +1723,7 @@ class NotificationService {
           const identifier = `tahajjud-${dateStr}`;
           const message = this.tahajjudMessages[dayOffset % this.tahajjudMessages.length];
 
-          await Notifications.scheduleNotificationAsync({
+          await scheduleLocalNotificationAsync({
             content: {
               title: 'Tahajjud Time',
               body: message,

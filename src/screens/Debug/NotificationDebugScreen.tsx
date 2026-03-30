@@ -20,6 +20,7 @@ import { AppTheme } from '../../theme';
 import { CHANNELS, SOUNDS } from '../../constants/NotificationConstants';
 import { scheduleFullAdhan } from '../../services/notifications/FullAdhanScheduler';
 import NotificationLedger, { LedgerHealth } from '../../services/NotificationLedger';
+import { scheduleLocalNotificationAsync } from '../../services/notifications/scheduleLocalNotification';
 
 type NotificationDebugInfo = Awaited<ReturnType<typeof NotificationService.getDebugInfo>>;
 type UpcomingNotification = NotificationDebugInfo['upcomingNotifications'][number];
@@ -81,11 +82,10 @@ export const NotificationDebugScreen = () => {
   // 🧪 Test 2: Schedule notification 10 seconds from now
   const test10SecondNotification = async () => {
     try {
-      await Notifications.scheduleNotificationAsync({
+      await scheduleLocalNotificationAsync({
         content: {
           title: '⏰ 10-Second Test',
           body: 'This notification was scheduled 10 seconds ago',
-          sound: 'default',
         },
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
@@ -103,7 +103,7 @@ export const NotificationDebugScreen = () => {
 
   const test10SecondAdhanNotification = async () => {
     try {
-      await Notifications.scheduleNotificationAsync({
+      await scheduleLocalNotificationAsync({
         content: {
           title: '⏰ Adhan Test',
           body: 'This should play the adhan sound',

@@ -5,7 +5,7 @@ import { SettingRow } from '../../../components/settings/SettingRow';
 
 interface AboutSectionProps {
   onPrivacyPolicy: () => void;
-  onSupport: () => void;
+  onSupport?: () => void;
   onShowDebugInfo?: () => Promise<void>;
   showSupport?: boolean;
 }
@@ -14,7 +14,7 @@ export const AboutSection: React.FC<AboutSectionProps> = ({
   onPrivacyPolicy,
   onSupport,
   onShowDebugInfo,
-  showSupport = true,
+  showSupport = false,
 }) => {
   return (
   <SettingSection title="About">
@@ -22,7 +22,7 @@ export const AboutSection: React.FC<AboutSectionProps> = ({
       label="Privacy Policy"
       onPress={onPrivacyPolicy}
     />
-    {showSupport && (
+    {showSupport && onSupport && (
       <SettingRow
         label="Support Sukoon"
         subtitle="Optional sadaqah to help sustain the app"

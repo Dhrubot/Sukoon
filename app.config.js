@@ -111,7 +111,6 @@ export default {
       ],
       "expo-secure-store",
       "expo-background-task",
-      "expo-iap",
       [
         "expo-notifications",
         {
