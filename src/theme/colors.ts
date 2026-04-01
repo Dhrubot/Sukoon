@@ -432,11 +432,11 @@ export const darkTheme = {
     buttonBorderMuted: palette.whiteAlpha15,
     buttonText: palette.white,
     ring: {
-      innerGradCenter: 'rgba(10,30,22,0.8)',
-      innerGradEdge: 'rgba(7,20,14,0.95)',
+      innerGradCenter: 'rgba(10,22,18,1)',
+      innerGradEdge: 'rgba(4,10,14,1)',
       innerBorder: 'rgba(212,175,55,0.10)',
       trackStroke: palette.whiteAlpha08,
-      glowStroke: 'rgba(212,175,55,0.22)',
+      glowStroke: 'rgba(212,175,55,0.20)',
     },
   },
 
@@ -767,11 +767,11 @@ export const lightTheme = {
     buttonBorderMuted: palette.whiteAlpha15,
     buttonText: palette.white,
     ring: {
-      innerGradCenter: 'rgba(18,42,32,0.88)',
-      innerGradEdge: 'rgba(10,28,20,0.95)',
+      innerGradCenter: 'rgba(16,24,20,1)',
+      innerGradEdge: 'rgba(8,14,16,1)',
       innerBorder: 'rgba(232,201,122,0.12)',
       trackStroke: palette.whiteAlpha08,
-      glowStroke: 'rgba(232,201,122,0.25)',
+      glowStroke: 'rgba(232,201,122,0.20)',
     },
   },
 
@@ -1135,8 +1135,8 @@ export const midnightTheme = {
     buttonBorderMuted: palette.whiteAlpha15,
     buttonText: midnightPalette.text,
     ring: {
-      innerGradCenter: 'rgba(10,30,22,0.8)',
-      innerGradEdge: 'rgba(7,20,14,0.95)',
+      innerGradCenter: 'rgba(12,20,18,1)',
+      innerGradEdge: 'rgba(5,9,13,1)',
       innerBorder: 'rgba(201,168,76,0.08)',
       trackStroke: palette.whiteAlpha05,
       glowStroke: 'rgba(201,168,76,0.20)',
