@@ -770,7 +770,7 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
 
   // 🎯 MAIN UI: SanctuaryView hero + secondary content below
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]} edges={['left', 'right']}>
       <ScrollView
         ref={scrollViewRef}
         style={styles.scrollView}
@@ -1053,7 +1053,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     alignItems: 'center',
     paddingTop: 0,
     paddingBottom: theme.spacing.md,
-    marginTop: -12,
+    marginTop: -4,
     backgroundColor: 'transparent',
   },
   focusRevealText: {

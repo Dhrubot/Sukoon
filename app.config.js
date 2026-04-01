@@ -32,11 +32,6 @@ export default {
           "Sukoon needs notification permission to remind you of prayer times.",
         UIBackgroundModes: ["audio"],
       },
-      config: {
-        googleMobileAds: {
-          app_id: "ca-app-pub-5474984690525462~1671116769",
-        },
-      },
       jsEngine: "hermes",
       googleServicesFile: "./GoogleService-Info.plist",
     },
@@ -66,11 +61,6 @@ export default {
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.USE_EXACT_ALARM",
       ],
-      config: {
-        googleMobileAds: {
-          app_id: "ca-app-pub-5474984690525462~6816196886",
-        },
-      },
       googleServicesFile: "./google-services.json",
     },
     plugins: [
@@ -123,13 +113,6 @@ export default {
       ],
       "./plugins/withPlatformSounds.js",
       [
-        "react-native-google-mobile-ads",
-        {
-          androidAppId: "ca-app-pub-5474984690525462~6816196886",
-          iosAppId: "ca-app-pub-5474984690525462~1671116769"
-        },
-      ],
-      [
         "expo-build-properties",
         {
           android: {
@@ -165,14 +148,6 @@ export default {
         "./assets/sounds/adhan_ios.caf",
         "./assets/sounds/adhan_full.mp3"
       ],
-      "react-native-google-mobile-ads": {
-        androidAppId: "ca-app-pub-5474984690525462~6816196886",
-        iosAppId: "ca-app-pub-5474984690525462~1671116769"
-      }
     },
   },
-  "react-native-google-mobile-ads": {
-    android_app_id: "ca-app-pub-5474984690525462~6816196886",
-    ios_app_id: "ca-app-pub-5474984690525462~1671116769"
-  }
 };
