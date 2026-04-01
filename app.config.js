@@ -46,8 +46,6 @@ export default {
         foregroundImage: "./assets/icon.png",
         backgroundColor: "#1A1F3A",  // Dark theme background
       },
-      enableProguardInReleaseBuilds: true,
-      enableShrinkResources: true,
       package: "com.talukders.sukoon",
       jsEngine: "hermes",
       permissions: [
@@ -139,6 +137,8 @@ export default {
             targetSdkVersion: 36,
             minSdkVersion: 24,
             kotlinVersion: "2.0.21",
+            enableMinifyInReleaseBuilds: true,
+            enableShrinkResourcesInReleaseBuilds: true,
           },
           ios: {
             deploymentTarget: "15.1",
