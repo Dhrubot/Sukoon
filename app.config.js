@@ -17,7 +17,7 @@ export default {
     icon: "./assets/icon.png",
     userInterfaceStyle: "automatic",
     splash: {
-      image: "./assets/icon.png",
+      image: "./assets/splash-logo.png",
       resizeMode: "contain",
       backgroundColor: "#00102a",
     },
@@ -93,7 +93,7 @@ export default {
       [
         "expo-splash-screen",
         {
-          image: "./assets/icon.png",
+          image: "./assets/splash-logo.png",
           resizeMode: "contain",
           backgroundColor: "#00102a",
           imageWidth: 180,
