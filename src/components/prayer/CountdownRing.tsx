@@ -2,7 +2,7 @@
 // Centralized prayer surface ring with stable text layout and semantic color inputs.
 import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient as SvgGradient, RadialGradient, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient as SvgGradient, Path, RadialGradient, Stop } from 'react-native-svg';
 import { useTheme } from '../../providers/ThemeProvider';
 import { AppTheme } from '../../theme';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
@@ -15,6 +15,9 @@ import { withAlpha } from '../../utils/color';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const RING_SIZE = Math.min(SCREEN_WIDTH * 0.54, 220);
 const STROKE_WIDTH = 3;
+const GLOW_STROKE_WIDTH = STROKE_WIDTH + 13;
+const SVG_PADDING = Math.ceil(GLOW_STROKE_WIDTH / 2) + 2;
+const SVG_SIZE = RING_SIZE + SVG_PADDING * 2;
 const RADIUS = (RING_SIZE - STROKE_WIDTH * 2) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 const INNER_INSET = 16;
@@ -63,7 +66,7 @@ const CountdownRing: React.FC<CountdownRingProps> = ({
   const glowStroke = useMemo(() => (
     ringColorMode === 'gold'
       ? theme.colors.sanctuary.ring.glowStroke
-      : withAlpha(accentColor, 0.24)
+      : withAlpha(accentColor, 0.2)
   ), [accentColor, ringColorMode, theme.colors.sanctuary.ring.glowStroke]);
 
   useEffect(() => {
@@ -92,13 +95,13 @@ const CountdownRing: React.FC<CountdownRingProps> = ({
   }, [countdownTargetTime]);
 
   const strokeDashoffset = CIRCUMFERENCE * (1 - progress);
-  const cx = RING_SIZE / 2;
-  const cy = RING_SIZE / 2;
+  const cx = SVG_SIZE / 2;
+  const cy = SVG_SIZE / 2;
   const origin = `${cx}, ${cy}`;
 
   return (
     <View style={styles.container}>
-      <Svg width={RING_SIZE} height={RING_SIZE} style={StyleSheet.absoluteFill}>
+      <Svg width={SVG_SIZE} height={SVG_SIZE} style={StyleSheet.absoluteFill}>
         <Defs>
           {/* Arc gradient follows centralized ring semantics */}
           <SvgGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -107,8 +110,15 @@ const CountdownRing: React.FC<CountdownRingProps> = ({
           </SvgGradient>
           {/* Radial gradient for inner circle */}
           <RadialGradient id="innerGrad" cx="50%" cy="50%" r="50%">
-            <Stop offset="0%" stopColor={theme.colors.sanctuary.ring.innerGradCenter} />
-            <Stop offset="100%" stopColor={theme.colors.sanctuary.ring.innerGradEdge} />
+            <Stop offset="0%" stopColor={theme.colors.sanctuary.ring.innerGradCenter} stopOpacity="0.18" />
+            <Stop offset="52%" stopColor={theme.colors.sanctuary.ring.innerGradCenter} stopOpacity="0.30" />
+            <Stop offset="82%" stopColor={theme.colors.sanctuary.ring.innerGradEdge} stopOpacity="0.65" />
+            <Stop offset="100%" stopColor={theme.colors.sanctuary.ring.innerGradEdge} stopOpacity="0.88" />
+          </RadialGradient>
+          <RadialGradient id="vignetteRing" cx="50%" cy="50%" r="50%">
+            <Stop offset="70%" stopColor="transparent" stopOpacity="0" />
+            <Stop offset="88%" stopColor={theme.colors.sanctuary.ring.innerGradEdge} stopOpacity="0.28" />
+            <Stop offset="100%" stopColor={theme.colors.sanctuary.ring.innerGradEdge} stopOpacity="0.55" />
           </RadialGradient>
         </Defs>
 
@@ -128,7 +138,7 @@ const CountdownRing: React.FC<CountdownRingProps> = ({
           cy={cy}
           r={RADIUS}
           stroke={glowStroke}
-          strokeWidth={STROKE_WIDTH + 7}
+          strokeWidth={GLOW_STROKE_WIDTH}
           fill="none"
           strokeLinecap="round"
           strokeDasharray={`${CIRCUMFERENCE}`}
@@ -160,6 +170,14 @@ const CountdownRing: React.FC<CountdownRingProps> = ({
           fill="url(#innerGrad)"
           stroke={theme.colors.sanctuary.ring.innerBorder}
           strokeWidth={1}
+        />
+        <Circle cx={cx} cy={cy} r={INNER_RADIUS} fill="url(#vignetteRing)" />
+        <Path
+          d={`M ${cx - INNER_RADIUS * 0.72} ${cy - INNER_RADIUS * 0.72} A ${INNER_RADIUS} ${INNER_RADIUS} 0 0 1 ${cx + INNER_RADIUS * 0.72} ${cy - INNER_RADIUS * 0.72}`}
+          stroke="rgba(255,255,255,0.09)"
+          strokeWidth={1.5}
+          fill="none"
+          strokeLinecap="round"
         />
       </Svg>
 
@@ -196,8 +214,8 @@ const CountdownRing: React.FC<CountdownRingProps> = ({
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: {
-      width: RING_SIZE,
-      height: RING_SIZE,
+      width: SVG_SIZE,
+      height: SVG_SIZE,
       alignItems: 'center',
       justifyContent: 'center',
     },
