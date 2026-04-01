@@ -86,9 +86,6 @@ coverage/
 # TypeScript
 *.tsbuildinfo
 
-# EAS Build
-eas.json
-
 # Private keys and certificates
 *.pem
 *.p12

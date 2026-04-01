@@ -28,6 +28,18 @@ describe('app config contract', () => {
     });
   });
 
+  it('keeps Android release minification enabled through expo-build-properties', () => {
+    const appConfig = require('../../app.config.js').default;
+    const buildPropertiesPlugin = appConfig.expo.plugins.find(
+      (plugin: any) => Array.isArray(plugin) && plugin[0] === 'expo-build-properties'
+    );
+
+    expect(buildPropertiesPlugin[1].android).toMatchObject({
+      enableMinifyInReleaseBuilds: true,
+      enableShrinkResourcesInReleaseBuilds: true,
+    });
+  });
+
   it('keeps Android foreground media playback permissions and the AdhanService declaration', () => {
     const manifestPath = path.join(
       __dirname,
