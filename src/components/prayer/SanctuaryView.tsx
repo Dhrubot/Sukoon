@@ -10,6 +10,7 @@ import {
   Dimensions,
   Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PreAdhanSheet from './PreAdhanSheet';
 import PostPrayerSheet from './PostPrayerSheet';
 import CountdownRing from './CountdownRing';
@@ -83,6 +84,7 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
 }) => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
+  const insets = useSafeAreaInsets();
   const hijriAdjustment = useStore((state) => state.userSettings?.hijriAdjustment ?? 0);
   const [hijriDateStr, setHijriDateStr] = useState(formatHijriDateSync());
   const pulseAnim = useRef(new Animated.Value(0.6)).current;
@@ -174,7 +176,14 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
     <>
       <LinearGradient
         colors={getPrayerGradient()}
-        style={[styles.container, isFocusMode && { minHeight: HERO_FOCUS_MIN_HEIGHT }]}
+        style={[
+          styles.container,
+          {
+            paddingTop: insets.top + theme.spacing['2xl'],
+            minHeight: HERO_MIN_HEIGHT + insets.top,
+          },
+          isFocusMode && { minHeight: HERO_FOCUS_MIN_HEIGHT + insets.top },
+        ]}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
       >
@@ -317,7 +326,6 @@ const createStyles = (theme: AppTheme) =>
       minHeight: HERO_MIN_HEIGHT,
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingTop: theme.spacing['2xl'],
       paddingBottom: Platform.OS === 'ios'
         ? theme.spacing['3xl'] + 32
         : theme.spacing['4xl'] + 72,
