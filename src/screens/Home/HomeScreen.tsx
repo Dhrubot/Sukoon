@@ -789,6 +789,7 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
             record={heroPrayerRecord}
             ringProgress={heroSurface?.progress ?? 0}
             countdownTargetTime={heroSurface?.countdownTarget.time ?? heroPrayer.time}
+            countdownMode={heroSurface?.countdownMode ?? 'next_prayer_start'}
             ringAccentPrayer={heroSurface?.ringAccentPrayer ?? heroPrayer}
             ringColorMode={heroSurface?.ringColorMode ?? 'gold'}
             isTimeEntered={isHeroPrayerTimeEntered}
