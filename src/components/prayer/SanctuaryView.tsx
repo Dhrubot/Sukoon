@@ -24,6 +24,7 @@ import { formatHijriDate, formatHijriDateSync } from '../../utils/hijriDate';
 import { useStore } from '../../store/useStore';
 import { isFriday, isRamadan, getRamadanDay } from '../../utils/ramadan';
 import { JummahResourceTopic } from '../../constants/jummahContent';
+import { PrayerSurfaceRingColorMode } from '../../utils/prayerSurfaceResolver';
 
 const { height } = Dimensions.get('window');
 const HERO_MIN_HEIGHT = Platform.OS === 'ios' ? height * 0.72 : height * 0.78;
@@ -37,10 +38,14 @@ interface MosqueModeHeroInfo {
 
 interface SanctuaryViewProps {
   prayer: PrayerTime;
+  gradientPrayer?: PrayerTime;
   greeting: string;
   userName?: string;
-  previousPrayerTime?: Date;
   record?: PrayerRecord;
+  ringProgress: number;
+  countdownTargetTime: Date;
+  ringAccentPrayer: PrayerTime;
+  ringColorMode: PrayerSurfaceRingColorMode;
   isTimeEntered?: boolean;
   missedPrayer?: PrayerTime;
   onPrepare: () => void;
@@ -56,10 +61,14 @@ interface SanctuaryViewProps {
 
 const SanctuaryView: React.FC<SanctuaryViewProps> = ({
   prayer,
+  gradientPrayer,
   greeting,
   userName,
-  previousPrayerTime,
   record,
+  ringProgress,
+  countdownTargetTime,
+  ringAccentPrayer,
+  ringColorMode,
   isTimeEntered = true,
   missedPrayer,
   onPrepare,
@@ -85,8 +94,10 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
     formatHijriDate().then(setHijriDateStr).catch(() => {});
   }, [hijriAdjustment]);
 
+  const heroGradientPrayer = gradientPrayer ?? prayer;
   const isAlreadyPrayed = record?.status === 'prayed';
   const isJummah = prayer.name === 'Dhuhr' && isFriday();
+  const isGradientJummah = heroGradientPrayer.name === 'Dhuhr' && isFriday();
   const [showPreAdhanSheet, setShowPreAdhanSheet] = useState(false);
   const [showPostPrayerSheet, setShowPostPrayerSheet] = useState(false);
 
@@ -153,8 +164,8 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
 
   const getPrayerGradient = (): readonly [string, string, string] => {
     const gradients = theme.colors.prayerGradients as unknown as Record<string, readonly [string, string, string]>;
-    if (isJummah) return gradients.Jumah || gradients.default;
-    return gradients[prayer.name] || gradients.default;
+    if (isGradientJummah) return gradients.Jumah || gradients.default;
+    return gradients[heroGradientPrayer.name] || gradients.default;
   };
 
   const ramadanDay = isRamadan() ? getRamadanDay() : null;
@@ -168,7 +179,7 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
         end={{ x: 0.5, y: 1 }}
       >
         {/* Animated star field — nighttime prayers only */}
-        <StarField prayerName={prayer.name} />
+        <StarField prayerName={heroGradientPrayer.name} />
 
         {/* Greeting + Hijri date */}
         <View style={styles.greetingContainer}>
@@ -192,7 +203,10 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
         {/* Countdown Ring — the focal point */}
         <CountdownRing
           prayer={prayer}
-          previousPrayerTime={previousPrayerTime}
+          progress={ringProgress}
+          countdownTargetTime={countdownTargetTime}
+          ringAccentPrayer={ringAccentPrayer}
+          ringColorMode={ringColorMode}
           iqamahTime={mosqueModeInfo?.iqamahTime}
           isAlreadyPrayed={isAlreadyPrayed}
         />

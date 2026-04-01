@@ -310,7 +310,9 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
       WidgetService.updateWidgetData(
         todayResult.prayerTimes,
         todayRecords,
-        nextPrayer
+        nextPrayer,
+        tomorrowFajrPrayer,
+        todayResult.sunrise,
       );
 
       // Update Live Activity (iOS lock screen / Android ongoing notification)

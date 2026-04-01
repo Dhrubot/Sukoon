@@ -103,6 +103,9 @@ describe('LiveActivityService', () => {
       prayerName: 'Dhuhr',
       prayerArabicName: 'الظهر',
       activePrayerName: 'Dhuhr',
+      heroGradientPrayerName: 'Dhuhr',
+      ringAccentPrayerName: 'Dhuhr',
+      ringColorMode: 'gold',
       hijriShortLabel: '18 Shawwal 1447',
       countdownTargetISO: '2026-03-18T12:30:00.000Z',
       countdownTargetPrayerName: 'Dhuhr',
@@ -127,6 +130,9 @@ describe('LiveActivityService', () => {
     expect(updatePayload).toMatchObject({
       prayerName: 'Asr',
       activePrayerName: 'Dhuhr',
+      heroGradientPrayerName: 'Dhuhr',
+      ringAccentPrayerName: 'Asr',
+      ringColorMode: 'prayer',
       countdownTargetISO: '2026-03-18T15:45:00.000Z',
       countdownTargetPrayerName: 'Asr',
       phase: 'prayed',
@@ -172,12 +178,15 @@ describe('LiveActivityService', () => {
     expect(payload).toMatchObject({
       prayerArabicName: 'الظهر',
       activePrayerName: 'Dhuhr',
+      heroGradientPrayerName: 'Dhuhr',
+      ringAccentPrayerName: 'Dhuhr',
+      ringColorMode: 'gold',
       hijriShortLabel: '18 Shawwal 1447',
       countdownTargetPrayerName: 'Dhuhr',
     });
   });
 
-  it('uses the active prayer focus during fiqh windows until the 15 minute handoff', async () => {
+  it('uses the active prayer focus during fiqh windows when the prayer is not logged', async () => {
     const { service, bridges } = loadService({ platformOS: 'ios', liveActivityEnabled: true });
     const prayerTimes = [
       { name: 'Fajr', time: new Date('2026-03-18T05:00:00.000Z'), isNext: false },
@@ -192,6 +201,9 @@ describe('LiveActivityService', () => {
     expect(payload).toMatchObject({
       prayerName: 'Dhuhr',
       activePrayerName: 'Dhuhr',
+      heroGradientPrayerName: 'Dhuhr',
+      ringAccentPrayerName: 'Dhuhr',
+      ringColorMode: 'prayer',
       countdownTargetPrayerName: 'Asr',
       countdownTargetISO: '2026-03-18T15:45:00.000Z',
       phase: 'fiqh_window',
@@ -201,7 +213,7 @@ describe('LiveActivityService', () => {
     expect(payload.progress).toBeLessThan(1);
   });
 
-  it('switches the display prayer during the 15 minute handoff while keeping active actions bound to the current prayer', async () => {
+  it('keeps the active prayer display during the last 15 minutes when it is still unprayed', async () => {
     const { service, bridges } = loadService({ platformOS: 'ios', liveActivityEnabled: true });
     const prayerTimes = [
       { name: 'Fajr', time: new Date('2026-03-18T05:00:00.000Z'), isNext: false },
@@ -213,12 +225,15 @@ describe('LiveActivityService', () => {
 
     const payload = JSON.parse(bridges.iosBridge?.startLiveActivity.mock.calls[0][0]);
     expect(payload).toMatchObject({
-      prayerName: 'Asr',
+      prayerName: 'Dhuhr',
       activePrayerName: 'Dhuhr',
+      heroGradientPrayerName: 'Dhuhr',
+      ringAccentPrayerName: 'Dhuhr',
+      ringColorMode: 'prayer',
       countdownTargetPrayerName: 'Asr',
       countdownTargetISO: '2026-03-18T10:12:00.000Z',
       phase: 'fiqh_window',
-      countdownMode: 'next_prayer_start',
+      countdownMode: 'current_prayer_end',
     });
     expect(payload.progress).toBeGreaterThan(0.71);
     expect(payload.progress).toBeLessThan(0.72);
@@ -248,6 +263,9 @@ describe('LiveActivityService', () => {
     expect(payload).toMatchObject({
       prayerName: 'Isha',
       activePrayerName: 'Isha',
+      heroGradientPrayerName: 'Isha',
+      ringAccentPrayerName: 'Isha',
+      ringColorMode: 'prayer',
       countdownTargetPrayerName: 'Fajr',
       countdownTargetISO: '2026-03-19T05:05:00.000Z',
       phase: 'fiqh_window',
@@ -276,6 +294,9 @@ describe('LiveActivityService', () => {
     expect(payload).toMatchObject({
       prayerName: 'Fajr',
       activePrayerName: 'Fajr',
+      heroGradientPrayerName: 'Fajr',
+      ringAccentPrayerName: 'Fajr',
+      ringColorMode: 'prayer',
       countdownTargetPrayerName: 'Sunrise',
       countdownTargetISO: '2026-03-18T06:10:00.000Z',
       phase: 'fiqh_window',

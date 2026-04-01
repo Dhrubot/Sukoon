@@ -1,4 +1,3 @@
-import { HERO_ADVANCE_MINUTES } from '../constants/NotificationConstants';
 import { PrayerRecord, PrayerTime } from '../types';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -6,16 +5,21 @@ const FALLBACK_WINDOW_MS = 4 * 60 * 60 * 1000;
 
 export type PrayerSurfacePhase = 'pre_adhan' | 'fiqh_window' | 'prayed';
 export type PrayerSurfaceCountdownMode = 'current_prayer_end' | 'next_prayer_start';
+export type PrayerSurfaceRingColorMode = 'gold' | 'prayer';
+export interface PrayerSurfaceCountdownTarget {
+  name: string;
+  time: Date;
+  timestamp: number;
+  isNext?: boolean;
+}
 
 export interface PrayerSurfaceState {
   activePrayer: PrayerTime;
   displayPrayer: PrayerTime;
-  countdownTarget: {
-    name: string;
-    time: Date;
-    timestamp: number;
-    isNext?: boolean;
-  };
+  heroGradientPrayer: PrayerTime;
+  ringAccentPrayer: PrayerTime;
+  ringColorMode: PrayerSurfaceRingColorMode;
+  countdownTarget: PrayerSurfaceCountdownTarget;
   nextChronologicalPrayer: PrayerTime | null;
   phase: PrayerSurfacePhase;
   countdownMode: PrayerSurfaceCountdownMode;
@@ -151,6 +155,10 @@ function resolveElapsedProgress(
   return clamp01(elapsed / total);
 }
 
+function isJumuahWindow(prayer: PrayerTime, now: Date): boolean {
+  return prayer.name === 'Dhuhr' && now.getDay() === 5;
+}
+
 function resolvePrayerStatuses(
   prayerTimes: PrayerTime[],
   records: PrayerRecord[],
@@ -218,32 +226,34 @@ export function resolvePrayerSurfaceState(
       : 'fiqh_window';
 
   let displayPrayer = nextPrayer;
-  let countdownTarget = nextPrayer;
+  let heroGradientPrayer = nextPrayer;
+  let ringAccentPrayer = nextPrayer;
+  let ringColorMode: PrayerSurfaceRingColorMode = 'gold';
+  let countdownTarget: PrayerSurfaceCountdownTarget = nextPrayer;
   let countdownMode: PrayerSurfaceCountdownMode = 'next_prayer_start';
   let displayWindowStart = resolvePreviousBoundary(prayerTimes, nextPrayer)?.time
     ?? new Date(nextPrayer.time.getTime() - FALLBACK_WINDOW_MS);
 
-  if (phase !== 'pre_adhan') {
-    const minutesUntilCurrentWindowEnd = currentPrayerWindowEnd
-      ? (currentPrayerWindowEnd.time.getTime() - now.getTime()) / (1000 * 60)
-      : Number.POSITIVE_INFINITY;
-    const shouldSwitchToNextPrayer = !!nextChronologicalPrayer && (
-      isActivePrayerLogged ||
-      (
-        currentPrayerWindowEnd.name === nextChronologicalPrayer.name &&
-        minutesUntilCurrentWindowEnd > 0 &&
-        minutesUntilCurrentWindowEnd <= HERO_ADVANCE_MINUTES
-      )
-    );
-
+  if (phase === 'pre_adhan') {
+    displayPrayer = nextPrayer;
+    heroGradientPrayer = nextPrayer;
+    ringAccentPrayer = nextPrayer;
+    ringColorMode = 'gold';
+  } else {
     displayWindowStart = nextPrayer.time;
 
-    if (shouldSwitchToNextPrayer && nextChronologicalPrayer) {
+    heroGradientPrayer = nextPrayer;
+
+    if (isActivePrayerLogged && nextChronologicalPrayer) {
       displayPrayer = nextChronologicalPrayer;
+      ringAccentPrayer = nextChronologicalPrayer;
+      ringColorMode = isJumuahWindow(nextPrayer, now) ? 'gold' : 'prayer';
       countdownTarget = nextChronologicalPrayer;
       countdownMode = 'next_prayer_start';
     } else {
       displayPrayer = nextPrayer;
+      ringAccentPrayer = nextPrayer;
+      ringColorMode = isJumuahWindow(nextPrayer, now) ? 'gold' : 'prayer';
       countdownTarget = currentPrayerWindowEnd;
       countdownMode = 'current_prayer_end';
     }
@@ -264,6 +274,9 @@ export function resolvePrayerSurfaceState(
   return {
     activePrayer: nextPrayer,
     displayPrayer,
+    heroGradientPrayer,
+    ringAccentPrayer,
+    ringColorMode,
     countdownTarget,
     nextChronologicalPrayer,
     phase,

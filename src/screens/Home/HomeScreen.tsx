@@ -463,17 +463,11 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
 
   const heroPrayer = heroSurface?.displayPrayer ?? null;
   const activeHeroPrayerName = heroSurface?.activePrayer.name ?? null;
+  const heroGradientPrayer = heroSurface?.heroGradientPrayer ?? heroPrayer;
 
   // Stable identity key — only changes when the hero prayer actually transitions.
   // Downstream memos use this instead of heroPrayer (which rebuilds every 60s tick).
   const heroPrayerName = heroPrayer?.name ?? null;
-
-  // Previous boundary for inter-prayer ring progress
-  const previousPrayerTime = useMemo(() => {
-    if (!heroPrayer || !heroSurface) return undefined;
-    if (heroPrayer.time <= currentTime) return undefined;
-    return heroSurface.displayWindowStart;
-  }, [currentTime, heroPrayer, heroSurface]);
 
   // Unified mosque mode info for the hero pill — scoped to heroPrayer
   const mosqueModeHeroInfo = useMemo(() => {
@@ -789,10 +783,14 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
         {heroPrayer && (
           <SanctuaryView
             prayer={heroPrayer}
+            gradientPrayer={heroGradientPrayer ?? undefined}
             greeting={getGreeting()}
             userName={heroUserName}
-            previousPrayerTime={previousPrayerTime}
             record={heroPrayerRecord}
+            ringProgress={heroSurface?.progress ?? 0}
+            countdownTargetTime={heroSurface?.countdownTarget.time ?? heroPrayer.time}
+            ringAccentPrayer={heroSurface?.ringAccentPrayer ?? heroPrayer}
+            ringColorMode={heroSurface?.ringColorMode ?? 'gold'}
             isTimeEntered={isHeroPrayerTimeEntered}
             missedPrayer={missedPreviousPrayer}
             onPrepare={() => handleQuickLogTrigger(heroPrayer)}
