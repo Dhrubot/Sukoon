@@ -5,8 +5,13 @@ import ActivityKit
 struct SukoonPrayerAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
         var prayerName: String
+        var prayerArabicName: String
+        var activePrayerName: String
+        var hijriShortLabel: String
         var countdownTargetISO: String
+        var countdownTargetPrayerName: String
         var phase: String
+        var countdownMode: String
         var progress: Double
         var prayerStatuses: [String]
         var prayerAccentKeys: [String]
@@ -16,8 +21,13 @@ struct SukoonPrayerAttributes: ActivityAttributes {
 
 struct LiveActivityPayload: Codable {
     let prayerName: String
+    let prayerArabicName: String
+    let activePrayerName: String
+    let hijriShortLabel: String
     let countdownTargetISO: String
+    let countdownTargetPrayerName: String
     let phase: String
+    let countdownMode: String
     let progress: Double
     let prayerStatuses: [String]
     let prayerAccentKeys: [String]
@@ -51,8 +61,13 @@ class SukoonLiveActivityBridge: NSObject {
                 let attributes = SukoonPrayerAttributes(prayerNames: payload.prayerNames)
                 let state = SukoonPrayerAttributes.ContentState(
                     prayerName: payload.prayerName,
+                    prayerArabicName: payload.prayerArabicName,
+                    activePrayerName: payload.activePrayerName,
+                    hijriShortLabel: payload.hijriShortLabel,
                     countdownTargetISO: payload.countdownTargetISO,
+                    countdownTargetPrayerName: payload.countdownTargetPrayerName,
                     phase: payload.phase,
+                    countdownMode: payload.countdownMode,
                     progress: payload.progress,
                     prayerStatuses: payload.prayerStatuses,
                     prayerAccentKeys: payload.prayerAccentKeys
@@ -84,8 +99,13 @@ class SukoonLiveActivityBridge: NSObject {
 
             let state = SukoonPrayerAttributes.ContentState(
                 prayerName: payload.prayerName,
+                prayerArabicName: payload.prayerArabicName,
+                activePrayerName: payload.activePrayerName,
+                hijriShortLabel: payload.hijriShortLabel,
                 countdownTargetISO: payload.countdownTargetISO,
+                countdownTargetPrayerName: payload.countdownTargetPrayerName,
                 phase: payload.phase,
+                countdownMode: payload.countdownMode,
                 progress: payload.progress,
                 prayerStatuses: payload.prayerStatuses,
                 prayerAccentKeys: payload.prayerAccentKeys

@@ -30,6 +30,8 @@ interface AppState {
   setTodayPrayerTimes: (times: PrayerTime[]) => void;
   nextPrayer: PrayerTime | null;
   setNextPrayer: (prayer: PrayerTime | null) => void;
+  tomorrowFajr: PrayerTime | null;
+  setTomorrowFajr: (prayer: PrayerTime | null) => void;
   
   // Sun times (Sunrise/Sunset) and Midnight
   todaySunrise: Date | null;
@@ -129,6 +131,8 @@ export const useStore = create<AppState>((set) => ({
   setTodayPrayerTimes: (times) => set({ todayPrayerTimes: times }),
   nextPrayer: null,
   setNextPrayer: (prayer) => set({ nextPrayer: prayer }),
+  tomorrowFajr: null,
+  setTomorrowFajr: (prayer) => set({ tomorrowFajr: prayer }),
   
   // Sun times and Midnight
   todaySunrise: null,
@@ -202,8 +206,10 @@ export const usePrayerTimesState = () => useStore(
   useShallow((state) => ({
     todayPrayerTimes: state.todayPrayerTimes,
     nextPrayer: state.nextPrayer,
+    tomorrowFajr: state.tomorrowFajr,
     setTodayPrayerTimes: state.setTodayPrayerTimes,
     setNextPrayer: state.setNextPrayer,
+    setTomorrowFajr: state.setTomorrowFajr,
   }))
 );
 

@@ -78,6 +78,7 @@ jest.mock('../services/LiveActivityService', () => ({
 }));
 
 const { NotificationSection } = require('../screens/Settings/components/NotificationSection');
+const LiveActivityService = require('../services/LiveActivityService').default;
 
 const baseSettings: UserSettings = {
   location: { latitude: 23.8103, longitude: 90.4125, city: 'Dhaka', country: 'Bangladesh' },
@@ -143,6 +144,10 @@ describe('NotificationSection', () => {
     expect(
       getByText('Schedules the complete call to prayer when your phone is locked or the app is closed')
     ).toBeTruthy();
+    expect(getByText('Persistent Prayer Countdown')).toBeTruthy();
+    expect(
+      getByText('Keep a prayer-aware countdown in your notifications and on the lock screen.')
+    ).toBeTruthy();
   });
 
   it('hides the Android-only full adhan toggle on iOS', async () => {
@@ -159,6 +164,10 @@ describe('NotificationSection', () => {
     expect(queryByText('Full Adhan (Locked Screen)')).toBeNull();
     expect(
       queryByText('Short call to prayer on the lock screen. Full adhan continues after you open the app.')
+    ).toBeTruthy();
+    expect(queryByText('Live Activity')).toBeTruthy();
+    expect(
+      queryByText('Show a prayer-aware countdown on your lock screen and Dynamic Island.')
     ).toBeTruthy();
   });
 
@@ -192,6 +201,40 @@ describe('NotificationSection', () => {
     expect(mockUpdateNotificationSettings).toHaveBeenCalledWith({
       adhanEnabled: false,
       fullAdhanEnabled: false,
+    });
+  });
+
+  it('starts and ends the platform countdown service when the toggle changes', async () => {
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'ios' });
+
+    const { UNSAFE_getAllByType } = render(
+      <NotificationSection
+        userSettings={baseSettings}
+        onNotificationPress={jest.fn()}
+      />
+    );
+
+    await waitFor(() => {
+      expect(UNSAFE_getAllByType(Switch).length).toBeGreaterThanOrEqual(2);
+    });
+
+    const liveActivitySwitch = UNSAFE_getAllByType(Switch)[1];
+    fireEvent(liveActivitySwitch, 'valueChange', true);
+
+    await waitFor(() => {
+      expect(mockUpdateUserSettings).toHaveBeenCalledWith({
+        notifications: {
+          ...baseSettings.notifications,
+          liveActivityEnabled: true,
+        },
+      });
+      expect(LiveActivityService.startWithCurrentData).toHaveBeenCalledTimes(1);
+    });
+
+    fireEvent(liveActivitySwitch, 'valueChange', false);
+
+    await waitFor(() => {
+      expect(LiveActivityService.end).toHaveBeenCalledTimes(1);
     });
   });
 });

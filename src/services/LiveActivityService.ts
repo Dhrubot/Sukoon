@@ -4,16 +4,23 @@
 
 import { NativeModules, Platform } from 'react-native';
 import { PrayerTime, PrayerRecord } from '../types';
+import { PRAYER_ARABIC_MAP } from '../constants/prayerRegistry';
+import { getCachedHijriDate } from '../utils/ramadan';
+import { formatHijriDateSync } from '../utils/hijriDate';
 import logger from '../utils/logger';
+import { resolvePrayerSurfaceState } from '../utils/prayerSurfaceResolver';
 import StorageService from './StorageService';
 import { useStore } from '../store/useStore';
 
-const PRAYER_NAMES = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'];
-
 interface LiveActivityPayload {
   prayerName: string;
+  prayerArabicName: string;
+  activePrayerName: string;
+  hijriShortLabel: string;
   countdownTargetISO: string;
+  countdownTargetPrayerName: string;
   phase: 'pre_adhan' | 'fiqh_window' | 'prayed';
+  countdownMode: 'current_prayer_end' | 'next_prayer_start';
   progress: number;
   prayerStatuses: string[];
   prayerAccentKeys: string[];
@@ -22,6 +29,19 @@ interface LiveActivityPayload {
 
 class LiveActivityService {
   private isActive = false;
+
+  private getPrayerArabicName(prayerName: string): string {
+    return PRAYER_ARABIC_MAP[prayerName.toLowerCase()] ?? prayerName;
+  }
+
+  private getHijriShortLabel(): string {
+    const cachedHijri = getCachedHijriDate();
+    if (cachedHijri) {
+      return `${cachedHijri.day} ${cachedHijri.monthNameEn} ${cachedHijri.year}`;
+    }
+
+    return formatHijriDateSync();
+  }
 
   /**
    * Check if the user has enabled Live Activities in settings.
@@ -47,70 +67,32 @@ class LiveActivityService {
     prayerTimes: PrayerTime[],
     records: PrayerRecord[],
     nextPrayer: PrayerTime | null,
+    tomorrowFajr?: PrayerTime | null,
+    todaySunrise?: Date | null,
   ): LiveActivityPayload | null {
-    if (!nextPrayer || prayerTimes.length === 0) return null;
-
-    const now = new Date();
-    const isPrayerTimePassed = nextPrayer.time <= now;
-
-    // Determine prayer statuses for dots
-    const prayerStatuses = prayerTimes.map((p) => {
-      const record = records.find((r) => r.prayer === p.name);
-      if (record?.status === 'prayed') return 'prayed';
-      if (p.name === nextPrayer.name) return isPrayerTimePassed ? 'current' : 'next';
-      if (p.time < now) return 'missed';
-      return 'upcoming';
-    });
-
-    // Determine phase and countdown target
-    const nextIdx = prayerTimes.findIndex((p) => p.name === nextPrayer.name);
-    const nextChronoPrayer = nextIdx < prayerTimes.length - 1
-      ? prayerTimes[nextIdx + 1]
-      : null;
-
-    // Has the current fiqh-window prayer been prayed?
-    const isPrayed = records.some(
-      (r) => r.prayer === nextPrayer.name && r.status === 'prayed'
+    const surface = resolvePrayerSurfaceState(
+      prayerTimes,
+      records,
+      nextPrayer,
+      tomorrowFajr ?? null,
+      undefined,
+      todaySunrise ?? null,
     );
-
-    let phase: 'pre_adhan' | 'fiqh_window' | 'prayed';
-    let countdownTargetISO: string;
-    let prayerName: string;
-
-    if (isPrayed) {
-      // Prayer is done — show as prayed, countdown to next
-      phase = 'prayed';
-      prayerName = nextPrayer.name;
-      countdownTargetISO = nextChronoPrayer?.time.toISOString() || '';
-    } else if (isPrayerTimePassed) {
-      // Adhan has passed, prayer not done — fiqh window open
-      phase = 'fiqh_window';
-      prayerName = nextPrayer.name;
-      // Countdown target = next prayer's adhan (end of this window)
-      countdownTargetISO = nextChronoPrayer?.time.toISOString() || '';
-    } else {
-      // Pre-adhan: counting down to this prayer's time
-      phase = 'pre_adhan';
-      prayerName = nextPrayer.name;
-      countdownTargetISO = nextPrayer.time.toISOString();
-    }
-
-    // Calculate progress (0→1, fills from previous prayer to next)
-    const prevPrayer = nextIdx > 0 ? prayerTimes[nextIdx - 1] : null;
-    const windowStart = prevPrayer?.time.getTime() || (nextPrayer.time.getTime() - 4 * 60 * 60 * 1000);
-    const windowEnd = nextPrayer.time.getTime();
-    const elapsed = now.getTime() - windowStart;
-    const total = windowEnd - windowStart;
-    const progress = total > 0 ? Math.min(Math.max(elapsed / total, 0), 1) : 0;
+    if (!surface) return null;
 
     return {
-      prayerName,
-      countdownTargetISO,
-      phase,
-      progress,
-      prayerStatuses,
+      prayerName: surface.displayPrayer.name,
+      prayerArabicName: this.getPrayerArabicName(surface.displayPrayer.name),
+      activePrayerName: surface.activePrayer.name,
+      hijriShortLabel: this.getHijriShortLabel(),
+      countdownTargetISO: surface.countdownTarget.time.toISOString(),
+      countdownTargetPrayerName: surface.countdownTarget.name,
+      phase: surface.phase,
+      countdownMode: surface.countdownMode,
+      progress: surface.progress,
+      prayerStatuses: surface.prayerStatuses,
       prayerAccentKeys: prayerTimes.map((p) => p.name.toLowerCase()),
-      prayerNames: PRAYER_NAMES,
+      prayerNames: prayerTimes.map((p) => p.name),
     };
   }
 
@@ -122,6 +104,8 @@ class LiveActivityService {
     prayerTimes: PrayerTime[],
     records: PrayerRecord[],
     nextPrayer: PrayerTime | null,
+    tomorrowFajr?: PrayerTime | null,
+    todaySunrise?: Date | null,
   ): Promise<void> {
     if (!this.isEnabled()) {
       // If was active but now disabled, end it
@@ -134,7 +118,7 @@ class LiveActivityService {
     const bridge = this.getBridge();
     if (!bridge) return;
 
-    const payload = this.buildPayload(prayerTimes, records, nextPrayer);
+    const payload = this.buildPayload(prayerTimes, records, nextPrayer, tomorrowFajr, todaySunrise);
     if (!payload) {
       await this.end();
       return;
@@ -166,13 +150,19 @@ class LiveActivityService {
       return;
     }
 
-    const { todayPrayerTimes, nextPrayer, todayPrayerRecords } = useStore.getState();
+    const { todayPrayerTimes, nextPrayer, todayPrayerRecords, tomorrowFajr, todaySunrise } = useStore.getState();
     if (!nextPrayer || todayPrayerTimes.length === 0) {
       logger.warn('[LiveActivity] No prayer data available to start');
       return;
     }
 
-    const payload = this.buildPayload(todayPrayerTimes, todayPrayerRecords, nextPrayer);
+    const payload = this.buildPayload(
+      todayPrayerTimes,
+      todayPrayerRecords,
+      nextPrayer,
+      tomorrowFajr,
+      todaySunrise,
+    );
     if (!payload) {
       logger.warn('[LiveActivity] Could not build payload');
       return;
