@@ -55,6 +55,8 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
     setNextPrayer, 
     todayPrayerTimes, 
     nextPrayer,
+    tomorrowFajr,
+    setTomorrowFajr,
     setTodaySunrise,
     setTodaySunset,
     setTodayMidnight,
@@ -65,13 +67,14 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
     setNextPrayer: s.setNextPrayer,
     todayPrayerTimes: s.todayPrayerTimes,
     nextPrayer: s.nextPrayer,
+    tomorrowFajr: s.tomorrowFajr,
+    setTomorrowFajr: s.setTomorrowFajr,
     setTodaySunrise: s.setTodaySunrise,
     setTodaySunset: s.setTodaySunset,
     setTodayMidnight: s.setTodayMidnight,
   })));
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [tomorrowFajr, setTomorrowFajr] = useState<PrayerTime | null>(null);
   const [isOffline, setIsOffline] = useState(false);
   const [usingHardcodedDefaults, setUsingHardcodedDefaults] = useState(false);
   const [highLatitudeWarning, setHighLatitudeWarning] = useState(false);
@@ -311,7 +314,13 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
       );
 
       // Update Live Activity (iOS lock screen / Android ongoing notification)
-      LiveActivityService.update(todayResult.prayerTimes, todayRecords, nextPrayer);
+      LiveActivityService.update(
+        todayResult.prayerTimes,
+        todayRecords,
+        nextPrayer,
+        tomorrowFajrPrayer,
+        todayResult.sunrise,
+      );
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load prayer times';
       logger.error('❌ Error loading prayer times:', err);
@@ -377,7 +386,13 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
     const todayStr = getLocalDateKey();
     const todayRecords = StorageService.getDayPrayerRecords(todayStr);
     WidgetService.refreshFromStore().catch(() => {});
-    LiveActivityService.update(todayPrayerTimes, todayRecords, updated ?? nextPrayer);
+    LiveActivityService.update(
+      todayPrayerTimes,
+      todayRecords,
+      updated ?? nextPrayer,
+      tomorrowFajr,
+      sunrise,
+    );
   };
 
   // Keep the ref pointing to the latest runRecalc closure

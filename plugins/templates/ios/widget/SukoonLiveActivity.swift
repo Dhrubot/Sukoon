@@ -5,8 +5,13 @@ import SwiftUI
 struct SukoonPrayerAttributes: ActivityAttributes {
     public struct ContentState: Codable, Hashable {
         var prayerName: String
+        var prayerArabicName: String
+        var activePrayerName: String
+        var hijriShortLabel: String
         var countdownTargetISO: String
+        var countdownTargetPrayerName: String
         var phase: String
+        var countdownMode: String
         var progress: Double
         var prayerStatuses: [String]
         var prayerAccentKeys: [String]
@@ -41,20 +46,14 @@ private struct LADateHelper {
 }
 
 private struct LAColors {
-    static let gold = Color(red: 0.831, green: 0.686, blue: 0.216)
-    static let teal = Color(red: 0.176, green: 0.831, blue: 0.749)
-    static let night = Color(red: 0.035, green: 0.051, blue: 0.094)
     static let text = Color(red: 0.95, green: 0.93, blue: 0.89)
-    static let secondary = Color.white.opacity(0.72)
-    static let mutedText = Color(red: 0.478, green: 0.518, blue: 0.600)
-    static let backgroundTop = Color(red: 0.07, green: 0.11, blue: 0.19)
+    static let secondary = Color.white.opacity(0.74)
+    static let muted = Color.white.opacity(0.34)
+    static let border = Color.white.opacity(0.11)
+    static let track = Color.white.opacity(0.11)
+    static let backgroundTop = Color(red: 0.05, green: 0.08, blue: 0.16)
     static let backgroundBottom = Color(red: 0.03, green: 0.05, blue: 0.10)
-    static let border = Color.white.opacity(0.10)
-    static let buttonBorder = Color.white.opacity(0.12)
-    static let prepareFill = teal
-    static let prepareText = night
-    static let prayedFill = night
-    static let prayedText = mutedText
+    static let buttonFill = Color.white.opacity(0.05)
 
     static func accent(for key: String) -> Color {
         switch key {
@@ -69,138 +68,258 @@ private struct LAColors {
         case "isha":
             return Color(red: 0.62, green: 0.66, blue: 0.85)
         default:
-            return gold
-        }
-    }
-}
-
-private struct PrayerDot: View {
-    let status: String
-    let accentKey: String
-
-    private var accent: Color { LAColors.accent(for: accentKey) }
-
-    var body: some View {
-        ZStack {
-            if status == "missed" {
-                Circle()
-                    .stroke(accent.opacity(0.28), lineWidth: 1.2)
-                    .frame(width: 8, height: 8)
-            } else {
-                Circle()
-                    .fill(fillColor)
-                    .frame(width: 8, height: 8)
-                    .overlay(
-                        Circle()
-                            .stroke(accent.opacity(status == "current" || status == "next" ? 0.92 : 0), lineWidth: 1.1)
-                    )
-                    .shadow(color: accent.opacity(status == "current" || status == "next" ? 0.35 : 0), radius: 3)
-            }
-        }
-    }
-
-    private var fillColor: Color {
-        switch status {
-        case "prayed":
-            return accent.opacity(0.96)
-        case "current", "next":
-            return accent.opacity(0.96)
-        case "upcoming":
-            return accent.opacity(0.24)
-        default:
-            return accent.opacity(0.18)
+            return Color(red: 0.83, green: 0.69, blue: 0.22)
         }
     }
 }
 
 private struct PrayerProgressBar: View {
     let progress: Double
-    var height: CGFloat = 4
+    let accent: Color
 
     var body: some View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
-                RoundedRectangle(cornerRadius: height / 2)
-                    .fill(Color.white.opacity(0.15))
-                    .frame(height: height)
+                Capsule()
+                    .fill(LAColors.track)
+                    .frame(height: 2.5)
 
-                RoundedRectangle(cornerRadius: height / 2)
-                    .fill(LAColors.prepareFill)
-                    .frame(width: geo.size.width * min(max(CGFloat(progress), 0), 1), height: height)
+                Capsule()
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                accent.opacity(0.55),
+                                accent.opacity(0.82),
+                                accent.opacity(0.98),
+                            ],
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .frame(width: geo.size.width * CGFloat(min(max(progress, 0), 1)), height: 2.5)
             }
         }
-        .frame(height: height)
+        .frame(height: 2.5)
+    }
+}
+
+private struct LockScreenPrayerDot: View {
+    let label: String
+    let status: String
+    let accentKey: String
+
+    private var accent: Color { LAColors.accent(for: accentKey) }
+    private var isActive: Bool { status == "current" || status == "next" }
+    private var isPrayed: Bool { status == "prayed" }
+    private var dotSize: CGFloat { isActive ? 10 : 7 }
+    private var labelColor: Color {
+        if isActive { return accent.opacity(0.9) }
+        if isPrayed { return LAColors.secondary.opacity(0.62) }
+        return LAColors.secondary.opacity(0.34)
+    }
+
+    var body: some View {
+        VStack(spacing: 2.5) {
+            Group {
+                if status == "missed" {
+                    Circle()
+                        .stroke(accent.opacity(0.28), lineWidth: 1)
+                        .frame(width: 7, height: 7)
+                } else {
+                    Circle()
+                        .fill(dotFill)
+                        .frame(width: dotSize, height: dotSize)
+                        .shadow(color: accent.opacity(isActive ? 0.35 : 0), radius: 4)
+                }
+            }
+            .frame(height: 11)
+
+            Text(shortPrayerLabel(label))
+                .font(.system(size: 7.5, weight: isActive ? .semibold : .regular, design: .rounded))
+                .foregroundColor(labelColor)
+                .lineLimit(1)
+        }
+    }
+
+    private var dotFill: Color {
+        if isActive { return accent.opacity(0.95) }
+        if isPrayed { return accent.opacity(0.5) }
+        return accent.opacity(0.24)
+    }
+}
+
+private struct PrayerDotLabel: View {
+    let label: String
+    let status: String
+    let accentKey: String
+
+    private var accent: Color { LAColors.accent(for: accentKey) }
+    private var isActive: Bool { status == "current" || status == "next" }
+
+    var body: some View {
+        VStack(spacing: 4) {
+            ZStack {
+                if status == "missed" {
+                    Circle()
+                        .stroke(accent.opacity(0.34), lineWidth: 1.1)
+                        .frame(width: 8, height: 8)
+                } else {
+                    Circle()
+                        .fill(fillColor)
+                        .frame(width: isActive ? 10 : 7, height: isActive ? 10 : 7)
+                        .shadow(color: accent.opacity(isActive ? 0.35 : 0), radius: 4)
+                }
+            }
+            .frame(height: 12)
+
+            Text(shortPrayerLabel(label))
+                .font(.system(size: 8, weight: isActive ? .semibold : .regular, design: .rounded))
+                .foregroundColor(isActive ? accent.opacity(0.96) : LAColors.secondary.opacity(0.6))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var fillColor: Color {
+        switch status {
+        case "prayed":
+            return accent.opacity(0.9)
+        case "current", "next":
+            return accent.opacity(0.96)
+        case "upcoming":
+            return accent.opacity(0.26)
+        default:
+            return accent.opacity(0.18)
+        }
+    }
+}
+
+private struct CompactPrayerDot: View {
+    let status: String
+    let accentKey: String
+
+    private var accent: Color { LAColors.accent(for: accentKey) }
+
+    var body: some View {
+        if status == "missed" {
+            Circle()
+                .stroke(accent.opacity(0.34), lineWidth: 1.1)
+                .frame(width: 8, height: 8)
+        } else {
+            Circle()
+                .fill(fillColor)
+                .frame(width: status == "current" || status == "next" ? 8 : 6, height: status == "current" || status == "next" ? 8 : 6)
+        }
+    }
+
+    private var fillColor: Color {
+        switch status {
+        case "prayed":
+            return accent.opacity(0.9)
+        case "current", "next":
+            return accent.opacity(0.96)
+        case "upcoming":
+            return accent.opacity(0.26)
+        default:
+            return accent.opacity(0.18)
+        }
     }
 }
 
 private struct ActivityActionLabel: View {
     let title: String
-    let variant: Variant
-
-    enum Variant {
-        case primary
-        case secondary
-    }
+    let accent: Color
+    let secondary: Bool
 
     var body: some View {
         Text(title)
-            .font(.system(size: 13, weight: .semibold))
-            .foregroundColor(variant == .primary ? LAColors.prepareText : LAColors.prayedText)
-            .padding(.horizontal, 16)
+            .font(.system(size: 13, weight: .semibold, design: .rounded))
+            .foregroundColor(secondary ? LAColors.secondary : accent.opacity(0.98))
+            .padding(.horizontal, 13)
             .padding(.vertical, 6)
-            .background(variant == .primary ? LAColors.prepareFill : LAColors.prayedFill)
+            .background(
+                Capsule()
+                    .fill(secondary ? LAColors.buttonFill : accent.opacity(0.18))
+            )
             .overlay(
                 Capsule()
-                    .stroke(variant == .secondary ? LAColors.buttonBorder : Color.clear, lineWidth: 1)
+                    .stroke(secondary ? LAColors.border : accent.opacity(0.35), lineWidth: 1)
             )
-            .clipShape(Capsule())
     }
 }
 
-private struct CompactActivityActionLabel: View {
-    let title: String
-    let variant: ActivityActionLabel.Variant
+private func shortPrayerLabel(_ prayerName: String) -> String {
+    prayerName == "Maghrib" ? "Magh." : prayerName
+}
 
-    var body: some View {
-        Text(title)
-            .font(.system(size: 11, weight: .semibold))
-            .foregroundColor(variant == .primary ? LAColors.prepareText : LAColors.prayedText)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 4)
-            .background(variant == .primary ? LAColors.prepareFill : LAColors.prayedFill)
-            .overlay(
-                Capsule()
-                    .stroke(variant == .secondary ? LAColors.buttonBorder : Color.clear, lineWidth: 1)
-            )
-            .clipShape(Capsule())
+private func windowLabel(for countdownMode: String, phase: String) -> String {
+    switch countdownMode {
+    case "current_prayer_end":
+        return "Prayer Window"
+    case "next_prayer_start":
+        return phase == "pre_adhan" ? "Countdown" : "Next Prayer"
+    default:
+        return "Countdown"
     }
 }
 
-private struct ActivitySupportiveCopy {
-    static func line(for phase: String) -> String {
-        switch phase {
-        case "fiqh_window":
-            return "Return with the next prayer"
-        case "prayed":
-            return "Rest in remembrance until the next prayer"
-        default:
-            return "Prepare for the next salah"
-        }
+private func targetLabel(for countdownMode: String) -> String {
+    countdownMode == "current_prayer_end" ? "Ends at" : "Starts at"
+}
+
+@available(iOS 16.2, *)
+private func rowMessage(
+    for context: ActivityViewContext<SukoonPrayerAttributes>
+) -> String {
+    switch context.state.phase {
+    case "fiqh_window":
+        return context.state.countdownMode == "current_prayer_end"
+            ? "Still in His remembrance"
+            : "\(context.state.countdownTargetPrayerName) is approaching"
+    case "prayed":
+        return "Return with the next prayer"
+    default:
+        return "Prepare your heart quietly"
     }
 }
 
-private struct ActivityTopStatusCopy {
-    static func line(prayerName: String, hasFutureTarget: Bool) -> String {
-        if hasFutureTarget {
-            return ""
-        }
+@available(iOS 16.2, *)
+private func actionPrayerName(
+    for context: ActivityViewContext<SukoonPrayerAttributes>
+) -> String {
+    context.state.activePrayerName.isEmpty ? context.state.prayerName : context.state.activePrayerName
+}
 
-        if prayerName == "Isha" {
-            return "Until Fajr tomorrow"
-        }
-
-        return "Now"
+@available(iOS 16.2, *)
+private func accentKey(
+    for prayerName: String,
+    in context: ActivityViewContext<SukoonPrayerAttributes>
+) -> String {
+    if let index = context.attributes.prayerNames.firstIndex(of: prayerName),
+       index < context.state.prayerAccentKeys.count {
+        return context.state.prayerAccentKeys[index]
     }
+
+    if let activeIndex = context.state.prayerStatuses.firstIndex(where: { $0 == "current" || $0 == "next" }),
+       activeIndex < context.state.prayerAccentKeys.count {
+        return context.state.prayerAccentKeys[activeIndex]
+    }
+
+    return "dhuhr"
+}
+
+@available(iOS 16.2, *)
+private func accent(
+    for context: ActivityViewContext<SukoonPrayerAttributes>
+) -> Color {
+    LAColors.accent(for: accentKey(for: context.state.prayerName, in: context))
+}
+
+@available(iOS 16.2, *)
+private func hasFutureTarget(_ context: ActivityViewContext<SukoonPrayerAttributes>) -> Bool {
+    guard let target = LADateHelper.parse(context.state.countdownTargetISO) else { return false }
+    return target > Date()
 }
 
 @available(iOS 16.2, *)
@@ -208,34 +327,56 @@ struct SukoonLiveActivity: Widget {
     var body: some WidgetConfiguration {
         ActivityConfiguration(for: SukoonPrayerAttributes.self) { context in
             lockScreenView(context: context)
+                .activityBackgroundTint(nil)
+                .activitySystemActionForegroundColor(LAColors.text)
         } dynamicIsland: { context in
-            DynamicIsland {
+            let prayerAccent = accent(for: context)
+            let targetDate = LADateHelper.parse(context.state.countdownTargetISO)
+            let hasTarget = hasFutureTarget(context)
+
+            return DynamicIsland {
                 DynamicIslandExpandedRegion(.leading) {
-                    Text(context.state.prayerName)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(LAColors.text)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(context.state.prayerName)
+                            .font(.system(size: 16, weight: .semibold, design: .rounded))
+                            .foregroundColor(LAColors.text)
+
+                        Text(context.state.prayerArabicName)
+                            .font(.system(size: 11, weight: .medium, design: .serif))
+                            .foregroundColor(prayerAccent.opacity(0.72))
+                    }
                 }
 
                 DynamicIslandExpandedRegion(.trailing) {
-                    if let target = LADateHelper.parse(context.state.countdownTargetISO), target > Date() {
-                        Text(target, style: .timer)
-                            .font(.system(size: 14, weight: .medium, design: .monospaced))
-                            .foregroundColor(LAColors.teal)
-                            .multilineTextAlignment(.trailing)
-                    } else {
-                        Text("Now")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(LAColors.gold)
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text(windowLabel(for: context.state.countdownMode, phase: context.state.phase))
+                            .font(.system(size: 10, weight: .medium, design: .rounded))
+                            .foregroundColor(prayerAccent.opacity(0.72))
+                            .textCase(.uppercase)
+
+                        if let targetDate, hasTarget {
+                            Text(targetDate, style: .timer)
+                                .font(.system(size: 14, weight: .medium, design: .rounded))
+                                .foregroundColor(prayerAccent)
+                                .multilineTextAlignment(.trailing)
+                        } else {
+                            Text("Now")
+                                .font(.system(size: 14, weight: .semibold, design: .rounded))
+                                .foregroundColor(prayerAccent)
+                        }
                     }
                 }
 
                 DynamicIslandExpandedRegion(.center) {
                     VStack(spacing: 8) {
-                        PrayerProgressBar(progress: context.state.progress)
+                        PrayerProgressBar(progress: context.state.progress, accent: prayerAccent)
 
-                        HStack(spacing: 6) {
+                        HStack(spacing: 8) {
                             ForEach(Array(context.state.prayerStatuses.enumerated()), id: \.offset) { index, status in
-                                PrayerDot(status: status, accentKey: accentKey(for: index, in: context))
+                                CompactPrayerDot(
+                                    status: status,
+                                    accentKey: index < context.state.prayerAccentKeys.count ? context.state.prayerAccentKeys[index] : "dhuhr"
+                                )
                             }
                         }
                     }
@@ -244,141 +385,160 @@ struct SukoonLiveActivity: Widget {
 
                 DynamicIslandExpandedRegion(.bottom) {
                     if context.state.phase == "fiqh_window" {
-                        HStack(spacing: 12) {
-                            Link(destination: URL(string: "sukoon://prepare?prayer=\(context.state.prayerName)")!) {
-                                ActivityActionLabel(title: "Prepare", variant: .primary)
+                        let actionPrayer = actionPrayerName(for: context)
+                        HStack(spacing: 10) {
+                            Link(destination: URL(string: "sukoon://prayed?prayer=\(actionPrayer)")!) {
+                                ActivityActionLabel(title: "Prayed", accent: prayerAccent, secondary: true)
                             }
 
-                            Link(destination: URL(string: "sukoon://prayed?prayer=\(context.state.prayerName)")!) {
-                                ActivityActionLabel(title: "Prayed", variant: .secondary)
+                            Link(destination: URL(string: "sukoon://prepare?prayer=\(actionPrayer)")!) {
+                                ActivityActionLabel(title: "Prepare", accent: prayerAccent, secondary: false)
                             }
                         }
                         .padding(.top, 4)
                     }
                 }
             } compactLeading: {
-                Text(context.state.prayerName)
-                    .font(.system(size: 13, weight: .semibold))
+                Text(shortPrayerLabel(context.state.prayerName))
+                    .font(.system(size: 12, weight: .semibold, design: .rounded))
                     .foregroundColor(LAColors.text)
             } compactTrailing: {
-                if let target = LADateHelper.parse(context.state.countdownTargetISO), target > Date() {
-                    Text(target, style: .timer)
-                        .font(.system(size: 13, weight: .medium, design: .monospaced))
-                        .foregroundColor(LAColors.teal)
+                if let targetDate, hasTarget {
+                    Text(targetDate, style: .timer)
+                        .font(.system(size: 12, weight: .medium, design: .rounded))
+                        .foregroundColor(prayerAccent)
                 } else {
                     Text("Now")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(LAColors.gold)
+                        .font(.system(size: 12, weight: .semibold, design: .rounded))
+                        .foregroundColor(prayerAccent)
                 }
             } minimal: {
                 Image(systemName: "moon.stars.fill")
                     .font(.system(size: 12))
-                    .foregroundColor(LAColors.gold)
+                    .foregroundColor(prayerAccent)
             }
         }
     }
 
     @ViewBuilder
     private func lockScreenView(context: ActivityViewContext<SukoonPrayerAttributes>) -> some View {
-        VStack(spacing: 8) {
-            HStack {
-                HStack(spacing: 6) {
-                    Image(systemName: "moon.stars.fill")
-                        .font(.system(size: 14))
-                        .foregroundColor(LAColors.gold)
-
-                    Text(context.state.prayerName)
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(LAColors.text)
-                }
-
-                Spacer()
-
-                if let target = LADateHelper.parse(context.state.countdownTargetISO), target > Date() {
-                    HStack(spacing: 4) {
-                        Text(target, style: .timer)
-                            .font(.system(size: 15, weight: .medium, design: .monospaced))
-                            .foregroundColor(LAColors.teal)
-
-                        Text(context.state.phase == "fiqh_window" ? "remaining" : "")
-                            .font(.system(size: 12))
-                            .foregroundColor(LAColors.secondary)
-                    }
-                } else {
-                    Text(
-                        ActivityTopStatusCopy.line(
-                            prayerName: context.state.prayerName,
-                            hasFutureTarget: false
-                        )
-                    )
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(LAColors.gold)
-                }
-            }
-
-            PrayerProgressBar(progress: context.state.progress)
-
-            HStack {
-                Text(ActivitySupportiveCopy.line(for: context.state.phase))
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundColor(LAColors.secondary)
-                    .lineLimit(1)
-
-                Spacer()
-
-                if let target = LADateHelper.parse(context.state.countdownTargetISO) {
-                    Text(LADateHelper.timeFmt.string(from: target))
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundColor(LAColors.text)
-                }
-            }
-
-            HStack {
-                HStack(spacing: 6) {
-                    ForEach(Array(context.state.prayerStatuses.enumerated()), id: \.offset) { index, status in
-                        PrayerDot(status: status, accentKey: accentKey(for: index, in: context))
-                    }
-                }
-
-                Spacer()
-
-                if context.state.phase == "fiqh_window" {
-                    HStack(spacing: 8) {
-                        Link(destination: URL(string: "sukoon://prepare?prayer=\(context.state.prayerName)")!) {
-                            CompactActivityActionLabel(title: "Prepare", variant: .primary)
-                        }
-
-                        Link(destination: URL(string: "sukoon://prayed?prayer=\(context.state.prayerName)")!) {
-                            CompactActivityActionLabel(title: "Prayed", variant: .secondary)
-                        }
-                    }
-                }
-            }
-        }
-        .padding(16)
-        .background(
+        let prayerAccent = accent(for: context)
+        let targetDate = LADateHelper.parse(context.state.countdownTargetISO)
+        let hasTarget = hasFutureTarget(context)
+        let message = rowMessage(for: context)
+        ZStack {
             LinearGradient(
-                colors: [LAColors.backgroundTop, LAColors.backgroundBottom],
+                colors: [
+                    LAColors.backgroundTop.opacity(0.14),
+                    LAColors.backgroundBottom.opacity(0.08),
+                ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
-        )
-        .overlay(
-            RoundedRectangle(cornerRadius: 18)
-                .stroke(LAColors.border, lineWidth: 1)
-        )
-    }
+            .overlay(
+                RadialGradient(
+                    colors: [prayerAccent.opacity(0.10), .clear],
+                    center: .topLeading,
+                    startRadius: 6,
+                    endRadius: 210
+                )
+            )
 
-    private func accentKey(
-        for index: Int,
-        in context: ActivityViewContext<SukoonPrayerAttributes>
-    ) -> String {
-        if index < context.state.prayerAccentKeys.count {
-            return context.state.prayerAccentKeys[index]
+            VStack(spacing: 0) {
+                HStack(alignment: .center, spacing: 0) {
+                    HStack(alignment: .firstTextBaseline, spacing: 7) {
+                        Text(context.state.prayerName)
+                            .font(.system(size: 22, weight: .regular, design: .serif))
+                            .foregroundColor(LAColors.text)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
+
+                        Text(context.state.prayerArabicName)
+                            .font(.system(size: 12, weight: .medium, design: .serif))
+                            .foregroundColor(prayerAccent.opacity(0.66))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.75)
+
+                        if let targetDate, hasTarget {
+                            Text(targetDate, style: .timer)
+                                .font(.system(size: 22, weight: .light, design: .serif))
+                                .foregroundColor(prayerAccent)
+                                .monospacedDigit()
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.68)
+                                .padding(.leading, 8)
+                        }
+                    }
+
+                    Spacer(minLength: 8)
+
+                    VStack(alignment: .trailing, spacing: 1) {
+                        Text(context.state.countdownMode == "current_prayer_end"
+                            ? targetLabel(for: context.state.countdownMode)
+                            : ((context.state.countdownTargetPrayerName.isEmpty ? context.state.prayerName : context.state.countdownTargetPrayerName) + " at"))
+                            .font(.system(size: 8.5, weight: .medium, design: .rounded))
+                            .foregroundColor(LAColors.secondary.opacity(0.32))
+                            .textCase(.uppercase)
+
+                        if let targetDate, hasTarget {
+                            Text(LADateHelper.timeFmt.string(from: targetDate))
+                                .font(.system(size: 14, weight: .regular, design: .serif))
+                                .foregroundColor(LAColors.secondary.opacity(0.6))
+                                .lineLimit(1)
+                        } else {
+                            Text("Now")
+                                .font(.system(size: 14, weight: .medium, design: .rounded))
+                                .foregroundColor(LAColors.secondary.opacity(0.6))
+                        }
+                    }
+                }
+
+                PrayerProgressBar(progress: context.state.progress, accent: prayerAccent)
+                    .padding(.top, 8)
+
+                HStack(alignment: .center, spacing: 10) {
+                    Text(message)
+                        .font(.system(size: 12, weight: .light, design: .serif))
+                        .italic()
+                        .foregroundColor(LAColors.secondary.opacity(0.44))
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.8)
+
+                    Spacer(minLength: 0)
+                }
+                .padding(.top, 7)
+
+                HStack(alignment: .bottom, spacing: 10) {
+                    HStack(spacing: 8) {
+                        ForEach(Array(context.state.prayerStatuses.enumerated()), id: \.offset) { index, status in
+                            LockScreenPrayerDot(
+                                label: index < context.attributes.prayerNames.count ? context.attributes.prayerNames[index] : "",
+                                status: status,
+                                accentKey: index < context.state.prayerAccentKeys.count ? context.state.prayerAccentKeys[index] : "dhuhr"
+                            )
+                        }
+                    }
+
+                    Spacer(minLength: 10)
+
+                    if context.state.phase == "fiqh_window" {
+                        let actionPrayer = actionPrayerName(for: context)
+                        HStack(spacing: 7) {
+                            Link(destination: URL(string: "sukoon://prayed?prayer=\(actionPrayer)")!) {
+                                ActivityActionLabel(title: "Prayed", accent: prayerAccent, secondary: true)
+                            }
+
+                            Link(destination: URL(string: "sukoon://prepare?prayer=\(actionPrayer)")!) {
+                                ActivityActionLabel(title: "Prepare", accent: prayerAccent, secondary: false)
+                            }
+                        }
+                        .fixedSize(horizontal: true, vertical: false)
+                    }
+                }
+                .padding(.top, 8)
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 12)
         }
-        if index < context.attributes.prayerNames.count {
-            return context.attributes.prayerNames[index].lowercased()
-        }
-        return "asr"
     }
 }

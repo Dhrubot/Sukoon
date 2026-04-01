@@ -4,3 +4,4 @@ coverage/
 dist/
 edge-api/dist/
 ios/build/
+node_modules/

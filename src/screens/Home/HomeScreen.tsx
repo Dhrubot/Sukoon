@@ -63,9 +63,8 @@ import { getLocalDateKey } from "../../utils/dateHelpers";
 import MoonSightingPrompt from "../../components/MoonSightingPrompt";
 import { withAlpha } from "../../utils/color";
 import { mosqueModePlatformUi } from "../../utils/mosqueModePlatform";
+import { resolvePrayerSurfaceState } from "../../utils/prayerSurfaceResolver";
 import { JummahResourceTopic } from "../../constants/jummahContent";
-
-import { HERO_ADVANCE_MINUTES } from "../../constants/NotificationConstants";
 const MOSQUE_MODE_TIP_SEEN_KEY = 'mosque_mode_tip_seen';
 
 type HomeScreenNavigationProp = CompositeNavigationProp<
@@ -99,14 +98,12 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
     setTodayPrayerRecords,
     todaySunrise,
     todaySunset,
-    todayMidnight,
   } = useStore(useShallow((state) => ({
     userSettings: state.userSettings,
     todayPrayerRecords: state.todayPrayerRecords,
     setTodayPrayerRecords: state.setTodayPrayerRecords,
     todaySunrise: state.todaySunrise,
     todaySunset: state.todaySunset,
-    todayMidnight: state.todayMidnight,
   })));
 
   // Mosque mode state for focus mode + pill badge
@@ -453,77 +450,30 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
     return firstName.charAt(0).toUpperCase() + firstName.slice(1);
   }, [userSettings?.name]);
 
-  const heroPrayer = useMemo(() => {
-    if (!nextPrayer) return tomorrowFajr ? { ...tomorrowFajr, isNext: true } : null;
+  const heroSurface = useMemo(() => (
+    resolvePrayerSurfaceState(
+      todayPrayerTimes,
+      todayPrayerRecords,
+      nextPrayer,
+      tomorrowFajr,
+      currentTime,
+      todaySunrise,
+    )
+  ), [currentTime, nextPrayer, todayPrayerRecords, todayPrayerTimes, tomorrowFajr, todaySunrise]);
 
-    // After Islamic midnight and Isha is the current prayer → transition hero to Fajr
-    const now = new Date();
-    if (
-      nextPrayer.name === 'Isha' &&
-      todayMidnight &&
-      now >= todayMidnight &&
-      tomorrowFajr
-    ) {
-      return { ...tomorrowFajr, isNext: true };
-    }
-
-    const isCurrentPrayed = todayPrayerRecords.some(
-      r => r.prayer === nextPrayer.name && r.status === 'prayed'
-    );
-
-    // Determine base hero prayer from fiqh-window logic
-    let base: PrayerTime | null = null;
-
-    if (!isCurrentPrayed) {
-      base = nextPrayer;
-    } else {
-      // Walk forward to find the next unprayed prayer
-      const currentIdx = todayPrayerTimes.findIndex(p => p.name === nextPrayer.name);
-      for (let i = currentIdx + 1; i < todayPrayerTimes.length; i++) {
-        const p = todayPrayerTimes[i];
-        const prayed = todayPrayerRecords.some(
-          r => r.prayer === p.name && r.status === 'prayed'
-        );
-        if (!prayed) {
-          base = { ...p, isNext: true };
-          break;
-        }
-      }
-    }
-
-    // All remaining prayers prayed → show tomorrow's Fajr
-    if (!base) return tomorrowFajr ? { ...tomorrowFajr, isNext: true } : null;
-
-    // Early advance: if the next chronological prayer is ≤15 min away, show it instead.
-    // This makes the hero ring transition before the fiqh window officially ends,
-    // aligning with focus mode activation timing.
-    const baseIdx = todayPrayerTimes.findIndex(p => p.name === base!.name);
-    const nextChronoPrayer = baseIdx >= 0 && baseIdx < todayPrayerTimes.length - 1
-      ? todayPrayerTimes[baseIdx + 1]
-      : tomorrowFajr;
-
-    if (nextChronoPrayer) {
-      const msUntilNext = nextChronoPrayer.time.getTime() - now.getTime();
-      const minutesUntilNext = msUntilNext / (1000 * 60);
-      if (minutesUntilNext <= HERO_ADVANCE_MINUTES && minutesUntilNext > 0) {
-        return { ...nextChronoPrayer, isNext: true };
-      }
-    }
-
-    return base;
-  }, [nextPrayer, todayPrayerTimes, todayPrayerRecords, tomorrowFajr, todayMidnight, currentTime]);
+  const heroPrayer = heroSurface?.displayPrayer ?? null;
+  const activeHeroPrayerName = heroSurface?.activePrayer.name ?? null;
 
   // Stable identity key — only changes when the hero prayer actually transitions.
   // Downstream memos use this instead of heroPrayer (which rebuilds every 60s tick).
   const heroPrayerName = heroPrayer?.name ?? null;
 
-  // Previous prayer time for inter-prayer ring progress
+  // Previous boundary for inter-prayer ring progress
   const previousPrayerTime = useMemo(() => {
-    if (!heroPrayer) return undefined;
-    const heroIdx = todayPrayerTimes.findIndex(p => p.name === heroPrayer.name);
-    if (heroIdx > 0) return todayPrayerTimes[heroIdx - 1].time;
-    return undefined;
-  }, [heroPrayerName, todayPrayerTimes]);
+    if (!heroPrayer || !heroSurface) return undefined;
+    if (heroPrayer.time <= currentTime) return undefined;
+    return heroSurface.displayWindowStart;
+  }, [currentTime, heroPrayer, heroSurface]);
 
   // Unified mosque mode info for the hero pill — scoped to heroPrayer
   const mosqueModeHeroInfo = useMemo(() => {
@@ -606,13 +556,14 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
     const startIdx = heroIdx <= 0 ? todayPrayerTimes.length - 1 : heroIdx - 1;
     for (let i = startIdx; i >= 0; i--) {
       const p = todayPrayerTimes[i];
+      if (p.name === activeHeroPrayerName) continue;
       const prayed = todayPrayerRecords.some(
         r => r.prayer === p.name && r.status === 'prayed'
       );
       if (!prayed) return p;
     }
     return undefined;
-  }, [heroPrayerName, todayPrayerTimes, todayPrayerRecords, isHeroPrayerTimeEntered]);
+  }, [activeHeroPrayerName, heroPrayerName, todayPrayerTimes, todayPrayerRecords, isHeroPrayerTimeEntered]);
 
   // All missed prayers today (past time, no record, next prayer started)
   const missedPrayersToday = useMemo(() => {

@@ -63,6 +63,12 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
     Platform.OS === 'android'
       ? 'Short call to prayer at prayer time. Enable full playback below for locked-screen adhan.'
       : 'Short call to prayer on the lock screen. Full adhan continues after you open the app.';
+  const liveActivityLabel =
+    Platform.OS === 'android' ? 'Persistent Prayer Countdown' : 'Live Activity';
+  const liveActivitySubtitle =
+    Platform.OS === 'android'
+      ? 'Keep a prayer-aware countdown in your notifications and on the lock screen.'
+      : 'Show a prayer-aware countdown on your lock screen and Dynamic Island.';
 
   const handlePressRow = () => {
     if (permissionStatus === 'granted') {
@@ -174,11 +180,12 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
           />
         </View>
       )}
-      {/* Live Activity — lock screen prayer countdown */}
-       { __DEV__ && (<View style={styles.row}>
+      {/* Live Activity / persistent countdown */}
+      {Platform.OS !== 'web' && (
+        <View style={styles.row}>
         <View style={styles.textContainer}>
-          <Text style={styles.label}>Live Activity</Text>
-          <Text style={styles.subtitle}>Show prayer countdown on your lock screen</Text>
+          <Text style={styles.label}>{liveActivityLabel}</Text>
+          <Text style={styles.subtitle}>{liveActivitySubtitle}</Text>
         </View>
         <Switch
           value={!!userSettings.notifications.liveActivityEnabled}
@@ -199,7 +206,8 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
           trackColor={{ false: theme.colors.switch.trackFalse, true: theme.colors.switch.trackTrue }}
           thumbColor={theme.colors.switch.thumb}
         />
-      </View>)}
+        </View>
+      )}
       {/* Tahajjud Reminders */}
       {onToggleTahajjud && (
         <SettingRow

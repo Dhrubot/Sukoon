@@ -914,7 +914,7 @@ const withLiveActivityXcodeConfig = (config) => {
         }
       }
     } else {
-      console.warn('⚠️ Widget target not found — Live Activity will not be compiled');
+      console.log('ℹ️ Widget target not found yet — withWidget will attach Live Activity sources after the widget target is created');
     }
 
     // --- Add bridge files to main app target ---

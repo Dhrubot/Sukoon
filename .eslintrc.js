@@ -1,6 +1,6 @@
 module.exports = {
   root: true,
-  ignorePatterns: ['.expo/', 'android/app/build/', 'coverage/', 'dist/', 'edge-api/dist/', 'ios/build/'],
+  ignorePatterns: ['.expo/', 'android/app/build/', 'coverage/', 'dist/', 'edge-api/dist/', 'ios/build/', 'node_modules/'],
   extends: [
     'eslint:recommended',
     'plugin:react/recommended',

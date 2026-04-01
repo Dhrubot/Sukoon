@@ -108,7 +108,7 @@ export interface UserSettings {
     reminderText: string;
     postPrayerCheck: boolean; // DEPRECATED - replaced by habitBuilder
     intensity?: 'gentle' | 'balanced' | 'persistent'; // Controls follow-up reminder frequency
-    liveActivityEnabled?: boolean; // Show prayer countdown on lock screen (iOS Live Activity / Android ongoing notification)
+    liveActivityEnabled?: boolean; // Show the platform-specific prayer countdown surface on iOS lock screen / Dynamic Island or Android notifications
   };
   // Per-prayer notification toggles (individual control)
   prayerNotifications: {
