@@ -81,16 +81,25 @@ private struct PrayerProgressBar: View {
         GeometryReader { geo in
             ZStack(alignment: .leading) {
                 Capsule()
-                    .fill(LAColors.track)
+                    .fill(
+                        LinearGradient(
+                            colors: [
+                                Color.white.opacity(0.10),
+                                LAColors.track.opacity(0.88),
+                            ],
+                            startPoint: .top,
+                            endPoint: .bottom
+                        )
+                    )
                     .frame(height: 2.5)
 
                 Capsule()
                     .fill(
                         LinearGradient(
                             colors: [
-                                accent.opacity(0.55),
-                                accent.opacity(0.82),
-                                accent.opacity(0.98),
+                                accent.opacity(0.62),
+                                accent.opacity(0.86),
+                                accent.opacity(1.0),
                             ],
                             startPoint: .leading,
                             endPoint: .trailing
@@ -429,18 +438,33 @@ struct SukoonLiveActivity: Widget {
         ZStack {
             LinearGradient(
                 colors: [
-                    LAColors.backgroundTop.opacity(0.14),
-                    LAColors.backgroundBottom.opacity(0.08),
+                    LAColors.backgroundTop.opacity(0.12),
+                    LAColors.backgroundBottom.opacity(0.07),
                 ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
             .overlay(
                 RadialGradient(
-                    colors: [prayerAccent.opacity(0.10), .clear],
+                    colors: [
+                        prayerAccent.opacity(0.14),
+                        prayerAccent.opacity(0.04),
+                        .clear,
+                    ],
                     center: .topLeading,
                     startRadius: 6,
-                    endRadius: 210
+                    endRadius: 240
+                )
+            )
+            .overlay(
+                LinearGradient(
+                    colors: [
+                        Color.white.opacity(0.10),
+                        Color.white.opacity(0.03),
+                        .clear,
+                    ],
+                    startPoint: .top,
+                    endPoint: .center
                 )
             )
 
