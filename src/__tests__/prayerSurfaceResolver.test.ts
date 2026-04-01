@@ -30,9 +30,12 @@ describe('resolvePrayerSurfaceState', () => {
     expect(state).toMatchObject({
       phase: 'pre_adhan',
       countdownMode: 'next_prayer_start',
+      ringColorMode: 'gold',
       prayerStatuses: ['missed', 'next', 'upcoming', 'upcoming', 'upcoming'],
     });
     expect(state?.displayPrayer.name).toBe('Dhuhr');
+    expect(state?.heroGradientPrayer.name).toBe('Dhuhr');
+    expect(state?.ringAccentPrayer.name).toBe('Dhuhr');
     expect(state?.countdownTarget.name).toBe('Dhuhr');
     expect(state?.progress).toBeGreaterThan(0.7);
     expect(state?.progress).toBeLessThan(0.72);
@@ -50,15 +53,18 @@ describe('resolvePrayerSurfaceState', () => {
     expect(state).toMatchObject({
       phase: 'fiqh_window',
       countdownMode: 'current_prayer_end',
+      ringColorMode: 'prayer',
     });
     expect(state?.activePrayer.name).toBe('Dhuhr');
     expect(state?.displayPrayer.name).toBe('Dhuhr');
+    expect(state?.heroGradientPrayer.name).toBe('Dhuhr');
+    expect(state?.ringAccentPrayer.name).toBe('Dhuhr');
     expect(state?.countdownTarget.name).toBe('Asr');
     expect(state?.progress).toBeGreaterThan(0.28);
     expect(state?.progress).toBeLessThan(0.29);
   });
 
-  it('switches focus to the next prayer during the 15 minute handoff', () => {
+  it('keeps focus on the active prayer even during the last 15 minutes when not prayed', () => {
     const state = resolvePrayerSurfaceState(
       prayerTimes,
       [],
@@ -69,18 +75,21 @@ describe('resolvePrayerSurfaceState', () => {
 
     expect(state).toMatchObject({
       phase: 'fiqh_window',
-      countdownMode: 'next_prayer_start',
+      countdownMode: 'current_prayer_end',
+      ringColorMode: 'prayer',
     });
     expect(state?.activePrayer.name).toBe('Dhuhr');
-    expect(state?.displayPrayer.name).toBe('Asr');
+    expect(state?.displayPrayer.name).toBe('Dhuhr');
+    expect(state?.heroGradientPrayer.name).toBe('Dhuhr');
+    expect(state?.ringAccentPrayer.name).toBe('Dhuhr');
     expect(state?.countdownTarget.name).toBe('Asr');
-    expect(state?.prayerStatuses[1]).toBe('upcoming');
-    expect(state?.prayerStatuses[2]).toBe('next');
+    expect(state?.prayerStatuses[1]).toBe('current');
+    expect(state?.prayerStatuses[2]).toBe('upcoming');
     expect(state?.progress).toBeGreaterThan(0.95);
     expect(state?.progress).toBeLessThan(0.96);
   });
 
-  it('switches to the next prayer after the active prayer is logged', () => {
+  it('switches the display prayer after the active prayer is logged while keeping the active gradient', () => {
     const state = resolvePrayerSurfaceState(
       prayerTimes,
       [{ id: '1', prayer: 'Dhuhr', status: 'prayed', date: '2026-03-18' }],
@@ -92,9 +101,12 @@ describe('resolvePrayerSurfaceState', () => {
     expect(state).toMatchObject({
       phase: 'prayed',
       countdownMode: 'next_prayer_start',
+      ringColorMode: 'prayer',
     });
     expect(state?.activePrayer.name).toBe('Dhuhr');
     expect(state?.displayPrayer.name).toBe('Asr');
+    expect(state?.heroGradientPrayer.name).toBe('Dhuhr');
+    expect(state?.ringAccentPrayer.name).toBe('Asr');
     expect(state?.prayerStatuses[1]).toBe('prayed');
     expect(state?.prayerStatuses[2]).toBe('next');
   });
@@ -111,8 +123,11 @@ describe('resolvePrayerSurfaceState', () => {
     expect(state).toMatchObject({
       phase: 'fiqh_window',
       countdownMode: 'current_prayer_end',
+      ringColorMode: 'prayer',
     });
     expect(state?.displayPrayer.name).toBe('Isha');
+    expect(state?.heroGradientPrayer.name).toBe('Isha');
+    expect(state?.ringAccentPrayer.name).toBe('Isha');
     expect(state?.countdownTarget.name).toBe('Fajr');
     expect(state?.countdownTarget.time.toISOString()).toBe('2026-03-19T05:05:00.000Z');
   });
@@ -144,15 +159,16 @@ describe('resolvePrayerSurfaceState', () => {
     expect(state).toMatchObject({
       phase: 'fiqh_window',
       countdownMode: 'current_prayer_end',
+      ringColorMode: 'prayer',
     });
     expect(state?.displayPrayer.name).toBe('Fajr');
     expect(state?.countdownTarget.name).toBe('Sunrise');
     expect(state?.countdownTarget.time.toISOString()).toBe('2026-03-18T06:10:00.000Z');
-    expect(state?.progress).toBeGreaterThan(0.35);
-    expect(state?.progress).toBeLessThan(0.37);
+    expect(state?.progress).toBeGreaterThan(0.49);
+    expect(state?.progress).toBeLessThan(0.51);
   });
 
-  it('switches Fajr to Dhuhr immediately once the prayer is logged', () => {
+  it('keeps Fajr as the hero gradient but switches the ring/display to Dhuhr after logging', () => {
     const state = resolvePrayerSurfaceState(
       prayerTimes,
       [{ id: '1', prayer: 'Fajr', status: 'prayed', date: '2026-03-18' }],
@@ -165,8 +181,33 @@ describe('resolvePrayerSurfaceState', () => {
     expect(state).toMatchObject({
       phase: 'prayed',
       countdownMode: 'next_prayer_start',
+      ringColorMode: 'prayer',
     });
     expect(state?.displayPrayer.name).toBe('Dhuhr');
+    expect(state?.heroGradientPrayer.name).toBe('Fajr');
+    expect(state?.ringAccentPrayer.name).toBe('Dhuhr');
     expect(state?.countdownTarget.name).toBe('Dhuhr');
+  });
+
+  it('uses gold for Jumuah before and during the Dhuhr window on Friday', () => {
+    const fridayBefore = resolvePrayerSurfaceState(
+      prayerTimes,
+      [],
+      prayerTimes[1],
+      tomorrowFajr,
+      new Date('2026-03-20T10:00:00.000Z'),
+    );
+    const fridayActive = resolvePrayerSurfaceState(
+      prayerTimes,
+      [{ id: '1', prayer: 'Dhuhr', status: 'prayed', date: '2026-03-20' }],
+      prayerTimes[1],
+      tomorrowFajr,
+      new Date('2026-03-20T13:00:00.000Z'),
+    );
+
+    expect(fridayBefore?.ringColorMode).toBe('gold');
+    expect(fridayActive?.ringColorMode).toBe('gold');
+    expect(fridayActive?.heroGradientPrayer.name).toBe('Dhuhr');
+    expect(fridayActive?.ringAccentPrayer.name).toBe('Asr');
   });
 });

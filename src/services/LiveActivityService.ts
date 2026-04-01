@@ -16,6 +16,9 @@ interface LiveActivityPayload {
   prayerName: string;
   prayerArabicName: string;
   activePrayerName: string;
+  heroGradientPrayerName: string;
+  ringAccentPrayerName: string;
+  ringColorMode: 'gold' | 'prayer';
   hijriShortLabel: string;
   countdownTargetISO: string;
   countdownTargetPrayerName: string;
@@ -84,6 +87,9 @@ class LiveActivityService {
       prayerName: surface.displayPrayer.name,
       prayerArabicName: this.getPrayerArabicName(surface.displayPrayer.name),
       activePrayerName: surface.activePrayer.name,
+      heroGradientPrayerName: surface.heroGradientPrayer.name,
+      ringAccentPrayerName: surface.ringAccentPrayer.name,
+      ringColorMode: surface.ringColorMode,
       hijriShortLabel: this.getHijriShortLabel(),
       countdownTargetISO: surface.countdownTarget.time.toISOString(),
       countdownTargetPrayerName: surface.countdownTarget.name,

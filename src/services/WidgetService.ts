@@ -7,6 +7,7 @@ import { getCachedHijriDate } from '../utils/ramadan';
 import { formatHijriDateSync } from '../utils/hijriDate';
 import { getLocalDateKey } from '../utils/dateHelpers';
 import logger from '../utils/logger';
+import { resolvePrayerSurfaceState } from '../utils/prayerSurfaceResolver';
 
 const { SukoonWidgetBridge } = NativeModules;
 
@@ -62,6 +63,18 @@ interface WidgetNextPrayer {
   remainingMinutes: number;
 }
 
+interface WidgetSurfaceData {
+  activePrayerName: string;
+  displayPrayerName: string;
+  heroGradientPrayerName: string;
+  ringAccentPrayerName: string;
+  ringColorMode: 'gold' | 'prayer';
+  countdownTargetName: string;
+  countdownTargetISO: string;
+  phase: 'pre_adhan' | 'fiqh_window' | 'prayed';
+  countdownMode: 'current_prayer_end' | 'next_prayer_start';
+}
+
 interface WidgetHijriData {
   day: number;
   monthEn: string;
@@ -94,6 +107,7 @@ export interface WidgetSnapshot {
   themeMode: WidgetThemeMode;
   nextPrayer: WidgetNextPrayer | null;
   prayers: WidgetPrayerData[];
+  surface: WidgetSurfaceData | null;
   hijri: WidgetHijriData;
   supportiveLine: string;
   lastUpdatedISO: string;
@@ -133,37 +147,19 @@ class WidgetService {
     };
   }
 
-  private resolvePrayerStatus(
-    prayer: PrayerTime,
-    records: PrayerRecord[],
-    nextPrayer: PrayerTime | null,
-    now: Date
-  ): WidgetPrayerStatus {
-    const record = records.find((entry) => entry.prayer === prayer.name);
-    if (record?.status === 'prayed') return 'prayed';
-    if (nextPrayer?.name === prayer.name) {
-      return prayer.time <= now ? 'current' : 'next';
-    }
-    if (prayer.time < now) return 'missed';
-    return 'upcoming';
-  }
-
   private resolveSupportiveLine(
-    prayerTimes: PrayerTime[],
-    records: PrayerRecord[],
-    nextPrayer: PrayerTime | null,
+    surface: ReturnType<typeof resolvePrayerSurfaceState>,
     now: Date
   ): string {
-    if (prayerTimes.length === 0 || !nextPrayer) {
+    if (!surface) {
       return 'Rest in remembrance until the next prayer';
     }
 
-    const nextRecord = records.find((entry) => entry.prayer === nextPrayer.name);
-    if (getLocalDateKey(nextPrayer.time) !== getLocalDateKey(now)) {
+    if (getLocalDateKey(surface.displayPrayer.time) !== getLocalDateKey(now)) {
       return 'Rest in remembrance until the next prayer';
     }
 
-    if (nextPrayer.time <= now && nextRecord?.status !== 'prayed') {
+    if (surface.phase === 'fiqh_window' && surface.countdownMode === 'current_prayer_end') {
       return 'Return with the next prayer';
     }
 
@@ -173,27 +169,44 @@ class WidgetService {
   buildSnapshot(
     prayerTimes: PrayerTime[],
     records: PrayerRecord[],
-    nextPrayer: PrayerTime | null
+    nextPrayer: PrayerTime | null,
+    tomorrowFajr?: PrayerTime | null,
+    todaySunrise?: Date | null,
   ): WidgetSnapshot {
     const now = new Date();
+    const surface = resolvePrayerSurfaceState(
+      prayerTimes,
+      records,
+      nextPrayer,
+      tomorrowFajr ?? null,
+      now,
+      todaySunrise ?? null,
+    );
+    const statusByPrayer = new Map<string, WidgetPrayerStatus>();
+    prayerTimes.forEach((prayer, index) => {
+      const status = surface?.prayerStatuses[index] as WidgetPrayerStatus | undefined;
+      if (status) {
+        statusByPrayer.set(prayer.name, status);
+      }
+    });
     const prayers = FARD_PRAYER_NAMES_LIST.map((name) => prayerTimes.find((entry) => entry.name === name))
       .filter((entry): entry is PrayerTime => !!entry)
       .map((prayer) => ({
         name: prayer.name,
         arabicName: PRAYER_ARABIC_MAP[prayer.name.toLowerCase()] ?? prayer.name,
         timeISO: prayer.time.toISOString(),
-        status: this.resolvePrayerStatus(prayer, records, nextPrayer, now),
+        status: statusByPrayer.get(prayer.name) ?? (prayer.time < now ? 'missed' : 'upcoming'),
         accentKey: prayer.name.toLowerCase(),
       }));
 
-    const nextPrayerPayload = nextPrayer
+    const nextPrayerPayload = surface
       ? {
-          name: nextPrayer.name,
-          arabicName: PRAYER_ARABIC_MAP[nextPrayer.name.toLowerCase()] ?? nextPrayer.name,
-          timeISO: nextPrayer.time.toISOString(),
+          name: surface.displayPrayer.name,
+          arabicName: PRAYER_ARABIC_MAP[surface.displayPrayer.name.toLowerCase()] ?? surface.displayPrayer.name,
+          timeISO: surface.displayPrayer.time.toISOString(),
           remainingMinutes: Math.max(
             0,
-            Math.floor((nextPrayer.time.getTime() - now.getTime()) / 60000)
+            Math.floor((surface.countdownTarget.time.getTime() - now.getTime()) / 60000)
           ),
         }
       : null;
@@ -203,8 +216,21 @@ class WidgetService {
       themeMode: this.resolveThemeMode(),
       nextPrayer: nextPrayerPayload,
       prayers,
+      surface: surface
+        ? {
+            activePrayerName: surface.activePrayer.name,
+            displayPrayerName: surface.displayPrayer.name,
+            heroGradientPrayerName: surface.heroGradientPrayer.name,
+            ringAccentPrayerName: surface.ringAccentPrayer.name,
+            ringColorMode: surface.ringColorMode,
+            countdownTargetName: surface.countdownTarget.name,
+            countdownTargetISO: surface.countdownTarget.time.toISOString(),
+            phase: surface.phase,
+            countdownMode: surface.countdownMode,
+          }
+        : null,
       hijri: this.buildHijriPayload(),
-      supportiveLine: this.resolveSupportiveLine(prayerTimes, records, nextPrayer, now),
+      supportiveLine: this.resolveSupportiveLine(surface, now),
       lastUpdatedISO: now.toISOString(),
     };
   }
@@ -240,9 +266,11 @@ class WidgetService {
   private buildPayload(
     prayerTimes: PrayerTime[],
     records: PrayerRecord[],
-    nextPrayer: PrayerTime | null
+    nextPrayer: PrayerTime | null,
+    tomorrowFajr?: PrayerTime | null,
+    todaySunrise?: Date | null,
   ): WidgetPayload {
-    const snapshot = this.buildSnapshot(prayerTimes, records, nextPrayer);
+    const snapshot = this.buildSnapshot(prayerTimes, records, nextPrayer, tomorrowFajr, todaySunrise);
     return {
       ...snapshot,
       ...this.buildLegacyPayload(snapshot, records),
@@ -266,10 +294,12 @@ class WidgetService {
   async updateWidgetData(
     prayerTimes: PrayerTime[],
     records: PrayerRecord[],
-    nextPrayer: PrayerTime | null
+    nextPrayer: PrayerTime | null,
+    tomorrowFajr?: PrayerTime | null,
+    todaySunrise?: Date | null,
   ): Promise<void> {
     try {
-      await this.pushPayload(this.buildPayload(prayerTimes, records, nextPrayer));
+      await this.pushPayload(this.buildPayload(prayerTimes, records, nextPrayer, tomorrowFajr, todaySunrise));
     } catch (error) {
       logger.error('[Widget] Failed to update widget data:', error);
     }
@@ -279,11 +309,11 @@ class WidgetService {
    * Rebuild the snapshot from the current store + storage state.
    */
   async refreshFromStore(): Promise<void> {
-    const { todayPrayerTimes, nextPrayer, todayPrayerRecords } = useStore.getState();
+    const { todayPrayerTimes, nextPrayer, todayPrayerRecords, tomorrowFajr, todaySunrise } = useStore.getState();
     const todayKey = getLocalDateKey();
     const persistedRecords = StorageService.getDayPrayerRecords(todayKey);
     const records = persistedRecords.length > 0 ? persistedRecords : todayPrayerRecords;
-    await this.updateWidgetData(todayPrayerTimes, records, nextPrayer);
+    await this.updateWidgetData(todayPrayerTimes, records, nextPrayer, tomorrowFajr, todaySunrise);
   }
 
   /**
