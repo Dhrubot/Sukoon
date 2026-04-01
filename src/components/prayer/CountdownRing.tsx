@@ -9,7 +9,7 @@ import { useThemedStyles } from '../../hooks/useThemedStyles';
 import PrayerTimeService from '../../services/PrayerTimeService';
 import { PrayerTime } from '../../types';
 import { format } from 'date-fns';
-import { PrayerSurfaceRingColorMode } from '../../utils/prayerSurfaceResolver';
+import { PrayerSurfaceCountdownMode, PrayerSurfaceRingColorMode } from '../../utils/prayerSurfaceResolver';
 import { withAlpha } from '../../utils/color';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -27,6 +27,7 @@ interface CountdownRingProps {
   prayer: PrayerTime;
   progress: number;
   countdownTargetTime: Date;
+  countdownMode?: PrayerSurfaceCountdownMode;
   ringAccentPrayer: PrayerTime;
   ringColorMode: PrayerSurfaceRingColorMode;
   iqamahTime?: Date;
@@ -37,6 +38,7 @@ const CountdownRing: React.FC<CountdownRingProps> = ({
   prayer,
   progress,
   countdownTargetTime,
+  countdownMode = 'next_prayer_start',
   ringAccentPrayer,
   ringColorMode,
   iqamahTime,
@@ -98,6 +100,7 @@ const CountdownRing: React.FC<CountdownRingProps> = ({
   const cx = SVG_SIZE / 2;
   const cy = SVG_SIZE / 2;
   const origin = `${cx}, ${cy}`;
+  const countdownPrefix = countdownMode === 'current_prayer_end' ? 'Ends In' : 'In';
 
   return (
     <View style={styles.container}>
@@ -199,7 +202,7 @@ const CountdownRing: React.FC<CountdownRingProps> = ({
         {isAlreadyPrayed ? (
           <Text style={styles.prayedStatus}>Prayed ✓</Text>
         ) : (
-          <Text style={styles.countdown}>in {timeRemaining}</Text>
+          <Text style={styles.countdown}>{countdownPrefix} {timeRemaining}</Text>
         )}
         {iqamahTime && (
           <Text style={styles.iqamah}>

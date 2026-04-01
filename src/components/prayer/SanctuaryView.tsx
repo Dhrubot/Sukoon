@@ -25,7 +25,8 @@ import { formatHijriDate, formatHijriDateSync } from '../../utils/hijriDate';
 import { useStore } from '../../store/useStore';
 import { isFriday, isRamadan, getRamadanDay } from '../../utils/ramadan';
 import { JummahResourceTopic } from '../../constants/jummahContent';
-import { PrayerSurfaceRingColorMode } from '../../utils/prayerSurfaceResolver';
+import { PrayerSurfaceCountdownMode, PrayerSurfaceRingColorMode } from '../../utils/prayerSurfaceResolver';
+import { withAlpha } from '../../utils/color';
 
 const { height } = Dimensions.get('window');
 const HERO_MIN_HEIGHT = Platform.OS === 'ios' ? height * 0.72 : height * 0.78;
@@ -45,6 +46,7 @@ interface SanctuaryViewProps {
   record?: PrayerRecord;
   ringProgress: number;
   countdownTargetTime: Date;
+  countdownMode?: PrayerSurfaceCountdownMode;
   ringAccentPrayer: PrayerTime;
   ringColorMode: PrayerSurfaceRingColorMode;
   isTimeEntered?: boolean;
@@ -68,6 +70,7 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
   record,
   ringProgress,
   countdownTargetTime,
+  countdownMode = 'next_prayer_start',
   ringAccentPrayer,
   ringColorMode,
   isTimeEntered = true,
@@ -170,6 +173,18 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
     return gradients[heroGradientPrayer.name] || gradients.default;
   };
 
+  const buttonAccentColor = (() => {
+    if (isGradientJummah) {
+      return theme.colors.goldLight;
+    }
+
+    const accentKey = heroGradientPrayer.name.toLowerCase() as keyof typeof theme.colors.prayer;
+    return theme.colors.prayer[accentKey] ?? theme.colors.goldLight;
+  })();
+
+  const activeButtonBorderColor = withAlpha(buttonAccentColor, 0.34);
+  const mutedButtonBorderColor = withAlpha(buttonAccentColor, 0.18);
+
   const ramadanDay = isRamadan() ? getRamadanDay() : null;
 
   return (
@@ -214,6 +229,7 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
           prayer={prayer}
           progress={ringProgress}
           countdownTargetTime={countdownTargetTime}
+          countdownMode={countdownMode}
           ringAccentPrayer={ringAccentPrayer}
           ringColorMode={ringColorMode}
           iqamahTime={mosqueModeInfo?.iqamahTime}
@@ -265,7 +281,9 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
           <TouchableOpacity
             style={[
               styles.prepareButton,
+              { borderColor: activeButtonBorderColor },
               !isCTAActive && styles.mutedButton,
+              !isCTAActive && { borderColor: mutedButtonBorderColor },
             ]}
             onPress={handlePress}
             onLongPress={handleLongPress}
