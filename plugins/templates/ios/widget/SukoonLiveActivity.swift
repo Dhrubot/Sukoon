@@ -396,21 +396,29 @@ struct SukoonLiveActivity: Widget {
                     if context.state.phase == "fiqh_window" {
                         let actionPrayer = actionPrayerName(for: context)
                         HStack(spacing: 10) {
-                            Link(destination: URL(string: "sukoon://prayed?prayer=\(actionPrayer)")!) {
-                                ActivityActionLabel(title: "Prayed", accent: prayerAccent, secondary: true)
-                            }
-
                             Link(destination: URL(string: "sukoon://prepare?prayer=\(actionPrayer)")!) {
                                 ActivityActionLabel(title: "Prepare", accent: prayerAccent, secondary: false)
+                            }
+
+                            Link(destination: URL(string: "sukoon://prayed?prayer=\(actionPrayer)")!) {
+                                ActivityActionLabel(title: "Prayed", accent: prayerAccent, secondary: true)
                             }
                         }
                         .padding(.top, 4)
                     }
                 }
             } compactLeading: {
-                Text(shortPrayerLabel(context.state.prayerName))
-                    .font(.system(size: 12, weight: .semibold, design: .rounded))
-                    .foregroundColor(LAColors.text)
+                HStack(spacing: 4) {
+                    Circle()
+                        .fill(prayerAccent)
+                        .frame(width: 6, height: 6)
+                        .shadow(color: prayerAccent.opacity(0.55), radius: 2.5)
+
+                    Text(shortPrayerLabel(context.state.prayerName))
+                        .font(.system(size: 11.5, weight: .semibold, design: .rounded))
+                        .foregroundColor(LAColors.text)
+                        .lineLimit(1)
+                }
             } compactTrailing: {
                 if let targetDate, hasTarget {
                     Text(targetDate, style: .timer)
@@ -422,9 +430,10 @@ struct SukoonLiveActivity: Widget {
                         .foregroundColor(prayerAccent)
                 }
             } minimal: {
-                Image(systemName: "moon.stars.fill")
-                    .font(.system(size: 12))
-                    .foregroundColor(prayerAccent)
+                Circle()
+                    .fill(prayerAccent)
+                    .frame(width: 8, height: 8)
+                    .shadow(color: prayerAccent.opacity(0.8), radius: 4)
             }
         }
     }
@@ -548,12 +557,12 @@ struct SukoonLiveActivity: Widget {
                     if context.state.phase == "fiqh_window" {
                         let actionPrayer = actionPrayerName(for: context)
                         HStack(spacing: 7) {
-                            Link(destination: URL(string: "sukoon://prayed?prayer=\(actionPrayer)")!) {
-                                ActivityActionLabel(title: "Prayed", accent: prayerAccent, secondary: true)
-                            }
-
                             Link(destination: URL(string: "sukoon://prepare?prayer=\(actionPrayer)")!) {
                                 ActivityActionLabel(title: "Prepare", accent: prayerAccent, secondary: false)
+                            }
+
+                            Link(destination: URL(string: "sukoon://prayed?prayer=\(actionPrayer)")!) {
+                                ActivityActionLabel(title: "Prayed", accent: prayerAccent, secondary: true)
                             }
                         }
                         .fixedSize(horizontal: true, vertical: false)
