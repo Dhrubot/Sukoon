@@ -11,7 +11,14 @@ import { CHANNELS, NOTIFICATION_CHANNEL_VERSION, NOTIFICATION_SCHEDULING_DAYS, N
 import MosqueModeService from './MosqueModeService';
 import { NOTIFICATION_CATEGORIES, initializeChannelsAndCategories } from './notifications/NotificationChannels';
 import AdhanPlayer from './notifications/AdhanPlayer';
-import { scheduleFullAdhan, cancelAllFullAdhans, stopFullAdhan, getExactAlarmStatus } from './notifications/FullAdhanScheduler';
+import {
+  scheduleFullAdhan,
+  cancelAllFullAdhans,
+  stopFullAdhan,
+  getExactAlarmStatus,
+  openExactAlarmSettings,
+  type ExactAlarmStatus,
+} from './notifications/FullAdhanScheduler';
 import { scheduleTier2PersistentReminders, scheduleTier3GracePeriodWarning } from './notifications/HabitBuilderNotifications';
 import {
   resolveMainPrayerNotificationAudio,
@@ -108,7 +115,7 @@ class NotificationService {
   private async syncAndroidExactAlarmStatus(settings: UserSettings): Promise<void> {
     if (Platform.OS !== 'android') return;
 
-    const usesExactAlarm = !!settings.notifications.fullAdhanEnabled && !!settings.notifications.adhanEnabled;
+    const usesExactAlarm = !!settings.notifications.enabled;
     if (!usesExactAlarm) {
       StorageService.setValue('android_exact_alarm_status', 'not_applicable');
       return;
@@ -417,6 +424,24 @@ class NotificationService {
     } catch {
       return 'undetermined' as Notifications.PermissionStatus;
     }
+  }
+
+  async getAndroidExactAlarmStatus(): Promise<ExactAlarmStatus | 'not_applicable'> {
+    if (Platform.OS !== 'android') return 'not_applicable';
+
+    const settings = StorageService.getUserSettings();
+    if (!settings?.notifications.enabled) {
+      StorageService.setValue('android_exact_alarm_status', 'not_applicable');
+      return 'not_applicable';
+    }
+
+    const status = await getExactAlarmStatus();
+    StorageService.setValue('android_exact_alarm_status', status);
+    return status;
+  }
+
+  async openAndroidExactAlarmSettings(): Promise<boolean> {
+    return openExactAlarmSettings();
   }
 
   // Channel setup delegated to notifications/NotificationChannels.ts
@@ -766,7 +791,7 @@ class NotificationService {
 
       await this.syncAndroidExactAlarmStatus(settings);
       const exactAlarmStatus = Platform.OS === 'android'
-        ? StorageService.getValue('android_exact_alarm_status') || 'unknown'
+        ? await this.getAndroidExactAlarmStatus()
         : 'not_applicable';
       const scheduled = await this.scheduleExtendedNotifications(options?.onProgress, {
         forceRebuild: options?.force ?? reason !== 'settings_change',
@@ -1504,7 +1529,7 @@ class NotificationService {
         return this.isPrayerNotificationType(data?.type) || typeof data?.prayer === 'string';
       }).length;
       const exactAlarmStatus = Platform.OS === 'android'
-        ? StorageService.getValue('android_exact_alarm_status') || 'unknown'
+        ? await this.getAndroidExactAlarmStatus()
         : 'not_applicable';
       this.lastScheduleSummary = {
         reason: options?.reason || 'background_refresh',
@@ -1552,6 +1577,51 @@ class NotificationService {
     });
   }
 
+  async sendProductionLikePrayerTestNotification(
+    prayer: PrayerName = 'Isha',
+    delaySeconds: number = 10
+  ) {
+    const settings = StorageService.getUserSettings();
+    if (!settings) {
+      throw new Error('User settings unavailable');
+    }
+
+    const prayerTime = new Date(Date.now() + delaySeconds * 1000);
+    const prayerName = PrayerTimeService.getPrayerDisplayName(prayer, 'en', prayerTime);
+    const prayerId = `${prayer}-test-${format(prayerTime, 'yyyy-MM-dd-HH-mm-ss')}`;
+    const identifier = `prayer-test-${prayer}-${prayerTime.getTime()}`;
+
+    const audioResolution = resolveMainPrayerNotificationAudio(Platform.OS, settings.notifications);
+    const content = this.getPrayerTimeContent(prayerName, prayer, settings, prayerTime);
+
+    await scheduleLocalNotificationAsync({
+      content: {
+        ...content,
+        data: {
+          prayer,
+          prayerId,
+          type: 'prayer-time',
+          time: prayerTime.toISOString(),
+          scheduledAt: new Date().toISOString(),
+          isDebugProductionLike: true,
+        },
+        sound: audioResolution.notificationSound,
+        categoryIdentifier: NOTIFICATION_CATEGORIES.PRAYER_REMINDER,
+      },
+      trigger: {
+        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+        seconds: delaySeconds,
+        repeats: false,
+        ...(Platform.OS === 'android' && { channelId: audioResolution.androidChannelId }),
+      } as Notifications.NotificationTriggerInput,
+      identifier,
+    });
+
+    if (audioResolution.shouldScheduleNativeFullAdhan && Platform.OS === 'android') {
+      await scheduleFullAdhan(prayerTime, prayer, prayerName);
+    }
+  }
+
   // Better debugging information
   async getScheduledNotifications() {
     const notifications = await Notifications.getAllScheduledNotificationsAsync();
@@ -1594,6 +1664,10 @@ class NotificationService {
       totalScheduledCount: allScheduled.length,
       prayerScheduledCount: scheduled.length,
       iosCap: IOS_NOTIFICATION_CAP,
+      androidExactAlarmStatus:
+        Platform.OS === 'android'
+          ? await this.getAndroidExactAlarmStatus()
+          : 'not_applicable',
       notificationTraceEnabled: NotificationTraceService.isEnabled(),
       recentNotificationTraceCount: NotificationTraceService.getRecentEvents().length,
       lastScheduleSummary: this.lastScheduleSummary,

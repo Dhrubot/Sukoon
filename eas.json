@@ -9,6 +9,10 @@
       "distribution": "internal"
     },
     "preview": {
+      "env": {
+        "ANDROID_ENABLE_MINIFY": "false",
+        "ANDROID_ENABLE_SHRINK_RESOURCES": "false"
+      },
       "android": {
         "buildType": "apk",
         "buildArtifactPaths": [
@@ -18,6 +22,10 @@
     },
     "production": {
       "autoIncrement": true,
+      "env": {
+        "ANDROID_ENABLE_MINIFY": "false",
+        "ANDROID_ENABLE_SHRINK_RESOURCES": "false"
+      },
       "android": {
         "buildType": "app-bundle",
         "buildArtifactPaths": [

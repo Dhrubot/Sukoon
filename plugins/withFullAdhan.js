@@ -280,7 +280,9 @@ import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
+import android.provider.Settings;
 import android.util.Log;
 
 import com.facebook.react.bridge.Promise;
@@ -319,6 +321,25 @@ public class AdhanModule extends ReactContextBaseJavaModule {
             promise.resolve(alarmManager.canScheduleExactAlarms() ? "granted" : "fallback");
         } catch (Exception e) {
             promise.reject("EXACT_ALARM_STATUS_ERROR", "Failed to read exact alarm status: " + e.getMessage());
+        }
+    }
+
+    @ReactMethod
+    public void openExactAlarmSettings(Promise promise) {
+        try {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                promise.resolve(false);
+                return;
+            }
+
+            Context context = getReactApplicationContext();
+            Intent intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
+            intent.setData(Uri.parse("package:" + context.getPackageName()));
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(intent);
+            promise.resolve(true);
+        } catch (Exception e) {
+            promise.reject("OPEN_EXACT_ALARM_SETTINGS_ERROR", "Failed to open exact alarm settings: " + e.getMessage());
         }
     }
 
@@ -585,6 +606,40 @@ const withFullAdhanFiles = (config) => {
   ]);
 };
 
+const withFullAdhanProguard = (config) => {
+  return withDangerousMod(config, [
+    'android',
+    async (config) => {
+      const projectRoot = config.modRequest.projectRoot;
+      const proguardPath = path.join(projectRoot, 'android', 'app', 'proguard-rules.pro');
+      const keepBlock = `
+# Notification and alarm native bridge/classes used by manifest or RN reflection.
+-keep class com.talukders.sukoon.AdhanModule { *; }
+-keep class com.talukders.sukoon.AdhanPackage { *; }
+-keep class com.talukders.sukoon.BootPrefsModule { *; }
+-keep class com.talukders.sukoon.BootPrefsPackage { *; }
+-keep class com.talukders.sukoon.AdhanService { *; }
+-keep class com.talukders.sukoon.AdhanAlarmReceiver { *; }
+-keep class com.talukders.sukoon.BootReceiver { *; }
+-keep class com.talukders.sukoon.NotificationRescheduleWorker { *; }
+`.trim();
+
+      const current = fs.existsSync(proguardPath)
+        ? fs.readFileSync(proguardPath, 'utf-8')
+        : '';
+
+      if (!current.includes('-keep class com.talukders.sukoon.AdhanModule { *; }')) {
+        const next = current.trimEnd()
+          ? `${current.trimEnd()}\n\n${keepBlock}\n`
+          : `${keepBlock}\n`;
+        fs.writeFileSync(proguardPath, next, 'utf-8');
+      }
+
+      return config;
+    },
+  ]);
+};
+
 // ─── Plugin: Register AdhanPackage in MainApplication ──────────────────────
 const withFullAdhanPackage = (config) => {
   return withMainApplication(config, (config) => {
@@ -601,6 +656,7 @@ const withFullAdhanPackage = (config) => {
 module.exports = function withFullAdhan(config) {
   config = withFullAdhanManifest(config);
   config = withFullAdhanFiles(config);
+  config = withFullAdhanProguard(config);
   config = withFullAdhanPackage(config);
   return config;
 };

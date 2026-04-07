@@ -150,3 +150,17 @@ export async function getExactAlarmStatus(): Promise<ExactAlarmStatus> {
     return 'unknown';
   }
 }
+
+export async function openExactAlarmSettings(): Promise<boolean> {
+  const adhanModule = getAdhanModule();
+  if (Platform.OS !== 'android') return false;
+  if (!adhanModule?.openExactAlarmSettings) return false;
+
+  try {
+    const opened = await adhanModule.openExactAlarmSettings();
+    return Boolean(opened);
+  } catch (error) {
+    logger.error('❌ Failed to open exact alarm settings:', error);
+    return false;
+  }
+}

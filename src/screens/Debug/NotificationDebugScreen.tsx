@@ -107,15 +107,18 @@ export const NotificationDebugScreen = () => {
         content: {
           title: '⏰ Adhan Test',
           body: 'This should play the adhan sound',
-          sound: SOUNDS.ANDROID_SHORT,        // ← 'adhan_short'
-
+          sound: SOUNDS.ANDROID_SHORT,
+          data: {
+            type: 'test',
+            channelId: CHANNELS.ADHAN,
+          },
         },
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
           seconds: 10,
           repeats: false,
           ...(Platform.OS === 'android' && {
-            channelId: CHANNELS.ADHAN,         // ← 'prayer-times-adhan-v6'
+            channelId: CHANNELS.ADHAN,
           }),
         },
       });
@@ -124,6 +127,15 @@ export const NotificationDebugScreen = () => {
       Alert.alert('Error', `Failed: ${error}`);
     }
   }
+
+  const testProductionLikePrayerNotification = async () => {
+    try {
+      await NotificationService.sendProductionLikePrayerTestNotification('Isha', 10);
+      Alert.alert('Scheduled', 'Production-like prayer notification in 10 seconds — lock your phone now');
+    } catch (error) {
+      Alert.alert('Error', `Failed: ${error}`);
+    }
+  };
 
   // 🧪 Test 2.75: Full Adhan Foreground Service (10-second lock screen test)
   const test10SecondFullAdhan = async () => {
@@ -230,11 +242,28 @@ export const NotificationDebugScreen = () => {
       const channels = await Notifications.getNotificationChannelsAsync();
       const channelInfo = channels.map(c => `${c.name} (${c.id})`).join('\n');
       Alert.alert('Android Channels', channelInfo || 'No channels found');
-      const adhanChannel = channels.find(c => c.id.includes('adhan'));
-      if (adhanChannel) {
-        console.log('🔊 Adhan channel sound:', adhanChannel.sound);
-        console.log('🔊 Adhan channel full:', JSON.stringify(adhanChannel, null, 2));
-        Alert.alert('Adhan Channel', `Sound: ${adhanChannel.sound}\nID: ${adhanChannel.id}`);
+      const shortAdhanChannel = channels.find(c => c.id === CHANNELS.ADHAN);
+      const fullAdhanChannel = channels.find(c => c.id === CHANNELS.ADHAN_SILENT);
+      if (shortAdhanChannel) {
+        console.log('🔊 Short Adhan channel sound:', shortAdhanChannel.sound);
+        console.log('🔊 Short Adhan channel full:', JSON.stringify(shortAdhanChannel, null, 2));
+      }
+      if (fullAdhanChannel) {
+        console.log('🔊 Full Adhan channel sound:', fullAdhanChannel.sound);
+        console.log('🔊 Full Adhan channel full:', JSON.stringify(fullAdhanChannel, null, 2));
+      }
+      if (shortAdhanChannel || fullAdhanChannel) {
+        Alert.alert(
+          'Adhan Channels',
+          [
+            shortAdhanChannel
+              ? `Short: ${shortAdhanChannel.sound ?? 'null'} (${shortAdhanChannel.id})`
+              : 'Short: missing',
+            fullAdhanChannel
+              ? `Full: ${fullAdhanChannel.sound ?? 'null'} (${fullAdhanChannel.id})`
+              : 'Full: missing',
+          ].join('\n')
+        );
       }
     } catch (error) {
       Alert.alert('Error', `Failed: ${error}`);
@@ -257,6 +286,7 @@ export const NotificationDebugScreen = () => {
         <InfoRow label="Platform" value={Platform.OS} />
         <InfoRow label="Permission Status" value={permissionStatus} />
         <InfoRow label="Scheduled Count" value={scheduledCount.toString()} />
+        <InfoRow label="Exact Alarm Status" value={debugInfo?.androidExactAlarmStatus ?? 'unknown'} />
         <InfoRow label="Trace Enabled" value={NotificationTraceService.isEnabled() ? 'Yes' : 'No'} />
       </View>
 
@@ -359,6 +389,12 @@ export const NotificationDebugScreen = () => {
           description="Short adhan via notification channel"
         />
 
+        <TestButton
+          title="2.6 Test Production Prayer"
+          onPress={testProductionLikePrayerNotification}
+          description="Uses the real prayer notification payload shape"
+        />
+
         {Platform.OS === 'android' && (
           <TestButton
             title="2.75 Test Full Adhan (Lock Screen)"
@@ -379,6 +415,16 @@ export const NotificationDebugScreen = () => {
           onPress={requestPermissions}
           description="Re-request notification permissions"
         />
+
+        {Platform.OS === 'android' && (
+          <TestButton
+            title="4.5 Open Exact Alarm Settings"
+            onPress={() => {
+              void NotificationService.openAndroidExactAlarmSettings();
+            }}
+            description="Open Android Alarms & reminders access"
+          />
+        )}
 
         <TestButton
           title="5. Force Reschedule All"
