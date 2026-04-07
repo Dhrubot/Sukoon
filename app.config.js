@@ -6,6 +6,8 @@ const edgeApiEnabled =
   process.env.EXPO_PUBLIC_EDGE_API_ENABLED !== "false";
 const perfValidationEnabled = process.env.EXPO_PUBLIC_PERF_VALIDATION_ENABLED === "true";
 const notificationTraceEnabled = process.env.EXPO_PUBLIC_NOTIFICATION_TRACE_ENABLED === "true";
+const androidReleaseMinifyEnabled = process.env.ANDROID_ENABLE_MINIFY === "true";
+const androidReleaseShrinkResourcesEnabled = process.env.ANDROID_ENABLE_SHRINK_RESOURCES === "true";
 
 export default {
   expo: {
@@ -120,8 +122,8 @@ export default {
             targetSdkVersion: 36,
             minSdkVersion: 24,
             kotlinVersion: "2.0.21",
-            enableMinifyInReleaseBuilds: true,
-            enableShrinkResourcesInReleaseBuilds: true,
+            enableMinifyInReleaseBuilds: androidReleaseMinifyEnabled,
+            enableShrinkResourcesInReleaseBuilds: androidReleaseShrinkResourcesEnabled,
           },
           ios: {
             deploymentTarget: "15.1",

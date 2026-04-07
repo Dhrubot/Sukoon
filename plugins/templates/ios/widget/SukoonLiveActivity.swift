@@ -344,40 +344,50 @@ struct SukoonLiveActivity: Widget {
             let hasTarget = hasFutureTarget(context)
 
             return DynamicIsland {
-                DynamicIslandExpandedRegion(.leading) {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(context.state.prayerName)
-                            .font(.system(size: 16, weight: .semibold, design: .rounded))
-                            .foregroundColor(LAColors.text)
-
-                        Text(context.state.prayerArabicName)
-                            .font(.system(size: 11, weight: .medium, design: .serif))
-                            .foregroundColor(prayerAccent.opacity(0.72))
-                    }
-                }
-
-                DynamicIslandExpandedRegion(.trailing) {
-                    VStack(alignment: .trailing, spacing: 2) {
-                        Text(windowLabel(for: context.state.countdownMode, phase: context.state.phase))
-                            .font(.system(size: 10, weight: .medium, design: .rounded))
-                            .foregroundColor(prayerAccent.opacity(0.72))
-                            .textCase(.uppercase)
-
-                        if let targetDate, hasTarget {
-                            Text(targetDate, style: .timer)
-                                .font(.system(size: 14, weight: .medium, design: .rounded))
-                                .foregroundColor(prayerAccent)
-                                .multilineTextAlignment(.trailing)
-                        } else {
-                            Text("Now")
-                                .font(.system(size: 14, weight: .semibold, design: .rounded))
-                                .foregroundColor(prayerAccent)
-                        }
-                    }
-                }
-
                 DynamicIslandExpandedRegion(.center) {
-                    VStack(spacing: 8) {
+                    VStack(spacing: 10) {
+                        HStack(alignment: .center, spacing: 10) {
+                            HStack(spacing: 7) {
+                                Circle()
+                                    .fill(prayerAccent)
+                                    .frame(width: 8, height: 8)
+                                    .shadow(color: prayerAccent.opacity(0.45), radius: 3)
+
+                                VStack(alignment: .leading, spacing: 1) {
+                                    Text(context.state.prayerName)
+                                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                                        .foregroundColor(LAColors.text)
+                                        .lineLimit(1)
+
+                                    Text(context.state.prayerArabicName)
+                                        .font(.system(size: 10.5, weight: .medium, design: .serif))
+                                        .foregroundColor(prayerAccent.opacity(0.68))
+                                        .lineLimit(1)
+                                }
+                            }
+
+                            Spacer(minLength: 12)
+
+                            VStack(alignment: .trailing, spacing: 1) {
+                                Text(windowLabel(for: context.state.countdownMode, phase: context.state.phase))
+                                    .font(.system(size: 9.5, weight: .medium, design: .rounded))
+                                    .foregroundColor(prayerAccent.opacity(0.72))
+                                    .textCase(.uppercase)
+
+                                if let targetDate, hasTarget {
+                                    Text(targetDate, style: .timer)
+                                        .font(.system(size: 17, weight: .medium, design: .rounded))
+                                        .foregroundColor(prayerAccent)
+                                        .monospacedDigit()
+                                        .multilineTextAlignment(.trailing)
+                                } else {
+                                    Text("Now")
+                                        .font(.system(size: 17, weight: .semibold, design: .rounded))
+                                        .foregroundColor(prayerAccent)
+                                }
+                            }
+                        }
+
                         PrayerProgressBar(progress: context.state.progress, accent: prayerAccent)
 
                         HStack(spacing: 8) {
@@ -391,43 +401,30 @@ struct SukoonLiveActivity: Widget {
                     }
                     .padding(.top, 4)
                 }
-
-                DynamicIslandExpandedRegion(.bottom) {
-                    if context.state.phase == "fiqh_window" {
-                        let actionPrayer = actionPrayerName(for: context)
-                        HStack(spacing: 10) {
-                            Link(destination: URL(string: "sukoon://prepare?prayer=\(actionPrayer)")!) {
-                                ActivityActionLabel(title: "Prepare", accent: prayerAccent, secondary: false)
-                            }
-
-                            Link(destination: URL(string: "sukoon://prayed?prayer=\(actionPrayer)")!) {
-                                ActivityActionLabel(title: "Prayed", accent: prayerAccent, secondary: true)
-                            }
-                        }
-                        .padding(.top, 4)
-                    }
-                }
             } compactLeading: {
                 HStack(spacing: 4) {
                     Circle()
                         .fill(prayerAccent)
-                        .frame(width: 6, height: 6)
-                        .shadow(color: prayerAccent.opacity(0.55), radius: 2.5)
+                        .frame(width: 5, height: 5)
 
                     Text(shortPrayerLabel(context.state.prayerName))
-                        .font(.system(size: 11.5, weight: .semibold, design: .rounded))
+                        .font(.system(size: 10.5, weight: .semibold, design: .rounded))
                         .foregroundColor(LAColors.text)
                         .lineLimit(1)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
             } compactTrailing: {
                 if let targetDate, hasTarget {
                     Text(targetDate, style: .timer)
                         .font(.system(size: 12, weight: .medium, design: .rounded))
                         .foregroundColor(prayerAccent)
+                        .monospacedDigit()
+                        .frame(maxWidth: .infinity, alignment: .trailing)
                 } else {
                     Text("Now")
                         .font(.system(size: 12, weight: .semibold, design: .rounded))
                         .foregroundColor(prayerAccent)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
                 }
             } minimal: {
                 Circle()

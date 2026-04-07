@@ -7,6 +7,7 @@ import { SettingRow } from '../../../components/settings/SettingRow';
 import { UserSettings } from '../../../types';
 import { useStore } from '../../../store/useStore';
 import NotificationService from '../../../services/NotificationService';
+import type { ExactAlarmStatus } from '../../../services/notifications/FullAdhanScheduler';
 import LiveActivityService from '../../../services/LiveActivityService';
 import { useTheme } from '../../../providers/ThemeProvider';
 import { useThemedStyles } from '../../../hooks/useThemedStyles';
@@ -29,11 +30,17 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
   const styles = useThemedStyles(createStyles);
   const { updateUserSettings } = useStore();
   const [permissionStatus, setPermissionStatus] = useState<'granted' | 'denied' | 'undetermined'>('undetermined');
+  const [exactAlarmStatus, setExactAlarmStatus] = useState<ExactAlarmStatus | 'not_applicable'>('not_applicable');
 
   useEffect(() => {
     let mounted = true;
-    NotificationService.getPermissionStatus().then((status) => {
-      if (mounted) setPermissionStatus(status);
+    Promise.all([
+      NotificationService.getPermissionStatus(),
+      NotificationService.getAndroidExactAlarmStatus(),
+    ]).then(([status, alarmStatus]) => {
+      if (!mounted) return;
+      setPermissionStatus(status);
+      setExactAlarmStatus(alarmStatus);
     });
     return () => {
       mounted = false;
@@ -48,8 +55,18 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
     Linking.openSettings();
   };
 
+  const openExactAlarmSettings = async () => {
+    const opened = await NotificationService.openAndroidExactAlarmSettings();
+    if (!opened) {
+      openAppSettings();
+    }
+  };
+
   const getNotificationSubtitle = () => {
     if (permissionStatus !== 'granted') return 'Blocked in system settings';
+    if (Platform.OS === 'android' && exactAlarmStatus === 'fallback') {
+      return 'Blocked in Alarms & reminders';
+    }
     if (!userSettings.notifications.enabled) return 'Disabled';
     
     let subtitle = 'Enabled';
@@ -72,6 +89,18 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
 
   const handlePressRow = () => {
     if (permissionStatus === 'granted') {
+      if (Platform.OS === 'android' && exactAlarmStatus === 'fallback') {
+        Alert.alert(
+          'Enable Exact Alarms',
+          'Android is blocking exact alarm delivery, so prayer reminders may not arrive on time or at all.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => { void openExactAlarmSettings(); } },
+          ]
+        );
+        return;
+      }
+
       onNotificationPress();
       return;
     }
@@ -81,8 +110,25 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
         const granted = await NotificationService.requestPermissionsFromUser();
         const nextStatus = granted ? 'granted' : await NotificationService.getPermissionStatus();
         setPermissionStatus(nextStatus);
+        let nextExactAlarmStatus: ExactAlarmStatus | 'not_applicable' = exactAlarmStatus;
+        if (Platform.OS === 'android') {
+          nextExactAlarmStatus = await NotificationService.getAndroidExactAlarmStatus();
+          setExactAlarmStatus(nextExactAlarmStatus);
+        }
 
         if (granted) {
+          if (Platform.OS === 'android' && nextExactAlarmStatus === 'fallback') {
+            Alert.alert(
+              'Enable Exact Alarms',
+              'Android is blocking exact alarm delivery, so prayer reminders may not arrive on time or at all.',
+              [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Open Settings', onPress: () => { void openExactAlarmSettings(); } },
+              ]
+            );
+            return;
+          }
+
           onNotificationPress();
           return;
         }
@@ -150,6 +196,14 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
         subtitle={getNotificationSubtitle()}
         onPress={handlePressRow}
       />
+      {Platform.OS === 'android' && permissionStatus === 'granted' && exactAlarmStatus === 'fallback' && (
+        <SettingRow
+          label="Alarms & reminders"
+          subtitle="Required for exact prayer-time delivery on Android"
+          value="Blocked"
+          onPress={() => { void openExactAlarmSettings(); }}
+        />
+      )}
       {/* The Adhan Switch Row */}
       <View style={styles.row}>
         <View style={styles.textContainer}>
