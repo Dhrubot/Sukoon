@@ -39,7 +39,7 @@ function withPlatformSounds(config) {
         '@drawable/notification_icon',
       ];
       const keepXml = `<?xml version="1.0" encoding="utf-8"?>\n<resources xmlns:tools="http://schemas.android.com/tools"\n  tools:keep="${keepTargets.join(',')}" />\n`;
-      writeFileSync(resolve(rawPath, 'keep.xml'), keepXml, 'utf-8');
+      writeFileSync(resolve(rawPath, 'sukoon_keep.xml'), keepXml, 'utf-8');
       return cfg;
     },
   ]);

@@ -4,9 +4,11 @@
 // This forces Android to create a new channel with the fresh config.
 export const NOTIFICATION_CHANNEL_VERSION = 9;
 
-export const NOTIFICATION_SCHEDULING_DAYS = 3;   // Tier 1 (Adhan) horizon
-export const NOTIFICATION_LOWER_TIER_DAYS = 2;    // Pre-prayer / Tier 3 / Tier 2 horizon
-export const NOTIFICATION_MAX_FUTURE_DAYS = NOTIFICATION_SCHEDULING_DAYS + 1;
+export const NOTIFICATION_SCHEDULING_DAYS = 3;   // iOS Tier 1 horizon
+export const NOTIFICATION_LOWER_TIER_DAYS = 2;    // iOS lower-tier horizon
+export const ANDROID_NOTIFICATION_SCHEDULING_DAYS = 7;
+export const ANDROID_NOTIFICATION_LOWER_TIER_DAYS = 5;
+export const NOTIFICATION_MAX_FUTURE_DAYS = ANDROID_NOTIFICATION_SCHEDULING_DAYS + 1;
 
 // iOS imposes a hard limit of 64 local scheduled notifications per app.
 // We cap at 58 to leave headroom for Tahajjud, test notifications, etc.
@@ -18,6 +20,7 @@ export const CHANNELS = {
   ADHAN_SILENT: `prayer-times-adhan-silent-v${NOTIFICATION_CHANNEL_VERSION}`,
   DEFAULT: `prayer-times-default-v${NOTIFICATION_CHANNEL_VERSION}`,
   PRE_PRAYER: `pre-prayer-v${NOTIFICATION_CHANNEL_VERSION}`,
+  PERSISTENT_URGENT: `persistent-urgent-v${NOTIFICATION_CHANNEL_VERSION}`,
   MINDFULNESS: `mindfulness-v${NOTIFICATION_CHANNEL_VERSION}`,
   GRACE_WARNING: `grace-warning-v${NOTIFICATION_CHANNEL_VERSION}`, // Prayer Habit Builder Tier 3
   TAHAJJUD: `tahajjud-v${NOTIFICATION_CHANNEL_VERSION}`, // Gentle Tahajjud encouragement

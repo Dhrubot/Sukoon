@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   KeyboardAvoidingView,
   Linking,
@@ -15,6 +15,7 @@ import { useStore } from '../../store/useStore';
 import logger from '../../utils/logger';
 import LocationService from '../../services/LocationService';
 import NotificationService from '../../services/NotificationService';
+import type { NotificationReadiness } from '../../services/NotificationService';
 import { Location as AppLocation } from '../../types';
 import { LocationModal } from '../../components/LocationModal';
 import { applyRegionalCalculationMethod } from '../../utils/calculationMethodByRegion';
@@ -42,6 +43,13 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome');
   const [locationData, setLocationData] = useState<AppLocation | null>(null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [notificationReadiness, setNotificationReadiness] = useState<NotificationReadiness>({
+    permissionStatus: 'undetermined' as NotificationReadiness['permissionStatus'],
+    exactAlarmStatus: 'not_applicable',
+    isReady: false,
+    blockedReason: null,
+  });
+  const [isRequestingNotifications, setIsRequestingNotifications] = useState(false);
   const [asrJuristic, setAsrJuristic] = useState<'Standard' | 'Hanafi'>('Standard');
   const [displayName, setDisplayName] = useState('');
   const [isLocating, setIsLocating] = useState(false);
@@ -52,6 +60,33 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   const { setUserSettings } = useStore();
 
   const getProgress = () => (STEP_ORDER.indexOf(currentStep) + 1) / STEP_ORDER.length;
+  const buildOnboardingSettings = () => {
+    const baseSettings = StorageService.getDefaultSettings();
+    return {
+      ...baseSettings,
+      notifications: {
+        ...baseSettings.notifications,
+        enabled: true,
+      },
+      location: locationData ?? baseSettings.location,
+    };
+  };
+
+  useEffect(() => {
+    if (currentStep !== 'notifications') return;
+
+    let cancelled = false;
+    void (async () => {
+      const readiness = await NotificationService.getNotificationReadiness(buildOnboardingSettings());
+      if (cancelled) return;
+      setNotificationReadiness(readiness);
+      setNotificationsEnabled(readiness.permissionStatus === 'granted');
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentStep, locationData]);
 
   const requestLocationPermission = async () => {
     setIsLocating(true);
@@ -98,14 +133,21 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   };
 
   const requestNotificationPermission = async () => {
+    setIsRequestingNotifications(true);
     try {
-      const granted = await NotificationService.requestPermissionsFromUser();
+      await NotificationService.requestNotificationAccessFromUser();
+      const readiness = await NotificationService.getNotificationReadiness(buildOnboardingSettings());
+      setNotificationReadiness(readiness);
+      const granted = readiness.permissionStatus === 'granted';
       setNotificationsEnabled(granted);
+      if (granted && readiness.blockedReason !== 'exact_alarm_blocked') {
+        setCurrentStep('done');
+      }
     } catch (error) {
       logger.log('Error requesting notification permissions:', error);
       setNotificationsEnabled(false);
     } finally {
-      setCurrentStep('done');
+      setIsRequestingNotifications(false);
     }
   };
 
@@ -164,6 +206,10 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
               progress={getProgress()}
               onEnable={requestNotificationPermission}
               onSkip={() => setCurrentStep('done')}
+              onOpenSettings={openAppSettings}
+              permissionStatus={notificationReadiness.permissionStatus}
+              blockedReason={notificationReadiness.blockedReason}
+              isRequesting={isRequestingNotifications}
             />
           ) : null}
 

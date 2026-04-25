@@ -322,21 +322,21 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
   // Load records on mount
   useEffect(() => {
     loadTodayRecords();
-    checkNotificationPermission();
+    void checkNotificationPermission();
   }, []);
 
   // Notification permission denied banner
-  const [notificationsDenied, setNotificationsDenied] = useState(false);
-  const checkNotificationPermission = useCallback(() => {
-    const denied = StorageService.getValue('notification_permission_denied') === 'true';
-    setNotificationsDenied(denied);
+  const [notificationBlockedReason, setNotificationBlockedReason] = useState<string | null>(null);
+  const checkNotificationPermission = useCallback(async () => {
+    const readiness = await NotificationService.getNotificationReadiness();
+    setNotificationBlockedReason(readiness.blockedReason);
   }, []);
 
   // Reload on foreground via shared AppState listener
   useAppStateChange((nextState) => {
     if (nextState === 'active') {
       loadTodayRecords();
-      checkNotificationPermission();
+      void checkNotificationPermission();
     }
   });
 
@@ -871,14 +871,24 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
           )}
 
           {/* Notification Permission Denied Banner */}
-          {notificationsDenied && userSettings?.notifications?.enabled && (
+          {notificationBlockedReason &&
+            notificationBlockedReason !== 'no_valid_location' &&
+            userSettings?.notifications?.enabled && (
             <TouchableOpacity
               style={styles.permissionBanner}
-              onPress={() => Linking.openSettings()}
+              onPress={() => {
+                if (notificationBlockedReason === 'exact_alarm_blocked') {
+                  void NotificationService.openAndroidExactAlarmSettings();
+                  return;
+                }
+                Linking.openSettings();
+              }}
               activeOpacity={0.7}
             >
               <Text style={styles.permissionBannerText}>
-                Prayer reminders are off — tap to re-enable
+                {notificationBlockedReason === 'exact_alarm_blocked'
+                  ? 'Prayer reminders may be delayed — tap to enable Alarms & reminders'
+                  : 'Prayer reminders are off — tap to re-enable'}
               </Text>
             </TouchableOpacity>
           )}

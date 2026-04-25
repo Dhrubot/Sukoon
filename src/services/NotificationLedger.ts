@@ -1,5 +1,5 @@
 // src/services/NotificationLedger.ts
-// Dev-only notification delivery confirmation ledger.
+// Notification delivery confirmation ledger.
 // Tracks: scheduled → delivered → tapped/dismissed for every notification.
 // Persisted in unencrypted MMKV (non-PII data). Capped at 200 entries.
 // Surface via NotificationDebugScreen's "Notification Health" section.
@@ -76,7 +76,6 @@ class NotificationLedger {
 
   /** Record that a notification was scheduled. */
   recordScheduled(id: string, label: string, scheduledFor: Date): void {
-    if (!__DEV__) return;
     const entries = this.getEntries();
     entries.push({
       id,
@@ -92,7 +91,6 @@ class NotificationLedger {
 
   /** Record that a notification was delivered to the device. */
   recordDelivered(id: string): void {
-    if (!__DEV__) return;
     const entries = this.getEntries();
     const entry = entries.find(e => e.id === id);
     if (entry) {
@@ -109,7 +107,6 @@ class NotificationLedger {
 
   /** Record that the user tapped a notification. */
   recordTapped(id: string): void {
-    if (!__DEV__) return;
     const entries = this.getEntries();
     const entry = entries.find(e => e.id === id);
     if (entry) {

@@ -145,8 +145,8 @@ export const useNotificationRescheduler = () => {
       const lastRunStr = StorageService.getValue('last_batch_schedule_date');
       if (lastRunStr) {
         const hoursSinceLastRun = (Date.now() - new Date(lastRunStr).getTime()) / (1000 * 60 * 60);
-        if (hoursSinceLastRun > 48) {
-          logger.warn('⚠️ Notification refresh was stale (>48h)');
+        if (hoursSinceLastRun > 120) {
+          logger.warn('⚠️ Notification refresh was stale (>120h)');
           StorageService.setValue('notification_refresh_stale', 'true');
           NotificationTraceService.log('rescheduler_stale_refresh_detected', {
             hoursSinceLastRun: Number(hoursSinceLastRun.toFixed(2)),

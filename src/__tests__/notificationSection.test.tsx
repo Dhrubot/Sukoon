@@ -4,7 +4,12 @@ import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { UserSettings } from '../types';
 
 const mockUpdateUserSettings = jest.fn();
-const mockGetPermissionStatus = jest.fn(async () => 'granted');
+const mockGetNotificationReadiness = jest.fn(async () => ({
+  permissionStatus: 'granted',
+  exactAlarmStatus: 'granted',
+  isReady: true,
+  blockedReason: null,
+}));
 const mockUpdateNotificationSettings = jest.fn(async () => {});
 
 jest.mock('../components/settings/SettingSection', () => ({
@@ -64,7 +69,14 @@ jest.mock('../store/useStore', () => ({
 jest.mock('../services/NotificationService', () => ({
   __esModule: true,
   default: {
-    getPermissionStatus: mockGetPermissionStatus,
+    getNotificationReadiness: mockGetNotificationReadiness,
+    requestNotificationAccessFromUser: jest.fn(async () => ({
+      permissionStatus: 'granted',
+      exactAlarmStatus: 'granted',
+      isReady: true,
+      blockedReason: null,
+    })),
+    openAndroidExactAlarmSettings: jest.fn(async () => true),
     updateNotificationSettings: mockUpdateNotificationSettings,
   },
 }));
@@ -121,7 +133,12 @@ describe('NotificationSection', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useRealTimers();
-    mockGetPermissionStatus.mockResolvedValue('granted');
+    mockGetNotificationReadiness.mockResolvedValue({
+      permissionStatus: 'granted',
+      exactAlarmStatus: 'granted',
+      isReady: true,
+      blockedReason: null,
+    });
   });
 
   afterEach(() => {
@@ -160,7 +177,7 @@ describe('NotificationSection', () => {
       />
     );
 
-    await waitFor(() => expect(mockGetPermissionStatus).toHaveBeenCalled());
+    await waitFor(() => expect(mockGetNotificationReadiness).toHaveBeenCalled());
     expect(queryByText('Full Adhan (Locked Screen)')).toBeNull();
     expect(
       queryByText('Short call to prayer on the lock screen. Full adhan continues after you open the app.')

@@ -7,7 +7,17 @@ import StorageService from './StorageService';
 import PrayerTimeService from './PrayerTimeService';
 import ReminderStateService from './ReminderStateService';
 import { format } from 'date-fns';
-import { CHANNELS, NOTIFICATION_CHANNEL_VERSION, NOTIFICATION_SCHEDULING_DAYS, NOTIFICATION_LOWER_TIER_DAYS, IOS_NOTIFICATION_CAP, SCHEDULING_LOCK_TIMEOUT_MS, KEEP_ALIVE_INTERVAL_MS } from '../constants/NotificationConstants';
+import {
+  CHANNELS,
+  NOTIFICATION_CHANNEL_VERSION,
+  NOTIFICATION_SCHEDULING_DAYS,
+  NOTIFICATION_LOWER_TIER_DAYS,
+  ANDROID_NOTIFICATION_SCHEDULING_DAYS,
+  ANDROID_NOTIFICATION_LOWER_TIER_DAYS,
+  IOS_NOTIFICATION_CAP,
+  SCHEDULING_LOCK_TIMEOUT_MS,
+  KEEP_ALIVE_INTERVAL_MS,
+} from '../constants/NotificationConstants';
 import MosqueModeService from './MosqueModeService';
 import { NOTIFICATION_CATEGORIES, initializeChannelsAndCategories } from './notifications/NotificationChannels';
 import AdhanPlayer from './notifications/AdhanPlayer';
@@ -86,6 +96,21 @@ interface NotificationData {
   [key: string]: unknown;
 }
 
+export type NotificationBlockedReason =
+  | 'permission_denied'
+  | 'permission_blocked'
+  | 'exact_alarm_blocked'
+  | 'no_valid_location'
+  | 'notifications_disabled'
+  | null;
+
+export interface NotificationReadiness {
+  permissionStatus: Notifications.PermissionStatus;
+  exactAlarmStatus: ExactAlarmStatus | 'not_applicable';
+  isReady: boolean;
+  blockedReason: NotificationBlockedReason;
+}
+
 type PrayerTimesFetcher = (params: {
   location: UserSettings['location'];
   date: Date;
@@ -93,6 +118,22 @@ type PrayerTimesFetcher = (params: {
   adjustments?: UserSettings['adjustments'];
   asrJuristic?: UserSettings['asrJuristic'];
 }) => Promise<{ prayerTimes: PrayerTime[]; sunrise: Date; sunset: Date; midnight?: Date | null }>;
+
+type NotificationPermissionDetails = {
+  status: Notifications.PermissionStatus;
+  canAskAgain: boolean | null;
+};
+
+type ScheduleOutcomeStatus = 'scheduled' | 'scheduled_degraded' | 'blocked' | 'failed';
+type ScheduleBlockedReason = Exclude<NotificationBlockedReason, null> | 'exact_alarm_fallback' | 'boot_pending' | 'scheduler_locked';
+
+const READINESS_BLOCKED_REASON_KEY = 'notification_readiness_blocked_reason';
+const READINESS_PERMISSION_STATUS_KEY = 'notification_readiness_permission_status';
+const READINESS_UPDATED_AT_KEY = 'notification_readiness_updated_at';
+const LAST_SCHEDULE_STATUS_KEY = 'notification_last_schedule_status';
+const LAST_SCHEDULE_REASON_KEY = 'notification_last_schedule_reason';
+const LAST_SCHEDULE_BLOCKED_REASON_KEY = 'notification_last_schedule_blocked_reason';
+const LAST_SCHEDULE_AT_KEY = 'notification_last_schedule_at';
 
 class NotificationService {
   private notificationListener: Notifications.Subscription | null = null;
@@ -111,6 +152,55 @@ class NotificationService {
         exactAlarmStatus?: string;
       }
     | null = null;
+
+  private getSchedulingDays(): number {
+    return Platform.OS === 'android'
+      ? ANDROID_NOTIFICATION_SCHEDULING_DAYS
+      : NOTIFICATION_SCHEDULING_DAYS;
+  }
+
+  private getLowerTierSchedulingDays(): number {
+    return Platform.OS === 'android'
+      ? ANDROID_NOTIFICATION_LOWER_TIER_DAYS
+      : NOTIFICATION_LOWER_TIER_DAYS;
+  }
+
+  private persistNotificationReadiness(readiness: NotificationReadiness): void {
+    StorageService.setValue(READINESS_PERMISSION_STATUS_KEY, readiness.permissionStatus);
+    StorageService.setValue(READINESS_UPDATED_AT_KEY, new Date().toISOString());
+
+    if (readiness.blockedReason) {
+      StorageService.setValue(READINESS_BLOCKED_REASON_KEY, readiness.blockedReason);
+    } else {
+      StorageService.deleteValue(READINESS_BLOCKED_REASON_KEY);
+    }
+
+    if (
+      readiness.blockedReason === 'permission_denied' ||
+      readiness.blockedReason === 'permission_blocked'
+    ) {
+      StorageService.setValue('notification_permission_denied', 'true');
+    } else {
+      StorageService.deleteValue('notification_permission_denied');
+    }
+  }
+
+  private persistScheduleOutcome(
+    status: ScheduleOutcomeStatus,
+    reason: NotificationSchedulingReason,
+    blockedReason?: ScheduleBlockedReason | null
+  ): void {
+    StorageService.setValue(LAST_SCHEDULE_STATUS_KEY, status);
+    StorageService.setValue(LAST_SCHEDULE_REASON_KEY, reason);
+    StorageService.setValue(LAST_SCHEDULE_AT_KEY, new Date().toISOString());
+
+    if (blockedReason) {
+      StorageService.setValue(LAST_SCHEDULE_BLOCKED_REASON_KEY, blockedReason);
+      return;
+    }
+
+    StorageService.deleteValue(LAST_SCHEDULE_BLOCKED_REASON_KEY);
+  }
 
   private async syncAndroidExactAlarmStatus(settings: UserSettings): Promise<void> {
     if (Platform.OS !== 'android') return;
@@ -162,8 +252,8 @@ class NotificationService {
       prayerNotifications: settings.prayerNotifications || null,
       habitBuilder: settings.habitBuilder || null,
       fullAdhanEnabled: settings.notifications.fullAdhanEnabled || false,
-      schedulingDays: NOTIFICATION_SCHEDULING_DAYS,
-      lowerTierDays: NOTIFICATION_LOWER_TIER_DAYS,
+      schedulingDays: this.getSchedulingDays(),
+      lowerTierDays: this.getLowerTierSchedulingDays(),
       channelVersion: NOTIFICATION_CHANNEL_VERSION,
     });
   }
@@ -276,12 +366,22 @@ class NotificationService {
     return Platform.OS === 'android' && typeof Platform.Version === 'number' && Platform.Version >= 33;
   }
 
-  private async getCurrentPermissionStatus(): Promise<Notifications.PermissionStatus> {
+  private async getCurrentPermissionDetails(): Promise<NotificationPermissionDetails> {
     if (this.requiresAndroidNotificationRuntimePermission()) {
       try {
-        const { status } = await Notifications.getPermissionsAsync();
-        if (status === 'granted' || status === 'denied') {
-          return status;
+        const permissionResponse = await Notifications.getPermissionsAsync();
+        if (
+          permissionResponse.status === 'granted' ||
+          permissionResponse.status === 'denied' ||
+          permissionResponse.status === 'undetermined'
+        ) {
+          return {
+            status: permissionResponse.status,
+            canAskAgain:
+              typeof permissionResponse.canAskAgain === 'boolean'
+                ? permissionResponse.canAskAgain
+                : null,
+          };
         }
       } catch {
         // Fall through to direct Android permission check.
@@ -290,25 +390,45 @@ class NotificationService {
       const granted = await PermissionsAndroid.check(
         PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
       );
-      return granted
-        ? ('granted' as Notifications.PermissionStatus)
-        : ('undetermined' as Notifications.PermissionStatus);
+      return {
+        status: granted
+          ? ('granted' as Notifications.PermissionStatus)
+          : ('undetermined' as Notifications.PermissionStatus),
+        canAskAgain: null,
+      };
     }
 
-    const { status } = await Notifications.getPermissionsAsync();
+    const permissionResponse = await Notifications.getPermissionsAsync();
+    return {
+      status: permissionResponse.status,
+      canAskAgain:
+        typeof permissionResponse.canAskAgain === 'boolean'
+          ? permissionResponse.canAskAgain
+          : null,
+    };
+  }
+
+  private async getCurrentPermissionStatus(): Promise<Notifications.PermissionStatus> {
+    const { status } = await this.getCurrentPermissionDetails();
     return status;
   }
 
-  private async requestAndroidNotificationPermission(): Promise<Notifications.PermissionStatus> {
+  private async requestAndroidNotificationPermission(): Promise<NotificationPermissionDetails> {
     const result = await PermissionsAndroid.request(
       PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS
     );
 
     if (result === PermissionsAndroid.RESULTS.GRANTED) {
-      return 'granted' as Notifications.PermissionStatus;
+      return {
+        status: 'granted' as Notifications.PermissionStatus,
+        canAskAgain: true,
+      };
     }
 
-    return 'denied' as Notifications.PermissionStatus;
+    return {
+      status: 'denied' as Notifications.PermissionStatus,
+      canAskAgain: result !== PermissionsAndroid.RESULTS.NEVER_ASK_AGAIN,
+    };
   }
 
   private async resolvePermissionStatus(
@@ -320,7 +440,8 @@ class NotificationService {
       return 'denied' as Notifications.PermissionStatus;
     }
 
-    const existingStatus = await this.getCurrentPermissionStatus();
+    const existingPermission = await this.getCurrentPermissionDetails();
+    const existingStatus = existingPermission.status;
     NotificationTraceService.log('permission_status_checked', {
       existingStatus,
       requestIfNeeded,
@@ -330,17 +451,54 @@ class NotificationService {
       return existingStatus;
     }
 
-    const status = this.requiresAndroidNotificationRuntimePermission()
-      ? await this.requestAndroidNotificationPermission()
-      : (
-          await Notifications.requestPermissionsAsync({
-            ios: {
-              allowAlert: true,
-              allowBadge: true,
-              allowSound: true,
-            },
-          })
-        ).status;
+    if (this.requiresAndroidNotificationRuntimePermission()) {
+      NotificationTraceService.log('permission_request_started', {
+        existingStatus,
+        source: 'expo_permissions',
+      });
+
+      try {
+        await Notifications.requestPermissionsAsync({
+          ios: {
+            allowAlert: true,
+            allowBadge: true,
+            allowSound: true,
+          },
+        });
+      } catch (error) {
+        logger.warn('⚠️ Expo notification permission request failed on Android:', error);
+      }
+
+      let resolvedStatus = await this.getCurrentPermissionDetails();
+      NotificationTraceService.log('permission_request_verified', {
+        source: 'expo_permissions',
+        finalStatus: resolvedStatus.status,
+      });
+
+      if (resolvedStatus.status === 'undetermined') {
+        NotificationTraceService.log('permission_request_fallback_started', {
+          source: 'permissions_android',
+        });
+        resolvedStatus = await this.requestAndroidNotificationPermission();
+        NotificationTraceService.log('permission_request_fallback_completed', {
+          source: 'permissions_android',
+          finalStatus: resolvedStatus.status,
+          canAskAgain: resolvedStatus.canAskAgain,
+        });
+      }
+
+      return resolvedStatus.status;
+    }
+
+    const status = (
+      await Notifications.requestPermissionsAsync({
+        ios: {
+          allowAlert: true,
+          allowBadge: true,
+          allowSound: true,
+        },
+      })
+    ).status;
 
     NotificationTraceService.log('permission_request_result', {
       requestedFrom: existingStatus,
@@ -348,6 +506,43 @@ class NotificationService {
     });
 
     return status;
+  }
+
+  async getNotificationReadiness(
+    settingsOverride?: UserSettings | null
+  ): Promise<NotificationReadiness> {
+    const settings = settingsOverride === undefined
+      ? StorageService.getUserSettings()
+      : settingsOverride;
+    const permission = await this.getCurrentPermissionDetails();
+
+    let exactAlarmStatus: ExactAlarmStatus | 'not_applicable' = 'not_applicable';
+    let blockedReason: NotificationBlockedReason = null;
+
+    if (!settings?.notifications.enabled) {
+      blockedReason = 'notifications_disabled';
+    } else if (permission.status !== 'granted') {
+      blockedReason = permission.canAskAgain === false
+        ? 'permission_blocked'
+        : 'permission_denied';
+    } else if (!isValidCoordinates(settings.location)) {
+      blockedReason = 'no_valid_location';
+    } else if (Platform.OS === 'android') {
+      exactAlarmStatus = await this.getAndroidExactAlarmStatus();
+      if (exactAlarmStatus === 'fallback') {
+        blockedReason = 'exact_alarm_blocked';
+      }
+    }
+
+    const readiness: NotificationReadiness = {
+      permissionStatus: permission.status,
+      exactAlarmStatus,
+      isReady: blockedReason === null,
+      blockedReason,
+    };
+
+    this.persistNotificationReadiness(readiness);
+    return readiness;
   }
 
   // Register a handler function that will be called when navigation is needed
@@ -379,6 +574,7 @@ class NotificationService {
         options?.requestPermissions ?? true
       );
       const hasPermission = permissionStatus === 'granted';
+      await this.getNotificationReadiness();
       if (!hasPermission) {
         logger.log(`📵 Notification permissions not granted (${permissionStatus})`);
         NotificationTraceService.log('initialize_permissions_missing', {
@@ -413,14 +609,42 @@ class NotificationService {
     }
   }
 
+  async requestNotificationAccessFromUser(): Promise<NotificationReadiness> {
+    NotificationTraceService.log('notification_access_request_tapped');
+    const before = await this.getCurrentPermissionDetails();
+    NotificationTraceService.log('notification_access_request_started', {
+      statusBefore: before.status,
+      canAskAgainBefore: before.canAskAgain,
+    });
+
+    const finalStatus = await this.resolvePermissionStatus(true);
+    const readiness = await this.getNotificationReadiness();
+
+    NotificationTraceService.log('notification_access_request_completed', {
+      statusBefore: before.status,
+      statusAfter: finalStatus,
+      exactAlarmStatus: readiness.exactAlarmStatus,
+      blockedReason: readiness.blockedReason,
+    });
+
+    if (readiness.permissionStatus === 'granted') {
+      const settings = StorageService.getUserSettings();
+      if (settings?.notifications.enabled && isValidCoordinates(settings.location)) {
+        await this.reconcileScheduling('permission_change', { force: true });
+      }
+    }
+
+    return readiness;
+  }
+
   async requestPermissionsFromUser(): Promise<boolean> {
-    const status = await this.resolvePermissionStatus(true);
-    return status === 'granted';
+    const readiness = await this.requestNotificationAccessFromUser();
+    return readiness.permissionStatus === 'granted';
   }
 
   async getPermissionStatus(): Promise<Notifications.PermissionStatus> {
     try {
-      return await this.getCurrentPermissionStatus();
+      return (await this.getNotificationReadiness()).permissionStatus;
     } catch {
       return 'undetermined' as Notifications.PermissionStatus;
     }
@@ -442,6 +666,20 @@ class NotificationService {
 
   async openAndroidExactAlarmSettings(): Promise<boolean> {
     return openExactAlarmSettings();
+  }
+
+  getStoredBlockedReason(): NotificationBlockedReason {
+    const stored = StorageService.getValue(READINESS_BLOCKED_REASON_KEY);
+    if (
+      stored === 'permission_denied' ||
+      stored === 'permission_blocked' ||
+      stored === 'exact_alarm_blocked' ||
+      stored === 'no_valid_location' ||
+      stored === 'notifications_disabled'
+    ) {
+      return stored;
+    }
+    return null;
   }
 
   // Channel setup delegated to notifications/NotificationChannels.ts
@@ -751,6 +989,7 @@ class NotificationService {
       });
       if (!StorageService.isInitialized()) {
         logger.log(`⏳ Skipping notification reconcile (${reason}) — storage not initialized`);
+        this.persistScheduleOutcome('blocked', reason, 'boot_pending');
         NotificationTraceService.log('reconcile_skipped', {
           reason,
           skipReason: 'storage_not_initialized',
@@ -761,6 +1000,7 @@ class NotificationService {
       const settings = StorageService.getUserSettings();
       if (!settings) {
         logger.log(`📵 Skipping notification reconcile (${reason}) — no user settings`);
+        this.persistScheduleOutcome('blocked', reason, 'boot_pending');
         NotificationTraceService.log('reconcile_skipped', {
           reason,
           skipReason: 'no_user_settings',
@@ -773,6 +1013,7 @@ class NotificationService {
         await this.cancelAllPrayerNotifications();
         StorageService.deleteValue('notification_schedule_fingerprint');
         StorageService.deleteValue('last_batch_schedule_date');
+        this.persistScheduleOutcome('blocked', reason, 'notifications_disabled');
         NotificationTraceService.log('reconcile_skipped', {
           reason,
           skipReason: 'notifications_disabled',
@@ -782,6 +1023,7 @@ class NotificationService {
 
       if (!isValidCoordinates(settings.location)) {
         logger.log(`❌ No valid location for notification reconcile (${reason})`);
+        this.persistScheduleOutcome('blocked', reason, 'no_valid_location');
         NotificationTraceService.log('reconcile_skipped', {
           reason,
           skipReason: 'no_valid_location',
@@ -799,6 +1041,12 @@ class NotificationService {
       });
 
       if (!scheduled) {
+        const readiness = await this.getNotificationReadiness(settings);
+        const blockedReason =
+          readiness.blockedReason === 'exact_alarm_blocked'
+            ? 'exact_alarm_fallback'
+            : readiness.blockedReason;
+        this.persistScheduleOutcome('blocked', reason, blockedReason ?? undefined);
         NotificationTraceService.log('reconcile_completed', {
           reason,
           scheduled: false,
@@ -811,6 +1059,11 @@ class NotificationService {
       StorageService.setValue('last_batch_schedule_date', now.toISOString());
       StorageService.setValue('notification_schedule_last_reason', reason);
       StorageService.setValue('notification_utc_offset', now.getTimezoneOffset().toString());
+      this.persistScheduleOutcome(
+        exactAlarmStatus === 'fallback' ? 'scheduled_degraded' : 'scheduled',
+        reason,
+        exactAlarmStatus === 'fallback' ? 'exact_alarm_fallback' : null
+      );
       NotificationTraceService.log('reconcile_completed', {
         reason,
         scheduled: true,
@@ -820,6 +1073,7 @@ class NotificationService {
       });
       return true;
     } catch (error) {
+      this.persistScheduleOutcome('failed', reason);
       NotificationTraceService.log('reconcile_failed', {
         reason,
       });
@@ -1295,6 +1549,7 @@ class NotificationService {
   ): Promise<boolean> {
     if (!this.acquireSchedulingLock()) {
       logger.log('🔒 Scheduling already in progress, skipping');
+      this.persistScheduleOutcome('blocked', options?.reason || 'background_refresh', 'scheduler_locked');
       NotificationTraceService.log('schedule_skipped_locked', {
         reason: options?.reason || 'unspecified',
       });
@@ -1303,19 +1558,23 @@ class NotificationService {
 
     this.schedulingProgress = 0;
     try {
+      const settings = StorageService.getUserSettings();
+      const readiness = await this.getNotificationReadiness(settings);
+
       // Check permission status before scheduling — handles revocation
-      const status = await this.getCurrentPermissionStatus();
-      if (status !== 'granted') {
-        logger.warn('🚫 Notification permission not granted (status: ' + status + '), skipping scheduling');
-        StorageService.setValue('notification_permission_denied', 'true');
+      if (readiness.permissionStatus !== 'granted') {
+        logger.warn('🚫 Notification permission not granted (status: ' + readiness.permissionStatus + '), skipping scheduling');
+        this.persistScheduleOutcome(
+          'blocked',
+          options?.reason || 'background_refresh',
+          readiness.blockedReason === 'permission_blocked' ? 'permission_blocked' : 'permission_denied'
+        );
         NotificationTraceService.log('schedule_skipped_permission', {
           reason: options?.reason || 'unspecified',
-          status,
+          status: readiness.permissionStatus,
         });
         return false;
       }
-      // Permission is granted — clear any stale denial flag
-      StorageService.deleteValue('notification_permission_denied');
 
       logger.log(`🗓️ Starting split-tier horizontal scheduling (${options?.reason || 'unspecified'})...`);
       NotificationTraceService.log('schedule_started', {
@@ -1323,9 +1582,13 @@ class NotificationService {
         forceRebuild: Boolean(options?.forceRebuild),
       });
 
-      const settings = StorageService.getUserSettings();
       if (!settings?.notifications.enabled || !isValidCoordinates(settings.location)) {
         logger.log('📵 Notifications disabled or no location');
+        this.persistScheduleOutcome(
+          'blocked',
+          options?.reason || 'background_refresh',
+          settings?.notifications.enabled ? 'no_valid_location' : 'notifications_disabled'
+        );
         NotificationTraceService.log('schedule_skipped_prereqs', {
           reason: options?.reason || 'unspecified',
           notificationsEnabled: Boolean(settings?.notifications.enabled),
@@ -1367,6 +1630,8 @@ class NotificationService {
       // Single timestamp capture — prevents drift across async scheduling passes
       const now = captureNow();
       const today = now;
+      const schedulingDays = this.getSchedulingDays();
+      const lowerTierDays = Math.min(this.getLowerTierSchedulingDays(), schedulingDays);
 
       const fetcher: PrayerTimesFetcher =
         this.prayerTimesFetcher ||
@@ -1386,7 +1651,7 @@ class NotificationService {
       }
       const allDays: DayPrayerData[] = [];
 
-      for (let i = 0; i < NOTIFICATION_SCHEDULING_DAYS; i++) {
+      for (let i = 0; i < schedulingDays; i++) {
         const date = new Date(today);
         date.setDate(date.getDate() + i);
         try {
@@ -1403,8 +1668,8 @@ class NotificationService {
           allDays.push({ prayers: [], sunrise: new Date() });
         }
 
-        this.schedulingProgress = (i + 1) / (NOTIFICATION_SCHEDULING_DAYS * 2);
-        onProgress?.(i + 1, NOTIFICATION_SCHEDULING_DAYS);
+        this.schedulingProgress = (i + 1) / (schedulingDays * 2);
+        onProgress?.(i + 1, schedulingDays);
       }
 
       // Initialize reminder states for all prayers (needed for Tier 2/3)
@@ -1420,10 +1685,10 @@ class NotificationService {
 
       // === HORIZONTAL PASSES (priority order) ===
 
-      // PASS 1: Tier 1 (Main Adhan) — NOTIFICATION_SCHEDULING_DAYS (3 days)
-      logger.log('📢 Pass 1: Scheduling Tier 1 (Adhan) for 3 days...');
+      // PASS 1: Tier 1 (Main Adhan)
+      logger.log(`📢 Pass 1: Scheduling Tier 1 (Adhan) for ${schedulingDays} days...`);
       const pass1Promises: Promise<unknown>[] = [];
-      for (let dayIdx = 0; dayIdx < NOTIFICATION_SCHEDULING_DAYS && dayIdx < allDays.length; dayIdx++) {
+      for (let dayIdx = 0; dayIdx < schedulingDays && dayIdx < allDays.length; dayIdx++) {
         const { prayers } = allDays[dayIdx];
         for (const prayer of prayers) {
           if (prayer.time > now) {
@@ -1435,8 +1700,8 @@ class NotificationService {
       // Yield to JS thread between passes to avoid blocking UI
       await new Promise(resolve => setTimeout(resolve, 0));
 
-      // PASS 2: Pre-prayer — NOTIFICATION_LOWER_TIER_DAYS (2 days)
-      const lowerDays = Math.min(NOTIFICATION_LOWER_TIER_DAYS, allDays.length);
+      // PASS 2: Pre-prayer
+      const lowerDays = Math.min(lowerTierDays, allDays.length);
       logger.log(`🔔 Pass 2: Scheduling pre-prayer for ${lowerDays} days...`);
       const pass2Promises: Promise<unknown>[] = [];
       for (let dayIdx = 0; dayIdx < lowerDays; dayIdx++) {
@@ -1545,9 +1810,15 @@ class NotificationService {
       });
 
       this.schedulingProgress = 1;
-      onProgress?.(NOTIFICATION_SCHEDULING_DAYS, NOTIFICATION_SCHEDULING_DAYS);
+      this.persistScheduleOutcome(
+        exactAlarmStatus === 'fallback' ? 'scheduled_degraded' : 'scheduled',
+        options?.reason || 'background_refresh',
+        exactAlarmStatus === 'fallback' ? 'exact_alarm_fallback' : null
+      );
+      onProgress?.(schedulingDays, schedulingDays);
       return true;
     } catch (error) {
+      this.persistScheduleOutcome('failed', options?.reason || 'background_refresh');
       NotificationTraceService.log('schedule_failed', {
         reason: options?.reason || 'unspecified',
       });
@@ -1646,6 +1917,7 @@ class NotificationService {
     const storeState = useStore.getState();
     const hasSource = storeState.todayPrayerTimes.length > 0;
     const sourceHasLocation = isValidCoordinates(storeState.location);
+    const readiness = await this.getNotificationReadiness();
 
     // Tier distribution
     const tierCounts = { tier1: 0, prePrayer: 0, tier3: 0, tier2: 0, keepalive: 0, supplementary: 0, other: 0 };
@@ -1664,6 +1936,7 @@ class NotificationService {
       totalScheduledCount: allScheduled.length,
       prayerScheduledCount: scheduled.length,
       iosCap: IOS_NOTIFICATION_CAP,
+      notificationReadiness: readiness,
       androidExactAlarmStatus:
         Platform.OS === 'android'
           ? await this.getAndroidExactAlarmStatus()
@@ -1671,6 +1944,12 @@ class NotificationService {
       notificationTraceEnabled: NotificationTraceService.isEnabled(),
       recentNotificationTraceCount: NotificationTraceService.getRecentEvents().length,
       lastScheduleSummary: this.lastScheduleSummary,
+      lastScheduleState: {
+        status: StorageService.getValue(LAST_SCHEDULE_STATUS_KEY),
+        reason: StorageService.getValue(LAST_SCHEDULE_REASON_KEY),
+        blockedReason: StorageService.getValue(LAST_SCHEDULE_BLOCKED_REASON_KEY),
+        at: StorageService.getValue(LAST_SCHEDULE_AT_KEY),
+      },
       tierDistribution: tierCounts,
       hasSource,
       sourceHasLocation,
@@ -1750,7 +2029,7 @@ class NotificationService {
 
       const frequency = settings.tahajjudReminders.frequency || 'twice_weekly';
 
-      // Determine which days to schedule (over next NOTIFICATION_LOWER_TIER_DAYS)
+      // Determine which days to schedule over the active lower-tier horizon
       const scheduleDays = this.getTahajjudScheduleDays(frequency);
 
       for (const dayOffset of scheduleDays) {
@@ -1828,7 +2107,7 @@ class NotificationService {
   }
 
   private getTahajjudScheduleDays(frequency: string): number[] {
-    const days = Array.from({ length: NOTIFICATION_LOWER_TIER_DAYS }, (_, i) => i);
+    const days = Array.from({ length: this.getLowerTierSchedulingDays() }, (_, i) => i);
     switch (frequency) {
       case 'daily':
         return days;

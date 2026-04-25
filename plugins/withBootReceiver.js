@@ -14,6 +14,7 @@ const { registerAndroidPackageInMainApplication } = require('./withAndroidPackag
 
 const PKG = 'com.talukders.sukoon';
 const JAVA_PATH_SEGMENTS = ['android', 'app', 'src', 'main', 'java', 'com', 'talukders', 'sukoon'];
+const HEADLESS_BOOT_TASK_NAME = 'BOOT_NOTIFICATION_RESCHEDULE_TASK';
 
 // ─────────────────────────────────────────────
 // JAVA: BootReceiver — triggers WorkManager on BOOT_COMPLETED
@@ -60,8 +61,11 @@ public class BootReceiver extends BroadcastReceiver {
 const WORKER_JAVA = `package ${PKG};
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.util.Log;
+
+import com.facebook.react.HeadlessJsTaskService;
 
 import androidx.annotation.NonNull;
 import androidx.work.Worker;
@@ -87,11 +91,17 @@ public class NotificationRescheduleWorker extends Worker {
     @NonNull
     @Override
     public Result doWork() {
-        Log.i(TAG, "Setting reschedule flag for next app launch");
+        Log.i(TAG, "Setting reschedule flag and starting headless boot reschedule");
         try {
             SharedPreferences prefs = getApplicationContext()
                 .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
             prefs.edit().putBoolean(KEY_NEEDS_RESCHEDULE, true).apply();
+
+            Intent serviceIntent = new Intent(getApplicationContext(), BootNotificationRescheduleTaskService.class);
+            serviceIntent.putExtra("trigger", "boot_completed");
+            HeadlessJsTaskService.acquireWakeLockNow(getApplicationContext());
+            getApplicationContext().startService(serviceIntent);
+
             return Result.success();
         } catch (Exception e) {
             Log.e(TAG, "Failed to set reschedule flag", e);
@@ -146,6 +156,46 @@ public class BootPrefsModule extends ReactContextBaseJavaModule {
             promise.reject("BOOT_PREFS_ERROR", e.getMessage(), e);
         }
     }
+
+    @ReactMethod
+    public void clearBootRescheduleFlag(Promise promise) {
+        try {
+            SharedPreferences prefs = getReactApplicationContext()
+                .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            prefs.edit().putBoolean(KEY_NEEDS_RESCHEDULE, false).apply();
+            promise.resolve(true);
+        } catch (Exception e) {
+            promise.reject("BOOT_PREFS_ERROR", e.getMessage(), e);
+        }
+    }
+}
+`;
+
+const BOOT_HEADLESS_TASK_SERVICE_JAVA = `package ${PKG};
+
+import android.content.Intent;
+import android.os.Bundle;
+
+import androidx.annotation.Nullable;
+
+import com.facebook.react.HeadlessJsTaskService;
+import com.facebook.react.bridge.Arguments;
+import com.facebook.react.jstasks.HeadlessJsTaskConfig;
+
+public class BootNotificationRescheduleTaskService extends HeadlessJsTaskService {
+    @Override
+    protected @Nullable HeadlessJsTaskConfig getTaskConfig(Intent intent) {
+        Bundle extras = intent != null && intent.getExtras() != null
+            ? intent.getExtras()
+            : new Bundle();
+
+        return new HeadlessJsTaskConfig(
+            "${HEADLESS_BOOT_TASK_NAME}",
+            Arguments.fromBundle(extras),
+            60000,
+            true
+        );
+    }
 }
 `;
 
@@ -190,6 +240,7 @@ function withBootReceiverJava(config) {
       fs.writeFileSync(path.join(javaDir, 'NotificationRescheduleWorker.java'), WORKER_JAVA.trim());
       fs.writeFileSync(path.join(javaDir, 'BootPrefsModule.java'), BOOT_PREFS_MODULE_JAVA.trim());
       fs.writeFileSync(path.join(javaDir, 'BootPrefsPackage.java'), BOOT_PREFS_PACKAGE_JAVA.trim());
+      fs.writeFileSync(path.join(javaDir, 'BootNotificationRescheduleTaskService.java'), BOOT_HEADLESS_TASK_SERVICE_JAVA.trim());
 
       return cfg;
     },
@@ -245,6 +296,21 @@ function withBootReceiverManifest(config) {
             action: [{ $: { 'android:name': 'android.intent.action.BOOT_COMPLETED' } }],
           },
         ],
+      });
+    }
+
+    if (!application.service) {
+      application.service = [];
+    }
+    const hasHeadlessService = application.service.some(
+      (service) => service.$?.['android:name'] === '.BootNotificationRescheduleTaskService'
+    );
+    if (!hasHeadlessService) {
+      application.service.push({
+        $: {
+          'android:name': '.BootNotificationRescheduleTaskService',
+          'android:exported': 'false',
+        },
       });
     }
 

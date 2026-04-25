@@ -1,6 +1,7 @@
 import './src/setupFeatureFlags';
 import { registerRootComponent } from 'expo';
 import './src/tasks/notificationRescheduleTask';
+import './src/tasks/notificationBootRescheduleTask';
 
 import App from './App';
 import CrashReportingService from './src/services/CrashReportingService';

@@ -137,8 +137,7 @@ export async function scheduleTier2PersistentReminders(
         type: 'date',
         date: reminderTime,
         ...(Platform.OS === 'android' && {
-          channelId: CHANNELS.DEFAULT,
-          priority: i === maxReminders ? 'high' : 'default',
+          channelId: i === maxReminders ? CHANNELS.PERSISTENT_URGENT : CHANNELS.DEFAULT,
         }),
       } as Notifications.NotificationTriggerInput,
       identifier: tier2Identifier,
@@ -213,7 +212,6 @@ export async function scheduleTier3GracePeriodWarning(
       date: warningTime,
       ...(Platform.OS === 'android' && {
         channelId: CHANNELS.GRACE_WARNING,
-        priority: 'high',
       }),
     } as Notifications.NotificationTriggerInput,
     identifier: tier3Identifier,

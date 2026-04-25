@@ -31,6 +31,7 @@ const SetupHealthScreen: React.FC<SetupHealthScreenProps> = ({ onDone, navigatio
   const [locationStatus, setLocationStatus] = useState<{ hasPermission: boolean; servicesEnabled: boolean } | null>(null);
   const [scheduledCount, setScheduledCount] = useState<number>(0);
   const [lastReschedule, setLastReschedule] = useState<string | null>(null);
+  const [blockedReason, setBlockedReason] = useState<string | null>(null);
   const [canModifyDnd, setCanModifyDnd] = useState<boolean | null>(null);
   const [isAdhanPlaying, setIsAdhanPlaying] = useState(false);
   const [launchSummary, setLaunchSummary] = useState(() => PerformanceService.getLatestLaunchSummary());
@@ -50,16 +51,14 @@ const SetupHealthScreen: React.FC<SetupHealthScreenProps> = ({ onDone, navigatio
   }, []);
 
   const refresh = useCallback(async () => {
-    const perm = await Notifications.getPermissionsAsync();
-    setNotifPermission(perm.status);
-
     const loc = await LocationService.getLocationAccuracy();
     setLocationStatus(loc);
 
     const debug = await NotificationService.getDebugInfo();
+    setNotifPermission(debug.notificationReadiness.permissionStatus);
     setScheduledCount(debug.totalScheduledCount);
-
-    setLastReschedule(StorageService.getValue('last_batch_schedule_date'));
+    setLastReschedule(debug.lastScheduleState.at || StorageService.getValue('last_batch_schedule_date'));
+    setBlockedReason(debug.notificationReadiness.blockedReason);
 
     if (Platform.OS === 'android') {
       const can = await RingerControlService.canModify();
@@ -163,6 +162,7 @@ const SetupHealthScreen: React.FC<SetupHealthScreenProps> = ({ onDone, navigatio
         <View style={[styles.card, { backgroundColor: theme.colors.card.background, borderColor: theme.colors.border.primary }]}>
           <Text style={[styles.cardTitle, { color: theme.colors.text.primary }]}>Notifications</Text>
           <Text style={[styles.rowText, { color: theme.colors.text.secondary }]}>Permission: {notifPermission === 'granted' ? '✅ Granted' : '❌ Blocked'}</Text>
+          <Text style={[styles.rowText, { color: theme.colors.text.secondary }]}>Blocked reason: {blockedReason || 'None'}</Text>
           <Text style={[styles.rowText, { color: theme.colors.text.secondary }]}>Scheduled: {scheduledCount}</Text>
           <Text style={[styles.rowText, { color: theme.colors.text.secondary }]}>Last reschedule: {lastReschedule ? new Date(lastReschedule).toLocaleString() : 'Never'}</Text>
 

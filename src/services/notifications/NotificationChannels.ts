@@ -33,6 +33,7 @@ export async function cleanupOldChannels(): Promise<void> {
       deletableIds.add(`prayer-times-adhan-silent-v${v}`);
       deletableIds.add(`prayer-times-default-v${v}`);
       deletableIds.add(`pre-prayer-v${v}`);
+      deletableIds.add(`persistent-urgent-v${v}`);
       deletableIds.add(`mindfulness-v${v}`);
       deletableIds.add(`grace-warning-v${v}`);
     }
@@ -91,6 +92,16 @@ export async function setupNotificationChannels(): Promise<void> {
     importance: Notifications.AndroidImportance.DEFAULT,
     vibrationPattern: [0, 100, 100, 100],
     lightColor: '#D4AF37',
+  });
+
+  await Notifications.setNotificationChannelAsync(CHANNELS.PERSISTENT_URGENT, {
+    name: 'Prayer Follow-up (Urgent)',
+    description: 'Final prayer-window reminders with higher urgency',
+    importance: Notifications.AndroidImportance.HIGH,
+    vibrationPattern: [0, 250, 250, 250],
+    lightColor: '#FF6B6B',
+    bypassDnd: false,
+    showBadge: true,
   });
 
   await Notifications.setNotificationChannelAsync(CHANNELS.MINDFULNESS, {
