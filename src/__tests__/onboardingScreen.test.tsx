@@ -1,9 +1,21 @@
 import React from 'react';
-import { fireEvent, render } from '@testing-library/react-native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
 
 const mockSetUserSettings = jest.fn();
 const mockLogOnboardingCompleted = jest.fn();
 const mockOnComplete = jest.fn();
+const mockGetNotificationReadiness = jest.fn(async () => ({
+  permissionStatus: 'undetermined',
+  exactAlarmStatus: 'not_applicable',
+  isReady: false,
+  blockedReason: null,
+}));
+const mockRequestNotificationAccessFromUser = jest.fn(async () => ({
+  permissionStatus: 'granted',
+  exactAlarmStatus: 'granted',
+  isReady: true,
+  blockedReason: null,
+}));
 
 jest.mock('expo-linear-gradient', () => ({
   LinearGradient: ({ children }: any) => children,
@@ -95,7 +107,8 @@ jest.mock('../services/LocationService', () => ({
 jest.mock('../services/NotificationService', () => ({
   __esModule: true,
   default: {
-    requestPermissionsFromUser: jest.fn(async () => true),
+    getNotificationReadiness: mockGetNotificationReadiness,
+    requestNotificationAccessFromUser: mockRequestNotificationAccessFromUser,
   },
 }));
 
@@ -129,9 +142,14 @@ jest.mock('../components/onboarding/OnboardingLocationStep', () => ({
 }));
 
 jest.mock('../components/onboarding/OnboardingNotificationStep', () => ({
-  OnboardingNotificationStep: ({ onSkip }: any) => {
+  OnboardingNotificationStep: ({ onSkip, onEnable }: any) => {
     const ReactNative = require('react-native');
-    return <ReactNative.Button title="notifications" onPress={onSkip} />;
+    return (
+      <ReactNative.View>
+        <ReactNative.Button title="notifications-enable" onPress={onEnable} />
+        <ReactNative.Button title="notifications-skip" onPress={onSkip} />
+      </ReactNative.View>
+    );
   },
 }));
 
@@ -153,6 +171,18 @@ const OnboardingScreen = require('../screens/Onboarding/OnboardingScreen').defau
 describe('OnboardingScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockGetNotificationReadiness.mockResolvedValue({
+      permissionStatus: 'undetermined',
+      exactAlarmStatus: 'not_applicable',
+      isReady: false,
+      blockedReason: null,
+    });
+    mockRequestNotificationAccessFromUser.mockResolvedValue({
+      permissionStatus: 'granted',
+      exactAlarmStatus: 'granted',
+      isReady: true,
+      blockedReason: null,
+    });
   });
 
   it('defaults the final onboarding step to Standard and persists a changed Asr juristic choice', () => {
@@ -160,7 +190,7 @@ describe('OnboardingScreen', () => {
 
     fireEvent.press(getByRole('button', { name: 'welcome' }));
     fireEvent.press(getByRole('button', { name: 'location' }));
-    fireEvent.press(getByRole('button', { name: 'notifications' }));
+    fireEvent.press(getByRole('button', { name: 'notifications-skip' }));
 
     expect(getByText('Asr: Standard')).toBeTruthy();
 
@@ -172,5 +202,31 @@ describe('OnboardingScreen', () => {
     );
     expect(mockLogOnboardingCompleted).toHaveBeenCalled();
     expect(mockOnComplete).toHaveBeenCalled();
+  });
+
+  it('stays on the notification step when Android permission remains blocked', async () => {
+    mockRequestNotificationAccessFromUser.mockResolvedValueOnce({
+      permissionStatus: 'denied',
+      exactAlarmStatus: 'not_applicable',
+      isReady: false,
+      blockedReason: 'permission_blocked',
+    });
+    mockGetNotificationReadiness.mockResolvedValueOnce({
+      permissionStatus: 'denied',
+      exactAlarmStatus: 'not_applicable',
+      isReady: false,
+      blockedReason: 'permission_blocked',
+    });
+
+    const { getByRole, queryByText } = render(<OnboardingScreen onComplete={mockOnComplete} />);
+
+    fireEvent.press(getByRole('button', { name: 'welcome' }));
+    fireEvent.press(getByRole('button', { name: 'location' }));
+    fireEvent.press(getByRole('button', { name: 'notifications-enable' }));
+
+    await waitFor(() => {
+      expect(queryByText('Asr: Standard')).toBeNull();
+      expect(mockOnComplete).not.toHaveBeenCalled();
+    });
   });
 });

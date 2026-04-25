@@ -7,6 +7,7 @@ import { SettingRow } from '../../../components/settings/SettingRow';
 import { UserSettings } from '../../../types';
 import { useStore } from '../../../store/useStore';
 import NotificationService from '../../../services/NotificationService';
+import type { NotificationBlockedReason } from '../../../services/NotificationService';
 import type { ExactAlarmStatus } from '../../../services/notifications/FullAdhanScheduler';
 import LiveActivityService from '../../../services/LiveActivityService';
 import { useTheme } from '../../../providers/ThemeProvider';
@@ -31,16 +32,23 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
   const { updateUserSettings } = useStore();
   const [permissionStatus, setPermissionStatus] = useState<'granted' | 'denied' | 'undetermined'>('undetermined');
   const [exactAlarmStatus, setExactAlarmStatus] = useState<ExactAlarmStatus | 'not_applicable'>('not_applicable');
+  const [blockedReason, setBlockedReason] = useState<NotificationBlockedReason>(null);
+
+  const refreshReadiness = async () => {
+    const readiness = await NotificationService.getNotificationReadiness();
+    setPermissionStatus(readiness.permissionStatus);
+    setExactAlarmStatus(readiness.exactAlarmStatus);
+    setBlockedReason(readiness.blockedReason);
+    return readiness;
+  };
 
   useEffect(() => {
     let mounted = true;
-    Promise.all([
-      NotificationService.getPermissionStatus(),
-      NotificationService.getAndroidExactAlarmStatus(),
-    ]).then(([status, alarmStatus]) => {
+    refreshReadiness().then((readiness) => {
       if (!mounted) return;
-      setPermissionStatus(status);
-      setExactAlarmStatus(alarmStatus);
+      setPermissionStatus(readiness.permissionStatus);
+      setExactAlarmStatus(readiness.exactAlarmStatus);
+      setBlockedReason(readiness.blockedReason);
     });
     return () => {
       mounted = false;
@@ -63,10 +71,12 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
   };
 
   const getNotificationSubtitle = () => {
-    if (permissionStatus !== 'granted') return 'Blocked in system settings';
-    if (Platform.OS === 'android' && exactAlarmStatus === 'fallback') {
+    if (blockedReason === 'permission_blocked') return 'Blocked in system settings';
+    if (blockedReason === 'permission_denied' || permissionStatus !== 'granted') return 'Permission required';
+    if (blockedReason === 'exact_alarm_blocked' || (Platform.OS === 'android' && exactAlarmStatus === 'fallback')) {
       return 'Blocked in Alarms & reminders';
     }
+    if (blockedReason === 'no_valid_location') return 'Location required';
     if (!userSettings.notifications.enabled) return 'Disabled';
     
     let subtitle = 'Enabled';
@@ -107,14 +117,12 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
 
     if (permissionStatus === 'undetermined') {
       void (async () => {
-        const granted = await NotificationService.requestPermissionsFromUser();
-        const nextStatus = granted ? 'granted' : await NotificationService.getPermissionStatus();
-        setPermissionStatus(nextStatus);
-        let nextExactAlarmStatus: ExactAlarmStatus | 'not_applicable' = exactAlarmStatus;
-        if (Platform.OS === 'android') {
-          nextExactAlarmStatus = await NotificationService.getAndroidExactAlarmStatus();
-          setExactAlarmStatus(nextExactAlarmStatus);
-        }
+        const readiness = await NotificationService.requestNotificationAccessFromUser();
+        setPermissionStatus(readiness.permissionStatus);
+        setExactAlarmStatus(readiness.exactAlarmStatus);
+        setBlockedReason(readiness.blockedReason);
+        const granted = readiness.permissionStatus === 'granted';
+        const nextExactAlarmStatus = readiness.exactAlarmStatus;
 
         if (granted) {
           if (Platform.OS === 'android' && nextExactAlarmStatus === 'fallback') {
@@ -146,11 +154,18 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
     }
 
     Alert.alert(
-      'Notifications Blocked',
-      'Enable notifications in your device settings to receive prayer reminders.',
+      blockedReason === 'exact_alarm_blocked' ? 'Alarms & Reminders Blocked' : 'Notifications Blocked',
+      blockedReason === 'exact_alarm_blocked'
+        ? 'Enable Alarms & reminders in your device settings to improve prayer-time delivery.'
+        : 'Enable notifications in your device settings to receive prayer reminders.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Open Settings', onPress: openAppSettings },
+        {
+          text: 'Open Settings',
+          onPress: blockedReason === 'exact_alarm_blocked'
+            ? () => { void openExactAlarmSettings(); }
+            : openAppSettings,
+        },
       ]
     );
   };

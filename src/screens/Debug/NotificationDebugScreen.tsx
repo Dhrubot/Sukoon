@@ -51,8 +51,8 @@ export const NotificationDebugScreen = () => {
   }, []);
 
   const checkPermissions = async () => {
-    const { status } = await Notifications.getPermissionsAsync();
-    setPermissionStatus(status);
+    const readiness = await NotificationService.getNotificationReadiness();
+    setPermissionStatus(readiness.permissionStatus);
   };
 
   const loadDebugInfo = async () => {
@@ -169,15 +169,12 @@ export const NotificationDebugScreen = () => {
   // 🧪 Test 4: Request permissions
   const requestPermissions = async () => {
     try {
-      const { status } = await Notifications.requestPermissionsAsync({
-        ios: {
-          allowAlert: true,
-          allowBadge: true,
-          allowSound: true,
-        },
-      });
-      setPermissionStatus(status);
-      Alert.alert('Permission Status', `Status: ${status}`);
+      const readiness = await NotificationService.requestNotificationAccessFromUser();
+      setPermissionStatus(readiness.permissionStatus);
+      Alert.alert(
+        'Permission Status',
+        `Status: ${readiness.permissionStatus}\nBlocked: ${readiness.blockedReason || 'none'}`
+      );
     } catch (error) {
       Alert.alert('Error', `Failed: ${error}`);
     }

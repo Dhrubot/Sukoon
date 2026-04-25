@@ -70,12 +70,19 @@ describe('NotificationChannels', () => {
 
     await setupNotificationChannels();
 
-    expect(mocks.setNotificationChannelAsync).toHaveBeenCalledTimes(9);
+    expect(mocks.setNotificationChannelAsync).toHaveBeenCalledTimes(10);
     expect(mocks.setNotificationChannelAsync).toHaveBeenCalledWith(
       'prayer-times-adhan-silent-v9',
       expect.objectContaining({
         name: 'Prayer Times (Full Adhan)',
         sound: null,
+      })
+    );
+    expect(mocks.setNotificationChannelAsync).toHaveBeenCalledWith(
+      'persistent-urgent-v9',
+      expect.objectContaining({
+        name: 'Prayer Follow-up (Urgent)',
+        importance: 4,
       })
     );
     expect(mocks.setNotificationChannelAsync).toHaveBeenCalledWith(
@@ -104,7 +111,7 @@ describe('NotificationChannels', () => {
 
     const android = loadModule({ platformOS: 'android', isDevice: true });
     await android.initializeChannelsAndCategories();
-    expect(android.mocks.setNotificationChannelAsync).toHaveBeenCalledTimes(9);
+    expect(android.mocks.setNotificationChannelAsync).toHaveBeenCalledTimes(10);
 
     const simulator = loadModule({ platformOS: 'android', isDevice: false });
     await simulator.initializeChannelsAndCategories();

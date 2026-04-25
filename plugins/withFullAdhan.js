@@ -15,6 +15,7 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.pm.ServiceInfo;
 import android.content.Context;
 import android.content.Intent;
 import android.media.AudioAttributes;
@@ -49,7 +50,7 @@ public class AdhanService extends Service {
             // Must call startForeground() before stopping if started via startForegroundService()
             try {
                 Notification notification = buildNotification("Prayer");
-                startForeground(NOTIFICATION_ID, notification);
+                startForegroundCompat(notification);
             } catch (Exception e) {
                 Log.w(TAG, "startForeground before stop: " + e.getMessage());
             }
@@ -74,12 +75,31 @@ public class AdhanService extends Service {
 
         // Build and start foreground notification
         Notification notification = buildNotification(prayerName);
-        startForeground(NOTIFICATION_ID, notification);
+        try {
+            startForegroundCompat(notification);
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to enter foreground mode: " + e.getMessage(), e);
+            stopAdhan();
+            return START_NOT_STICKY;
+        }
 
         // Play the full adhan
         playAdhan();
 
         return START_NOT_STICKY;
+    }
+
+    private void startForegroundCompat(Notification notification) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(
+                NOTIFICATION_ID,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+            );
+            return;
+        }
+
+        startForeground(NOTIFICATION_ID, notification);
     }
 
     private void createNotificationChannel() {
@@ -618,6 +638,7 @@ const withFullAdhanProguard = (config) => {
 -keep class com.talukders.sukoon.AdhanPackage { *; }
 -keep class com.talukders.sukoon.BootPrefsModule { *; }
 -keep class com.talukders.sukoon.BootPrefsPackage { *; }
+-keep class com.talukders.sukoon.BootNotificationRescheduleTaskService { *; }
 -keep class com.talukders.sukoon.AdhanService { *; }
 -keep class com.talukders.sukoon.AdhanAlarmReceiver { *; }
 -keep class com.talukders.sukoon.BootReceiver { *; }
