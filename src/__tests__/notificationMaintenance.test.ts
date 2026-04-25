@@ -212,7 +212,6 @@ describe('NotificationService maintenance flows', () => {
 
     await service.updateNotificationSettings({
       enabled: false,
-      adhanEnabled: false,
     });
 
     expect(AdhanPlayer.stop).toHaveBeenCalledTimes(1);

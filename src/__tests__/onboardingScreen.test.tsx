@@ -204,6 +204,37 @@ describe('OnboardingScreen', () => {
     expect(mockOnComplete).toHaveBeenCalled();
   });
 
+  it('persists reminders and adhan as off when prayer reminders are skipped', async () => {
+    mockGetNotificationReadiness.mockResolvedValueOnce({
+      permissionStatus: 'granted',
+      exactAlarmStatus: 'granted',
+      isReady: true,
+      blockedReason: null,
+    });
+
+    const { getByRole } = render(<OnboardingScreen onComplete={mockOnComplete} />);
+
+    fireEvent.press(getByRole('button', { name: 'welcome' }));
+    fireEvent.press(getByRole('button', { name: 'location' }));
+
+    await waitFor(() => {
+      expect(mockGetNotificationReadiness).toHaveBeenCalled();
+    });
+
+    fireEvent.press(getByRole('button', { name: 'notifications-skip' }));
+    fireEvent.press(getByRole('button', { name: 'complete' }));
+
+    expect(mockSetUserSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        notifications: expect.objectContaining({
+          enabled: false,
+          adhanEnabled: false,
+          fullAdhanEnabled: false,
+        }),
+      })
+    );
+  });
+
   it('stays on the notification step when Android permission remains blocked', async () => {
     mockRequestNotificationAccessFromUser.mockResolvedValueOnce({
       permissionStatus: 'denied',

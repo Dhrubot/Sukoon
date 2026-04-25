@@ -37,6 +37,7 @@ import {
   shouldSuppressForegroundAdhanNotificationSound,
   usesAndroidScheduledFullAdhan,
 } from './notifications/AdhanPlaybackPolicy';
+import { mergeNotificationSettings } from './notifications/notificationSettingsState';
 import { isValidCoordinates } from '../utils/locationValidation';
 import logger from '../utils/logger';
 import { captureNow } from '../constants/time';
@@ -1514,12 +1515,14 @@ class NotificationService {
     const currentSettings = StorageService.getUserSettings();
     if (!currentSettings) return;
 
+    const normalizedNotifications = mergeNotificationSettings(
+      currentSettings.notifications,
+      settings,
+    );
+
     const updatedSettings = {
       ...currentSettings,
-      notifications: {
-        ...currentSettings.notifications,
-        ...settings,
-      },
+      notifications: normalizedNotifications,
     };
 
     // Stop any currently-playing adhan if adhan or notifications were just disabled

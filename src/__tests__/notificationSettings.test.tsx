@@ -1,5 +1,6 @@
 import React from 'react';
-import { render } from '@testing-library/react-native';
+import { fireEvent, render, waitFor } from '@testing-library/react-native';
+import { Switch } from 'react-native';
 import { UserSettings } from '../types';
 
 jest.mock('@react-native-community/slider', () => 'Slider');
@@ -106,6 +107,7 @@ jest.mock('../hooks/useThemedStyles', () => ({
 }));
 
 const NotificationSettings = require('../components/settings/NotificationSettings').default;
+const NotificationService = require('../services/NotificationService').default;
 
 const baseSettings: UserSettings = {
   location: { latitude: 23.81, longitude: 90.41, city: 'Dhaka', country: 'Bangladesh' },
@@ -144,6 +146,10 @@ const baseSettings: UserSettings = {
 };
 
 describe('NotificationSettings', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
   it('does not render the removed test reminder section', () => {
     const { queryByText, getByText } = render(
       <NotificationSettings
@@ -156,5 +162,42 @@ describe('NotificationSettings', () => {
     expect(queryByText('Test Reminders')).toBeNull();
     expect(queryByText('Send Test Reminder')).toBeNull();
     expect(queryByText('View Scheduled Reminders')).toBeNull();
+  });
+
+  it('normalizes adhan and full adhan off when prayer reminders are disabled', async () => {
+    const onUpdateSettings = jest.fn();
+    const { UNSAFE_getAllByType } = render(
+      <NotificationSettings
+        userSettings={{
+          ...baseSettings,
+          notifications: {
+            ...baseSettings.notifications,
+            fullAdhanEnabled: true,
+          },
+        }}
+        onUpdateSettings={onUpdateSettings}
+      />
+    );
+
+    fireEvent(UNSAFE_getAllByType(Switch)[0], 'valueChange', false);
+
+    await waitFor(() => {
+      expect(onUpdateSettings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          notifications: expect.objectContaining({
+            enabled: false,
+            adhanEnabled: false,
+            fullAdhanEnabled: false,
+          }),
+        })
+      );
+      expect(NotificationService.updateNotificationSettings).toHaveBeenCalledWith(
+        expect.objectContaining({
+          enabled: false,
+          adhanEnabled: false,
+          fullAdhanEnabled: false,
+        })
+      );
+    });
   });
 });

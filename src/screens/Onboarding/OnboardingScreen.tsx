@@ -16,6 +16,7 @@ import logger from '../../utils/logger';
 import LocationService from '../../services/LocationService';
 import NotificationService from '../../services/NotificationService';
 import type { NotificationReadiness } from '../../services/NotificationService';
+import { normalizeNotificationSettings } from '../../services/notifications/notificationSettingsState';
 import { Location as AppLocation } from '../../types';
 import { LocationModal } from '../../components/LocationModal';
 import { applyRegionalCalculationMethod } from '../../utils/calculationMethodByRegion';
@@ -42,7 +43,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   const styles = useThemedStyles(createStyles);
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome');
   const [locationData, setLocationData] = useState<AppLocation | null>(null);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [wantsPrayerReminders, setWantsPrayerReminders] = useState(false);
   const [notificationReadiness, setNotificationReadiness] = useState<NotificationReadiness>({
     permissionStatus: 'undetermined' as NotificationReadiness['permissionStatus'],
     exactAlarmStatus: 'not_applicable',
@@ -80,7 +81,6 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
       const readiness = await NotificationService.getNotificationReadiness(buildOnboardingSettings());
       if (cancelled) return;
       setNotificationReadiness(readiness);
-      setNotificationsEnabled(readiness.permissionStatus === 'granted');
     })();
 
     return () => {
@@ -139,13 +139,13 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
       const readiness = await NotificationService.getNotificationReadiness(buildOnboardingSettings());
       setNotificationReadiness(readiness);
       const granted = readiness.permissionStatus === 'granted';
-      setNotificationsEnabled(granted);
+      setWantsPrayerReminders(granted);
       if (granted && readiness.blockedReason !== 'exact_alarm_blocked') {
         setCurrentStep('done');
       }
     } catch (error) {
       logger.log('Error requesting notification permissions:', error);
-      setNotificationsEnabled(false);
+      setWantsPrayerReminders(false);
     } finally {
       setIsRequestingNotifications(false);
     }
@@ -154,7 +154,14 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   const completeOnboarding = async () => {
     const settings = StorageService.getDefaultSettings();
     settings.calculationMethodManuallySelected = false;
-    settings.notifications.enabled = notificationsEnabled;
+    settings.notifications = normalizeNotificationSettings({
+      ...settings.notifications,
+      enabled: wantsPrayerReminders,
+      adhanEnabled: wantsPrayerReminders ? settings.notifications.adhanEnabled : false,
+      fullAdhanEnabled: wantsPrayerReminders
+        ? settings.notifications.fullAdhanEnabled
+        : false,
+    });
     settings.name = displayName.trim();
     settings.asrJuristic = asrJuristic;
 
@@ -205,7 +212,10 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
             <OnboardingNotificationStep
               progress={getProgress()}
               onEnable={requestNotificationPermission}
-              onSkip={() => setCurrentStep('done')}
+              onSkip={() => {
+                setWantsPrayerReminders(false);
+                setCurrentStep('done');
+              }}
               onOpenSettings={openAppSettings}
               permissionStatus={notificationReadiness.permissionStatus}
               blockedReason={notificationReadiness.blockedReason}
@@ -217,7 +227,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
             <OnboardingReadyStep
               progress={getProgress()}
               locationData={locationData}
-              notificationsEnabled={notificationsEnabled}
+              notificationsEnabled={wantsPrayerReminders}
               asrJuristic={asrJuristic}
               displayName={displayName}
               onAsrJuristicChange={setAsrJuristic}
