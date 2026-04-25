@@ -23,6 +23,10 @@ import {
 } from '../../utils/notificationPresets';
 import ThemedTimePicker from '../common/ThemedTimePicker';
 import logger from '../../utils/logger';
+import {
+  mergeNotificationSettings,
+  normalizeNotificationSettings,
+} from '../../services/notifications/notificationSettingsState';
 
 interface NotificationSettingsProps {
   userSettings: UserSettings;
@@ -90,7 +94,9 @@ const buildLocalNotificationSettings = (
     liveActivityEnabled: false,
   };
 
-  return notifications ? { ...defaults, ...notifications } : defaults;
+  return normalizeNotificationSettings(
+    notifications ? { ...defaults, ...notifications } : defaults,
+  );
 };
 
 const NotificationSettings: React.FC<NotificationSettingsProps> = ({
@@ -148,19 +154,20 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
     notifications = localSettings,
     habitBuilder = localHabitBuilder,
   ) => {
+    const normalizedNotifications = normalizeNotificationSettings(notifications);
     setIsUpdating(true);
-    setLocalSettings(notifications);
+    setLocalSettings(normalizedNotifications);
     setLocalHabitBuilder(habitBuilder);
 
     try {
       const updated: UserSettings = {
         ...userSettings,
-        notifications,
+        notifications: normalizedNotifications,
         habitBuilder,
       };
 
       onUpdateSettings(updated);
-      await NotificationService.updateNotificationSettings(notifications);
+      await NotificationService.updateNotificationSettings(normalizedNotifications);
       await NotificationService.reconcileScheduling('settings_change');
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     } catch (error) {
@@ -196,13 +203,15 @@ const NotificationSettings: React.FC<NotificationSettingsProps> = ({
       }
     }
 
-    await persistSettings({ ...localSettings, enabled: value });
+    await persistSettings(
+      mergeNotificationSettings(localSettings, { enabled: value }),
+    );
   };
 
   const handleNotificationUpdate = async (
     updates: Partial<typeof localSettings>,
   ) => {
-    await persistSettings({ ...localSettings, ...updates });
+    await persistSettings(mergeNotificationSettings(localSettings, updates));
   };
 
   const handleHabitBuilderUpdate = async (

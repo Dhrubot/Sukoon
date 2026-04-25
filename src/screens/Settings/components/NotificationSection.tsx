@@ -10,6 +10,10 @@ import NotificationService from '../../../services/NotificationService';
 import type { NotificationBlockedReason } from '../../../services/NotificationService';
 import type { ExactAlarmStatus } from '../../../services/notifications/FullAdhanScheduler';
 import LiveActivityService from '../../../services/LiveActivityService';
+import {
+  mergeNotificationSettings,
+  normalizeNotificationSettings,
+} from '../../../services/notifications/notificationSettingsState';
 import { useTheme } from '../../../providers/ThemeProvider';
 import { useThemedStyles } from '../../../hooks/useThemedStyles';
 import { AppTheme } from '../../../theme';
@@ -30,6 +34,7 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const { updateUserSettings } = useStore();
+  const notifications = normalizeNotificationSettings(userSettings.notifications);
   const [permissionStatus, setPermissionStatus] = useState<'granted' | 'denied' | 'undetermined'>('undetermined');
   const [exactAlarmStatus, setExactAlarmStatus] = useState<ExactAlarmStatus | 'not_applicable'>('not_applicable');
   const [blockedReason, setBlockedReason] = useState<NotificationBlockedReason>(null);
@@ -77,11 +82,11 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
       return 'Blocked in Alarms & reminders';
     }
     if (blockedReason === 'no_valid_location') return 'Location required';
-    if (!userSettings.notifications.enabled) return 'Disabled';
+    if (!notifications.enabled) return 'Disabled';
     
     let subtitle = 'Enabled';
-    if (userSettings.notifications.beforePrayer > 0) {
-      subtitle += ` • ${userSettings.notifications.beforePrayer} min before`;
+    if (notifications.beforePrayer > 0) {
+      subtitle += ` • ${notifications.beforePrayer} min before`;
     }
     return subtitle;
   };
@@ -172,36 +177,31 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
 
   // Logic for the Adhan toggle
   const toggleAdhan = async (value: boolean) => {
+    const nextNotifications = mergeNotificationSettings(notifications, {
+      adhanEnabled: value,
+    });
+
     // Optimistic UI update via Store
     updateUserSettings({
-      notifications: {
-        ...userSettings.notifications,
-        adhanEnabled: value,
-        // Disable full adhan if adhan is turned off
-        ...(value === false && { fullAdhanEnabled: false }),
-      }
+      notifications: nextNotifications,
     });
 
     // Update the native notification service
     // This forces a reschedule so the next notification uses the correct sound
-    await NotificationService.updateNotificationSettings({
-      adhanEnabled: value,
-      ...(value === false && { fullAdhanEnabled: false }),
-    });
+    await NotificationService.updateNotificationSettings(nextNotifications);
   };
 
   // Logic for the Full Adhan toggle (Android only)
   const toggleFullAdhan = async (value: boolean) => {
-    updateUserSettings({
-      notifications: {
-        ...userSettings.notifications,
-        fullAdhanEnabled: value,
-      }
-    });
-
-    await NotificationService.updateNotificationSettings({
+    const nextNotifications = mergeNotificationSettings(notifications, {
       fullAdhanEnabled: value,
     });
+
+    updateUserSettings({
+      notifications: nextNotifications,
+    });
+
+    await NotificationService.updateNotificationSettings(nextNotifications);
   };
 
   return (
@@ -226,24 +226,24 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
           <Text style={styles.subtitle}>{adhanSubtitle}</Text>
         </View>
         <Switch
-          value={userSettings.notifications.adhanEnabled}
+          value={notifications.adhanEnabled}
           onValueChange={toggleAdhan}
-          disabled={!userSettings.notifications.enabled || permissionStatus !== 'granted'}
+          disabled={!notifications.enabled || permissionStatus !== 'granted'}
           trackColor={{ false: theme.colors.switch.trackFalse, true: theme.colors.switch.trackTrue }}
           thumbColor={theme.colors.switch.thumb}
         />
       </View>
       {/* Full Adhan — Android only, visible when adhan is enabled */}
-      {Platform.OS === 'android' && userSettings.notifications.adhanEnabled && (
+      {Platform.OS === 'android' && notifications.adhanEnabled && (
         <View style={styles.row}>
           <View style={styles.textContainer}>
             <Text style={styles.label}>Full Adhan (Locked Screen)</Text>
             <Text style={styles.subtitle}>Schedules the complete call to prayer when your phone is locked or the app is closed</Text>
           </View>
           <Switch
-            value={!!userSettings.notifications.fullAdhanEnabled}
+            value={!!notifications.fullAdhanEnabled}
             onValueChange={toggleFullAdhan}
-            disabled={!userSettings.notifications.enabled || permissionStatus !== 'granted'}
+            disabled={!notifications.enabled || permissionStatus !== 'granted'}
             trackColor={{ false: theme.colors.switch.trackFalse, true: theme.colors.switch.trackTrue }}
             thumbColor={theme.colors.switch.thumb}
           />
@@ -257,13 +257,14 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
           <Text style={styles.subtitle}>{liveActivitySubtitle}</Text>
         </View>
         <Switch
-          value={!!userSettings.notifications.liveActivityEnabled}
+          value={!!notifications.liveActivityEnabled}
           onValueChange={async (value) => {
+            const nextNotifications = {
+              ...notifications,
+              liveActivityEnabled: value,
+            };
             updateUserSettings({
-              notifications: {
-                ...userSettings.notifications,
-                liveActivityEnabled: value,
-              }
+              notifications: nextNotifications,
             });
             if (value) {
               await LiveActivityService.startWithCurrentData();
@@ -271,7 +272,7 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
               await LiveActivityService.end();
             }
           }}
-          disabled={!userSettings.notifications.enabled || permissionStatus !== 'granted'}
+          disabled={!notifications.enabled || permissionStatus !== 'granted'}
           trackColor={{ false: theme.colors.switch.trackFalse, true: theme.colors.switch.trackTrue }}
           thumbColor={theme.colors.switch.thumb}
         />

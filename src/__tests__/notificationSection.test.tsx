@@ -216,9 +216,38 @@ describe('NotificationSection', () => {
     });
 
     expect(mockUpdateNotificationSettings).toHaveBeenCalledWith({
+      ...baseSettings.notifications,
       adhanEnabled: false,
       fullAdhanEnabled: false,
     });
+  });
+
+  it('shows adhan as off when reminders are disabled even if the stored state is inconsistent', async () => {
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'android' });
+
+    const inconsistentSettings: UserSettings = {
+      ...baseSettings,
+      notifications: {
+        ...baseSettings.notifications,
+        enabled: false,
+        adhanEnabled: true,
+        fullAdhanEnabled: true,
+      },
+    };
+
+    const { UNSAFE_getAllByType, queryByText } = render(
+      <NotificationSection
+        userSettings={inconsistentSettings}
+        onNotificationPress={jest.fn()}
+      />
+    );
+
+    await waitFor(() => {
+      expect(UNSAFE_getAllByType(Switch)[0].props.value).toBe(false);
+      expect(UNSAFE_getAllByType(Switch)[0].props.disabled).toBe(true);
+    });
+
+    expect(queryByText('Full Adhan (Locked Screen)')).toBeNull();
   });
 
   it('starts and ends the platform countdown service when the toggle changes', async () => {
