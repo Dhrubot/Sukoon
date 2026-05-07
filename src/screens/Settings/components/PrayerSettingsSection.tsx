@@ -13,6 +13,7 @@ import { useThemedStyles } from '../../../hooks/useThemedStyles';
 import { AppTheme } from '../../../theme';
 import { NotificationToggleButton } from '../../../components/common/NotificationToggleButton';
 import { SegmentedControl } from '../../../components/settings/SegmentedControl';
+import { PrayerTimeAdjustments } from '../../../components/settings/PrayerTimeAdjustments';
 import { withAlpha } from '../../../utils/color';
 
 interface PrayerSettingsSectionProps {
@@ -229,7 +230,7 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
       <SettingSection title="Calculation">
         <SettingRow
           label="Calculation Method"
-          subtitle="Affects Fajr & Isha angles"
+          subtitle={userSettings.calculationMethodManuallySelected ? 'Manually selected' : 'Automatic for your region'}
           value={isUpdatingMethod ? 'Updating...' : getCurrentMethodLabel()}
           onPress={onCalculationMethodPress}
           disabled={isUpdatingMethod}
@@ -278,6 +279,14 @@ export const PrayerSettingsSection: React.FC<PrayerSettingsSectionProps> = ({
             </Text>
           </TouchableOpacity>
         )}
+
+        <View style={styles.adjustmentDivider} />
+        <PrayerTimeAdjustments
+          userSettings={userSettings}
+          todayPrayerTimes={todayPrayerTimes}
+          hasValidLocation={hasValidLocation}
+          onRefreshPrayerTimes={onRefreshPrayerTimes}
+        />
       </SettingSection>
     </>
   );
@@ -442,6 +451,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     color: theme.colors.primary.DEFAULT,
     fontFamily: theme.typography.fontFamily.bodySemibold,
     letterSpacing: 0.2,
+  },
+  adjustmentDivider: {
+    height: 1,
+    backgroundColor: theme.colors.border.primary,
+    marginTop: theme.spacing.lg,
+    marginBottom: theme.spacing.lg,
   },
   refreshingOverlay: {
     flexDirection: 'row' as const,

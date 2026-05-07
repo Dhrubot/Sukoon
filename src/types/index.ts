@@ -20,11 +20,21 @@ export interface PrayerTimes {
   Midnight: string;
 }
 
+export type PrayerTimeQuality =
+  | "provider"
+  | "edge"
+  | "direct"
+  | "calculated_fallback"
+  | "disk_cache"
+  | "hardcoded_defaults"
+  | "invalid";
+
 export interface PrayerTimesWithSun {
   prayerTimes: PrayerTime[];
   sunrise: Date;
   sunset: Date;
   midnight: Date | null;
+  quality?: PrayerTimeQuality;
 }
 
 export interface OptionalPrayerTime {

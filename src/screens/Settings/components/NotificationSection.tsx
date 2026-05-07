@@ -78,8 +78,8 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
   const getNotificationSubtitle = () => {
     if (blockedReason === 'permission_blocked') return 'Blocked in system settings';
     if (blockedReason === 'permission_denied' || permissionStatus !== 'granted') return 'Permission required';
-    if (blockedReason === 'exact_alarm_blocked' || (Platform.OS === 'android' && exactAlarmStatus === 'fallback')) {
-      return 'Blocked in Alarms & reminders';
+    if (Platform.OS === 'android' && exactAlarmStatus === 'fallback' && notifications.fullAdhanEnabled) {
+      return 'Enabled • full Adhan may be delayed';
     }
     if (blockedReason === 'no_valid_location') return 'Location required';
     if (!notifications.enabled) return 'Disabled';
@@ -104,18 +104,6 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
 
   const handlePressRow = () => {
     if (permissionStatus === 'granted') {
-      if (Platform.OS === 'android' && exactAlarmStatus === 'fallback') {
-        Alert.alert(
-          'Enable Exact Alarms',
-          'Android is blocking exact alarm delivery, so prayer reminders may not arrive on time or at all.',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Open Settings', onPress: () => { void openExactAlarmSettings(); } },
-          ]
-        );
-        return;
-      }
-
       onNotificationPress();
       return;
     }
@@ -127,21 +115,8 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
         setExactAlarmStatus(readiness.exactAlarmStatus);
         setBlockedReason(readiness.blockedReason);
         const granted = readiness.permissionStatus === 'granted';
-        const nextExactAlarmStatus = readiness.exactAlarmStatus;
 
         if (granted) {
-          if (Platform.OS === 'android' && nextExactAlarmStatus === 'fallback') {
-            Alert.alert(
-              'Enable Exact Alarms',
-              'Android is blocking exact alarm delivery, so prayer reminders may not arrive on time or at all.',
-              [
-                { text: 'Cancel', style: 'cancel' },
-                { text: 'Open Settings', onPress: () => { void openExactAlarmSettings(); } },
-              ]
-            );
-            return;
-          }
-
           onNotificationPress();
           return;
         }
@@ -211,11 +186,11 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
         subtitle={getNotificationSubtitle()}
         onPress={handlePressRow}
       />
-      {Platform.OS === 'android' && permissionStatus === 'granted' && exactAlarmStatus === 'fallback' && (
+      {Platform.OS === 'android' && permissionStatus === 'granted' && exactAlarmStatus === 'fallback' && notifications.fullAdhanEnabled && (
         <SettingRow
-          label="Alarms & reminders"
-          subtitle="Required for exact prayer-time delivery on Android"
-          value="Blocked"
+          label="Full Adhan exact timing"
+          subtitle="Prayer reminders still work; enable this for precise full-Adhan playback"
+          value="Needs settings"
           onPress={() => { void openExactAlarmSettings(); }}
         />
       )}

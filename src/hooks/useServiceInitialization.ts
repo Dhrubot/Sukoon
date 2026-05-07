@@ -1,5 +1,5 @@
 // src/hooks/useServiceInitialization.ts (FINAL MERGED VERSION)
-import { useEffect, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { InteractionManager } from 'react-native';
 import * as BackgroundTask from 'expo-background-task';
 import * as TaskManager from 'expo-task-manager';
@@ -20,6 +20,7 @@ import PerformanceService from '../services/PerformanceService';
 import logger from '../utils/logger';
 import { SCHEDULING_DEBOUNCE_MS } from '../constants/time';
 import StorageService from '../services/StorageService';
+import { buildNotificationScheduleFingerprint } from '../utils/notificationScheduleFingerprint';
 
 /** If the rescheduler ran within this window, skip the settings-change schedule. */
 const COLD_START_GUARD_MS = 30_000;
@@ -29,6 +30,11 @@ export const useServiceInitialization = () => {
     usePrayerTimes();
 
   const { userSettings, setLocation, updateUserSettings } = useStore();
+  const notificationScheduleFingerprint = useMemo(() => {
+    if (!userSettings) return null;
+    return buildNotificationScheduleFingerprint(userSettings, todayPrayerTimes);
+  }, [userSettings, todayPrayerTimes]);
+  const notificationsEnabled = userSettings?.notifications?.enabled ?? false;
 
   // 🔄 Initialize all services once on mount
   useEffect(() => {
@@ -101,33 +107,36 @@ export const useServiceInitialization = () => {
       return;
     }
 
-    const shouldSchedule =
-      hasValidLocation &&
-      !isLoading &&
-      userSettings?.notifications?.enabled &&
-      todayPrayerTimes.length > 0;
+    if (!hasValidLocation || isLoading || !notificationScheduleFingerprint || todayPrayerTimes.length === 0) return;
 
-    if (shouldSchedule) {
-      if (scheduleTimerRef.current) clearTimeout(scheduleTimerRef.current);
-      scheduleTimerRef.current = setTimeout(() => {
-        // Guard: skip if useNotificationRescheduler ran recently (cold-start window)
-        const lastRun = StorageService.getValue('last_batch_schedule_date');
-        if (lastRun) {
-          const msSinceLastRun = Date.now() - new Date(lastRun).getTime();
-          if (msSinceLastRun < COLD_START_GUARD_MS) {
-            logger.log("📅 Skipping settings-change reschedule — rescheduler ran recently");
-            scheduleTimerRef.current = null;
-            return;
-          }
-        }
-
+    if (scheduleTimerRef.current) clearTimeout(scheduleTimerRef.current);
+    scheduleTimerRef.current = setTimeout(() => {
+      if (!notificationsEnabled) {
         InteractionManager.runAfterInteractions(() => {
-          logger.log("📅 Settings changed — rescheduling prayer notifications...");
-          NotificationService.reconcileScheduling('settings_change');
+          logger.log("📵 Notifications disabled — cancelling Sukoon reminders...");
+          NotificationService.cancelAllSukoonReminderNotifications();
         });
         scheduleTimerRef.current = null;
-      }, SCHEDULING_DEBOUNCE_MS);
-    }
+        return;
+      }
+
+      // Guard: skip if useNotificationRescheduler ran recently (cold-start window)
+      const lastRun = StorageService.getValue('last_batch_schedule_date');
+      if (lastRun) {
+        const msSinceLastRun = Date.now() - new Date(lastRun).getTime();
+        if (msSinceLastRun < COLD_START_GUARD_MS) {
+          logger.log("📅 Skipping settings-change reschedule — rescheduler ran recently");
+          scheduleTimerRef.current = null;
+          return;
+        }
+      }
+
+      InteractionManager.runAfterInteractions(() => {
+        logger.log("📅 Schedule fingerprint changed — rescheduling prayer notifications...");
+        NotificationService.reconcileScheduling('settings_change', { force: true });
+      });
+      scheduleTimerRef.current = null;
+    }, SCHEDULING_DEBOUNCE_MS);
 
     return () => {
       if (scheduleTimerRef.current) clearTimeout(scheduleTimerRef.current);
@@ -135,11 +144,8 @@ export const useServiceInitialization = () => {
   }, [
     hasValidLocation,
     isLoading,
-    userSettings?.notifications?.enabled,
-    userSettings?.notifications?.beforePrayer,
-    userSettings?.notifications?.soundEnabled,
-    userSettings?.notifications?.postPrayerCheck,
-    userSettings?.calculationMethod,
+    notificationScheduleFingerprint,
+    notificationsEnabled,
     todayPrayerTimes.length,
   ]);
 

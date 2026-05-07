@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { format } from 'date-fns';
-import { CalculationMethodType, PrayerTime } from '../../../types';
+import { CalculationMethod, CalculationMethodType, PrayerTime } from '../../../types';
 import { useTheme } from '../../../providers/ThemeProvider';
 import { useThemedStyles } from '../../../hooks/useThemedStyles';
 import { AppTheme } from '../../../theme';
@@ -21,6 +21,11 @@ interface CalculationMethodModalProps {
   calculationMethods: CalculationMethodType[];
   selectedMethod: string;
   onMethodSelect: (method: CalculationMethodType) => void;
+  regionalMethod?: CalculationMethod;
+  regionalMethodLabel?: string;
+  regionalCountry?: string | null;
+  isAutomaticSelected?: boolean;
+  onAutomaticSelect?: () => void;
   
   // 🎯 NEW: Preview functionality
   previewPrayerTimes?: {
@@ -37,6 +42,11 @@ export const CalculationMethodModal: React.FC<CalculationMethodModalProps> = ({
   calculationMethods,
   selectedMethod,
   onMethodSelect,
+  regionalMethod,
+  regionalMethodLabel,
+  regionalCountry,
+  isAutomaticSelected = false,
+  onAutomaticSelect,
   previewPrayerTimes,
   onPreviewMethod,
   isUpdatingMethod = false,
@@ -56,6 +66,12 @@ export const CalculationMethodModal: React.FC<CalculationMethodModalProps> = ({
   const handleMethodSelect = (method: CalculationMethodType) => {
     if (!isUpdatingMethod) {
       onMethodSelect(method);
+    }
+  };
+
+  const handleAutomaticSelect = () => {
+    if (!isUpdatingMethod && onAutomaticSelect) {
+      onAutomaticSelect();
     }
   };
 
@@ -113,56 +129,93 @@ export const CalculationMethodModal: React.FC<CalculationMethodModalProps> = ({
             {/* Method selection */}
             <View style={styles.methodsContainer}>
               <Text style={styles.sectionTitle}>Available Methods</Text>
-              
-              {calculationMethods.map((method) => (
-                <View key={method.value} style={styles.methodWrapper}>
+              {onAutomaticSelect && regionalMethod && (
+                <View style={styles.methodWrapper}>
                   <TouchableOpacity
                     style={[
                       styles.methodOption,
-                      selectedMethod === method.value && styles.methodOptionSelected,
+                      isAutomaticSelected && styles.methodOptionSelected,
                       isUpdatingMethod && styles.methodOptionDisabled,
                     ]}
-                    onPress={() => handleMethodSelect(method)}
+                    onPress={handleAutomaticSelect}
                     disabled={isUpdatingMethod}
                   >
                     <View style={styles.methodInfo}>
                       <Text style={[
                         styles.methodText,
-                        selectedMethod === method.value && styles.methodTextSelected,
+                        isAutomaticSelected && styles.methodTextSelected,
                         isUpdatingMethod && styles.methodTextDisabled,
                       ]}>
-                        {method.label}
+                        Automatic for my region
                       </Text>
-                      
-                      {/* 🎯 NEW: Method descriptions */}
                       <Text style={styles.methodDescription}>
-                        {getMethodDescription(method.value)}
+                        {regionalCountry && regionalCountry !== 'Unknown'
+                          ? `Uses ${regionalMethodLabel || regionalMethod} for ${regionalCountry}`
+                          : `Uses ${regionalMethodLabel || regionalMethod} as the default method`}
                       </Text>
                     </View>
-                    
+
                     <View style={styles.methodActions}>
-                      {selectedMethod === method.value && (
+                      {isAutomaticSelected && (
                         <Text style={styles.checkmark}>✓</Text>
-                      )}
-                      
-                      {/* 🎯 NEW: Preview button */}
-                      {onPreviewMethod && selectedMethod !== method.value && (
-                        <TouchableOpacity
-                          style={styles.previewButton}
-                          onPress={() => handlePreview(method)}
-                          disabled={previewingMethod === method.value || isUpdatingMethod}
-                        >
-                          {previewingMethod === method.value ? (
-                            <ActivityIndicator size="small" color={theme.colors.primary.DEFAULT} />
-                          ) : (
-                            <Text style={styles.previewButtonText}>Preview</Text>
-                          )}
-                        </TouchableOpacity>
                       )}
                     </View>
                   </TouchableOpacity>
                 </View>
-              ))}
+              )}
+              
+              {calculationMethods.map((method) => {
+                const isMethodSelected = selectedMethod === method.value && !isAutomaticSelected;
+                return (
+                  <View key={method.value} style={styles.methodWrapper}>
+                    <TouchableOpacity
+                      style={[
+                        styles.methodOption,
+                        isMethodSelected && styles.methodOptionSelected,
+                        isUpdatingMethod && styles.methodOptionDisabled,
+                      ]}
+                      onPress={() => handleMethodSelect(method)}
+                      disabled={isUpdatingMethod}
+                    >
+                      <View style={styles.methodInfo}>
+                        <Text style={[
+                          styles.methodText,
+                          isMethodSelected && styles.methodTextSelected,
+                          isUpdatingMethod && styles.methodTextDisabled,
+                        ]}>
+                          {method.label}
+                        </Text>
+                        
+                        {/* 🎯 NEW: Method descriptions */}
+                        <Text style={styles.methodDescription}>
+                          {getMethodDescription(method.value)}
+                        </Text>
+                      </View>
+                      
+                      <View style={styles.methodActions}>
+                        {isMethodSelected && (
+                          <Text style={styles.checkmark}>✓</Text>
+                        )}
+                        
+                        {/* 🎯 NEW: Preview button */}
+                        {onPreviewMethod && selectedMethod !== method.value && (
+                          <TouchableOpacity
+                            style={styles.previewButton}
+                            onPress={() => handlePreview(method)}
+                            disabled={previewingMethod === method.value || isUpdatingMethod}
+                          >
+                            {previewingMethod === method.value ? (
+                              <ActivityIndicator size="small" color={theme.colors.primary.DEFAULT} />
+                            ) : (
+                              <Text style={styles.previewButtonText}>Preview</Text>
+                            )}
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                );
+              })}
             </View>
             
             {/* 🎯 NEW: Information section */}

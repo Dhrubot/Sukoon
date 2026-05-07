@@ -2,14 +2,13 @@
 import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import { PermissionsAndroid, Platform } from 'react-native';
-import { PrayerTime, PrayerName, UserSettings, NotificationSchedulingReason } from '../types';
+import { PrayerTime, PrayerName, UserSettings, NotificationSchedulingReason, PrayerTimeQuality } from '../types';
 import StorageService from './StorageService';
 import PrayerTimeService from './PrayerTimeService';
 import ReminderStateService from './ReminderStateService';
 import { format } from 'date-fns';
 import {
   CHANNELS,
-  NOTIFICATION_CHANNEL_VERSION,
   NOTIFICATION_SCHEDULING_DAYS,
   NOTIFICATION_LOWER_TIER_DAYS,
   ANDROID_NOTIFICATION_SCHEDULING_DAYS,
@@ -50,6 +49,7 @@ import {
   prependNotificationName,
 } from '../utils/notificationPersonalization';
 import { scheduleLocalNotificationAsync } from './notifications/scheduleLocalNotification';
+import { buildNotificationScheduleFingerprint } from '../utils/notificationScheduleFingerprint';
 
 // NOTIFICATION_CATEGORIES now imported from ./notifications/NotificationChannels
 
@@ -109,6 +109,9 @@ export interface NotificationReadiness {
   permissionStatus: Notifications.PermissionStatus;
   exactAlarmStatus: ExactAlarmStatus | 'not_applicable';
   isReady: boolean;
+  coreNotificationReady: boolean;
+  exactAlarmReady: boolean;
+  fullAdhanReady: boolean;
   blockedReason: NotificationBlockedReason;
 }
 
@@ -118,7 +121,7 @@ type PrayerTimesFetcher = (params: {
   calculationMethod: UserSettings['calculationMethod'];
   adjustments?: UserSettings['adjustments'];
   asrJuristic?: UserSettings['asrJuristic'];
-}) => Promise<{ prayerTimes: PrayerTime[]; sunrise: Date; sunset: Date; midnight?: Date | null }>;
+}) => Promise<{ prayerTimes: PrayerTime[]; sunrise: Date; sunset: Date; midnight?: Date | null; quality?: PrayerTimeQuality }>;
 
 type NotificationPermissionDetails = {
   status: Notifications.PermissionStatus;
@@ -237,28 +240,6 @@ class NotificationService {
 
   private prayerTimesFetcher: PrayerTimesFetcher | null = null;
 
-  private getScheduleFingerprint(settings: UserSettings): string {
-    const roundCoord = (n: number) => Math.round(n * 10000) / 10000;
-    return JSON.stringify({
-      location: settings.location
-        ? {
-          latitude: roundCoord(settings.location.latitude),
-          longitude: roundCoord(settings.location.longitude),
-        }
-        : null,
-      calculationMethod: settings.calculationMethod,
-      adjustments: settings.adjustments || null,
-      asrJuristic: settings.asrJuristic || null,
-      notifications: settings.notifications,
-      prayerNotifications: settings.prayerNotifications || null,
-      habitBuilder: settings.habitBuilder || null,
-      fullAdhanEnabled: settings.notifications.fullAdhanEnabled || false,
-      schedulingDays: this.getSchedulingDays(),
-      lowerTierDays: this.getLowerTierSchedulingDays(),
-      channelVersion: NOTIFICATION_CHANNEL_VERSION,
-    });
-  }
-
   private isPrayerNotificationType(type: unknown): boolean {
     if (typeof type !== 'string') return false;
     return (
@@ -270,6 +251,18 @@ class NotificationService {
       type === 'snoozed' ||
       type === 'tier2-reminder' ||
       type === 'tier3-warning'
+    );
+  }
+
+  private isSupplementalReminderType(type: unknown): boolean {
+    if (typeof type !== 'string') return false;
+    return (
+      type === 'tahajjud-reminder' ||
+      type === 'mindfulness-reminder' ||
+      type === 'eid' ||
+      type.startsWith('jummah-') ||
+      type.startsWith('ramadan-') ||
+      type.startsWith('mosque_mode')
     );
   }
 
@@ -302,7 +295,13 @@ class NotificationService {
     }
 
     if (toCancel.length > 0) {
-      await Promise.all(toCancel.map(id => Notifications.cancelScheduledNotificationAsync(id)));
+      const results = await Promise.allSettled(
+        toCancel.map(id => Notifications.cancelScheduledNotificationAsync(id))
+      );
+      const failed = results.filter(result => result.status === 'rejected').length;
+      if (failed > 0) {
+        logger.warn(`⚠️ ${failed}/${toCancel.length} stale notification cancellations failed`);
+      }
     }
 
     return toCancel.length;
@@ -528,17 +527,25 @@ class NotificationService {
         : 'permission_denied';
     } else if (!isValidCoordinates(settings.location)) {
       blockedReason = 'no_valid_location';
-    } else if (Platform.OS === 'android') {
-      exactAlarmStatus = await this.getAndroidExactAlarmStatus();
-      if (exactAlarmStatus === 'fallback') {
-        blockedReason = 'exact_alarm_blocked';
-      }
     }
+
+    if (settings?.notifications.enabled && Platform.OS === 'android') {
+      exactAlarmStatus = await this.getAndroidExactAlarmStatus();
+    }
+
+    const exactAlarmReady = exactAlarmStatus !== 'fallback';
+    const coreNotificationReady = blockedReason === null;
+    const fullAdhanReady =
+      coreNotificationReady &&
+      (!settings?.notifications.fullAdhanEnabled || Platform.OS !== 'android' || exactAlarmReady);
 
     const readiness: NotificationReadiness = {
       permissionStatus: permission.status,
       exactAlarmStatus,
-      isReady: blockedReason === null,
+      isReady: coreNotificationReady,
+      coreNotificationReady,
+      exactAlarmReady,
+      fullAdhanReady,
       blockedReason,
     };
 
@@ -1011,7 +1018,7 @@ class NotificationService {
 
       if (!settings.notifications.enabled) {
         logger.log(`📵 Notifications disabled — clearing prayer notifications (${reason})`);
-        await this.cancelAllPrayerNotifications();
+        await this.cancelAllSukoonReminderNotifications();
         StorageService.deleteValue('notification_schedule_fingerprint');
         StorageService.deleteValue('last_batch_schedule_date');
         this.persistScheduleOutcome('blocked', reason, 'notifications_disabled');
@@ -1043,10 +1050,7 @@ class NotificationService {
 
       if (!scheduled) {
         const readiness = await this.getNotificationReadiness(settings);
-        const blockedReason =
-          readiness.blockedReason === 'exact_alarm_blocked'
-            ? 'exact_alarm_fallback'
-            : readiness.blockedReason;
+        const blockedReason = readiness.blockedReason;
         this.persistScheduleOutcome('blocked', reason, blockedReason ?? undefined);
         NotificationTraceService.log('reconcile_completed', {
           reason,
@@ -1099,17 +1103,23 @@ class NotificationService {
     const prayerId = `${prayer.name}-${dateStr}`;
     const prayerIdentifier = `prayer-${prayer.name}-${dateStr}`;
 
-    if (existingIdentifiers.has(prayerIdentifier)) return true; // Already scheduled
+    // Hybrid Audio Logic
+    const audioResolution = resolveMainPrayerNotificationAudio(Platform.OS, notifications);
+    const soundAsset = audioResolution.notificationSound;
+    const androidChannel = audioResolution.androidChannelId;
+
+    if (existingIdentifiers.has(prayerIdentifier)) {
+      if (audioResolution.shouldScheduleNativeFullAdhan) {
+        const displayName = PrayerTimeService.getPrayerDisplayName(prayer.name, 'en', prayer.time);
+        await scheduleFullAdhan(prayer.time, prayer.name, displayName);
+      }
+      return true; // Already scheduled locally; native full-Adhan may still need repair.
+    }
 
     if (Platform.OS === 'ios' && iosCounter && iosCounter.count >= IOS_NOTIFICATION_CAP) {
       logger.log(`🚫 iOS cap reached (${iosCounter.count}), skipping main ${prayer.name}`);
       return false;
     }
-
-    // Hybrid Audio Logic
-    const audioResolution = resolveMainPrayerNotificationAudio(Platform.OS, notifications);
-    const soundAsset = audioResolution.notificationSound;
-    const androidChannel = audioResolution.androidChannelId;
 
     const mainContent = this.getPrayerTimeContent(prayerName, prayer.name, settings, prayer.time);
 
@@ -1487,6 +1497,27 @@ class NotificationService {
     logger.log(`🗑️ Cancelled ${prayerNotifications.length} prayer notifications`);
   }
 
+  async cancelAllSukoonReminderNotifications() {
+    const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+    const toCancel = scheduled.filter((notif) => {
+      const data = notif.content.data as NotificationData | undefined;
+      return this.isPrayerNotificationType(data?.type) || this.isSupplementalReminderType(data?.type);
+    });
+
+    if (toCancel.length > 0) {
+      const results = await Promise.allSettled(
+        toCancel.map(n => Notifications.cancelScheduledNotificationAsync(n.identifier))
+      );
+      const failed = results.filter(r => r.status === 'rejected').length;
+      if (failed > 0) {
+        logger.warn(`⚠️ ${failed}/${toCancel.length} Sukoon reminder cancellations failed`);
+      }
+    }
+
+    await cancelAllFullAdhans();
+    logger.log(`🗑️ Cancelled ${toCancel.length} Sukoon reminder notifications`);
+  }
+
   /**
 * Cancel all notifications for a specific prayer reminder flow
 * (Tier 1, Tier 2, Tier 3, and any snoozes)
@@ -1533,7 +1564,7 @@ class NotificationService {
     if (updatedSettings.notifications.enabled) {
       await this.reconcileScheduling('settings_change');
     } else {
-      await this.cancelAllPrayerNotifications();
+      await this.cancelAllSukoonReminderNotifications();
     }
   }
 
@@ -1600,35 +1631,7 @@ class NotificationService {
         return false;
       }
 
-      const fingerprint = this.getScheduleFingerprint(settings);
       const previousFingerprint = StorageService.getValue('notification_schedule_fingerprint');
-      const shouldRebuild = options?.forceRebuild || previousFingerprint !== fingerprint;
-
-      if (shouldRebuild) {
-        await this.cancelAllPrayerNotifications();
-        // Fingerprint saved AFTER all passes complete (see below)
-      }
-
-      // Get ALL scheduled notifications once for the entire scheduling cycle
-      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
-
-      // Reuse cached list to avoid a second native bridge call
-      await this.cleanupPastPrayerNotifications(new Date(), scheduled);
-
-      // Clean up stale reminder states on every reschedule (not just cold start)
-      ReminderStateService.cleanupOldStates();
-      const existingIdentifiers = new Set<string>();
-      for (const notif of scheduled) {
-        const data = (notif.content?.data || {}) as Record<string, unknown>;
-        if (data?.type && typeof data.type === 'string' && data.type.startsWith('mosque_mode')) continue;
-        if (!this.isPrayerNotificationType(data?.type)) continue;
-        existingIdentifiers.add(notif.identifier);
-      }
-
-      // iOS: count ALL scheduled notifications (global budget, not just prayer types)
-      const iosCounter = Platform.OS === 'ios'
-        ? { count: scheduled.length }
-        : undefined;
 
       // Single timestamp capture — prevents drift across async scheduling passes
       const now = captureNow();
@@ -1665,7 +1668,30 @@ class NotificationService {
             adjustments: settings.adjustments,
             asrJuristic: settings.asrJuristic,
           });
-          allDays.push({ prayers: prayerData.prayerTimes, sunrise: prayerData.sunrise });
+          const quality =
+            prayerData.quality ??
+            (PrayerTimeService as unknown as { lastPrayerTimeQuality?: string }).lastPrayerTimeQuality;
+          if (quality === 'hardcoded_defaults' || quality === 'invalid') {
+            throw new Error(`Unsafe prayer time quality for notification scheduling: ${quality}`);
+          }
+          if (quality === 'calculated_fallback') {
+            NotificationTraceService.log('schedule_using_degraded_prayer_times', {
+              reason: options?.reason || 'unspecified',
+              date: date.toISOString(),
+            });
+          }
+
+          const validPrayers = prayerData.prayerTimes.filter(
+            (prayer) => prayer.time instanceof Date && !Number.isNaN(prayer.time.getTime())
+          );
+          if (validPrayers.length !== prayerData.prayerTimes.length) {
+            throw new Error('Invalid prayer Date returned by prayer time fetcher');
+          }
+          if (!(prayerData.sunrise instanceof Date) || Number.isNaN(prayerData.sunrise.getTime())) {
+            throw new Error('Invalid sunrise Date returned by prayer time fetcher');
+          }
+
+          allDays.push({ prayers: validPrayers, sunrise: prayerData.sunrise });
         } catch (error) {
           logger.error(`❌ Failed to fetch day ${i}:`, error);
           allDays.push({ prayers: [], sunrise: new Date() });
@@ -1674,6 +1700,38 @@ class NotificationService {
         this.schedulingProgress = (i + 1) / (schedulingDays * 2);
         onProgress?.(i + 1, schedulingDays);
       }
+
+      const fingerprint = buildNotificationScheduleFingerprint(
+        settings,
+        allDays.flatMap((day) => day.prayers)
+      );
+      const shouldRebuild = options?.forceRebuild || previousFingerprint !== fingerprint;
+
+      if (shouldRebuild) {
+        await this.cancelAllPrayerNotifications();
+        // Fingerprint saved AFTER all passes complete (see below)
+      }
+
+      // Get ALL scheduled notifications once for the entire scheduling cycle
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+
+      // Reuse cached list to avoid a second native bridge call
+      await this.cleanupPastPrayerNotifications(new Date(), scheduled);
+
+      // Clean up stale reminder states on every reschedule (not just cold start)
+      ReminderStateService.cleanupOldStates();
+      const existingIdentifiers = new Set<string>();
+      for (const notif of scheduled) {
+        const data = (notif.content?.data || {}) as Record<string, unknown>;
+        if (data?.type && typeof data.type === 'string' && data.type.startsWith('mosque_mode')) continue;
+        if (!this.isPrayerNotificationType(data?.type)) continue;
+        existingIdentifiers.add(notif.identifier);
+      }
+
+      // iOS: count ALL scheduled notifications (global budget, not just prayer types)
+      const iosCounter = Platform.OS === 'ios'
+        ? { count: scheduled.length }
+        : undefined;
 
       // Initialize reminder states for all prayers (needed for Tier 2/3)
       for (const { prayers } of allDays) {
@@ -1690,37 +1748,43 @@ class NotificationService {
 
       // PASS 1: Tier 1 (Main Adhan)
       logger.log(`📢 Pass 1: Scheduling Tier 1 (Adhan) for ${schedulingDays} days...`);
-      const pass1Promises: Promise<unknown>[] = [];
+      let mainPrayerScheduledOrRepairedCount = 0;
       for (let dayIdx = 0; dayIdx < schedulingDays && dayIdx < allDays.length; dayIdx++) {
         const { prayers } = allDays[dayIdx];
         for (const prayer of prayers) {
           if (prayer.time > now) {
-            pass1Promises.push(this.scheduleMainPrayerNotification(prayer, settings, existingIdentifiers, iosCounter));
+            const scheduledOrRepaired = await this.scheduleMainPrayerNotification(prayer, settings, existingIdentifiers, iosCounter);
+            if (scheduledOrRepaired) mainPrayerScheduledOrRepairedCount++;
           }
         }
       }
-      await Promise.all(pass1Promises);
       // Yield to JS thread between passes to avoid blocking UI
       await new Promise(resolve => setTimeout(resolve, 0));
+
+      if (mainPrayerScheduledOrRepairedCount === 0) {
+        logger.error('❌ No future main prayer notifications were scheduled or repaired');
+        NotificationTraceService.log('schedule_failed_no_main_prayers', {
+          reason: options?.reason || 'unspecified',
+        });
+        this.persistScheduleOutcome('failed', options?.reason || 'background_refresh');
+        return false;
+      }
 
       // PASS 2: Pre-prayer
       const lowerDays = Math.min(lowerTierDays, allDays.length);
       logger.log(`🔔 Pass 2: Scheduling pre-prayer for ${lowerDays} days...`);
-      const pass2Promises: Promise<unknown>[] = [];
       for (let dayIdx = 0; dayIdx < lowerDays; dayIdx++) {
         const { prayers } = allDays[dayIdx];
         for (const prayer of prayers) {
           if (prayer.time > now) {
-            pass2Promises.push(this.schedulePrePrayerNotification(prayer, settings, existingIdentifiers, iosCounter));
+            await this.schedulePrePrayerNotification(prayer, settings, existingIdentifiers, iosCounter);
           }
         }
       }
-      await Promise.all(pass2Promises);
       await new Promise(resolve => setTimeout(resolve, 0));
 
       // PASS 3: Tier 3 (Grace period warnings) — 2 days
       if (settings.habitBuilder?.enabled) {
-        const pass3Promises: Promise<unknown>[] = [];
         logger.log(`⚠️ Pass 3: Scheduling Tier 3 (grace warnings) for ${lowerDays} days...`);
         for (let dayIdx = 0; dayIdx < lowerDays; dayIdx++) {
           const { prayers, sunrise } = allDays[dayIdx];
@@ -1733,16 +1797,14 @@ class NotificationService {
             const prayerId = `${prayer.name}-${dateStr}`;
             const deadline = prayer.name === 'Fajr' && sunrise ? sunrise : nextPrayer?.time || undefined;
 
-            pass3Promises.push(scheduleTier3GracePeriodWarning(prayer, nextPrayer, prayerId, settings, existingIdentifiers, deadline, iosCounter));
+            await scheduleTier3GracePeriodWarning(prayer, nextPrayer, prayerId, settings, existingIdentifiers, deadline, iosCounter);
           }
         }
-        await Promise.all(pass3Promises);
         await new Promise(resolve => setTimeout(resolve, 0));
       }
 
       // PASS 4: Tier 2 (Persistent reminders) — 2 days, fills remaining budget
       if (settings.habitBuilder?.enabled) {
-        const pass4Promises: Promise<unknown>[] = [];
         logger.log(`🏗️ Pass 4: Scheduling Tier 2 (reminders) for ${lowerDays} days...`);
         for (let dayIdx = 0; dayIdx < lowerDays; dayIdx++) {
           const { prayers, sunrise } = allDays[dayIdx];
@@ -1755,26 +1817,23 @@ class NotificationService {
             const prayerId = `${prayer.name}-${dateStr}`;
             const deadline = prayer.name === 'Fajr' && sunrise ? sunrise : nextPrayer?.time || undefined;
 
-            pass4Promises.push(scheduleTier2PersistentReminders(prayer, prayerId, settings, existingIdentifiers, deadline, iosCounter));
+            await scheduleTier2PersistentReminders(prayer, prayerId, settings, existingIdentifiers, deadline, iosCounter);
           }
         }
-        await Promise.all(pass4Promises);
         await new Promise(resolve => setTimeout(resolve, 0));
       }
 
       // PASS 5: Legacy post-prayer check — 2 days (for users without Habit Builder)
       if (!settings.habitBuilder?.enabled && settings.notifications.postPrayerCheck) {
-        const pass5Promises: Promise<unknown>[] = [];
         for (let dayIdx = 0; dayIdx < lowerDays; dayIdx++) {
           const { prayers, sunrise } = allDays[dayIdx];
           for (let j = 0; j < prayers.length; j++) {
             const prayer = prayers[j];
             const nextPrayer = prayers[j + 1] || null;
             if (prayer.time <= now) continue;
-            pass5Promises.push(this.scheduleLegacyPostPrayerCheck(prayer, nextPrayer, sunrise, settings, existingIdentifiers, iosCounter));
+            await this.scheduleLegacyPostPrayerCheck(prayer, nextPrayer, sunrise, settings, existingIdentifiers, iosCounter);
           }
         }
-        await Promise.all(pass5Promises);
         await new Promise(resolve => setTimeout(resolve, 0));
       }
 

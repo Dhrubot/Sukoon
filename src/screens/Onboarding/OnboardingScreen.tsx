@@ -48,6 +48,9 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
     permissionStatus: 'undetermined' as NotificationReadiness['permissionStatus'],
     exactAlarmStatus: 'not_applicable',
     isReady: false,
+    coreNotificationReady: false,
+    exactAlarmReady: true,
+    fullAdhanReady: true,
     blockedReason: null,
   });
   const [isRequestingNotifications, setIsRequestingNotifications] = useState(false);
@@ -140,7 +143,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
       setNotificationReadiness(readiness);
       const granted = readiness.permissionStatus === 'granted';
       setWantsPrayerReminders(granted);
-      if (granted && readiness.blockedReason !== 'exact_alarm_blocked') {
+      if (granted && readiness.coreNotificationReady) {
         setCurrentStep('done');
       }
     } catch (error) {

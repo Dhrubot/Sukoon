@@ -3,15 +3,24 @@
 // orchestration produces valid notifications within iOS budget constraints.
 
 import { PrayerTime, UserSettings } from '../types';
-import { CHANNELS, IOS_NOTIFICATION_CAP, SOUNDS } from '../constants/NotificationConstants';
+import {
+  ANDROID_NOTIFICATION_SCHEDULING_DAYS,
+  CHANNELS,
+  IOS_NOTIFICATION_CAP,
+  SOUNDS,
+} from '../constants/NotificationConstants';
 import { Platform } from 'react-native';
+import { format, addDays } from 'date-fns';
+import { buildNotificationScheduleFingerprint } from '../utils/notificationScheduleFingerprint';
 
 // ── Track all scheduled notifications ────────────────────────────────────────
 const mockScheduledNotifications: Array<{
   identifier: string;
-  content: { title: string; body: string; data: Record<string, unknown> };
+  content: { title: string; body: string; data: Record<string, unknown>; sound?: string };
   trigger: unknown;
 }> = [];
+let mockPrayerTimeQuality = 'provider';
+let mockDelayScheduling = false;
 
 // ── Mock expo-notifications ──────────────────────────────────────────────────
 jest.mock('expo-notifications', () => ({
@@ -33,14 +42,17 @@ jest.mock('expo-notifications', () => ({
     }
     return Promise.resolve();
   }),
-  scheduleNotificationAsync: jest.fn((input: any) => {
+  scheduleNotificationAsync: jest.fn(async (input: any) => {
+    if (mockDelayScheduling) {
+      await Promise.resolve();
+    }
     const id = input.identifier || `notif-${mockScheduledNotifications.length}`;
     mockScheduledNotifications.push({
       identifier: id,
       content: input.content,
       trigger: input.trigger,
     });
-    return Promise.resolve(id);
+    return id;
   }),
   setNotificationHandler: jest.fn(),
   setNotificationCategoryAsync: jest.fn(() => Promise.resolve()),
@@ -144,6 +156,9 @@ jest.mock('../services/PrayerTimeService', () => ({
       Promise.resolve(mockBuildPrayerTimesForDate(date))
     ),
     getPrayerDisplayName: jest.fn((name: string) => name),
+    get lastPrayerTimeQuality() {
+      return mockPrayerTimeQuality;
+    },
   },
 }));
 
@@ -231,9 +246,15 @@ describe('scheduleExtendedNotifications integration', () => {
     mockTestSettings.notifications.beforePrayer = 10;
     mockTestSettings.notifications.postPrayerCheck = false;
     mockTestSettings.notifications.intensity = 'balanced';
+    mockTestSettings.prayerNotifications = { Fajr: true, Dhuhr: true, Asr: true, Maghrib: true, Isha: true };
     mockTestSettings.habitBuilder.enabled = true;
     mockTestSettings.habitBuilder.persistentReminders.enabled = true;
     mockTestSettings.habitBuilder.gracePeriodWarning.enabled = true;
+    mockPrayerTimeQuality = 'provider';
+    mockDelayScheduling = false;
+    const HabitBuilder = require('../services/notifications/HabitBuilderNotifications');
+    HabitBuilder.scheduleTier2PersistentReminders.mockImplementation(() => Promise.resolve());
+    HabitBuilder.scheduleTier3GracePeriodWarning.mockImplementation(() => Promise.resolve());
     Object.defineProperty(Platform, 'OS', { configurable: true, value: originalPlatform });
   });
 
@@ -387,6 +408,76 @@ describe('scheduleExtendedNotifications integration', () => {
     expect(FullAdhanScheduler.scheduleFullAdhan).not.toHaveBeenCalled();
   });
 
+  it('keeps iOS prayer notifications silent when sound and adhan are disabled', async () => {
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'ios' });
+    mockTestSettings.notifications.adhanEnabled = false;
+    mockTestSettings.notifications.soundEnabled = false;
+
+    await NotificationService.scheduleExtendedNotifications();
+
+    const mainPrayerNotification = mockScheduledNotifications.find(
+      (notification) => notification.content?.data?.type === 'prayer-time'
+    );
+
+    expect(mainPrayerNotification).toBeTruthy();
+    expect(mainPrayerNotification?.content.sound).toBeUndefined();
+  });
+
+  it('reserves iOS notification budget sequentially even when scheduling resolves later', async () => {
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'ios' });
+    mockDelayScheduling = true;
+    for (let i = 0; i < IOS_NOTIFICATION_CAP - 1; i++) {
+      mockScheduledNotifications.push({
+        identifier: `existing-${i}`,
+        content: { title: 'Existing', body: 'Existing', data: { type: 'external' } },
+        trigger: null,
+      });
+    }
+
+    const HabitBuilder = require('../services/notifications/HabitBuilderNotifications');
+    const actualHabitBuilder = jest.requireActual('../services/notifications/HabitBuilderNotifications');
+    HabitBuilder.scheduleTier2PersistentReminders.mockImplementation(actualHabitBuilder.scheduleTier2PersistentReminders);
+    HabitBuilder.scheduleTier3GracePeriodWarning.mockImplementation(actualHabitBuilder.scheduleTier3GracePeriodWarning);
+
+    await NotificationService.scheduleExtendedNotifications();
+
+    const sukoonNotifications = mockScheduledNotifications.filter(
+      (notification) => notification.content?.data?.type !== 'external'
+    );
+    expect(mockScheduledNotifications.length).toBe(IOS_NOTIFICATION_CAP);
+    expect(sukoonNotifications).toHaveLength(1);
+    expect(sukoonNotifications[0].content.data.type).toBe('prayer-time');
+  });
+
+  it('repairs Android native full-Adhan alarms even when the local Expo notification already exists', async () => {
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'android' });
+    mockTestSettings.notifications.fullAdhanEnabled = true;
+
+    const now = new Date();
+    const allPrayers: PrayerTime[] = [];
+    for (let day = 0; day < ANDROID_NOTIFICATION_SCHEDULING_DAYS; day++) {
+      const prayerData = mockBuildPrayerTimesForDate(addDays(now, day));
+      allPrayers.push(...prayerData.prayerTimes);
+    }
+    mockStorageData.notification_schedule_fingerprint = buildNotificationScheduleFingerprint(mockTestSettings, allPrayers);
+
+    const tomorrowFajr = mockBuildPrayerTimesForDate(addDays(now, 1)).prayerTimes[0];
+    mockScheduledNotifications.push({
+      identifier: `prayer-Fajr-${format(tomorrowFajr.time, 'yyyy-MM-dd')}`,
+      content: { title: 'Fajr', body: 'Fajr', data: { type: 'prayer-time', prayer: 'Fajr' } },
+      trigger: { type: 'date', date: tomorrowFajr.time },
+    });
+
+    await NotificationService.scheduleExtendedNotifications();
+
+    const FullAdhanScheduler = require('../services/notifications/FullAdhanScheduler');
+    expect(FullAdhanScheduler.scheduleFullAdhan).toHaveBeenCalledWith(
+      tomorrowFajr.time,
+      'Fajr',
+      'Fajr'
+    );
+  });
+
   it('falls back to the default notification sound when adhan audio is disabled', async () => {
     Object.defineProperty(Platform, 'OS', { configurable: true, value: 'android' });
     mockTestSettings.notifications.adhanEnabled = false;
@@ -420,5 +511,18 @@ describe('scheduleExtendedNotifications integration', () => {
 
     expect(prePrayer).toHaveLength(0);
     expect(prayerTime.length).toBeGreaterThan(0);
+  });
+
+  it('fails loudly instead of scheduling keepalive-only batches from unsafe prayer-time sources', async () => {
+    mockPrayerTimeQuality = 'hardcoded_defaults';
+
+    await expect(NotificationService.scheduleExtendedNotifications()).resolves.toBe(false);
+
+    expect(mockScheduledNotifications).toHaveLength(0);
+    const StorageService = require('../services/StorageService').default;
+    expect(StorageService.setValue).toHaveBeenCalledWith(
+      'notification_last_schedule_status',
+      'failed'
+    );
   });
 });

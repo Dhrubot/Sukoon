@@ -1,5 +1,5 @@
 // src/screens/Settings/SettingsScreen.tsx (ENHANCED)
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -31,8 +31,10 @@ import { CalculationMethodModal, NotificationModal, HijriAdjustmentModal } from 
 
 // Services
 import NotificationService from '../../services/NotificationService';
+import JummahNotificationService from '../../services/JummahNotificationService';
 import { getCachedHijriDate } from '../../utils/ramadan';
 import { NotificationDebugScreen } from '../Debug/NotificationDebugScreen';
+import { resolveCalculationMethodForCountry } from '../../utils/calculationMethodByRegion';
 
 type SettingsModalKey = 'calculation' | 'hijri' | 'notification' | 'location' | null;
 const SHOW_APP_DATA_SECTION = false;
@@ -84,10 +86,20 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
 
     // 🎯 NEW: Enhanced actions
     previewCalculationMethod,
+    handleAutomaticCalculationMethod,
     testPrayerCalculations,
     showDebugInfo,
     refreshPrayerTimes,
   } = useSettingsManager();
+
+  const regionalMethod = useMemo(
+    () => resolveCalculationMethodForCountry(userSettings?.location?.country),
+    [userSettings?.location?.country]
+  );
+  const regionalMethodLabel = useMemo(
+    () => calculationMethods.find((method) => method.value === regionalMethod)?.label || regionalMethod,
+    [calculationMethods, regionalMethod]
+  );
 
   if (!userSettings) {
     return (
@@ -153,12 +165,19 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   };
 
   // Jumu'ah toggle handler
-  const handleToggleJummah = () => {
+  const handleToggleJummah = async () => {
     const isEnabled = userSettings.jummahReminders?.enabled !== false;
-    setUserSettings({
+    const updated = {
       ...userSettings,
       jummahReminders: { enabled: !isEnabled },
-    });
+    };
+    setUserSettings(updated);
+
+    if (isEnabled) {
+      await JummahNotificationService.cancelExisting();
+    } else {
+      await JummahNotificationService.scheduleJummahNotifications(todayPrayerTimes);
+    }
   };
 
   return (
@@ -287,6 +306,11 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         calculationMethods={calculationMethods}
         selectedMethod={userSettings.calculationMethod}
         onMethodSelect={handleCalculationMethodChange}
+        regionalMethod={regionalMethod}
+        regionalMethodLabel={regionalMethodLabel}
+        regionalCountry={userSettings.location?.country}
+        isAutomaticSelected={!userSettings.calculationMethodManuallySelected}
+        onAutomaticSelect={handleAutomaticCalculationMethod}
 
         // Enhanced props
         previewPrayerTimes={previewPrayerTimes}

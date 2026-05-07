@@ -101,6 +101,62 @@ describe('PrayerTimeService.getPrayerTimesList', () => {
     expect(adjustedFajr.time.getTime() - baseFajr.time.getTime()).toBe(5 * 60000);
   });
 
+  it('rejects malformed provider times and marks the result as a calculated fallback', async () => {
+    (global.fetch as jest.Mock) = jest.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            ...MOCK_API_RESPONSE,
+            data: {
+              ...MOCK_API_RESPONSE.data,
+              timings: {
+                ...MOCK_API_RESPONSE.data.timings,
+                Fajr: '25:99',
+              },
+            },
+          }),
+      })
+    );
+
+    const result = await PrayerTimeService.getPrayerTimesList(dhaka, testDate, 'MWL');
+
+    expect(result.prayerTimes).toHaveLength(5);
+    expect(PrayerTimeService.lastPrayerTimeQuality).toBe('calculated_fallback');
+    expect(PrayerTimeService.usingHardcodedDefaults).toBe(false);
+  });
+
+  it('rejects all-zero provider payloads before any notification scheduler can trust them', async () => {
+    (global.fetch as jest.Mock) = jest.fn(() =>
+      Promise.resolve({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            ...MOCK_API_RESPONSE,
+            data: {
+              ...MOCK_API_RESPONSE.data,
+              timings: {
+                Fajr: '00:00',
+                Sunrise: '00:00',
+                Dhuhr: '00:00',
+                Asr: '00:00',
+                Sunset: '00:00',
+                Maghrib: '00:00',
+                Isha: '00:00',
+                Midnight: '00:00',
+              },
+            },
+          }),
+      })
+    );
+
+    const result = await PrayerTimeService.getPrayerTimesList(dhaka, testDate, 'MWL');
+
+    expect(result.prayerTimes).toHaveLength(5);
+    expect(PrayerTimeService.lastPrayerTimeQuality).toBe('calculated_fallback');
+    expect(PrayerTimeService.usingHardcodedDefaults).toBe(false);
+  });
+
   it("renders Friday Dhuhr as Jumu'ah when given the prayer date", () => {
     expect(
       PrayerTimeService.getPrayerDisplayName('Dhuhr', 'en', new Date('2026-03-20T12:05:00.000Z'))

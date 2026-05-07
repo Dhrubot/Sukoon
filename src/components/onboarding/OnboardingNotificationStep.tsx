@@ -26,15 +26,13 @@ export const OnboardingNotificationStep: React.FC<OnboardingNotificationStepProp
   isRequesting = false,
 }) => {
   const styles = useThemedStyles(createStyles);
-  const hasBlockedState = blockedReason === 'permission_blocked' || blockedReason === 'exact_alarm_blocked';
+  const hasBlockedState = blockedReason === 'permission_blocked';
   const statusText =
     blockedReason === 'permission_blocked'
       ? 'Android is blocking notification access. Open Settings and allow notifications for Sukoon.'
       : blockedReason === 'permission_denied'
         ? 'Notification permission is still off. Enable it to receive prayer reminders.'
-        : blockedReason === 'exact_alarm_blocked'
-          ? 'Notifications are allowed, but Android is blocking Alarms & reminders. Prayer alerts may arrive late or not at all.'
-          : permissionStatus === 'granted'
+        : permissionStatus === 'granted'
             ? 'Notifications are enabled.'
             : null;
 
@@ -70,7 +68,7 @@ export const OnboardingNotificationStep: React.FC<OnboardingNotificationStepProp
         {statusText ? (
           <View style={styles.statusCard}>
             <Text style={styles.statusTitle}>
-              {permissionStatus === 'granted' && blockedReason !== 'exact_alarm_blocked'
+              {permissionStatus === 'granted' && blockedReason === null
                 ? 'READY'
                 : 'ACTION NEEDED'}
             </Text>

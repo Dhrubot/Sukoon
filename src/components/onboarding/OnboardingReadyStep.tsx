@@ -44,6 +44,9 @@ export const OnboardingReadyStep: React.FC<OnboardingReadyStepProps> = ({
   const regionalMethod = resolveCalculationMethodForCountry(locationData?.country);
   const methodLabel =
     CALCULATION_METHODS.find((method) => method.value === regionalMethod)?.label || regionalMethod;
+  const methodSummary = locationData?.country
+    ? `Using ${methodLabel} for ${locationData.country}`
+    : `Using ${methodLabel} as the default method`;
   const asrOptions = [
     {
       value: 'Standard',
@@ -109,7 +112,7 @@ export const OnboardingReadyStep: React.FC<OnboardingReadyStepProps> = ({
         <View style={styles.divider} />
         <SummaryRow
           label="Prayer method"
-          value={locationData ? methodLabel : 'Muslim World League'}
+          value={methodSummary}
         />
         <View style={styles.divider} />
         <SummaryRow

@@ -25,7 +25,7 @@ describe('scheduleLocalNotificationAsync', () => {
     };
   }
 
-  it('adds the default sound on iOS when none is provided', async () => {
+  it('preserves silent iOS notifications when no sound is provided', async () => {
     const { scheduleLocalNotificationAsync, mocks } = loadModule('ios');
 
     await scheduleLocalNotificationAsync({
@@ -37,11 +37,10 @@ describe('scheduleLocalNotificationAsync', () => {
     });
 
     expect(mocks.scheduleNotificationAsync).toHaveBeenCalledWith({
-      content: expect.objectContaining({
+      content: {
         title: 'Reminder',
         body: 'Prayer time',
-        sound: 'default',
-      }),
+      },
       trigger: null,
     });
   });

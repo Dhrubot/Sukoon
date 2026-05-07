@@ -8,6 +8,7 @@ import {
   PrayerTimes,
   PrayerTime,
   PrayerName,
+  PrayerTimeQuality,
   Coordinates,
   CalculationMethod,
   AladhanResponse,
@@ -67,7 +68,7 @@ export class PrayerTimeService {
   private _lastFetchWasFallback: boolean = false;
   private _usingHardcodedDefaults: boolean = false;
   private _highLatitudeWarning: boolean = false;
-  private _lastProviderSource: 'edge' | 'direct' | 'memory_cache' | 'calculated_fallback' | 'disk_cache' | 'hardcoded_defaults' | null = null;
+  private _lastProviderSource: PrayerTimeQuality | 'memory_cache' | null = null;
 
   get lastFetchWasFallback(): boolean {
     return this._lastFetchWasFallback;
@@ -83,6 +84,11 @@ export class PrayerTimeService {
 
   get lastProviderSource(): string | null {
     return this._lastProviderSource;
+  }
+
+  get lastPrayerTimeQuality(): PrayerTimeQuality {
+    if (this._lastProviderSource === 'memory_cache') return 'provider';
+    return this._lastProviderSource ?? 'invalid';
   }
 
   static getInstance(): PrayerTimeService {
@@ -141,7 +147,8 @@ export class PrayerTimeService {
       return this.calculatePrayerTimes(
         coordinates || { latitude: 0, longitude: 0 },
         date,
-        method
+        method,
+        asrJuristic
       );
     }
 
@@ -170,7 +177,7 @@ export class PrayerTimeService {
           asrJuristic
         );
 
-        const times = apiResult.times;
+        const times = this.normalizeProviderTimes(apiResult.times);
 
         const requiredTimes = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
         const missingTimes = requiredTimes.filter(
@@ -178,9 +185,7 @@ export class PrayerTimeService {
         );
 
         if (missingTimes.length > 0) {
-          logger.warn(
-            `Missing prayer times after normalization: ${missingTimes.join(", ")}`
-          );
+          throw new Error(`Missing prayer times after normalization: ${missingTimes.join(", ")}`);
         }
 
         this._lastFetchWasFallback = false;
@@ -214,7 +219,7 @@ export class PrayerTimeService {
         // Return calculated times as fallback
         this._lastFetchWasFallback = true;
         this._lastProviderSource = 'calculated_fallback';
-        return this.calculatePrayerTimes(coordinates, date, method);
+        return this.calculatePrayerTimes(coordinates, date, method, asrJuristic);
       } finally {
         this.inFlightFetches.delete(cacheKey);
       }
@@ -261,6 +266,49 @@ export class PrayerTimeService {
       );
       return this.fetchPrayerTimesFromAladhan(coordinates, date, method, asrJuristic);
     }
+  }
+
+  private parseTimeStringParts(timeStr: string | undefined): { hours: number; minutes: number } | null {
+    if (!timeStr || typeof timeStr !== 'string') return null;
+    const match = timeStr.trim().match(/^(\d{1,2}):(\d{2})(?:\b|[^0-9])/);
+    if (!match) return null;
+
+    const hours = Number(match[1]);
+    const minutes = Number(match[2]);
+    if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return null;
+    if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
+    return { hours, minutes };
+  }
+
+  private normalizeTimeString(timeStr: string | undefined, label: string): string {
+    const parts = this.parseTimeStringParts(timeStr);
+    if (!parts) {
+      throw new Error(`Invalid ${label} prayer time: ${String(timeStr)}`);
+    }
+
+    return `${parts.hours.toString().padStart(2, '0')}:${parts.minutes
+      .toString()
+      .padStart(2, '0')}`;
+  }
+
+  private normalizeProviderTimes(times: PrayerTimes): PrayerTimes {
+    const normalized: PrayerTimes = {
+      Fajr: this.normalizeTimeString(times.Fajr, 'Fajr'),
+      Sunrise: this.normalizeTimeString(times.Sunrise, 'Sunrise'),
+      Dhuhr: this.normalizeTimeString(times.Dhuhr, 'Dhuhr'),
+      Asr: this.normalizeTimeString(times.Asr, 'Asr'),
+      Sunset: this.normalizeTimeString(times.Sunset, 'Sunset'),
+      Maghrib: this.normalizeTimeString(times.Maghrib, 'Maghrib'),
+      Isha: this.normalizeTimeString(times.Isha, 'Isha'),
+      Midnight: this.normalizeTimeString(times.Midnight, 'Midnight'),
+    };
+
+    const fardTimes = [normalized.Fajr, normalized.Dhuhr, normalized.Asr, normalized.Maghrib, normalized.Isha];
+    if (fardTimes.every((time) => time === '00:00')) {
+      throw new Error('Invalid provider prayer times: all fard prayers are midnight');
+    }
+
+    return normalized;
   }
 
   private async fetchPrayerTimesFromAladhan(
@@ -325,23 +373,31 @@ export class PrayerTimeService {
     method: CalculationMethod = "MWL",
     adjustments?: Record<PrayerName, number>,
     asrJuristic: "Standard" | "Hanafi" = "Standard"
-  ): Promise<{ prayerTimes: PrayerTime[]; sunrise: Date; sunset: Date; midnight: Date | null }> {
+  ): Promise<{ prayerTimes: PrayerTime[]; sunrise: Date; sunset: Date; midnight: Date | null; quality: PrayerTimeQuality }> {
     // CENTRAL GUARD - Stop invalid calls immediately
     if (!isValidCoordinates(coordinates)) {
       logger.log(
         "🛑 BLOCKED: Invalid coordinates, returning empty prayer times"
       );
-      return { prayerTimes: [], sunrise: new Date(), sunset: new Date(), midnight: null };
+      return { prayerTimes: [], sunrise: new Date(), sunset: new Date(), midnight: null, quality: 'invalid' };
     }
 
     try {
       const times = await this.fetchPrayerTimes(coordinates, date, method, asrJuristic);
+      const quality = this.lastPrayerTimeQuality;
       const now = new Date();
 
       // Parse sunrise, sunset, and midnight
       const sunrise = this.parseTimeToDate(times.Sunrise, date);
       const sunset = this.parseTimeToDate(times.Sunset, date);
       const midnight = times.Midnight ? this.parseTimeToDate(times.Midnight, date) : null;
+      if (
+        Number.isNaN(sunrise.getTime()) ||
+        Number.isNaN(sunset.getTime()) ||
+        (midnight !== null && Number.isNaN(midnight.getTime()))
+      ) {
+        throw new Error('Invalid sun or midnight time in prayer time payload');
+      }
 
       const prayerNames = FARD_PRAYER_NAMES_LIST as unknown as PrayerName[];
       const prayerTimesList: PrayerTime[] = [];
@@ -350,6 +406,9 @@ export class PrayerTimeService {
       for (const name of prayerNames) {
         const timeStr = times[name];
         let prayerDate = this.parseTimeToDate(timeStr, date);
+        if (Number.isNaN(prayerDate.getTime())) {
+          throw new Error(`Invalid ${name} time in prayer time payload`);
+        }
 
         // Apply adjustments if provided
         if (adjustments && adjustments[name]) {
@@ -391,10 +450,11 @@ export class PrayerTimeService {
         sunrise,
         sunset,
         midnight,
+        quality,
       };
     } catch (error) {
       logger.error("❌ Error in getPrayerTimesList:", error);
-      return { prayerTimes: [], sunrise: new Date(), sunset: new Date(), midnight: null };
+      return { prayerTimes: [], sunrise: new Date(), sunset: new Date(), midnight: null, quality: 'invalid' };
     }
   }
 
@@ -417,15 +477,14 @@ export class PrayerTimeService {
    * Parse time string to Date object
    */
   parseTimeToDate(timeStr: string | undefined, date: Date): Date {
-    // Handle undefined or invalid time strings
-    if (!timeStr) {
-      logger.warn("Received undefined time string in parseTimeToDate");
-      return new Date(date); // Return the date with default time (midnight)
+    const parts = this.parseTimeStringParts(timeStr);
+    if (!parts) {
+      logger.warn("Received invalid time string in parseTimeToDate:", timeStr);
+      return new Date(Number.NaN);
     }
 
-    const [hours, minutes] = timeStr.split(":").map(Number);
     const result = new Date(date);
-    result.setHours(hours, minutes, 0, 0);
+    result.setHours(parts.hours, parts.minutes, 0, 0);
     return result;
   }
 
@@ -604,7 +663,7 @@ export class PrayerTimeService {
             this._lastFetchWasFallback = true;
             this._usingHardcodedDefaults = false;
             this._lastProviderSource = 'disk_cache';
-            return cached.times;
+            return this.normalizeProviderTimes(cached.times);
           }
         }
       } catch (cacheError) {

@@ -8,6 +8,7 @@ import StorageService from '../services/StorageService';
 import LocationService from '../services/LocationService';
 import { useStore } from '../store/useStore';
 import logger from '../utils/logger';
+import { buildNotificationLocationFingerprint } from '../utils/notificationScheduleFingerprint';
 
 let lastObservedWallClockMs: number | null = null;
 let lastObservedMonotonicMs: number | null = null;
@@ -75,6 +76,7 @@ export const useNotificationRescheduler = () => {
       }
 
       let invalidateReason: 'timezone_change' | 'location_change' | 'clock_change' | null = null;
+      let currentLocation = currentUserSettings.location;
 
       // ── DST offset detection ──────────────────────────────────
       // If the UTC offset changed since last schedule (DST transition),
@@ -99,6 +101,7 @@ export const useNotificationRescheduler = () => {
             const { setLocation, updateUserSettings } = useStore.getState();
             setLocation(freshLocation);
             updateUserSettings({ location: freshLocation });
+            currentLocation = freshLocation;
             logger.log('📍 Location refreshed after timezone change');
           }
         } catch (locErr) {
@@ -107,11 +110,8 @@ export const useNotificationRescheduler = () => {
         }
       }
 
-      const currentLocation = currentUserSettings.location;
       const savedLocationFingerprint = StorageService.getValue('notification_location_fingerprint');
-      const currentLocationFingerprint = currentLocation
-        ? `${currentLocation.latitude.toFixed(3)},${currentLocation.longitude.toFixed(3)}`
-        : null;
+      const currentLocationFingerprint = buildNotificationLocationFingerprint(currentLocation);
       if (
         currentLocationFingerprint &&
         savedLocationFingerprint &&
