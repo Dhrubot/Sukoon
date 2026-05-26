@@ -101,7 +101,12 @@ export interface NotificationReadiness {
   isReady: boolean;
   coreNotificationReady: boolean;
   exactAlarmReady: boolean;
-  fullAdhanReady: boolean;
+  /**
+   * True when the adhan audio path is fully ready. The native foreground-service
+   * engine backs BOTH the short and full clips and depends on exact alarms, so this
+   * requires exactAlarmReady whenever adhan is enabled (Android) — not just full adhan.
+   */
+  adhanAudioReady: boolean;
   blockedReason: NotificationBlockedReason;
 }
 
@@ -525,9 +530,11 @@ class NotificationService {
 
     const exactAlarmReady = exactAlarmStatus !== 'fallback';
     const coreNotificationReady = blockedReason === null;
-    const fullAdhanReady =
+    // Exact alarms drive the native adhan engine for any clip, so the audio path is
+    // only fully ready when exact alarms are granted while adhan is enabled (Android).
+    const adhanAudioReady =
       coreNotificationReady &&
-      (!settings?.notifications.fullAdhanEnabled || Platform.OS !== 'android' || exactAlarmReady);
+      (!settings?.notifications.adhanEnabled || Platform.OS !== 'android' || exactAlarmReady);
 
     const readiness: NotificationReadiness = {
       permissionStatus: permission.status,
@@ -535,7 +542,7 @@ class NotificationService {
       isReady: coreNotificationReady,
       coreNotificationReady,
       exactAlarmReady,
-      fullAdhanReady,
+      adhanAudioReady,
       blockedReason,
     };
 

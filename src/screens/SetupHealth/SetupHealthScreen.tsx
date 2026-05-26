@@ -35,7 +35,7 @@ const SetupHealthScreen: React.FC<SetupHealthScreenProps> = ({ onDone, navigatio
   const [blockedReason, setBlockedReason] = useState<string | null>(null);
   const [exactAlarmStatus, setExactAlarmStatus] = useState<string>('not_applicable');
   const [coreNotificationReady, setCoreNotificationReady] = useState(false);
-  const [fullAdhanReady, setFullAdhanReady] = useState(true);
+  const [adhanAudioReady, setAdhanAudioReady] = useState(true);
   const [canModifyDnd, setCanModifyDnd] = useState<boolean | null>(null);
   const [isAdhanPlaying, setIsAdhanPlaying] = useState(false);
   const [launchSummary, setLaunchSummary] = useState(() => PerformanceService.getLatestLaunchSummary());
@@ -66,7 +66,7 @@ const SetupHealthScreen: React.FC<SetupHealthScreenProps> = ({ onDone, navigatio
     setBlockedReason(debug.notificationReadiness.blockedReason);
     setExactAlarmStatus(debug.notificationReadiness.exactAlarmStatus);
     setCoreNotificationReady(debug.notificationReadiness.coreNotificationReady);
-    setFullAdhanReady(debug.notificationReadiness.fullAdhanReady);
+    setAdhanAudioReady(debug.notificationReadiness.adhanAudioReady);
 
     if (Platform.OS === 'android') {
       const can = await RingerControlService.canModify();
@@ -172,7 +172,7 @@ const SetupHealthScreen: React.FC<SetupHealthScreenProps> = ({ onDone, navigatio
           <Text style={[styles.rowText, { color: theme.colors.text.secondary }]}>Permission: {notifPermission === 'granted' ? '✅ Granted' : '❌ Blocked'}</Text>
           <Text style={[styles.rowText, { color: theme.colors.text.secondary }]}>Core reminders: {coreNotificationReady ? '✅ Ready' : '❌ Not ready'}</Text>
           <Text style={[styles.rowText, { color: theme.colors.text.secondary }]}>Exact alarm: {exactAlarmStatus}</Text>
-          <Text style={[styles.rowText, { color: theme.colors.text.secondary }]}>Full Adhan: {fullAdhanReady ? '✅ Ready' : '⚠️ Degraded'}</Text>
+          <Text style={[styles.rowText, { color: theme.colors.text.secondary }]}>Adhan playback: {adhanAudioReady ? '✅ Ready' : '⚠️ Degraded'}</Text>
           <Text style={[styles.rowText, { color: theme.colors.text.secondary }]}>Blocked reason: {blockedReason || 'None'}</Text>
           <Text style={[styles.rowText, { color: theme.colors.text.secondary }]}>Last schedule status: {lastScheduleStatus || 'Unknown'}</Text>
           <Text style={[styles.rowText, { color: theme.colors.text.secondary }]}>Scheduled: {scheduledCount}</Text>

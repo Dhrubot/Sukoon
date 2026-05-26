@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Linking,
   Platform,
@@ -50,7 +51,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
     isReady: false,
     coreNotificationReady: false,
     exactAlarmReady: true,
-    fullAdhanReady: true,
+    adhanAudioReady: true,
     blockedReason: null,
   });
   const [isRequestingNotifications, setIsRequestingNotifications] = useState(false);
@@ -135,6 +136,24 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
     }
   };
 
+  // After notifications are granted on Android, the native adhan engine still needs
+  // the exact-alarm permission to fire on time (and bypass silent/DND). Nudge the user
+  // to grant it now — but never block the onboarding flow on the outcome.
+  const maybePromptExactAlarm = (readiness: NotificationReadiness) => {
+    if (Platform.OS !== 'android' || readiness.exactAlarmStatus !== 'fallback') return;
+    Alert.alert(
+      'Allow exact alarms',
+      'So the adhan plays right on time — even when your phone is locked or in Do Not Disturb — allow “Alarms & reminders” for Sukoon.',
+      [
+        { text: 'Maybe later', style: 'cancel' },
+        {
+          text: 'Allow',
+          onPress: () => { void NotificationService.openAndroidExactAlarmSettings(); },
+        },
+      ]
+    );
+  };
+
   const requestNotificationPermission = async () => {
     setIsRequestingNotifications(true);
     try {
@@ -143,6 +162,9 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
       setNotificationReadiness(readiness);
       const granted = readiness.permissionStatus === 'granted';
       setWantsPrayerReminders(granted);
+      if (granted) {
+        maybePromptExactAlarm(readiness);
+      }
       if (granted && readiness.coreNotificationReady) {
         setCurrentStep('done');
       }

@@ -78,8 +78,8 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
   const getNotificationSubtitle = () => {
     if (blockedReason === 'permission_blocked') return 'Blocked in system settings';
     if (blockedReason === 'permission_denied' || permissionStatus !== 'granted') return 'Permission required';
-    if (Platform.OS === 'android' && exactAlarmStatus === 'fallback' && notifications.fullAdhanEnabled) {
-      return 'Enabled • full Adhan may be delayed';
+    if (Platform.OS === 'android' && exactAlarmStatus === 'fallback' && notifications.adhanEnabled) {
+      return 'Enabled • adhan may be delayed';
     }
     if (blockedReason === 'no_valid_location') return 'Location required';
     if (!notifications.enabled) return 'Disabled';
@@ -93,7 +93,7 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
 
   const adhanSubtitle =
     Platform.OS === 'android'
-      ? 'Short call to prayer at prayer time. Enable full playback below for locked-screen adhan.'
+      ? 'Plays the call to prayer at prayer time, even when your phone is locked. Choose the full-length adhan below.'
       : 'Short call to prayer on the lock screen. Full adhan continues after you open the app.';
   const liveActivityLabel =
     Platform.OS === 'android' ? 'Persistent Prayer Countdown' : 'Live Activity';
@@ -186,10 +186,10 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
         subtitle={getNotificationSubtitle()}
         onPress={handlePressRow}
       />
-      {Platform.OS === 'android' && permissionStatus === 'granted' && exactAlarmStatus === 'fallback' && notifications.fullAdhanEnabled && (
+      {Platform.OS === 'android' && permissionStatus === 'granted' && exactAlarmStatus === 'fallback' && notifications.adhanEnabled && (
         <SettingRow
-          label="Full Adhan exact timing"
-          subtitle="Prayer reminders still work; enable this for precise full-Adhan playback"
+          label="Allow exact alarms"
+          subtitle="Reminders still work, but the adhan may be delayed or silenced until you allow Alarms & reminders"
           value="Needs settings"
           onPress={() => { void openExactAlarmSettings(); }}
         />
@@ -212,8 +212,8 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
       {Platform.OS === 'android' && notifications.adhanEnabled && (
         <View style={styles.row}>
           <View style={styles.textContainer}>
-            <Text style={styles.label}>Full Adhan (Locked Screen)</Text>
-            <Text style={styles.subtitle}>Schedules the complete call to prayer when your phone is locked or the app is closed</Text>
+            <Text style={styles.label}>Full-Length Adhan</Text>
+            <Text style={styles.subtitle}>Play the complete call to prayer instead of the short clip (plays even when locked or the app is closed)</Text>
           </View>
           <Switch
             value={!!notifications.fullAdhanEnabled}

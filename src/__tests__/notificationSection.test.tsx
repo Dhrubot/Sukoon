@@ -156,10 +156,10 @@ describe('NotificationSection', () => {
     );
 
     await waitFor(() => {
-      expect(getByText('Full Adhan (Locked Screen)')).toBeTruthy();
+      expect(getByText('Full-Length Adhan')).toBeTruthy();
     });
     expect(
-      getByText('Schedules the complete call to prayer when your phone is locked or the app is closed')
+      getByText('Play the complete call to prayer instead of the short clip (plays even when locked or the app is closed)')
     ).toBeTruthy();
     expect(getByText('Persistent Prayer Countdown')).toBeTruthy();
     expect(
@@ -178,7 +178,7 @@ describe('NotificationSection', () => {
     );
 
     await waitFor(() => expect(mockGetNotificationReadiness).toHaveBeenCalled());
-    expect(queryByText('Full Adhan (Locked Screen)')).toBeNull();
+    expect(queryByText('Full-Length Adhan')).toBeNull();
     expect(
       queryByText('Short call to prayer on the lock screen. Full adhan continues after you open the app.')
     ).toBeTruthy();
@@ -247,7 +247,68 @@ describe('NotificationSection', () => {
       expect(UNSAFE_getAllByType(Switch)[0].props.disabled).toBe(true);
     });
 
-    expect(queryByText('Full Adhan (Locked Screen)')).toBeNull();
+    expect(queryByText('Full-Length Adhan')).toBeNull();
+  });
+
+  it('surfaces the exact-alarm CTA whenever adhan is enabled and exact alarms are unavailable', async () => {
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'android' });
+    mockGetNotificationReadiness.mockResolvedValue({
+      permissionStatus: 'granted',
+      exactAlarmStatus: 'fallback',
+      isReady: true,
+      blockedReason: null,
+    });
+
+    // Adhan on, but full adhan OFF — the CTA must still appear since the native
+    // engine backs the short clip too.
+    const shortOnlySettings: UserSettings = {
+      ...baseSettings,
+      notifications: {
+        ...baseSettings.notifications,
+        adhanEnabled: true,
+        fullAdhanEnabled: false,
+      },
+    };
+
+    const { getByText } = render(
+      <NotificationSection
+        userSettings={shortOnlySettings}
+        onNotificationPress={jest.fn()}
+      />
+    );
+
+    await waitFor(() => {
+      expect(getByText('Allow exact alarms')).toBeTruthy();
+    });
+  });
+
+  it('hides the exact-alarm CTA when adhan is disabled', async () => {
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'android' });
+    mockGetNotificationReadiness.mockResolvedValue({
+      permissionStatus: 'granted',
+      exactAlarmStatus: 'fallback',
+      isReady: true,
+      blockedReason: null,
+    });
+
+    const adhanOffSettings: UserSettings = {
+      ...baseSettings,
+      notifications: {
+        ...baseSettings.notifications,
+        adhanEnabled: false,
+        fullAdhanEnabled: false,
+      },
+    };
+
+    const { queryByText } = render(
+      <NotificationSection
+        userSettings={adhanOffSettings}
+        onNotificationPress={jest.fn()}
+      />
+    );
+
+    await waitFor(() => expect(mockGetNotificationReadiness).toHaveBeenCalled());
+    expect(queryByText('Allow exact alarms')).toBeNull();
   });
 
   it('starts and ends the platform countdown service when the toggle changes', async () => {

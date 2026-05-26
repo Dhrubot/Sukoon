@@ -1,4 +1,5 @@
 import React from 'react';
+import { Alert, Platform } from 'react-native';
 import { fireEvent, render, waitFor } from '@testing-library/react-native';
 
 const mockSetUserSettings = jest.fn();
@@ -104,11 +105,14 @@ jest.mock('../services/LocationService', () => ({
   },
 }));
 
+const mockOpenAndroidExactAlarmSettings = jest.fn(async () => true);
+
 jest.mock('../services/NotificationService', () => ({
   __esModule: true,
   default: {
     getNotificationReadiness: mockGetNotificationReadiness,
     requestNotificationAccessFromUser: mockRequestNotificationAccessFromUser,
+    openAndroidExactAlarmSettings: mockOpenAndroidExactAlarmSettings,
   },
 }));
 
@@ -233,6 +237,85 @@ describe('OnboardingScreen', () => {
         }),
       })
     );
+  });
+
+  it('prompts to allow exact alarms on Android after notifications are granted but exact alarms are unavailable', async () => {
+    const originalPlatform = Platform.OS;
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    mockRequestNotificationAccessFromUser.mockResolvedValueOnce({
+      permissionStatus: 'granted',
+      exactAlarmStatus: 'fallback',
+      isReady: true,
+      blockedReason: null,
+    });
+    mockGetNotificationReadiness.mockResolvedValue({
+      permissionStatus: 'granted',
+      exactAlarmStatus: 'fallback',
+      coreNotificationReady: true,
+      isReady: true,
+      blockedReason: null,
+    });
+
+    try {
+      const { getByRole } = render(<OnboardingScreen onComplete={mockOnComplete} />);
+
+      fireEvent.press(getByRole('button', { name: 'welcome' }));
+      fireEvent.press(getByRole('button', { name: 'location' }));
+      // Resolve button references before switching platform (RN Button accessibility
+      // names differ on Android), then run the enable handler under Android.
+      const enableButton = getByRole('button', { name: 'notifications-enable' });
+      Object.defineProperty(Platform, 'OS', { configurable: true, value: 'android' });
+      fireEvent.press(enableButton);
+
+      await waitFor(() => {
+        expect(alertSpy).toHaveBeenCalledWith(
+          'Allow exact alarms',
+          expect.stringContaining('Alarms & reminders'),
+          expect.any(Array)
+        );
+      });
+    } finally {
+      alertSpy.mockRestore();
+      Object.defineProperty(Platform, 'OS', { configurable: true, value: originalPlatform });
+    }
+  });
+
+  it('does not prompt for exact alarms when they are already granted', async () => {
+    const originalPlatform = Platform.OS;
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    mockRequestNotificationAccessFromUser.mockResolvedValueOnce({
+      permissionStatus: 'granted',
+      exactAlarmStatus: 'granted',
+      isReady: true,
+      blockedReason: null,
+    });
+    mockGetNotificationReadiness.mockResolvedValue({
+      permissionStatus: 'granted',
+      exactAlarmStatus: 'granted',
+      coreNotificationReady: true,
+      isReady: true,
+      blockedReason: null,
+    });
+
+    try {
+      const { getByRole } = render(<OnboardingScreen onComplete={mockOnComplete} />);
+
+      fireEvent.press(getByRole('button', { name: 'welcome' }));
+      fireEvent.press(getByRole('button', { name: 'location' }));
+      const enableButton = getByRole('button', { name: 'notifications-enable' });
+      Object.defineProperty(Platform, 'OS', { configurable: true, value: 'android' });
+      fireEvent.press(enableButton);
+
+      await waitFor(() => {
+        expect(mockRequestNotificationAccessFromUser).toHaveBeenCalled();
+      });
+      expect(alertSpy).not.toHaveBeenCalled();
+    } finally {
+      alertSpy.mockRestore();
+      Object.defineProperty(Platform, 'OS', { configurable: true, value: originalPlatform });
+    }
   });
 
   it('stays on the notification step when Android permission remains blocked', async () => {
