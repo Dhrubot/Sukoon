@@ -18,7 +18,7 @@ import { usePrayerTimes } from '../../providers/PrayerTimesProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import { CHANNELS, SOUNDS } from '../../constants/NotificationConstants';
-import { scheduleFullAdhan } from '../../services/notifications/FullAdhanScheduler';
+import { scheduleAdhanAudio } from '../../services/notifications/FullAdhanScheduler';
 import NotificationLedger, { LedgerHealth } from '../../services/NotificationLedger';
 import { scheduleLocalNotificationAsync } from '../../services/notifications/scheduleLocalNotification';
 
@@ -145,7 +145,7 @@ export const NotificationDebugScreen = () => {
     }
     try {
       const triggerTime = new Date(Date.now() + 10_000); // 10 seconds from now
-      await scheduleFullAdhan(triggerTime, 'Fajr', 'Test Adhan');
+      await scheduleAdhanAudio(triggerTime, 'Fajr', 'full', 'Test Adhan');
       Alert.alert(
         'Full Adhan Scheduled',
         'Foreground service will play in 10 seconds — LOCK YOUR PHONE NOW to test lock-screen playback'

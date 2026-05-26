@@ -21,7 +21,7 @@ import MosqueModeService from './MosqueModeService';
 import { NOTIFICATION_CATEGORIES, initializeChannelsAndCategories } from './notifications/NotificationChannels';
 import AdhanPlayer from './notifications/AdhanPlayer';
 import {
-  scheduleFullAdhan,
+  scheduleAdhanAudio,
   cancelAllFullAdhans,
   stopFullAdhan,
   getExactAlarmStatus,
@@ -30,11 +30,8 @@ import {
 } from './notifications/FullAdhanScheduler';
 import { scheduleTier2PersistentReminders, scheduleTier3GracePeriodWarning } from './notifications/HabitBuilderNotifications';
 import {
-  resolveMainPrayerNotificationAudio,
-  resolveRuntimeAdhanPlaybackPolicy,
-  shouldPlayForegroundClip,
-  shouldSuppressForegroundAdhanNotificationSound,
-  usesAndroidScheduledFullAdhan,
+  resolveAdhanDelivery,
+  isAdhanAudible,
 } from './notifications/AdhanPlaybackPolicy';
 import { mergeNotificationSettings } from './notifications/notificationSettingsState';
 import { isValidCoordinates } from '../utils/locationValidation';
@@ -58,23 +55,16 @@ Notifications.setNotificationHandler({
   handleNotification: async (notification) => {
     const data = notification.request.content.data;
     const isTest = data?.type === 'test';
-    const isAdhan = data?.type === 'prayer-time' || isTest;
 
-    // On Android foreground, suppress channel sound for adhan notifications
-    // ONLY when adhan is actually enabled (AdhanPlayer handles playback).
-    // If adhan is off, let the notification play its own channel sound normally.
-    const currentSettings = StorageService.getUserSettings();
-    const suppressSound = currentSettings?.notifications
-      ? shouldSuppressForegroundAdhanNotificationSound(
-          Platform.OS,
-          isAdhan,
-          currentSettings.notifications
-        )
-      : false;
+    // The notification's channel decides whether it sounds:
+    // - native_alarm engine → silent channel (audio comes from the foreground service)
+    // - channel_sound fallback → alarm-grade channel (we want it audible in foreground too)
+    // Test adhans are previewed in-app via AdhanPlayer, so mute their channel to avoid double audio.
+    const suppressForTest = isTest && Platform.OS === 'android';
 
     return {
       shouldShowAlert: !isTest || Platform.OS === 'ios',
-      shouldPlaySound: !suppressSound,
+      shouldPlaySound: !suppressForTest,
       shouldSetBadge: false,
       shouldShowBanner: true,
       shouldShowList: true,
@@ -803,19 +793,10 @@ class NotificationService {
         }
         logger.log('🕌 Mosque mode prompt tapped for:', data.prayer);
       }
-      // Play adhan for both prayer-time and test notifications (only if adhan is enabled)
+      // Tapping a prayer-time/test notification means the user is now in-app —
+      // stop any adhan that's currently sounding (native service or in-app preview).
       else if ((data?.type === 'prayer-time' || data?.type === 'test') && (data?.prayer || data?.type === 'test')) {
-        const tapSettings = StorageService.getUserSettings();
-        if (tapSettings?.notifications) {
-          const playbackPolicy = resolveRuntimeAdhanPlaybackPolicy(Platform.OS, tapSettings.notifications);
-          if (usesAndroidScheduledFullAdhan(playbackPolicy)) {
-            // If Full Adhan service is running, stop it (user is now in-app)
-            stopFullAdhan();
-          } else if (shouldPlayForegroundClip(playbackPolicy)) {
-            // Play full adhan inside app (for immersive experience)
-            this.playFullAdhan();
-          }
-        }
+        this.stopAdhan();
 
         // Only navigate if it's a prayer-time notification with prayer data
         if (data?.prayer && this.navigationHandler) {
@@ -935,22 +916,18 @@ class NotificationService {
       // Ledger: record delivery
       NotificationLedger.recordDelivered(notification.request.identifier);
 
-      // Auto-play adhan for test notifications when app is in foreground
-      // This is necessary because Android doesn't play channel-specific sounds in foreground
+      // Prayer-time adhan audio is owned by the delivery engine (native foreground
+      // service, or the notification channel's own sound) — not replayed here, so the
+      // foreground and background paths stay identical. Only the in-app TEST preview
+      // plays via AdhanPlayer, since a manual test has no scheduled engine behind it.
       const data = notification.request.content.data;
-      if ((data?.type === 'test' || data?.type === 'prayer-time') && Platform.OS === 'android') {
+      if (data?.type === 'test' && Platform.OS === 'android') {
         const currentSettings = StorageService.getUserSettings();
-        const playbackPolicy = currentSettings?.notifications
-          ? resolveRuntimeAdhanPlaybackPolicy(Platform.OS, currentSettings.notifications)
-          : 'silent';
-        if (playbackPolicy === 'silent') {
-          logger.log('🔇 Adhan disabled in settings — skipping playback');
-        } else if (usesAndroidScheduledFullAdhan(playbackPolicy)) {
-          // When Full Adhan foreground service is active, it handles audio — skip AdhanPlayer
-          logger.log('🎵 Full Adhan service handling audio — skipping AdhanPlayer');
-        } else if (shouldPlayForegroundClip(playbackPolicy)) {
-          logger.log('🎵 Playing adhan for prayer notification in foreground');
+        if (currentSettings?.notifications && isAdhanAudible(currentSettings.notifications)) {
+          logger.log('🎵 Playing test adhan preview in foreground');
           this.playFullAdhan();
+        } else {
+          logger.log('🔇 Adhan disabled in settings — skipping test preview');
         }
       }
     });
@@ -1093,6 +1070,7 @@ class NotificationService {
     prayer: PrayerTime,
     settings: UserSettings,
     existingIdentifiers: Set<string>,
+    exactAlarmGranted: boolean,
     iosCounter?: { count: number }
   ): Promise<boolean> {
     const { notifications, prayerNotifications } = settings;
@@ -1103,17 +1081,17 @@ class NotificationService {
     const prayerId = `${prayer.name}-${dateStr}`;
     const prayerIdentifier = `prayer-${prayer.name}-${dateStr}`;
 
-    // Hybrid Audio Logic
-    const audioResolution = resolveMainPrayerNotificationAudio(Platform.OS, notifications);
-    const soundAsset = audioResolution.notificationSound;
-    const androidChannel = audioResolution.androidChannelId;
+    // Unified audio delivery: native alarm-service (primary) or channel sound (fallback).
+    const delivery = resolveAdhanDelivery(Platform.OS, notifications, exactAlarmGranted);
+    const soundAsset = delivery.notificationSound;
+    const androidChannel = delivery.androidChannelId;
 
     if (existingIdentifiers.has(prayerIdentifier)) {
-      if (audioResolution.shouldScheduleNativeFullAdhan) {
+      if (delivery.scheduleNativeAudio) {
         const displayName = PrayerTimeService.getPrayerDisplayName(prayer.name, 'en', prayer.time);
-        await scheduleFullAdhan(prayer.time, prayer.name, displayName);
+        await scheduleAdhanAudio(prayer.time, prayer.name, delivery.clip, displayName);
       }
-      return true; // Already scheduled locally; native full-Adhan may still need repair.
+      return true; // Already scheduled locally; native audio may still need repair.
     }
 
     if (Platform.OS === 'ios' && iosCounter && iosCounter.count >= IOS_NOTIFICATION_CAP) {
@@ -1150,10 +1128,10 @@ class NotificationService {
     existingIdentifiers.add(prayerIdentifier);
     if (iosCounter) iosCounter.count++;
 
-    // Schedule native full Adhan alarm (Android foreground service)
-    if (audioResolution.shouldScheduleNativeFullAdhan) {
+    // Schedule native Adhan audio alarm (Android foreground service)
+    if (delivery.scheduleNativeAudio) {
       const displayName = PrayerTimeService.getPrayerDisplayName(prayer.name, 'en', prayer.time);
-      await scheduleFullAdhan(prayer.time, prayer.name, displayName);
+      await scheduleAdhanAudio(prayer.time, prayer.name, delivery.clip, displayName);
     }
 
     return true;
@@ -1744,6 +1722,13 @@ class NotificationService {
         }
       }
 
+      // Exact-alarm permission decides the adhan delivery engine on Android
+      // (native alarm service when granted, alarm-grade channel sound otherwise).
+      // Resolved once per scheduling cycle and shared across all prayers.
+      const exactAlarmGranted = Platform.OS === 'android'
+        ? (await this.getAndroidExactAlarmStatus()) === 'granted'
+        : false;
+
       // === HORIZONTAL PASSES (priority order) ===
 
       // PASS 1: Tier 1 (Main Adhan)
@@ -1753,7 +1738,7 @@ class NotificationService {
         const { prayers } = allDays[dayIdx];
         for (const prayer of prayers) {
           if (prayer.time > now) {
-            const scheduledOrRepaired = await this.scheduleMainPrayerNotification(prayer, settings, existingIdentifiers, iosCounter);
+            const scheduledOrRepaired = await this.scheduleMainPrayerNotification(prayer, settings, existingIdentifiers, exactAlarmGranted, iosCounter);
             if (scheduledOrRepaired) mainPrayerScheduledOrRepairedCount++;
           }
         }
@@ -1924,7 +1909,10 @@ class NotificationService {
     const prayerId = `${prayer}-test-${format(prayerTime, 'yyyy-MM-dd-HH-mm-ss')}`;
     const identifier = `prayer-test-${prayer}-${prayerTime.getTime()}`;
 
-    const audioResolution = resolveMainPrayerNotificationAudio(Platform.OS, settings.notifications);
+    const exactAlarmGranted = Platform.OS === 'android'
+      ? (await this.getAndroidExactAlarmStatus()) === 'granted'
+      : false;
+    const delivery = resolveAdhanDelivery(Platform.OS, settings.notifications, exactAlarmGranted);
     const content = this.getPrayerTimeContent(prayerName, prayer, settings, prayerTime);
 
     await scheduleLocalNotificationAsync({
@@ -1938,20 +1926,20 @@ class NotificationService {
           scheduledAt: new Date().toISOString(),
           isDebugProductionLike: true,
         },
-        sound: audioResolution.notificationSound,
+        sound: delivery.notificationSound,
         categoryIdentifier: NOTIFICATION_CATEGORIES.PRAYER_REMINDER,
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
         seconds: delaySeconds,
         repeats: false,
-        ...(Platform.OS === 'android' && { channelId: audioResolution.androidChannelId }),
+        ...(Platform.OS === 'android' && { channelId: delivery.androidChannelId }),
       } as Notifications.NotificationTriggerInput,
       identifier,
     });
 
-    if (audioResolution.shouldScheduleNativeFullAdhan && Platform.OS === 'android') {
-      await scheduleFullAdhan(prayerTime, prayer, prayerName);
+    if (delivery.scheduleNativeAudio && Platform.OS === 'android') {
+      await scheduleAdhanAudio(prayerTime, prayer, delivery.clip, prayerName);
     }
   }
 

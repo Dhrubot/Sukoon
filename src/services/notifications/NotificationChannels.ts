@@ -2,6 +2,7 @@
 // Extracted from NotificationService: channel setup, cleanup, and iOS categories
 
 import * as Notifications from 'expo-notifications';
+import { AndroidAudioContentType, AndroidAudioUsage } from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { CHANNELS, SOUNDS, NOTIFICATION_CHANNEL_VERSION } from '../../constants/NotificationConstants';
@@ -63,6 +64,10 @@ export async function setupNotificationChannels(): Promise<void> {
     showBadge: true,
   });
 
+  // Short-clip fallback channel — used when the native full-Adhan alarm service is
+  // unavailable (e.g. exact-alarm permission not granted). Alarm-grade audio attributes
+  // + bypassDnd make the call to prayer audible under silent mode / Do Not Disturb,
+  // matching the native foreground-service path (which plays via USAGE_ALARM).
   await Notifications.setNotificationChannelAsync(CHANNELS.ADHAN, {
     name: 'Prayer Times (Adhan)',
     description: 'Short call to prayer notification',
@@ -70,7 +75,11 @@ export async function setupNotificationChannels(): Promise<void> {
     vibrationPattern: [0, 1000, 500, 1000],
     lightColor: '#1B5E3F',
     sound: SOUNDS.ANDROID_SHORT,
-    bypassDnd: false,
+    audioAttributes: {
+      usage: AndroidAudioUsage.ALARM,
+      contentType: AndroidAudioContentType.MUSIC,
+    },
+    bypassDnd: true,
     showBadge: true,
   });
 

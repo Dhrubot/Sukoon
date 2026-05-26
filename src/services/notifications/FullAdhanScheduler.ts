@@ -4,7 +4,14 @@
 
 import { Platform, NativeModules } from 'react-native';
 import { PrayerName } from '../../types';
+import { AdhanClip } from './AdhanPlaybackPolicy';
 import logger from '../../utils/logger';
+
+/** Maps the user-facing clip choice to the native res/raw resource name. */
+const ADHAN_CLIP_RESOURCE: Record<AdhanClip, string> = {
+  short: 'adhan_short',
+  full: 'adhan_full',
+};
 
 function getAdhanModule() {
   return NativeModules.AdhanModule ?? null;
@@ -47,13 +54,17 @@ function getDayOffset(prayerTime: Date): number {
 }
 
 /**
- * Schedule a full Adhan alarm for a specific prayer time.
- * On Android, this sets an AlarmManager alarm that triggers a Foreground Service.
+ * Schedule a native Adhan audio alarm for a specific prayer time.
+ * On Android, this sets an AlarmManager alarm that triggers a Foreground Service
+ * which plays the requested clip via USAGE_ALARM (bypasses silent mode / DND).
  * No-ops on iOS.
+ *
+ * @param clip Which clip to play ('short' or 'full'). Defaults to 'full'.
  */
-export async function scheduleFullAdhan(
+export async function scheduleAdhanAudio(
   prayerTime: Date,
   prayerName: PrayerName,
+  clip: AdhanClip = 'full',
   displayName?: string
 ): Promise<void> {
   const adhanModule = getAdhanModule();
@@ -63,18 +74,20 @@ export async function scheduleFullAdhan(
     const dayOffset = getDayOffset(prayerTime);
     const requestCode = getRequestCode(prayerName, dayOffset);
     const label = displayName || prayerName;
+    const soundResource = ADHAN_CLIP_RESOURCE[clip];
 
     await adhanModule.scheduleAdhan(
       prayerTime.getTime(),
       label,
-      requestCode
+      requestCode,
+      soundResource
     );
 
     logger.log(
-      `🔊 Full Adhan scheduled for ${label} at ${prayerTime.toLocaleString()} (rc=${requestCode})`
+      `🔊 Adhan (${clip}) scheduled for ${label} at ${prayerTime.toLocaleString()} (rc=${requestCode})`
     );
   } catch (error) {
-    logger.error(`❌ Failed to schedule full Adhan for ${prayerName}:`, error);
+    logger.error(`❌ Failed to schedule Adhan audio for ${prayerName}:`, error);
   }
 }
 

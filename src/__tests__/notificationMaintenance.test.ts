@@ -118,7 +118,7 @@ describe('NotificationService maintenance flows', () => {
       },
     }));
     jest.doMock('../services/notifications/FullAdhanScheduler', () => ({
-      scheduleFullAdhan: jest.fn(async () => {}),
+      scheduleAdhanAudio: jest.fn(async () => {}),
       cancelAllFullAdhans,
       stopFullAdhan,
       getExactAlarmStatus: jest.fn(async () => 'granted'),

@@ -10,7 +10,7 @@ describe('FullAdhanScheduler', () => {
     jest.useRealTimers();
   });
 
-  it('schedules Android full adhan with the expected request code', async () => {
+  it('schedules the full adhan clip with the expected request code and resource', async () => {
     const scheduleAdhan = jest.fn(async () => {});
 
     jest.doMock('react-native', () => ({
@@ -30,15 +30,49 @@ describe('FullAdhanScheduler', () => {
       default: { log: jest.fn(), warn: jest.fn(), error: jest.fn() },
     }));
 
-    const { scheduleFullAdhan } = require('../services/notifications/FullAdhanScheduler');
+    const { scheduleAdhanAudio } = require('../services/notifications/FullAdhanScheduler');
 
     const prayerTime = new Date('2026-03-18T05:10:00.000Z');
-    await scheduleFullAdhan(prayerTime, 'Fajr', 'Fajr');
+    await scheduleAdhanAudio(prayerTime, 'Fajr', 'full', 'Fajr');
 
     expect(scheduleAdhan).toHaveBeenCalledWith(
       prayerTime.getTime(),
       'Fajr',
-      5005
+      5005,
+      'adhan_full'
+    );
+  });
+
+  it('schedules the short clip resource when clip is "short"', async () => {
+    const scheduleAdhan = jest.fn(async () => {});
+
+    jest.doMock('react-native', () => ({
+      Platform: { OS: 'android' },
+      NativeModules: {
+        AdhanModule: {
+          scheduleAdhan,
+          cancelAllAdhans: jest.fn(async () => {}),
+          cancelAdhan: jest.fn(async () => {}),
+          stopAdhan: jest.fn(async () => {}),
+          getExactAlarmStatus: jest.fn(async () => 'granted'),
+        },
+      },
+    }));
+    jest.doMock('../utils/logger', () => ({
+      __esModule: true,
+      default: { log: jest.fn(), warn: jest.fn(), error: jest.fn() },
+    }));
+
+    const { scheduleAdhanAudio } = require('../services/notifications/FullAdhanScheduler');
+
+    const prayerTime = new Date('2026-03-18T05:10:00.000Z');
+    await scheduleAdhanAudio(prayerTime, 'Fajr', 'short', 'Fajr');
+
+    expect(scheduleAdhan).toHaveBeenCalledWith(
+      prayerTime.getTime(),
+      'Fajr',
+      5005,
+      'adhan_short'
     );
   });
 
@@ -54,8 +88,8 @@ describe('FullAdhanScheduler', () => {
       default: { log: jest.fn(), warn: jest.fn(), error: jest.fn() },
     }));
 
-    const { scheduleFullAdhan } = require('../services/notifications/FullAdhanScheduler');
-    await scheduleFullAdhan(new Date('2026-03-18T05:10:00.000Z'), 'Fajr', 'Fajr');
+    const { scheduleAdhanAudio } = require('../services/notifications/FullAdhanScheduler');
+    await scheduleAdhanAudio(new Date('2026-03-18T05:10:00.000Z'), 'Fajr', 'full', 'Fajr');
 
     expect(scheduleAdhan).not.toHaveBeenCalled();
   });

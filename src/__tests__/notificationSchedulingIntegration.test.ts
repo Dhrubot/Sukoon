@@ -192,7 +192,7 @@ jest.mock('../services/notifications/AdhanPlayer', () => ({
 }));
 
 jest.mock('../services/notifications/FullAdhanScheduler', () => ({
-  scheduleFullAdhan: jest.fn(() => Promise.resolve()),
+  scheduleAdhanAudio: jest.fn(() => Promise.resolve()),
   cancelAllFullAdhans: jest.fn(() => Promise.resolve()),
   stopFullAdhan: jest.fn(),
   getExactAlarmStatus: jest.fn(() => Promise.resolve('granted')),
@@ -390,7 +390,7 @@ describe('scheduleExtendedNotifications integration', () => {
     expect(mainPrayerNotification).toBeTruthy();
     expect(mainPrayerNotification?.content.sound).toBeUndefined();
     expect(mainPrayerNotification?.trigger).toMatchObject({ channelId: CHANNELS.ADHAN_SILENT });
-    expect(FullAdhanScheduler.scheduleFullAdhan).toHaveBeenCalled();
+    expect(FullAdhanScheduler.scheduleAdhanAudio).toHaveBeenCalled();
   });
 
   it('keeps iOS scheduled prayer notifications on the short bundled sound even when full adhan is enabled', async () => {
@@ -405,7 +405,7 @@ describe('scheduleExtendedNotifications integration', () => {
     const FullAdhanScheduler = require('../services/notifications/FullAdhanScheduler');
 
     expect(mainPrayerNotification?.content.sound).toBe(SOUNDS.IOS_SHORT);
-    expect(FullAdhanScheduler.scheduleFullAdhan).not.toHaveBeenCalled();
+    expect(FullAdhanScheduler.scheduleAdhanAudio).not.toHaveBeenCalled();
   });
 
   it('keeps iOS prayer notifications silent when sound and adhan are disabled', async () => {
@@ -471,9 +471,10 @@ describe('scheduleExtendedNotifications integration', () => {
     await NotificationService.scheduleExtendedNotifications();
 
     const FullAdhanScheduler = require('../services/notifications/FullAdhanScheduler');
-    expect(FullAdhanScheduler.scheduleFullAdhan).toHaveBeenCalledWith(
+    expect(FullAdhanScheduler.scheduleAdhanAudio).toHaveBeenCalledWith(
       tomorrowFajr.time,
       'Fajr',
+      'full',
       'Fajr'
     );
   });

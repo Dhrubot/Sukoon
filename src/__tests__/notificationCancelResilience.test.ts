@@ -48,7 +48,7 @@ jest.mock('../services/notifications/AdhanPlayer', () => ({
 }));
 
 jest.mock('../services/notifications/FullAdhanScheduler', () => ({
-  scheduleFullAdhan: jest.fn(() => Promise.resolve()),
+  scheduleAdhanAudio: jest.fn(() => Promise.resolve()),
   cancelAllFullAdhans: jest.fn(() => Promise.resolve()),
   stopFullAdhan: jest.fn(),
   getExactAlarmStatus: jest.fn(() => Promise.resolve('granted')),

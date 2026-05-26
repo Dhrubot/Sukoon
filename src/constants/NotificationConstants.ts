@@ -2,7 +2,9 @@
 
 // 🛠 BUMP THIS VERSION whenever change sound files or channel settings
 // This forces Android to create a new channel with the fresh config.
-export const NOTIFICATION_CHANNEL_VERSION = 9;
+// v10: ADHAN channel given alarm-grade audio attributes + bypassDnd so the
+//      short-clip fallback is audible under silent mode / Do Not Disturb.
+export const NOTIFICATION_CHANNEL_VERSION = 10;
 
 export const NOTIFICATION_SCHEDULING_DAYS = 3;   // iOS Tier 1 horizon
 export const NOTIFICATION_LOWER_TIER_DAYS = 2;    // iOS lower-tier horizon

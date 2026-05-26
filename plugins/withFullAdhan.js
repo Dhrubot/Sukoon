@@ -34,6 +34,8 @@ public class AdhanService extends Service {
     private static final int NOTIFICATION_ID = 9001;
     public static final String ACTION_STOP = "com.talukders.sukoon.STOP_ADHAN";
     public static final String EXTRA_PRAYER_NAME = "prayer_name";
+    public static final String EXTRA_SOUND_RESOURCE = "sound_resource";
+    private static final String DEFAULT_SOUND_RESOURCE = "adhan_full";
 
     private MediaPlayer mediaPlayer;
     private PowerManager.WakeLock wakeLock;
@@ -63,6 +65,14 @@ public class AdhanService extends Service {
             prayerName = intent.getStringExtra(EXTRA_PRAYER_NAME);
         }
 
+        String soundResource = DEFAULT_SOUND_RESOURCE;
+        if (intent != null && intent.hasExtra(EXTRA_SOUND_RESOURCE)) {
+            String requested = intent.getStringExtra(EXTRA_SOUND_RESOURCE);
+            if (requested != null && !requested.isEmpty()) {
+                soundResource = requested;
+            }
+        }
+
         // Acquire wake lock to keep CPU active during playback
         PowerManager pm = (PowerManager) getSystemService(Context.POWER_SERVICE);
         if (pm != null) {
@@ -83,8 +93,8 @@ public class AdhanService extends Service {
             return START_NOT_STICKY;
         }
 
-        // Play the full adhan
-        playAdhan();
+        // Play the requested adhan clip
+        playAdhan(soundResource);
 
         return START_NOT_STICKY;
     }
@@ -158,16 +168,19 @@ public class AdhanService extends Service {
         return builder.build();
     }
 
-    private void playAdhan() {
+    private void playAdhan(String soundResource) {
         try {
             if (mediaPlayer != null) {
                 mediaPlayer.release();
                 mediaPlayer = null;
             }
 
-            int resId = getResources().getIdentifier("adhan_full", "raw", getPackageName());
+            String resourceName = (soundResource != null && !soundResource.isEmpty())
+                ? soundResource
+                : DEFAULT_SOUND_RESOURCE;
+            int resId = getResources().getIdentifier(resourceName, "raw", getPackageName());
             if (resId == 0) {
-                Log.e(TAG, "adhan_full resource not found in res/raw");
+                Log.e(TAG, resourceName + " resource not found in res/raw");
                 stopAdhan();
                 return;
             }
@@ -276,10 +289,14 @@ public class AdhanAlarmReceiver extends BroadcastReceiver {
 
         try {
             String prayerName = intent.getStringExtra(AdhanService.EXTRA_PRAYER_NAME);
-            Log.d(TAG, "Adhan alarm fired for: " + prayerName);
+            String soundResource = intent.getStringExtra(AdhanService.EXTRA_SOUND_RESOURCE);
+            Log.d(TAG, "Adhan alarm fired for: " + prayerName + " (sound=" + soundResource + ")");
 
             Intent serviceIntent = new Intent(context, AdhanService.class);
             serviceIntent.putExtra(AdhanService.EXTRA_PRAYER_NAME, prayerName != null ? prayerName : "Prayer");
+            if (soundResource != null && !soundResource.isEmpty()) {
+                serviceIntent.putExtra(AdhanService.EXTRA_SOUND_RESOURCE, soundResource);
+            }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(serviceIntent);
@@ -364,13 +381,14 @@ public class AdhanModule extends ReactContextBaseJavaModule {
     }
 
     /**
-     * Schedule an alarm that will trigger the full Adhan foreground service.
+     * Schedule an alarm that will trigger the Adhan foreground service.
      * @param timeMs    Epoch milliseconds for when to fire
      * @param prayerName Display name of the prayer (e.g., "Fajr")
      * @param requestCode Unique request code for this alarm
+     * @param soundResource res/raw resource name to play (e.g., "adhan_full" or "adhan_short")
      */
     @ReactMethod
-    public void scheduleAdhan(double timeMs, String prayerName, double requestCode, Promise promise) {
+    public void scheduleAdhan(double timeMs, String prayerName, double requestCode, String soundResource, Promise promise) {
         try {
             Context context = getReactApplicationContext();
             AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
@@ -382,6 +400,9 @@ public class AdhanModule extends ReactContextBaseJavaModule {
             Intent intent = new Intent(context, AdhanAlarmReceiver.class);
             intent.setAction("com.talukders.sukoon.FULL_ADHAN_" + (int) requestCode);
             intent.putExtra(AdhanService.EXTRA_PRAYER_NAME, prayerName);
+            if (soundResource != null && !soundResource.isEmpty()) {
+                intent.putExtra(AdhanService.EXTRA_SOUND_RESOURCE, soundResource);
+            }
 
             int flags = PendingIntent.FLAG_UPDATE_CURRENT;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {

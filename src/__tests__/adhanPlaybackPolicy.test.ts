@@ -1,9 +1,8 @@
 import {
-  resolveMainPrayerNotificationAudio,
-  resolveRuntimeAdhanPlaybackPolicy,
-  shouldPlayForegroundClip,
+  resolveAdhanDelivery,
+  isAdhanAudible,
+  selectedAdhanClip,
   shouldSuppressForegroundAdhanNotificationSound,
-  usesAndroidScheduledFullAdhan,
 } from '../services/notifications/AdhanPlaybackPolicy';
 import { CHANNELS, SOUNDS } from '../constants/NotificationConstants';
 import { UserSettings } from '../types';
@@ -20,71 +19,111 @@ const baseNotifications: UserSettings['notifications'] = {
 };
 
 describe('AdhanPlaybackPolicy', () => {
-  it('uses short custom sound for iOS scheduled prayer notifications', () => {
-    const resolution = resolveMainPrayerNotificationAudio('ios', baseNotifications);
+  describe('resolveAdhanDelivery', () => {
+    it('uses the native alarm service on Android when exact alarms are granted', () => {
+      const plan = resolveAdhanDelivery('android', baseNotifications, true);
 
-    expect(resolution).toEqual({
-      playbackPolicy: 'short_notification_sound',
-      notificationSound: SOUNDS.IOS_SHORT,
-      androidChannelId: CHANNELS.ADHAN,
-      shouldScheduleNativeFullAdhan: false,
+      expect(plan).toEqual({
+        audible: true,
+        clip: 'short',
+        engine: 'native_alarm',
+        notificationSound: undefined,
+        androidChannelId: CHANNELS.ADHAN_SILENT,
+        scheduleNativeAudio: true,
+      });
+    });
+
+    it('passes the full clip through to the native service when selected', () => {
+      const plan = resolveAdhanDelivery(
+        'android',
+        { ...baseNotifications, fullAdhanEnabled: true },
+        true
+      );
+
+      expect(plan.engine).toBe('native_alarm');
+      expect(plan.clip).toBe('full');
+      expect(plan.scheduleNativeAudio).toBe(true);
+    });
+
+    it('falls back to the alarm-grade channel sound (short clip) when exact alarms are denied', () => {
+      const plan = resolveAdhanDelivery(
+        'android',
+        { ...baseNotifications, fullAdhanEnabled: true },
+        false
+      );
+
+      expect(plan).toEqual({
+        audible: true,
+        clip: 'short', // full degrades to short on the channel fallback
+        engine: 'channel_sound',
+        notificationSound: SOUNDS.ANDROID_SHORT,
+        androidChannelId: CHANNELS.ADHAN,
+        scheduleNativeAudio: false,
+      });
+    });
+
+    it('uses the iOS short notification sound', () => {
+      const plan = resolveAdhanDelivery('ios', baseNotifications, false);
+
+      expect(plan).toEqual({
+        audible: true,
+        clip: 'short',
+        engine: 'ios_notification',
+        notificationSound: SOUNDS.IOS_SHORT,
+        androidChannelId: CHANNELS.ADHAN,
+        scheduleNativeAudio: false,
+      });
+    });
+
+    it('falls back to the default beep when adhan is off but sounds remain enabled', () => {
+      const plan = resolveAdhanDelivery(
+        'android',
+        { ...baseNotifications, adhanEnabled: false },
+        true
+      );
+
+      expect(plan).toEqual({
+        audible: false,
+        clip: 'short',
+        engine: 'silent',
+        notificationSound: 'default',
+        androidChannelId: CHANNELS.DEFAULT,
+        scheduleNativeAudio: false,
+      });
+    });
+
+    it('is fully silent when adhan and sounds are both off', () => {
+      const plan = resolveAdhanDelivery(
+        'android',
+        { ...baseNotifications, adhanEnabled: false, soundEnabled: false },
+        true
+      );
+
+      expect(plan.audible).toBe(false);
+      expect(plan.notificationSound).toBeUndefined();
+      expect(plan.scheduleNativeAudio).toBe(false);
     });
   });
 
-  it('uses Android native full adhan scheduling when full adhan is enabled', () => {
-    const resolution = resolveMainPrayerNotificationAudio('android', {
-      ...baseNotifications,
-      fullAdhanEnabled: true,
+  describe('isAdhanAudible / selectedAdhanClip', () => {
+    it('reports audible when adhan is enabled', () => {
+      expect(isAdhanAudible(baseNotifications)).toBe(true);
+      expect(isAdhanAudible({ ...baseNotifications, adhanEnabled: false })).toBe(false);
     });
 
-    expect(resolution).toEqual({
-      playbackPolicy: 'android_scheduled_full_adhan',
-      notificationSound: undefined,
-      androidChannelId: CHANNELS.ADHAN_SILENT,
-      shouldScheduleNativeFullAdhan: true,
+    it('maps the fullAdhanEnabled toggle to the clip choice', () => {
+      expect(selectedAdhanClip(baseNotifications)).toBe('short');
+      expect(selectedAdhanClip({ ...baseNotifications, fullAdhanEnabled: true })).toBe('full');
     });
   });
 
-  it('falls back to default notification sound when adhan is off but sounds remain enabled', () => {
-    const resolution = resolveMainPrayerNotificationAudio('android', {
-      ...baseNotifications,
-      adhanEnabled: false,
+  describe('shouldSuppressForegroundAdhanNotificationSound', () => {
+    it('mutes the channel sound only for the native_alarm engine', () => {
+      const nativePlan = resolveAdhanDelivery('android', baseNotifications, true);
+      const fallbackPlan = resolveAdhanDelivery('android', baseNotifications, false);
+
+      expect(shouldSuppressForegroundAdhanNotificationSound(nativePlan)).toBe(true);
+      expect(shouldSuppressForegroundAdhanNotificationSound(fallbackPlan)).toBe(false);
     });
-
-    expect(resolution).toEqual({
-      playbackPolicy: 'silent',
-      notificationSound: 'default',
-      androidChannelId: CHANNELS.DEFAULT,
-      shouldScheduleNativeFullAdhan: false,
-    });
-  });
-
-  it('returns silent runtime policy when adhan is disabled', () => {
-    expect(
-      resolveRuntimeAdhanPlaybackPolicy('ios', {
-        ...baseNotifications,
-        adhanEnabled: false,
-      })
-    ).toBe('silent');
-  });
-
-  it('returns foreground clip runtime policy for iOS when adhan is enabled', () => {
-    const policy = resolveRuntimeAdhanPlaybackPolicy('ios', baseNotifications);
-
-    expect(policy).toBe('foreground_full_clip');
-    expect(shouldPlayForegroundClip(policy)).toBe(true);
-    expect(usesAndroidScheduledFullAdhan(policy)).toBe(false);
-  });
-
-  it('suppresses foreground notification sound on Android when the app handles playback', () => {
-    expect(
-      shouldSuppressForegroundAdhanNotificationSound('android', true, baseNotifications)
-    ).toBe(true);
-  });
-
-  it('does not suppress non-adhan notifications', () => {
-    expect(
-      shouldSuppressForegroundAdhanNotificationSound('android', false, baseNotifications)
-    ).toBe(false);
   });
 });
