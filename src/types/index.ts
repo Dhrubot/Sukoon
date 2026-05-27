@@ -228,7 +228,7 @@ export interface MosqueModeSettings {
   jummah?: {
     enabled: boolean;        // Enable Jummah silent mode (default: true)
     silentDuration: number;  // Minutes — khutba (~20) + prayer (~10) = 30 default
-    iqamahOffset: number;    // Minutes after Dhuhr adhan on Friday
+    iqamahTime: string;      // Absolute iqamah time on Friday, "HH:mm" 24h (default: "13:30" — 1:30 PM)
   };
 }
 

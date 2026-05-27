@@ -140,7 +140,7 @@ const baseSettings: UserSettings = {
     autoRestore: true,
     promptBeforeEnable: false,
     useVibrateInsteadOfSilent: false,
-    jummah: { enabled: true, silentDuration: 30, iqamahOffset: 15 },
+    jummah: { enabled: true, silentDuration: 30, iqamahTime: '13:30' },
   },
   theme: 'auto',
 };

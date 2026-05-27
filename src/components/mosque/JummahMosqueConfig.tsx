@@ -17,7 +17,6 @@ import { useMosqueMode } from '../../hooks/useMosqueMode';
 import { usePrayerTimes } from '../../providers/PrayerTimesProvider';
 import TimeInput from '../common/TimeInput';
 import { mosqueModePlatformUi } from '../../utils/mosqueModePlatform';
-import { max } from 'date-fns';
 
 const DURATION_OPTIONS = [15, 20, 25, 30, 35, 40, 45, 50, 55, 60];
 const OFFSET_OPTIONS = [5, 10, 15, 20, 25, 30];
@@ -34,11 +33,15 @@ const JummahMosqueConfig: React.FC = () => {
   const [inputMode, setInputMode] = useState<InputMode>('offset');
   const showSilentControls = mosqueModePlatformUi.showsSilentModeControls;
 
-  const jummah = settings?.jummah ?? {
-    enabled: true,
-    silentDuration: 30,
-    iqamahOffset: 15,
+  // Normalize once: drops any legacy `iqamahOffset` and guarantees an absolute
+  // iqamah time. Jummah iqamah is a fixed wall-clock time (default 1:30 PM).
+  const jummah = {
+    enabled: settings?.jummah?.enabled ?? true,
+    silentDuration: settings?.jummah?.silentDuration ?? 30,
+    iqamahTime: settings?.jummah?.iqamahTime ?? '13:30',
   };
+
+  const dhuhrTime = todayPrayerTimes.find(p => p.name === 'Dhuhr')?.time ?? null;
 
   const handleToggle = (value: boolean) => {
     updateMosqueModeSettings({
@@ -52,34 +55,37 @@ const JummahMosqueConfig: React.FC = () => {
     });
   };
 
-  const handleOffsetChange = (value: number) => {
+  // Offset mode: choose minutes after Dhuhr → store the resulting absolute time
+  // (computed from today's Dhuhr), so the value stays a fixed wall-clock iqamah.
+  const handleOffsetChange = (offsetMin: number) => {
+    if (!dhuhrTime) return;
+    const iqamah = new Date(dhuhrTime.getTime() + offsetMin * 60000);
+    const h = iqamah.getHours().toString().padStart(2, '0');
+    const m = iqamah.getMinutes().toString().padStart(2, '0');
     updateMosqueModeSettings({
-      jummah: { ...jummah, iqamahOffset: value },
+      jummah: { ...jummah, iqamahTime: `${h}:${m}` },
     });
   };
 
-  // Compute exact iqamah time from Dhuhr adhan + offset
-  const getExactJummahTime = (): string => {
-    const dhuhr = todayPrayerTimes.find(p => p.name === 'Dhuhr');
-    if (!dhuhr) return '12:30';
-    const iqamah = new Date(dhuhr.time.getTime() + jummah.iqamahOffset * 60000);
-    const h = iqamah.getHours();
-    const m = iqamah.getMinutes();
-    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+  // Offset derived from the stored absolute time vs today's Dhuhr (for display).
+  const getDerivedOffset = (): number | null => {
+    if (!dhuhrTime) return null;
+    const [hStr, mStr] = jummah.iqamahTime.split(':');
+    const iqamah = new Date(dhuhrTime);
+    iqamah.setHours(parseInt(hStr, 10), parseInt(mStr, 10), 0, 0);
+    return Math.max(1, Math.round((iqamah.getTime() - dhuhrTime.getTime()) / 60000));
   };
 
-  // Convert exact time back to offset from Dhuhr adhan
+  // Exact mode reads/writes the absolute time directly.
+  const getExactJummahTime = (): string => jummah.iqamahTime;
+
   const handleExactTimeChange = (timeStr: string) => {
-    const dhuhr = todayPrayerTimes.find(p => p.name === 'Dhuhr');
-    if (!dhuhr) return;
-    const [hStr, mStr] = timeStr.split(':');
-    const exactDate = new Date(dhuhr.time);
-    exactDate.setHours(parseInt(hStr, 10), parseInt(mStr, 10), 0, 0);
-    const diffMin = Math.max(1, Math.round((exactDate.getTime() - dhuhr.time.getTime()) / 60000));
     updateMosqueModeSettings({
-      jummah: { ...jummah, iqamahOffset: diffMin },
+      jummah: { ...jummah, iqamahTime: timeStr },
     });
   };
+
+  const derivedOffset = getDerivedOffset();
 
   return (
     <View style={styles.container}>
@@ -200,13 +206,15 @@ const JummahMosqueConfig: React.FC = () => {
                   <Text style={styles.optionHint}>
                     {mosqueModePlatformUi.jummahOffsetHint}
                   </Text>
-                  <Text style={styles.optionValue}>{jummah.iqamahOffset} min</Text>
+                  <Text style={styles.optionValue}>
+                    {derivedOffset != null ? `${derivedOffset} min` : '—'}
+                  </Text>
                 </TouchableOpacity>
 
                 {showOffsetPicker && (
                   <View style={styles.chipGrid}>
                     {OFFSET_OPTIONS.map((min) => {
-                      const isSelected = jummah.iqamahOffset === min;
+                      const isSelected = derivedOffset === min;
                       return (
                         <TouchableOpacity
                           key={min}

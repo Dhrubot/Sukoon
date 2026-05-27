@@ -394,7 +394,7 @@ class StorageService {
       jummah: {
         enabled: true,         // Enable Jummah silent mode by default
         silentDuration: 30,    // 30 minutes (khutba ~20 + prayer ~10)
-        iqamahOffset: 15,      // 15 minutes after Dhuhr adhan on Friday
+        iqamahTime: '13:30',   // 1:30 PM — common Jummah iqamah; user can override
       },
     };
   }

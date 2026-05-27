@@ -3,6 +3,7 @@ import { Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { IOS_NOTIFICATION_CAP } from '../constants/NotificationConstants';
 import { format, addMinutes } from 'date-fns';
+import { isFriday } from '../utils/ramadan';
 import StorageService from './StorageService';
 import RingerControlService from './RingerControlService';
 import type { RingerMode } from './RingerControlService';
@@ -193,6 +194,16 @@ class MosqueModeService {
     const settings = StorageService.getUserSettings();
     if (!settings?.mosqueMode?.enabled) {
       return null;
+    }
+
+    // On Fridays, Dhuhr is Jumu'ah — use the dedicated absolute iqamah time
+    // (a fixed wall-clock time set by the user, default 1:30 PM) instead of an offset.
+    const jummah = settings.mosqueMode.jummah;
+    if (prayer.name === 'Dhuhr' && isFriday(prayer.time) && jummah?.enabled && jummah.iqamahTime) {
+      const [hStr, mStr] = jummah.iqamahTime.split(':');
+      const iqamah = new Date(prayer.time);
+      iqamah.setHours(parseInt(hStr, 10), parseInt(mStr, 10), 0, 0);
+      return iqamah;
     }
 
     const offset = settings.mosqueMode.iqamahOffsets[prayer.name];

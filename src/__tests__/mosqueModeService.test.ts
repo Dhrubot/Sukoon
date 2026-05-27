@@ -21,6 +21,7 @@ describe('MosqueModeService', () => {
     useVibrateInsteadOfSilent?: boolean;
     ringerMode?: 'NORMAL' | 'SILENT' | 'VIBRATE' | null;
     scheduleMosqueModeResult?: boolean;
+    jummah?: { enabled: boolean; silentDuration: number; iqamahTime: string };
   }) {
     jest.resetModules();
 
@@ -46,6 +47,7 @@ describe('MosqueModeService', () => {
         autoRestore: options?.autoRestore ?? true,
         promptBeforeEnable: options?.promptBeforeEnable ?? false,
         useVibrateInsteadOfSilent: options?.useVibrateInsteadOfSilent ?? false,
+        jummah: options?.jummah,
       },
     };
 
@@ -129,6 +131,32 @@ describe('MosqueModeService', () => {
     const disabled = loadService({ mosqueModeEnabled: false });
     expect(disabled.service.isEnabledForPrayer('Dhuhr')).toBe(false);
     expect(disabled.service.getIqamahTime(samplePrayer)).toBeNull();
+  });
+
+  it('uses the absolute Jummah iqamah time for Friday Dhuhr instead of the offset', () => {
+    const { service } = loadService({
+      jummah: { enabled: true, silentDuration: 30, iqamahTime: '13:30' },
+    });
+
+    // 2026-03-20 is a Friday. Local h/m asserted (setHours is local, tz-safe).
+    const fridayDhuhr = {
+      name: 'Dhuhr' as const,
+      time: new Date('2026-03-20T11:45:00.000Z'),
+      isNext: true,
+    };
+
+    const iqamah = service.getIqamahTime(fridayDhuhr);
+    expect(iqamah).not.toBeNull();
+    expect(iqamah?.getHours()).toBe(13);
+    expect(iqamah?.getMinutes()).toBe(30);
+
+    // Disabling the Jummah block falls back to the regular Dhuhr offset (12 min).
+    const offsetFallback = loadService({
+      jummah: { enabled: false, silentDuration: 30, iqamahTime: '13:30' },
+    });
+    expect(
+      offsetFallback.service.getIqamahTime(fridayDhuhr)?.toISOString()
+    ).toBe('2026-03-20T11:57:00.000Z');
   });
 
   it('schedules android silent mode, notifications, and active state', async () => {
