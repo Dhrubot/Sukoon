@@ -12,6 +12,7 @@ const RINGER_MODE_MODULE_JAVA = `package com.talukders.sukoon;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.media.AudioManager;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
@@ -22,17 +23,20 @@ import com.facebook.react.bridge.*;
 public class RingerModeModule extends ReactContextBaseJavaModule {
     private AudioManager audioManager;
     private static final String MODULE_NAME = "RingerModeModule";
-    
+    // Dedicated SharedPreferences file for cross-process mosque-mode state (Phase 2).
+    // Distinct from sukoon_boot_prefs to keep concerns separated.
+    static final String MOSQUE_PREFS_NAME = "sukoon_mosque_prefs";
+
     public RingerModeModule(ReactApplicationContext context) {
         super(context);
         audioManager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
     }
-    
+
     @Override
     public String getName() {
         return MODULE_NAME;
     }
-    
+
     @ReactMethod
     public void setRingerMode(String mode, Promise promise) {
         try {
@@ -51,14 +55,14 @@ public class RingerModeModule extends ReactContextBaseJavaModule {
                     promise.reject("INVALID_MODE", "Invalid ringer mode: " + mode);
                     return;
             }
-            
+
             audioManager.setRingerMode(ringerMode);
             promise.resolve(mode);
         } catch (Exception e) {
             promise.reject("ERROR", "Failed to set ringer mode: " + e.getMessage());
         }
     }
-    
+
     @ReactMethod
     public void getRingerMode(Promise promise) {
         try {
@@ -82,14 +86,14 @@ public class RingerModeModule extends ReactContextBaseJavaModule {
             promise.reject("ERROR", "Failed to get ringer mode: " + e.getMessage());
         }
     }
-    
+
     @ReactMethod
     public void canModifyRingerMode(Promise promise) {
         try {
             // On Android 6.0+, we need to check if we can actually modify
             boolean canModify = true;
             if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.M) {
-                android.app.NotificationManager notificationManager = 
+                android.app.NotificationManager notificationManager =
                     (android.app.NotificationManager) getReactApplicationContext()
                         .getSystemService(Context.NOTIFICATION_SERVICE);
                 canModify = notificationManager.isNotificationPolicyAccessGranted();
@@ -114,6 +118,60 @@ public class RingerModeModule extends ReactContextBaseJavaModule {
             promise.resolve(true);
         } catch (Exception e) {
             promise.reject("OPEN_SETTINGS_FAILED", "Failed to open DND settings: " + e.getMessage());
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Phase 2 — SharedPreferences bridge methods for cross-process mosque state.
+    // Uses commit() (synchronous) per the locked design decision so the boot
+    // receiver always reads a consistent snapshot.
+    // -----------------------------------------------------------------------
+
+    /**
+     * Write a string value to the mosque-mode SharedPreferences file.
+     * Uses commit() (synchronous) to guarantee cross-process visibility.
+     */
+    @ReactMethod
+    public void mosquePrefsSet(String key, String value, Promise promise) {
+        try {
+            SharedPreferences prefs = getReactApplicationContext()
+                .getSharedPreferences(MOSQUE_PREFS_NAME, Context.MODE_PRIVATE);
+            boolean committed = prefs.edit().putString(key, value).commit();
+            promise.resolve(committed);
+        } catch (Exception e) {
+            promise.reject("ERROR", "mosquePrefsSet failed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Read a string value from the mosque-mode SharedPreferences file.
+     * Returns null (JS null) if the key is absent.
+     */
+    @ReactMethod
+    public void mosquePrefsGet(String key, Promise promise) {
+        try {
+            SharedPreferences prefs = getReactApplicationContext()
+                .getSharedPreferences(MOSQUE_PREFS_NAME, Context.MODE_PRIVATE);
+            String value = prefs.getString(key, null);
+            promise.resolve(value);
+        } catch (Exception e) {
+            promise.reject("ERROR", "mosquePrefsGet failed: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Remove a single key from the mosque-mode SharedPreferences file.
+     * Uses commit() (synchronous).
+     */
+    @ReactMethod
+    public void mosquePrefsClear(String key, Promise promise) {
+        try {
+            SharedPreferences prefs = getReactApplicationContext()
+                .getSharedPreferences(MOSQUE_PREFS_NAME, Context.MODE_PRIVATE);
+            boolean committed = prefs.edit().remove(key).commit();
+            promise.resolve(committed);
+        } catch (Exception e) {
+            promise.reject("ERROR", "mosquePrefsClear failed: " + e.getMessage());
         }
     }
 
@@ -296,6 +354,195 @@ public class MosqueModeReceiver extends BroadcastReceiver {
 }
 `;
 
+// ---------------------------------------------------------------------------
+// Phase 2: Boot receiver that re-arms mosque-mode AlarmManager alarms after
+// a device reboot. Reads state from sukoon_mosque_prefs SharedPreferences
+// (written by RingerModeModule.mosquePrefsSet from JS side).
+// ---------------------------------------------------------------------------
+const RINGER_MODE_BOOT_RECEIVER_JAVA = `package com.talukders.sukoon;
+
+import android.app.AlarmManager;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.media.AudioManager;
+import android.os.Build;
+import android.util.Log;
+
+/**
+ * Fires on BOOT_COMPLETED and re-arms mosque-mode AlarmManager alarms
+ * that were wiped by the reboot.
+ *
+ * State is read from sukoon_mosque_prefs SharedPreferences (Phase 2),
+ * written by JS-side MosqueModeService via RingerModeModule.mosquePrefsSet().
+ */
+public class RingerModeBootReceiver extends BroadcastReceiver {
+    private static final String TAG = "RingerModeBootReceiver";
+
+    // SharedPreferences key names — must match JS SP_KEYS constants.
+    private static final String KEY_STATE             = "mosque_state";
+    private static final String KEY_PRAYER            = "mosque_prayer";
+    private static final String KEY_IQAMAH_MS         = "mosque_iqamah_ms";
+    private static final String KEY_RESTORE_MS        = "mosque_restore_ms";
+    private static final String KEY_RESTORE_MODE      = "mosque_restore_mode";
+    private static final String KEY_MANAGED_BY_SUKOON = "mosque_managed_by_sukoon";
+
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        if (context == null || intent == null) return;
+        if (!Intent.ACTION_BOOT_COMPLETED.equals(intent.getAction()) &&
+            !"android.intent.action.QUICKBOOT_POWERON".equals(intent.getAction())) {
+            return;
+        }
+
+        Log.d(TAG, "BOOT_COMPLETED received — checking mosque mode state");
+
+        SharedPreferences prefs = context.getSharedPreferences(
+            RingerModeModule.MOSQUE_PREFS_NAME, Context.MODE_PRIVATE);
+
+        String state = prefs.getString(KEY_STATE, null);
+        if (state == null || state.equals("idle")) {
+            Log.d(TAG, "No active mosque mode in prefs — nothing to re-arm");
+            return;
+        }
+
+        String iqamahMsStr  = prefs.getString(KEY_IQAMAH_MS, null);
+        String restoreMsStr = prefs.getString(KEY_RESTORE_MS, null);
+        String restoreMode  = prefs.getString(KEY_RESTORE_MODE, "NORMAL");
+        boolean managedBySukoon = "1".equals(prefs.getString(KEY_MANAGED_BY_SUKOON, "0"));
+
+        if (iqamahMsStr == null || restoreMsStr == null) {
+            Log.w(TAG, "Incomplete mosque prefs — clearing state");
+            prefs.edit().clear().commit();
+            return;
+        }
+
+        long iqamahMs;
+        long restoreMs;
+        try {
+            iqamahMs  = Long.parseLong(iqamahMsStr);
+            restoreMs = Long.parseLong(restoreMsStr);
+        } catch (NumberFormatException e) {
+            Log.e(TAG, "Failed to parse mosque pref timestamps: " + e.getMessage());
+            prefs.edit().clear().commit();
+            return;
+        }
+
+        long now = System.currentTimeMillis();
+
+        // Case 1: window has passed — restore ringer immediately if we managed it.
+        if (now >= restoreMs) {
+            Log.d(TAG, "Boot after restore window — restoring ringer immediately");
+            if (managedBySukoon) {
+                applyRingerMode(context, restoreMode);
+            }
+            prefs.edit().clear().commit();
+            return;
+        }
+
+        // Case 2: in active silence window — re-apply SILENT and re-arm only RESTORE alarm.
+        if (now >= iqamahMs && now < restoreMs && managedBySukoon) {
+            Log.d(TAG, "Boot during active silence window — re-applying SILENT and re-arming RESTORE alarm");
+            applyRingerMode(context, "SILENT");
+            scheduleRestoreAlarm(context, restoreMs, restoreMode, (int)(iqamahMs % Integer.MAX_VALUE));
+            return;
+        }
+
+        // Case 3: before iqamah — re-arm both ENABLE and RESTORE alarms.
+        if (now < iqamahMs) {
+            String prayer = prefs.getString(KEY_PRAYER, "Prayer");
+            Log.d(TAG, "Boot before iqamah for " + prayer + " — re-arming both alarms");
+            scheduleEnableAlarm(context, iqamahMs, "SILENT", (int)(iqamahMs % Integer.MAX_VALUE));
+            if (restoreMs > iqamahMs) {
+                scheduleRestoreAlarm(context, restoreMs, restoreMode, (int)(iqamahMs % Integer.MAX_VALUE));
+            }
+        }
+    }
+
+    private void applyRingerMode(Context context, String mode) {
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                NotificationManager nm = (NotificationManager)
+                    context.getSystemService(Context.NOTIFICATION_SERVICE);
+                if (nm != null && !nm.isNotificationPolicyAccessGranted()) {
+                    Log.w(TAG, "DND permission not granted — cannot apply ringer mode");
+                    return;
+                }
+            }
+            AudioManager am = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+            if (am == null) return;
+            switch (mode) {
+                case "SILENT":  am.setRingerMode(AudioManager.RINGER_MODE_SILENT);  break;
+                case "VIBRATE": am.setRingerMode(AudioManager.RINGER_MODE_VIBRATE); break;
+                default:        am.setRingerMode(AudioManager.RINGER_MODE_NORMAL);  break;
+            }
+            Log.d(TAG, "Ringer mode set to " + mode + " after boot");
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to apply ringer mode after boot: " + e.getMessage());
+        }
+    }
+
+    private void scheduleEnableAlarm(Context context, long triggerAtMs, String mode, int requestCode) {
+        try {
+            AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+            if (am == null) return;
+
+            Intent enableIntent = new Intent(context, MosqueModeReceiver.class);
+            enableIntent.setAction("com.talukders.sukoon.MOSQUE_MODE_ENABLE");
+            enableIntent.putExtra("mode", mode);
+
+            int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                flags |= PendingIntent.FLAG_IMMUTABLE;
+            }
+            PendingIntent pi = PendingIntent.getBroadcast(context, requestCode, enableIntent, flags);
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMs, pi);
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                am.setExact(AlarmManager.RTC_WAKEUP, triggerAtMs, pi);
+            } else {
+                am.set(AlarmManager.RTC_WAKEUP, triggerAtMs, pi);
+            }
+            Log.d(TAG, "ENABLE alarm re-armed for " + triggerAtMs);
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to schedule enable alarm: " + e.getMessage());
+        }
+    }
+
+    private void scheduleRestoreAlarm(Context context, long triggerAtMs, String restoreMode, int requestCodeBase) {
+        try {
+            AlarmManager am = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+            if (am == null) return;
+
+            Intent restoreIntent = new Intent(context, MosqueModeReceiver.class);
+            restoreIntent.setAction("com.talukders.sukoon.MOSQUE_MODE_RESTORE");
+            restoreIntent.putExtra("mode", restoreMode);
+
+            int flags = PendingIntent.FLAG_UPDATE_CURRENT;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                flags |= PendingIntent.FLAG_IMMUTABLE;
+            }
+            PendingIntent pi = PendingIntent.getBroadcast(context, requestCodeBase + 1, restoreIntent, flags);
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, triggerAtMs, pi);
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                am.setExact(AlarmManager.RTC_WAKEUP, triggerAtMs, pi);
+            } else {
+                am.set(AlarmManager.RTC_WAKEUP, triggerAtMs, pi);
+            }
+            Log.d(TAG, "RESTORE alarm re-armed for " + triggerAtMs + " mode=" + restoreMode);
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to schedule restore alarm: " + e.getMessage());
+        }
+    }
+}
+`;
+
 // Java code for the RingerMode Package
 const RINGER_MODE_PACKAGE_JAVA = `package com.talukders.sukoon;
 
@@ -390,8 +637,10 @@ const withRingerModePermission = (config) => {
     const mainApplication = androidManifest.manifest.application?.[0];
     if (mainApplication) {
       const receivers = mainApplication.receiver || [];
-      const hasReceiver = receivers.some((r) => r?.$?.['android:name'] === '.MosqueModeReceiver');
-      if (!hasReceiver) {
+
+      // MosqueModeReceiver — handles AlarmManager ENABLE / RESTORE intents
+      const hasMosqueModeReceiver = receivers.some((r) => r?.$?.['android:name'] === '.MosqueModeReceiver');
+      if (!hasMosqueModeReceiver) {
         receivers.push({
           $: {
             'android:name': '.MosqueModeReceiver',
@@ -399,9 +648,29 @@ const withRingerModePermission = (config) => {
           },
         });
       }
+
+      // RingerModeBootReceiver — Phase 2: re-arms mosque mode alarms after reboot
+      const hasBootReceiver = receivers.some((r) => r?.$?.['android:name'] === '.RingerModeBootReceiver');
+      if (!hasBootReceiver) {
+        receivers.push({
+          $: {
+            'android:name': '.RingerModeBootReceiver',
+            'android:exported': 'false',
+          },
+          'intent-filter': [
+            {
+              action: [
+                { $: { 'android:name': 'android.intent.action.BOOT_COMPLETED' } },
+                { $: { 'android:name': 'android.intent.action.QUICKBOOT_POWERON' } },
+              ],
+            },
+          ],
+        });
+      }
+
       mainApplication.receiver = receivers;
     }
-    
+
     return config;
   });
 };
@@ -442,6 +711,11 @@ const withRingerModeFiles = (config) => {
       const receiverPath = path.join(androidPath, 'MosqueModeReceiver.java');
       fs.writeFileSync(receiverPath, MOSQUE_MODE_RECEIVER_JAVA, 'utf-8');
       console.log('✅ Created MosqueModeReceiver.java');
+
+      // Phase 2: write RingerModeBootReceiver.java
+      const bootReceiverPath = path.join(androidPath, 'RingerModeBootReceiver.java');
+      fs.writeFileSync(bootReceiverPath, RINGER_MODE_BOOT_RECEIVER_JAVA, 'utf-8');
+      console.log('✅ Created RingerModeBootReceiver.java');
 
       return config;
     },

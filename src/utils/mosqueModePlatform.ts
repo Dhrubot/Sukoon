@@ -6,12 +6,17 @@ export const mosqueModePlatformUi = {
   allowsDeviceSilencing: isMosqueModeAutoSilenceSupported,
   showsSilentModeControls: isMosqueModeAutoSilenceSupported,
   showsRestoreWindow: isMosqueModeAutoSilenceSupported,
+  /**
+   * Header subtitle shown on MosqueModeScreen.
+   * Android: leads with the automatic-silence guarantee.
+   * iOS: leads with the iOS limitation so the user is never misled.
+   */
   headerSubtitle: isMosqueModeAutoSilenceSupported
-    ? 'Guard the quiet of the masjid by entering a dedicated prayer mode before iqamah.'
-    : 'Get a calm reminder before iqamah so you can silence your phone yourself before prayer begins.',
+    ? 'Automatic — Sukoon silences your phone at iqamah and restores it after prayer.'
+    : 'Reminder — Sukoon sends a strong reminder before iqamah so you can silence your phone.',
   footerText: isMosqueModeAutoSilenceSupported
     ? 'Sukoon handles the quiet around iqamah so the masjid stays calm and your attention stays on salah.'
-    : 'Sukoon cannot change iPhone sound settings for you. It will remind you at the right time so you can silence your phone yourself.',
+    : 'iPhone does not allow apps to control the ringer. Sukoon will remind you at the right time so you can silence your phone yourself.',
   optionsSectionLabel: isMosqueModeAutoSilenceSupported ? 'SILENT MODE OPTIONS' : 'REMINDER OPTIONS',
   toggleDescription: isMosqueModeAutoSilenceSupported
     ? 'Automatically protect masjid quiet at iqamah time'
@@ -73,4 +78,16 @@ export const mosqueModePlatformUi = {
     : 'Iqamah starts soon. Silence your phone before prayer begins.',
   iosReminderBody: 'Iqamah starts soon. Silence your phone before prayer begins.',
   iosIqamahBody: 'Iqamah is starting now. Please silence your phone for prayer.',
+  /**
+   * iOS Time-Sensitive pre-iqamah notification body (5 min before).
+   * Instructs user exactly how to silence — actionable and specific.
+   */
+  iosPreIqamahBody: 'Time to silence your phone. Swipe down to Control Center and tap the bell icon.',
+  /**
+   * Platform disclosure label shown in settings to prevent Android/iOS symmetry confusion.
+   * Android: explains automatic silence. iOS: explains reminder-only mode.
+   */
+  platformDisclosureLabel: isMosqueModeAutoSilenceSupported
+    ? 'Android: automatic silence at iqamah'
+    : 'iPhone: reminder to silence manually',
 };
