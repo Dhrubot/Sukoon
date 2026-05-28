@@ -170,6 +170,18 @@ jest.mock('../components/onboarding/OnboardingReadyStep', () => ({
   },
 }));
 
+jest.mock('../components/onboarding/OnboardingCalcMethodConfirmStep', () => ({
+  OnboardingCalcMethodConfirmStep: ({ onConfirm }: any) => {
+    const ReactNative = require('react-native');
+    return (
+      <ReactNative.Button
+        title="calc-method-confirm"
+        onPress={() => onConfirm('MWL')}
+      />
+    );
+  },
+}));
+
 const OnboardingScreen = require('../screens/Onboarding/OnboardingScreen').default;
 
 describe('OnboardingScreen', () => {
@@ -195,6 +207,8 @@ describe('OnboardingScreen', () => {
     fireEvent.press(getByRole('button', { name: 'welcome' }));
     fireEvent.press(getByRole('button', { name: 'location' }));
     fireEvent.press(getByRole('button', { name: 'notifications-skip' }));
+    // New calc_method step — confirm to advance to done
+    fireEvent.press(getByRole('button', { name: 'calc-method-confirm' }));
 
     expect(getByText('Asr: Standard')).toBeTruthy();
 
@@ -226,6 +240,8 @@ describe('OnboardingScreen', () => {
     });
 
     fireEvent.press(getByRole('button', { name: 'notifications-skip' }));
+    // New calc_method step — confirm to advance to done
+    fireEvent.press(getByRole('button', { name: 'calc-method-confirm' }));
     fireEvent.press(getByRole('button', { name: 'complete' }));
 
     expect(mockSetUserSettings).toHaveBeenCalledWith(

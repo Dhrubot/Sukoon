@@ -658,11 +658,41 @@ class StorageService {
     return stats;
   }
 
-  // Export prayer data as JSON
-  exportPrayerData(): string {
-    const exportData = {
+  // Export prayer data as JSON.
+  // By default, precise location (lat/lng/city) and display name are redacted.
+  // Pass includeLocation: true to include them (personal backup on trusted devices).
+  exportPrayerData(options: { includeLocation?: boolean } = {}): string {
+    const { includeLocation = false } = options;
+    const rawSettings = this.getUserSettings();
+
+    // Build a sanitized copy of userSettings
+    let exportedSettings: typeof rawSettings | null = null;
+    if (rawSettings) {
+      const { name, location, ...rest } = rawSettings;
+      exportedSettings = {
+        ...rest,
+        name: includeLocation ? name : undefined,
+        location: includeLocation
+          ? location
+          : {
+              // Keep country for regional method matching; redact everything else
+              latitude: 0,
+              longitude: 0,
+              city: undefined,
+              country: location.country,
+              timezone: location.timezone,
+            },
+      };
+    }
+
+    const exportData: Record<string, unknown> = {
       exportDate: new Date().toISOString(),
-      userSettings: this.getUserSettings(),
+      userSettings: exportedSettings,
+      // Embed a redaction marker so importPrayerData knows which fields to skip
+      redacted: {
+        location: !includeLocation,
+        name: !includeLocation,
+      },
       currentDawam: this.getCurrentDawam(),
       longestDawam: this.getLongestDawam(),
       prayers: [] as { date: string; records: PrayerRecord[] }[],
@@ -681,7 +711,7 @@ class StorageService {
       // Get prayer records
       const dayRecords = this.getDayPrayerRecords(dateStr);
       if (dayRecords.length > 0) {
-        exportData.prayers.push({
+        (exportData.prayers as { date: string; records: PrayerRecord[] }[]).push({
           date: dateStr,
           records: dayRecords,
         });
@@ -690,7 +720,7 @@ class StorageService {
       // Get daily stats
       const dayStats = this.getDailyStats(dateStr);
       if (dayStats) {
-        exportData.dailyStats.push(dayStats);
+        (exportData.dailyStats as DailyStats[]).push(dayStats);
       }
 
       currentDate.setDate(currentDate.getDate() + 1);
@@ -699,7 +729,10 @@ class StorageService {
     return JSON.stringify(exportData, null, 2);
   }
 
-  // Import prayer data from a JSON string (produced by exportPrayerData)
+  // Import prayer data from a JSON string (produced by exportPrayerData).
+  // Merges records without overwriting existing 'prayed' entries.
+  // Respects the 'redacted' marker — when location or name are redacted the
+  // current device values are kept and NOT overwritten.
   importPrayerData(jsonString: string): { imported: number; skipped: number } {
     const data = JSON.parse(jsonString);
 
@@ -745,6 +778,28 @@ class StorageService {
     }
     if (typeof data.longestDawam === 'number' && data.longestDawam > this.getLongestDawam()) {
       this.publicStorage.set('longest_dawam', data.longestDawam);
+    }
+
+    // Merge non-PII userSettings fields from the export.
+    // If location or name are redacted, keep the device's current values.
+    if (data.userSettings && typeof data.userSettings === 'object') {
+      const redacted: { location?: boolean; name?: boolean } = data.redacted ?? {};
+      const current = this.getUserSettings();
+      if (current) {
+        const incoming = data.userSettings as Partial<UserSettings>;
+        const mergedSettings: UserSettings = {
+          ...current,
+          // Merge safe non-PII settings fields
+          calculationMethod: incoming.calculationMethod ?? current.calculationMethod,
+          calculationMethodManuallySelected:
+            incoming.calculationMethodManuallySelected ?? current.calculationMethodManuallySelected,
+          asrJuristic: incoming.asrJuristic ?? current.asrJuristic,
+          // Keep current location/name when redacted
+          location: redacted.location ? current.location : (incoming.location ?? current.location),
+          name: redacted.name ? current.name : (incoming.name ?? current.name),
+        };
+        this.setUserSettings(mergedSettings);
+      }
     }
 
     return { imported, skipped };
@@ -1148,6 +1203,17 @@ class StorageService {
 
   deletePublicValue(key: string): void {
     this.publicStorage.remove(key);
+  }
+
+  /** Read a string value from the unencrypted public store. */
+  getPublicValue(key: string): string | null {
+    const value = this.publicStorage.getString(key);
+    return value === undefined ? null : value;
+  }
+
+  /** Write a string value to the unencrypted public store. */
+  setPublicValue(key: string, value: string): void {
+    this.publicStorage.set(key, value);
   }
 
   getPremiumFeatures(): PremiumFeatures {

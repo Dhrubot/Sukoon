@@ -5,7 +5,7 @@ import { useAppStateChange } from '../hooks/useAppStateChange';
 import { useStore } from '../store/useStore';
 import { useShallow } from 'zustand/react/shallow';
 import PrayerTimeService from '../services/PrayerTimeService';
-import { PrayerTime, PrayerName, PrayerTimes } from '../types';
+import { PrayerTime, PrayerName, PrayerTimeQuality, PrayerTimes } from '../types';
 import { isValidCoordinates } from '../utils/locationValidation';
 import logger from '../utils/logger';
 import WidgetService from '../services/WidgetService';
@@ -25,6 +25,10 @@ interface PrayerTimesContextType {
   isOffline: boolean;
   usingHardcodedDefaults: boolean;
   highLatitudeWarning: boolean;
+  /** Quality of the most-recent prayer time fetch. 'stale_cache' means the times
+   *  are from a prior day's successful fetch — better than hardcoded defaults but
+   *  not accurate for today. UI surfaces should show a soft offline banner. */
+  prayerTimeQuality: PrayerTimeQuality | null;
   refreshPrayerTimes: () => Promise<void>;
 }
 
@@ -38,6 +42,7 @@ const PrayerTimesContext = createContext<PrayerTimesContextType>({
   isOffline: false,
   usingHardcodedDefaults: false,
   highLatitudeWarning: false,
+  prayerTimeQuality: null,
   refreshPrayerTimes: async () => {},
 });
 
@@ -78,6 +83,7 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
   const [isOffline, setIsOffline] = useState(false);
   const [usingHardcodedDefaults, setUsingHardcodedDefaults] = useState(false);
   const [highLatitudeWarning, setHighLatitudeWarning] = useState(false);
+  const [prayerTimeQuality, setPrayerTimeQuality] = useState<PrayerTimeQuality | null>(null);
   const { recordRefreshAttempt, recordRefreshSuccess } = usePrayerTimeRefresh();
   const lastAnnouncedPrayerStateRef = useRef<string | null>(null);
 
@@ -292,6 +298,7 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
       setIsOffline(todayFetchWasFallback);
       setUsingHardcodedDefaults(usedHardcodedDefaults);
       setHighLatitudeWarning(hasHighLatitudeWarning);
+      setPrayerTimeQuality(todayResult.quality ?? null);
       if (!todayFetchWasFallback) {
         recordRefreshSuccess(
           freshLocation,
@@ -479,6 +486,7 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
     isOffline,
     usingHardcodedDefaults,
     highLatitudeWarning,
+    prayerTimeQuality,
     refreshPrayerTimes,
   };
 

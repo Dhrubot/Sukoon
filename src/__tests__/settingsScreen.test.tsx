@@ -94,6 +94,7 @@ jest.mock('../screens/Settings/modals', () => ({
   CalculationMethodModal: () => null,
   NotificationModal: () => null,
   HijriAdjustmentModal: () => null,
+  ExportDataConfirmModal: () => null,
 }));
 
 jest.mock('../screens/Debug/NotificationDebugScreen', () => ({
@@ -166,12 +167,16 @@ jest.mock('../screens/Settings/hooks', () => ({
     updateLocation: jest.fn(),
     handleResetApp: jest.fn(),
     handleExportData: jest.fn(),
+    handleExportDataWithOptions: jest.fn(),
     handleImportData: jest.fn(),
     handlePrivacyPolicy: jest.fn(),
     previewCalculationMethod: jest.fn(),
     testPrayerCalculations: jest.fn(),
     showDebugInfo: jest.fn(),
     refreshPrayerTimes: jest.fn(),
+    showExportConfirmModal: false,
+    setShowExportConfirmModal: jest.fn(),
+    handleAutomaticCalculationMethod: jest.fn(),
   }),
 }));
 

@@ -26,6 +26,7 @@ export type PrayerTimeQuality =
   | "direct"
   | "calculated_fallback"
   | "disk_cache"
+  | "stale_cache"
   | "hardcoded_defaults"
   | "invalid";
 

@@ -10,6 +10,7 @@ import { usePrayerTimes } from '../../../providers/PrayerTimesProvider';
 import logger from '../../../utils/logger';
 import { applyRegionalCalculationMethod } from '../../../utils/calculationMethodByRegion';
 import NotificationService from '../../../services/NotificationService';
+import type { ExportOptions } from '../modals/ExportDataConfirmModal';
 
 interface PreviewPrayerTimes {
   method: string;
@@ -25,6 +26,7 @@ export const useSettingsManager = () => {
   const [showCalculationPicker, setShowCalculationPicker] = useState(false);
   const [showNotificationModal, setShowNotificationModal] = useState(false);
   const [showManualLocationModal, setShowManualLocationModal] = useState(false);
+  const [showExportConfirmModal, setShowExportConfirmModal] = useState(false);
   const [isUpdatingLocation, setIsUpdatingLocation] = useState(false);
   const [isUpdatingMethod, setIsUpdatingMethod] = useState(false);
   const [previewPrayerTimes, setPreviewPrayerTimes] = useState<PreviewPrayerTimes | null>(null);
@@ -199,9 +201,15 @@ export const useSettingsManager = () => {
     );
   };
 
-  const handleExportData = async () => {
+  /** Opens the export consent sheet. The actual file write happens in handleExportDataWithOptions. */
+  const handleExportData = () => {
+    setShowExportConfirmModal(true);
+  };
+
+  /** Called by the ExportDataConfirmModal with the user's chosen options. */
+  const handleExportDataWithOptions = async (options: ExportOptions) => {
     try {
-      const jsonData = StorageService.exportPrayerData();
+      const jsonData = StorageService.exportPrayerData({ includeLocation: options.includeLocation });
       const fileName = `sukoon-backup-${new Date().toISOString().slice(0, 10)}.json`;
       const filePath = `${FileSystem.documentDirectory}${fileName}`;
       await FileSystem.writeAsStringAsync(filePath, jsonData, { encoding: FileSystem.EncodingType.UTF8 });
@@ -287,24 +295,27 @@ export const useSettingsManager = () => {
     setShowNotificationModal,
     showManualLocationModal,
     setShowManualLocationModal,
+    showExportConfirmModal,
+    setShowExportConfirmModal,
     isUpdatingLocation,
     isUpdatingMethod,
     previewPrayerTimes,
-    
+
     // Enhanced functions
     updateLocation,
     handleCalculationMethodChange,
     handleAutomaticCalculationMethod,
     previewCalculationMethod,
     testPrayerCalculations,
-    
+
     // Data functions
     handleExportData,
+    handleExportDataWithOptions,
     handleImportData,
     handleResetApp,
     handlePrivacyPolicy,
     showDebugInfo,
-    
+
     // Prayer times data
     todayPrayerTimes,
     nextPrayer,

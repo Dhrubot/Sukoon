@@ -27,7 +27,7 @@ import { PrayerSettingsSection } from './components/PrayerSettingsSection';
 // Mosque Mode now has its own dedicated screen via MenuStack
 
 // Modal Components
-import { CalculationMethodModal, NotificationModal, HijriAdjustmentModal } from './modals';
+import { CalculationMethodModal, NotificationModal, HijriAdjustmentModal, ExportDataConfirmModal } from './modals';
 
 // Services
 import NotificationService from '../../services/NotificationService';
@@ -84,8 +84,13 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
     updateLocation,
     handleResetApp,
     handleExportData,
+    handleExportDataWithOptions,
     handleImportData,
     handlePrivacyPolicy,
+
+    // Export consent modal state
+    showExportConfirmModal,
+    setShowExportConfirmModal,
 
     // 🎯 NEW: Enhanced actions
     previewCalculationMethod,
@@ -337,6 +342,13 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         onClose={closeAllModals}
         userSettings={userSettings}
         onUpdateSettings={setUserSettings}
+      />
+
+      {/* Export data consent sheet */}
+      <ExportDataConfirmModal
+        visible={showExportConfirmModal}
+        onClose={() => setShowExportConfirmModal(false)}
+        onConfirm={handleExportDataWithOptions}
       />
     </SafeAreaView>
   );
