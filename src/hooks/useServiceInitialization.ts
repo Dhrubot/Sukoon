@@ -48,7 +48,6 @@ export const useServiceInitialization = () => {
 
         try {
           await Promise.all([
-            // SubscriptionService.initialize(),
             LocationService.initialize(),
           ]);
 

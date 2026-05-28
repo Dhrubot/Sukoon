@@ -4,14 +4,10 @@ import logger from '../utils/logger';
 // Religious practice events (prayer_completed, prayer_missed, mindfulness_started/completed,
 // dawam_milestone) are intentionally EXCLUDED. Sukoon's privacy promise is that spiritual
 // practice data never leaves the device. These events must never be sent to Firebase.
+// v1 ships ad-free with no IAP / no donations, so monetization events are not modelled.
 type AnalyticsEvent =
   | 'app_open'
   | 'notification_tapped'
-  | 'premium_card_tapped'
-  | 'premium_purchased'
-  | 'ad_watched'
-  | 'ad_failed'
-  | 'donation_made'
   | 'qibla_opened'
   | 'mosque_mode_activated'
   | 'mosque_mode_deactivated'
@@ -95,23 +91,6 @@ class AnalyticsService {
   // No-ops: religious practice data never leaves the device
   async logPrayerCompleted(_prayer: string, _mindful: boolean): Promise<void> { }
   async logPrayerMissed(_prayer: string): Promise<void> { }
-
-  // Convenience: monetization
-  async logPremiumPurchased(plan: string): Promise<void> {
-    await this.logEvent('premium_purchased', { plan });
-  }
-
-  async logAdWatched(): Promise<void> {
-    await this.logEvent('ad_watched');
-  }
-
-  async logAdFailed(reason: string): Promise<void> {
-    await this.logEvent('ad_failed', { reason });
-  }
-
-  async logDonationMade(tier: string, amount: number): Promise<void> {
-    await this.logEvent('donation_made', { tier, amount });
-  }
 
   // No-op: dawam streaks are spiritual practice data — stays on device
   async logDawamMilestone(_days: number): Promise<void> { }
