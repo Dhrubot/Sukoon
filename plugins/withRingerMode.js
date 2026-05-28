@@ -618,19 +618,11 @@ const withRingerModePermission = (config) => {
       });
     }
 
-    // Add USE_EXACT_ALARM permission for Android 13+ (API 33+)
-    const hasUseExactAlarmPermission = permissions.some(
-      (permission) =>
-        permission.$['android:name'] === 'android.permission.USE_EXACT_ALARM'
-    );
-
-    if (!hasUseExactAlarmPermission) {
-      permissions.push({
-        $: {
-          'android:name': 'android.permission.USE_EXACT_ALARM',
-        },
-      });
-    }
+    // Note: USE_EXACT_ALARM is reserved by Google Play for alarm/clock apps and
+    // can trigger Play Console rejection for prayer apps. We use
+    // SCHEDULE_EXACT_ALARM (declared above), which is the correct permission for
+    // user-scheduled prayer time alarms. USE_EXACT_ALARM is explicitly listed in
+    // app.config.js blockedPermissions; do not add it back here.
 
     androidManifest.manifest['uses-permission'] = permissions;
 
