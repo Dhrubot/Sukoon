@@ -331,13 +331,18 @@ describe('scheduleExtendedNotifications integration', () => {
     expect(placeholderInCopy).toBe(false);
   });
 
-  it('saves fingerprint after successful scheduling', async () => {
+  it('saves v2 fingerprint after successful scheduling', async () => {
     await NotificationService.scheduleExtendedNotifications();
 
     const StorageService = require('../services/StorageService').default;
+    // Phase 1 migration: fingerprint is now stored under the v2 key
     expect(StorageService.setValue).toHaveBeenCalledWith(
-      'notification_schedule_fingerprint',
+      'notification_schedule_fingerprint_v2',
       expect.any(String)
+    );
+    // The old v1 key must be deleted on first v2 write (one-time migration)
+    expect(StorageService.deleteValue).toHaveBeenCalledWith(
+      'notification_schedule_fingerprint'
     );
   });
 

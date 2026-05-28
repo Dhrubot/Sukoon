@@ -39,14 +39,19 @@ import logger from '../utils/logger';
 import { captureNow } from '../constants/time';
 import AnalyticsService from './AnalyticsService';
 import NotificationLedger from './NotificationLedger';
-import { useStore } from '../store/useStore';
 import NotificationTraceService from './NotificationTraceService';
+import ScheduleLock from './notifications/ScheduleLock';
 import {
   getNotificationPersonalizationName,
   prependNotificationName,
 } from '../utils/notificationPersonalization';
 import { scheduleLocalNotificationAsync } from './notifications/scheduleLocalNotification';
-import { buildNotificationScheduleFingerprint } from '../utils/notificationScheduleFingerprint';
+import {
+  buildNotificationScheduleFingerprint,
+  buildNotificationScheduleFingerprintV2,
+  FINGERPRINT_V1_KEY,
+  FINGERPRINT_V2_KEY,
+} from '../utils/notificationScheduleFingerprint';
 
 // NOTIFICATION_CATEGORIES now imported from ./notifications/NotificationChannels
 
@@ -139,6 +144,7 @@ class NotificationService {
   private responseListener: Notifications.Subscription | null = null;
   private notificationCache = new Map<string, string>();
   private navigationHandler: ((prayer: PrayerName, action: string) => void) | null = null;
+  private mosquePromptHandler: ((prayer: PrayerName) => void) | null = null;
   private initialized = false;
   private channelsInitialized = false;
   private pendingInitialResponse: Notifications.NotificationResponse | null = null;
@@ -218,20 +224,7 @@ class NotificationService {
     }
   }
 
-  private acquireSchedulingLock(): boolean {
-    const lockTime = StorageService.getValue('notification_scheduling_lock');
-    if (lockTime) {
-      const elapsed = Date.now() - parseInt(lockTime, 10);
-      if (elapsed < SCHEDULING_LOCK_TIMEOUT_MS) return false; // Lock held < 2 min → scheduling in progress
-      // Lock is stale (>2 min) → previous run crashed, steal it
-    }
-    StorageService.setValue('notification_scheduling_lock', Date.now().toString());
-    return true;
-  }
-
-  private releaseSchedulingLock(): void {
-    StorageService.deleteValue('notification_scheduling_lock');
-  }
+  // Lock acquisition/release delegated to ScheduleLock (cross-process on Android)
 
   private prayerTimesFetcher: PrayerTimesFetcher | null = null;
 
@@ -567,6 +560,22 @@ class NotificationService {
     logger.log(replacingHandler ? '♻️ Navigation handler replaced' : '✅ Navigation handler registered');
   }
 
+  /**
+   * Register a callback that is invoked when the user taps a mosque-mode-prompt
+   * notification. The callback receives the PrayerName and should call
+   * `useStore.getState().setPendingMosquePromptPrayer(prayer)` from the React
+   * layer. This keeps `useStore` out of the service layer.
+   */
+  registerMosquePromptHandler(handler: ((prayer: PrayerName) => void) | null) {
+    const replacingHandler = this.mosquePromptHandler !== null;
+    this.mosquePromptHandler = handler;
+    if (!handler) {
+      logger.log('🧹 Mosque prompt handler cleared');
+      return;
+    }
+    logger.log(replacingHandler ? '♻️ Mosque prompt handler replaced' : '✅ Mosque prompt handler registered');
+  }
+
   async initialize(options?: { requestPermissions?: boolean }): Promise<boolean> {
     try {
       NotificationTraceService.log('initialize_started');
@@ -792,9 +801,11 @@ class NotificationService {
 
     // If user taps the notification itself
     if (actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER) {
-      // Mosque mode prompt: store pending prayer and navigate to Home
+      // Mosque mode prompt: invoke registered callback and navigate to Home
       if (data?.type === 'mosque_mode_prompt' && data?.prayer) {
-        useStore.getState().setPendingMosquePromptPrayer(data.prayer as PrayerName);
+        if (this.mosquePromptHandler) {
+          this.mosquePromptHandler(data.prayer as PrayerName);
+        }
         if (this.navigationHandler) {
           this.navigationHandler(data.prayer as PrayerName, 'default');
         }
@@ -971,6 +982,7 @@ class NotificationService {
     reason: NotificationSchedulingReason,
     options?: {
       force?: boolean;
+      diskOnly?: boolean;
       onProgress?: (day: number, total: number) => void;
     }
   ): Promise<boolean> {
@@ -1003,7 +1015,8 @@ class NotificationService {
       if (!settings.notifications.enabled) {
         logger.log(`📵 Notifications disabled — clearing prayer notifications (${reason})`);
         await this.cancelAllSukoonReminderNotifications();
-        StorageService.deleteValue('notification_schedule_fingerprint');
+        StorageService.deleteValue(FINGERPRINT_V2_KEY);
+        StorageService.deleteValue(FINGERPRINT_V1_KEY);
         StorageService.deleteValue('last_batch_schedule_date');
         this.persistScheduleOutcome('blocked', reason, 'notifications_disabled');
         NotificationTraceService.log('reconcile_skipped', {
@@ -1030,6 +1043,7 @@ class NotificationService {
       const scheduled = await this.scheduleExtendedNotifications(options?.onProgress, {
         forceRebuild: options?.force ?? reason !== 'settings_change',
         reason,
+        diskOnly: options?.diskOnly,
       });
 
       if (!scheduled) {
@@ -1564,9 +1578,11 @@ class NotificationService {
     options?: {
       forceRebuild?: boolean;
       reason?: NotificationSchedulingReason;
+      diskOnly?: boolean;
     }
   ): Promise<boolean> {
-    if (!this.acquireSchedulingLock()) {
+    const lockAcquired = await ScheduleLock.acquire();
+    if (!lockAcquired) {
       logger.log('🔒 Scheduling already in progress, skipping');
       this.persistScheduleOutcome('blocked', options?.reason || 'background_refresh', 'scheduler_locked');
       NotificationTraceService.log('schedule_skipped_locked', {
@@ -1616,7 +1632,9 @@ class NotificationService {
         return false;
       }
 
-      const previousFingerprint = StorageService.getValue('notification_schedule_fingerprint');
+      // V2 fingerprint: minute-rounded timestamps, no UTC offset, Hijri date included.
+      // On first v2 write we also delete the orphaned v1 key (one-time migration).
+      const previousFingerprint = StorageService.getValue(FINGERPRINT_V2_KEY);
 
       // Single timestamp capture — prevents drift across async scheduling passes
       const now = captureNow();
@@ -1624,16 +1642,45 @@ class NotificationService {
       const schedulingDays = this.getSchedulingDays();
       const lowerTierDays = Math.min(this.getLowerTierSchedulingDays(), schedulingDays);
 
-      const fetcher: PrayerTimesFetcher =
-        this.prayerTimesFetcher ||
-        ((params) =>
-          PrayerTimeService.getPrayerTimesList(
-            params.location,
-            params.date,
-            params.calculationMethod,
-            params.adjustments,
-            params.asrJuristic || 'Standard'
-          ));
+      // When diskOnly is true (boot path), only serve cached prayer times — never
+      // make a network request. This keeps the boot task well within its 60s budget.
+      const diskOnlyFetcher: PrayerTimesFetcher = async (params) => {
+        const cached = PrayerTimeService.getCachedPrayerTimesFromDisk(
+          params.location,
+          params.date,
+          params.calculationMethod,
+          params.asrJuristic || 'Standard'
+        );
+        if (!cached) {
+          logger.log(`⚠️ [boot/diskOnly] Disk cache miss for ${params.date.toISOString().slice(0, 10)} — skipping day`);
+          NotificationTraceService.log('boot_disk_cache_miss', {
+            date: params.date.toISOString().slice(0, 10),
+          });
+          // Return empty so the caller skips scheduling for this day
+          return { prayerTimes: [], sunrise: new Date(), sunset: new Date(), midnight: null, quality: 'invalid' as const };
+        }
+        // Reconstruct the PrayerTimesList result from cached data
+        logger.log(`✅ [boot/diskOnly] Serving cached prayer times for ${cached.date}`);
+        return PrayerTimeService.getPrayerTimesList(
+          params.location,
+          params.date,
+          params.calculationMethod,
+          params.adjustments,
+          params.asrJuristic || 'Standard'
+        );
+      };
+
+      const fetcher: PrayerTimesFetcher = options?.diskOnly
+        ? diskOnlyFetcher
+        : (this.prayerTimesFetcher ||
+          ((params) =>
+            PrayerTimeService.getPrayerTimesList(
+              params.location,
+              params.date,
+              params.calculationMethod,
+              params.adjustments,
+              params.asrJuristic || 'Standard'
+            )));
 
       // Step 0: Fetch prayer times for all days upfront (max of Tier 1 horizon)
       interface DayPrayerData {
@@ -1686,9 +1733,10 @@ class NotificationService {
         onProgress?.(i + 1, schedulingDays);
       }
 
-      const fingerprint = buildNotificationScheduleFingerprint(
+      const fingerprint = buildNotificationScheduleFingerprintV2(
         settings,
         allDays.flatMap((day) => day.prayers)
+        // hijriDate argument omitted → getCachedHijriDate() is called inside
       );
       const shouldRebuild = options?.forceRebuild || previousFingerprint !== fingerprint;
 
@@ -1835,7 +1883,9 @@ class NotificationService {
       // Save fingerprint AFTER all passes complete — if we crash mid-scheduling,
       // the stale fingerprint forces a full rebuild on next invocation.
       if (shouldRebuild) {
-        StorageService.setValue('notification_schedule_fingerprint', fingerprint);
+        StorageService.setValue(FINGERPRINT_V2_KEY, fingerprint);
+        // One-time migration: delete the orphaned v1 key on first v2 write.
+        StorageService.deleteValue(FINGERPRINT_V1_KEY);
       }
 
       if (iosCounter) {
@@ -1879,7 +1929,7 @@ class NotificationService {
       logger.error('❌ Extended scheduling failed:', error);
       return false;
     } finally {
-      this.releaseSchedulingLock();
+      await ScheduleLock.release();
       this.schedulingProgress = 0;
     }
   }
@@ -1971,9 +2021,6 @@ class NotificationService {
   async getDebugInfo() {
     const allScheduled = await Notifications.getAllScheduledNotificationsAsync();
     const scheduled = await this.getScheduledNotifications();
-    const storeState = useStore.getState();
-    const hasSource = storeState.todayPrayerTimes.length > 0;
-    const sourceHasLocation = isValidCoordinates(storeState.location);
     const readiness = await this.getNotificationReadiness();
 
     // Tier distribution
@@ -2008,8 +2055,8 @@ class NotificationService {
         at: StorageService.getValue(LAST_SCHEDULE_AT_KEY),
       },
       tierDistribution: tierCounts,
-      hasSource,
-      sourceHasLocation,
+      // Note: store-level prayer times info is not available here (service layer).
+      // Call sites that need richer debug data should pass it in or query the store directly.
       sourceLoading: false,
       upcomingNotifications: scheduled.slice(0, 5).map((n) => {
         let triggerDisplay = 'Unknown';
@@ -2030,13 +2077,6 @@ class NotificationService {
           scheduledAt: n.content.data?.scheduledAt,
         }
       }),
-      prayerTimesInfo: hasSource
-        ? {
-          todayPrayersCount: storeState.todayPrayerTimes.length,
-          hasNextPrayer: !!storeState.nextPrayer,
-          nextPrayerName: storeState.nextPrayer?.name || 'None',
-        }
-        : null,
     };
   }
 

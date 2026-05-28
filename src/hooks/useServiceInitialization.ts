@@ -94,6 +94,17 @@ export const useServiceInitialization = () => {
     logger.log("🔗 NotificationService fetcher connected");
   }, []);
 
+  // 🕌 Register mosque-prompt handler so NotificationService can call into the store
+  // without importing useStore directly (keeps the service layer store-free).
+  useEffect(() => {
+    NotificationService.registerMosquePromptHandler((prayer) => {
+      useStore.getState().setPendingMosquePromptPrayer(prayer);
+    });
+    return () => {
+      NotificationService.registerMosquePromptHandler(null);
+    };
+  }, []);
+
   // ⏰ Reschedule prayer notifications when SETTINGS change.
   // Initial cold-start scheduling is handled by useNotificationRescheduler
   // (in AppInitializer). This effect skips scheduling if the rescheduler

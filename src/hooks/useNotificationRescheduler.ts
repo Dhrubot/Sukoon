@@ -9,6 +9,9 @@ import LocationService from '../services/LocationService';
 import { useStore } from '../store/useStore';
 import logger from '../utils/logger';
 import { buildNotificationLocationFingerprint } from '../utils/notificationScheduleFingerprint';
+import { DST_RETRY_BACKOFF_MS } from '../constants/NotificationConstants';
+
+const DST_LAST_ATTEMPT_KEY = 'last_dst_reschedule_attempted_at';
 
 let lastObservedWallClockMs: number | null = null;
 let lastObservedMonotonicMs: number | null = null;
@@ -92,6 +95,27 @@ export const useNotificationRescheduler = () => {
           previousOffset: parseInt(savedOffset, 10),
           currentOffset,
         });
+
+        // DST back-off: if a previous DST reschedule attempt failed within the
+        // last DST_RETRY_BACKOFF_MS, skip to prevent a storm of retries when the
+        // network is unavailable (e.g., during international travel).
+        const lastAttemptStr = StorageService.getValue(DST_LAST_ATTEMPT_KEY);
+        if (lastAttemptStr) {
+          const msSinceAttempt = Date.now() - parseInt(lastAttemptStr, 10);
+          if (msSinceAttempt < DST_RETRY_BACKOFF_MS) {
+            logger.log(`⏳ DST reschedule back-off — ${Math.round(msSinceAttempt / 1000)}s since last attempt (back-off: ${DST_RETRY_BACKOFF_MS / 1000}s)`);
+            NotificationTraceService.log('rescheduler_dst_backoff_skipped', {
+              msSinceAttempt,
+              backoffMs: DST_RETRY_BACKOFF_MS,
+            });
+            // Do not update lastObservedWallClockMs here; we want the next active
+            // check to still detect the timezone mismatch and retry after back-off.
+            return;
+          }
+        }
+
+        // Record the attempt timestamp BEFORE trying (so failures are also throttled)
+        StorageService.setValue(DST_LAST_ATTEMPT_KEY, Date.now().toString());
 
         // Timezone changed — likely international travel. Refresh device location
         // so prayer times are recalculated for the new region.
@@ -178,6 +202,13 @@ export const useNotificationRescheduler = () => {
       if (rescheduled || savedOffset === null) {
         StorageService.setValue('notification_utc_offset', currentOffset.toString());
       }
+
+      // DST back-off: clear the attempt key on successful reschedule so the
+      // next timezone change gets a fresh attempt immediately.
+      if (rescheduled && invalidateReason === 'timezone_change') {
+        StorageService.deleteValue(DST_LAST_ATTEMPT_KEY);
+      }
+
       NotificationTraceService.log('rescheduler_check_completed', {
         rescheduled,
         invalidateReason,

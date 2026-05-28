@@ -128,10 +128,17 @@ import com.facebook.react.bridge.ReactMethod;
 /**
  * NativeModule that lets JS read (and clear) the boot-reschedule flag
  * set by NotificationRescheduleWorker after BOOT_COMPLETED.
+ *
+ * Also provides a cross-process scheduling lock backed by SharedPreferences,
+ * which is safe across Android processes (unlike MMKV which is process-local).
  */
 public class BootPrefsModule extends ReactContextBaseJavaModule {
     private static final String PREFS_NAME = "sukoon_boot_prefs";
     private static final String KEY_NEEDS_RESCHEDULE = "needs_notification_reschedule";
+
+    // Lock stored in a separate SharedPreferences file for cleanliness
+    private static final String LOCK_PREFS_NAME = "sukoon_lock_prefs";
+    private static final String KEY_SCHEDULE_LOCK = "notification_schedule_lock_until_ms";
 
     public BootPrefsModule(ReactApplicationContext context) {
         super(context);
@@ -166,6 +173,57 @@ public class BootPrefsModule extends ReactContextBaseJavaModule {
             promise.resolve(true);
         } catch (Exception e) {
             promise.reject("BOOT_PREFS_ERROR", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Atomically acquire a cross-process scheduling lock.
+     *
+     * Stores the lock expiry timestamp (epoch ms = now + timeoutMs) in
+     * SharedPreferences using commit() for synchronous, cross-process-safe writes.
+     *
+     * @param timeoutMs  Lock duration in milliseconds (passed from JS as Double).
+     * @param promise    Resolves true if newly acquired; false if a non-expired
+     *                   lock is already held by another process/caller.
+     */
+    @ReactMethod
+    public void acquireScheduleLock(double timeoutMs, Promise promise) {
+        try {
+            SharedPreferences prefs = getReactApplicationContext()
+                .getSharedPreferences(LOCK_PREFS_NAME, Context.MODE_PRIVATE);
+            long now = System.currentTimeMillis();
+            long existingExpiry = prefs.getLong(KEY_SCHEDULE_LOCK, 0L);
+            if (existingExpiry > 0 && now < existingExpiry) {
+                // A non-expired lock is held — cannot acquire
+                promise.resolve(false);
+                return;
+            }
+            // Lock is absent or stale — write new expiry with commit() (synchronous)
+            long newExpiry = now + (long) timeoutMs;
+            prefs.edit().putLong(KEY_SCHEDULE_LOCK, newExpiry).commit();
+            promise.resolve(true);
+        } catch (Exception e) {
+            promise.reject("SCHEDULE_LOCK_ERROR", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Release the cross-process scheduling lock.
+     * Uses commit() to ensure the release is immediately visible to other processes.
+     *
+     * @param promise  Resolves when the lock key has been removed.
+     */
+    @ReactMethod
+    public void releaseScheduleLock(Promise promise) {
+        try {
+            getReactApplicationContext()
+                .getSharedPreferences(LOCK_PREFS_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .remove(KEY_SCHEDULE_LOCK)
+                .commit();
+            promise.resolve(null);
+        } catch (Exception e) {
+            promise.reject("SCHEDULE_LOCK_ERROR", e.getMessage(), e);
         }
     }
 }

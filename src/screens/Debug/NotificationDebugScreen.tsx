@@ -301,8 +301,6 @@ export const NotificationDebugScreen = () => {
       {debugInfo && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Debug Info</Text>
-          <InfoRow label="Has Prayer Source" value={debugInfo.hasSource ? 'Yes' : 'No'} />
-          <InfoRow label="Has Location" value={debugInfo.sourceHasLocation ? 'Yes' : 'No'} />
           <InfoRow label="Loading" value={debugInfo.sourceLoading ? 'Yes' : 'No'} />
 
           {debugInfo.upcomingNotifications && debugInfo.upcomingNotifications.length > 0 && (

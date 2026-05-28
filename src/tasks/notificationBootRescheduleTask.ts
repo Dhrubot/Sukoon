@@ -24,7 +24,7 @@ export async function runBootNotificationRescheduleTask(): Promise<void> {
       )
     );
 
-    const didReschedule = await NotificationService.reconcileScheduling('boot', { force: true });
+    const didReschedule = await NotificationService.reconcileScheduling('boot', { force: true, diskOnly: true });
     if (didReschedule) {
       await NativeModules.BootPrefsModule?.clearBootRescheduleFlag?.();
     }

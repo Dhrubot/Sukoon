@@ -39,6 +39,12 @@ export const KEEP_ALIVE_INTERVAL_MS = 48 * 60 * 60 * 1000; // 48 hours
 // Prayer time API request timeout (ms)
 export const PRAYER_API_TIMEOUT_MS = 8_000;
 
+// DST reschedule retry back-off window (ms).
+// When a DST/timezone-triggered reschedule fails, the rescheduler will not
+// retry until at least this much time has elapsed since the last attempt.
+// Prevents a network-outage storm of retries on every app resume.
+export const DST_RETRY_BACKOFF_MS = 5 * 60 * 1000; // 5 minutes
+
 // Hero ring early advance threshold (minutes before next prayer's adhan)
 export const HERO_ADVANCE_MINUTES = 15;
 
