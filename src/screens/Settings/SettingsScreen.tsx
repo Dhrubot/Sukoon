@@ -37,7 +37,10 @@ import { NotificationDebugScreen } from '../Debug/NotificationDebugScreen';
 import { resolveCalculationMethodForCountry } from '../../utils/calculationMethodByRegion';
 
 type SettingsModalKey = 'calculation' | 'hijri' | 'notification' | 'location' | null;
-const SHOW_APP_DATA_SECTION = false;
+// Manual JSON export/import is the v1 backup story (no cloud sync).
+// NOTE: the JSON currently includes unredacted location coordinates + display name —
+// blocker #8 (export-data redaction) must ship before users export in volume.
+const SHOW_APP_DATA_SECTION = true;
 const SHOW_SUPPORT_SUKOON = false;
 
 interface SettingsScreenProps {

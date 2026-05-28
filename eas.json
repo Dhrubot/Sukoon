@@ -11,7 +11,9 @@
     "preview": {
       "env": {
         "ANDROID_ENABLE_MINIFY": "false",
-        "ANDROID_ENABLE_SHRINK_RESOURCES": "false"
+        "ANDROID_ENABLE_SHRINK_RESOURCES": "false",
+        "EXPO_PUBLIC_NOTIFICATION_TRACE_ENABLED": "false",
+        "EXPO_PUBLIC_PERF_VALIDATION_ENABLED": "false"
       },
       "android": {
         "buildType": "apk",
@@ -24,7 +26,9 @@
       "autoIncrement": true,
       "env": {
         "ANDROID_ENABLE_MINIFY": "false",
-        "ANDROID_ENABLE_SHRINK_RESOURCES": "false"
+        "ANDROID_ENABLE_SHRINK_RESOURCES": "false",
+        "EXPO_PUBLIC_NOTIFICATION_TRACE_ENABLED": "false",
+        "EXPO_PUBLIC_PERF_VALIDATION_ENABLED": "false"
       },
       "android": {
         "buildType": "app-bundle",
