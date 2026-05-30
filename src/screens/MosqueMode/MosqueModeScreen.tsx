@@ -16,6 +16,7 @@ import { MosqueModeStatus } from '../../components/mosque/MosqueModeStatus';
 import { IqamahTimeConfig } from '../../components/mosque/IqamahTimeConfig';
 import { MosqueModeOptions } from '../../components/mosque/MosqueModeOptions';
 import JummahMosqueConfig from '../../components/mosque/JummahMosqueConfig';
+import { OEMBatteryGuidanceCard } from '../../components/mosque/OEMBatteryGuidanceCard';
 import { useMosqueMode } from '../../hooks/useMosqueMode';
 import { mosqueModePlatformUi } from '../../utils/mosqueModePlatform';
 
@@ -68,6 +69,8 @@ const MosqueModeScreen: React.FC = () => {
 
           {isEnabled && (
             <>
+              <OEMBatteryGuidanceCard />
+
               <View style={styles.section}>
                 <Text style={styles.sectionLabel}>IQAMAH TIMES</Text>
                 <IqamahTimeConfig />
