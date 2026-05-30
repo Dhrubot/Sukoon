@@ -15,7 +15,10 @@ const isBenignKeepAwakeError = (error: unknown) => {
   return (
     message.includes('current activity is no longer available') ||
     message.includes('activity has been destroyed') ||
-    message.includes('no activity')
+    message.includes('no activity') ||
+    message.includes('expokeepawake.activate') ||
+    message.includes('expokeepawake.deactivate') ||
+    message.includes('has been rejected')
   );
 };
 
@@ -24,6 +27,11 @@ const logKeepAwakeError = (phase: 'activation' | 'deactivation', error: unknown)
     logger.warn(`Keep awake ${phase} failed:`, error);
   }
 };
+
+// Some expo-keep-awake versions return undefined synchronously when the
+// native module is unavailable. Guard against ".catch is not a function".
+const isPromiseLike = (value: unknown): value is Promise<unknown> =>
+  !!value && typeof (value as { then?: unknown }).then === 'function';
 
 export function useFocusKeepAwake(tag: string) {
   useFocusEffect(
@@ -38,13 +46,21 @@ export function useFocusKeepAwake(tag: string) {
 
         try {
           const activation = activateKeepAwakeAsync(tag);
-          void activation
-            .then(() => {
-              keepAwakeActive = true;
-            })
-            .catch((error) => {
-              logKeepAwakeError('activation', error);
-            });
+          if (isPromiseLike(activation)) {
+            // .then(onFulfilled, onRejected) attaches the rejection handler
+            // in the same microtask as the resolution handler — avoids the
+            // dev-mode LogBox window of .then().catch().
+            activation.then(
+              () => {
+                keepAwakeActive = true;
+              },
+              (error) => {
+                logKeepAwakeError('activation', error);
+              },
+            );
+          } else {
+            keepAwakeActive = true;
+          }
         } catch (error) {
           logKeepAwakeError('activation', error);
         }
@@ -59,9 +75,11 @@ export function useFocusKeepAwake(tag: string) {
 
         try {
           const deactivation = deactivateKeepAwake(tag);
-          void deactivation.catch((error) => {
-            logKeepAwakeError('deactivation', error);
-          });
+          if (isPromiseLike(deactivation)) {
+            deactivation.then(undefined, (error) => {
+              logKeepAwakeError('deactivation', error);
+            });
+          }
         } catch (error) {
           logKeepAwakeError('deactivation', error);
         }

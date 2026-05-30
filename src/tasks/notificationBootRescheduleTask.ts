@@ -1,9 +1,11 @@
 import { AppRegistry, NativeModules } from 'react-native';
 
+import MosqueModeService from '../services/MosqueModeService';
 import NotificationService from '../services/NotificationService';
 import NotificationTraceService from '../services/NotificationTraceService';
 import PrayerTimeService from '../services/PrayerTimeService';
 import StorageService from '../services/StorageService';
+import logger from '../utils/logger';
 import { initializeEncryptionKey } from '../utils/secureKeyManager';
 
 export const BOOT_NOTIFICATION_RESCHEDULE_TASK = 'BOOT_NOTIFICATION_RESCHEDULE_TASK';
@@ -27,6 +29,16 @@ export async function runBootNotificationRescheduleTask(): Promise<void> {
     const didReschedule = await NotificationService.reconcileScheduling('boot', { force: true, diskOnly: true });
     if (didReschedule) {
       await NativeModules.BootPrefsModule?.clearBootRescheduleFlag?.();
+    }
+
+    // Mosque Mode Phase 2 belt-and-suspenders. The native RingerModeBootReceiver
+    // is the critical-path re-arm; this JS pass reconciles MMKV from SharedPreferences
+    // and handles the rare edge case where the process is cold-launched after a
+    // crash but before reboot, leaving SP state populated and MMKV empty.
+    try {
+      await MosqueModeService.rearmFromPersistence();
+    } catch (mosqueErr) {
+      logger.warn('[BootTask] MosqueMode rearmFromPersistence failed:', mosqueErr);
     }
 
     NotificationTraceService.log('headless_boot_reschedule_completed', {

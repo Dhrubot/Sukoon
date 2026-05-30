@@ -13,6 +13,8 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import NotificationService from '../../services/NotificationService';
 import NotificationTraceService from '../../services/NotificationTraceService';
+import MosqueModeService from '../../services/MosqueModeService';
+import RingerControlService from '../../services/RingerControlService';
 import { useStore } from '../../store/useStore';
 import { usePrayerTimes } from '../../providers/PrayerTimesProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
@@ -21,6 +23,7 @@ import { CHANNELS, SOUNDS } from '../../constants/NotificationConstants';
 import { scheduleAdhanAudio } from '../../services/notifications/FullAdhanScheduler';
 import NotificationLedger, { LedgerHealth } from '../../services/NotificationLedger';
 import { scheduleLocalNotificationAsync } from '../../services/notifications/scheduleLocalNotification';
+import { buildNotificationScheduleFingerprintV2 } from '../../utils/notificationScheduleFingerprint';
 
 type NotificationDebugInfo = Awaited<ReturnType<typeof NotificationService.getDebugInfo>>;
 type UpcomingNotification = NotificationDebugInfo['upcomingNotifications'][number];
@@ -226,6 +229,82 @@ export const NotificationDebugScreen = () => {
     } catch (error) {
       Alert.alert('Error', `Failed: ${error}`);
     }
+  };
+
+  // 🕌 Mosque Mode Test: 1-minute scheduled silence
+  const testMosqueModeScheduled = async () => {
+    if (Platform.OS !== 'android') {
+      Alert.alert('Android Only', 'Mosque Mode auto-silence is Android-only (iOS is assisted-only).');
+      return;
+    }
+    try {
+      const ok = await MosqueModeService.scheduleTestMosqueMode();
+      Alert.alert(
+        ok ? 'Mosque Mode Scheduled' : 'Schedule Failed',
+        ok
+          ? 'Phone will silence in ~1 minute and restore ~1 minute after. Make sure Mosque Mode is enabled in Settings first.'
+          : 'Could not schedule. Confirm: (1) Mosque Mode toggle is ON in Settings, (2) Do Not Disturb access is granted.'
+      );
+    } catch (error) {
+      Alert.alert('Error', `Failed: ${error}`);
+    }
+  };
+
+  // 🚀 Boot Recovery: simulate the JS-side rearmFromPersistence path without a reboot
+  const forceBootRecovery = async () => {
+    if (Platform.OS !== 'android') {
+      Alert.alert('Android Only', 'Boot recovery applies to the native AlarmManager path (Android only).');
+      return;
+    }
+    try {
+      await MosqueModeService.rearmFromPersistence();
+      Alert.alert(
+        'Boot Recovery Ran',
+        'MosqueModeService.rearmFromPersistence() completed. Check the trace log + ringer mode to verify behaviour.'
+      );
+      loadTraceEvents();
+    } catch (error) {
+      Alert.alert('Error', `Failed: ${error}`);
+    }
+  };
+
+  // 🔔 Manually restore ringer (recovery action exposed to users in the Mosque Mode UI)
+  const manuallyRestoreRinger = async () => {
+    if (Platform.OS !== 'android') {
+      Alert.alert('Android Only', 'Ringer control is Android-only.');
+      return;
+    }
+    try {
+      const ok = await MosqueModeService.manuallyRestoreRinger();
+      const current = await RingerControlService.getRingerMode();
+      Alert.alert(
+        ok ? 'Ringer Restored' : 'No Action Taken',
+        `Current ringer mode: ${current ?? 'unknown'}`
+      );
+    } catch (error) {
+      Alert.alert('Error', `Failed: ${error}`);
+    }
+  };
+
+  // 👁 Run the foreground watchdog (stuck-silent recovery)
+  const runWatchdog = async () => {
+    try {
+      const outcome = await MosqueModeService.runForegroundWatchdog();
+      Alert.alert('Watchdog Result', `Outcome: ${outcome}`);
+      loadTraceEvents();
+    } catch (error) {
+      Alert.alert('Error', `Failed: ${error}`);
+    }
+  };
+
+  // 🔑 Show the current schedule fingerprint (v2)
+  const showFingerprint = () => {
+    if (!userSettings) {
+      Alert.alert('No settings', 'userSettings not loaded yet.');
+      return;
+    }
+    const fp = buildNotificationScheduleFingerprintV2(userSettings, todayPrayerTimes);
+    Alert.alert('Schedule Fingerprint (v2)', fp || '(empty)');
   };
 
   // 🧪 Test 8: Check Android notification channels
@@ -456,6 +535,63 @@ export const NotificationDebugScreen = () => {
           }}
           description="Reload debug information"
         />
+      </View>
+
+      {/* 🕌 Mosque Mode + Boot Recovery (physical device test shortcuts) */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>🕌 Mosque Mode & Boot Recovery</Text>
+
+        {Platform.OS === 'android' && (
+          <>
+            <TestButton
+              title="MM1. Test Mosque Mode (1-min)"
+              onPress={testMosqueModeScheduled}
+              description="Silences phone in ~1 min, restores ~1 min after. Requires Mosque Mode ON + DND access."
+            />
+
+            <TestButton
+              title="MM2. Force Boot Recovery (rearm)"
+              onPress={forceBootRecovery}
+              description="Runs MosqueModeService.rearmFromPersistence() — simulates the JS boot path without a reboot."
+            />
+
+            <TestButton
+              title="MM3. Manually Restore Ringer"
+              onPress={manuallyRestoreRinger}
+              description="Restores the previous ringer mode from SharedPrefs. Use if phone is stuck silent."
+            />
+          </>
+        )}
+
+        <TestButton
+          title="MM4. Run Foreground Watchdog"
+          onPress={runWatchdog}
+          description="Runs the stuck-silent recovery probe (safe to invoke anytime)."
+        />
+
+        <TestButton
+          title="MM5. Show Schedule Fingerprint (v2)"
+          onPress={showFingerprint}
+          description="Shows the current notification schedule fingerprint v2."
+        />
+
+        {Platform.OS === 'android' && (
+          <View style={styles.noteBox}>
+            <Text style={styles.noteText}>
+              For Doze + battery-optimization testing, run via adb:{'\n'}
+              {'\n'}
+              # Force Doze (notifications must still fire):{'\n'}
+              adb shell dumpsys deviceidle force-idle{'\n'}
+              adb shell dumpsys deviceidle unforce{'\n'}
+              {'\n'}
+              # Check alarm scheduling:{'\n'}
+              adb shell dumpsys alarm | grep -i sukoon{'\n'}
+              {'\n'}
+              # Reboot test (re-arm from SharedPrefs):{'\n'}
+              adb reboot
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* Notification Health (Ledger) */}

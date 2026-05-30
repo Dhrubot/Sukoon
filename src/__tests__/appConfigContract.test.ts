@@ -28,15 +28,19 @@ describe('app config contract', () => {
     });
   });
 
-  it('keeps Android release minification enabled through expo-build-properties', () => {
+  it('keeps Android release minification DISABLED through expo-build-properties (crash-symbol stability — see eas-submit-guide.md)', () => {
     const appConfig = require('../../app.config.js').default;
     const buildPropertiesPlugin = appConfig.expo.plugins.find(
       (plugin: any) => Array.isArray(plugin) && plugin[0] === 'expo-build-properties'
     );
 
+    // We intentionally ship Android production with minify=false (and shrinkResources=false)
+    // so that R8/ProGuard does not strip native crash symbols. If you flip this back to true,
+    // you must also wire ProGuard rules for our native AdhanService + MosqueMode receivers
+    // AND update eas.json/eas-submit-guide.md accordingly.
     expect(buildPropertiesPlugin[1].android).toMatchObject({
-      enableMinifyInReleaseBuilds: true,
-      enableShrinkResourcesInReleaseBuilds: true,
+      enableMinifyInReleaseBuilds: false,
+      enableShrinkResourcesInReleaseBuilds: false,
     });
   });
 
