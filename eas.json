@@ -43,7 +43,7 @@
       "ios": {
         "ascApiKeyPath": "./secrets/AuthKey_REPLACE.p8",
         "ascApiKeyId": "REPLACE_WITH_ASC_API_KEY_ID",
-        "ascApiIssuerId": "REPLACE_WITH_ASC_API_ISSUER_ID",
+        "ascApiKeyIssuerId": "REPLACE_WITH_ASC_API_ISSUER_ID",
         "appleTeamId": "REPLACE_WITH_APPLE_TEAM_ID",
         "ascAppId": "REPLACE_WITH_APP_STORE_CONNECT_APP_ID"
       },

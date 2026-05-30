@@ -30,7 +30,7 @@ You have two routes; **use the API key** — it doesn't expire under your daily 
 4. Put the `.p8` file at `./secrets/AuthKey_<KEY_ID>.p8` and update `eas.json` → `submit.production.ios` with:
    - `ascApiKeyPath` → `./secrets/AuthKey_<KEY_ID>.p8`
    - `ascApiKeyId` → the key ID
-   - `ascApiIssuerId` → the issuer ID
+   - `ascApiKeyIssuerId` → the issuer ID
    - `appleTeamId` → your team ID
    - `ascAppId` → the numeric ASC app ID
 
