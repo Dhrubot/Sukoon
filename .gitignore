@@ -105,3 +105,5 @@ yarn-error.log*
 /ios
 .claude/
 secrets/
+# iOS dev-signing backup (created by scripts/devSignIos.mjs)
+ios/Sukoon/Sukoon.entitlements.prod-backup
