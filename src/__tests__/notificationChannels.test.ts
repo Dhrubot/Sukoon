@@ -30,6 +30,7 @@ describe('NotificationChannels', () => {
       AndroidImportance: { MAX: 5, HIGH: 4, DEFAULT: 3, LOW: 2, MIN: 1 },
       AndroidAudioUsage: { ALARM: 4, NOTIFICATION: 5 },
       AndroidAudioContentType: { MUSIC: 2, SONIFICATION: 4 },
+      AndroidNotificationVisibility: { UNKNOWN: 0, PUBLIC: 1, PRIVATE: 2, SECRET: 3 },
     }));
     jest.doMock('../utils/logger', () => ({
       __esModule: true,
@@ -55,14 +56,17 @@ describe('NotificationChannels', () => {
         { id: 'prayer-times-adhan-v8' },
         { id: 'prayer-times-default-v2' },
         { id: 'jummah-v9' },
+        { id: 'unrelated-channel' },
       ],
     });
 
     await cleanupOldChannels();
 
-    expect(mocks.deleteNotificationChannelAsync).toHaveBeenCalledTimes(2);
+    expect(mocks.deleteNotificationChannelAsync).toHaveBeenCalledTimes(3);
     expect(mocks.deleteNotificationChannelAsync).toHaveBeenCalledWith('prayer-times-adhan-v8');
     expect(mocks.deleteNotificationChannelAsync).toHaveBeenCalledWith('prayer-times-default-v2');
+    expect(mocks.deleteNotificationChannelAsync).toHaveBeenCalledWith('jummah-v9');
+    expect(mocks.deleteNotificationChannelAsync).not.toHaveBeenCalledWith('unrelated-channel');
   });
 
   it('sets up the expected Android channels including the silent full-adhan channel', async () => {

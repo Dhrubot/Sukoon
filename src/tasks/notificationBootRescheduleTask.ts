@@ -41,8 +41,16 @@ export async function runBootNotificationRescheduleTask(): Promise<void> {
       logger.warn('[BootTask] MosqueMode rearmFromPersistence failed:', mosqueErr);
     }
 
+    // Report honest counts so partial-success at boot is observable. A
+    // didReschedule=true with prayerScheduledCount<<expected indicates the
+    // disk-only fetch chain fell back to last-known-good for some days — the
+    // alarms exist but may drift by a few minutes until the next foreground
+    // refresh corrects them. didReschedule=true with count=0 is a real failure.
+    const summary = NotificationService.getLastScheduleSummary();
     NotificationTraceService.log('headless_boot_reschedule_completed', {
       didReschedule,
+      prayerScheduledCount: summary?.scheduledCount ?? 0,
+      totalScheduledCount: summary?.totalScheduledCount ?? 0,
     });
   } catch (error) {
     NotificationTraceService.log('headless_boot_reschedule_failed');

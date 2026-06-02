@@ -158,6 +158,12 @@ class NotificationService {
       }
     | null = null;
 
+  /** Read-only view of the most recent reconcile outcome — used by the boot
+   *  headless task to report accurate scheduled counts in its trace event. */
+  getLastScheduleSummary() {
+    return this.lastScheduleSummary;
+  }
+
   private getSchedulingDays(): number {
     return Platform.OS === 'android'
       ? ANDROID_NOTIFICATION_SCHEDULING_DAYS
@@ -1644,30 +1650,33 @@ class NotificationService {
 
       // When diskOnly is true (boot path), only serve cached prayer times — never
       // make a network request. This keeps the boot task well within its 60s budget.
+      //
+      // Delegate to PrayerTimeService.getPrayerTimesList({diskOnly:true}) so we
+      // pick up its full disk-tier fallback chain:
+      //   1. Exact-date disk cache (quality: 'disk_cache')
+      //   2. Last-known-good — most-recent successful fetch for ANY date (quality: 'stale_cache')
+      //
+      // The earlier implementation only checked tier 1 directly and returned
+      // 'invalid' on a miss, which made every day past day 0 fail at boot
+      // because the cache only stores one date at a time. The downstream
+      // validator (below) treats 'stale_cache' as acceptable-but-degraded and
+      // logs a trace event — the user gets approximate notifications post-boot
+      // and the foreground refresh corrects them on next app open.
       const diskOnlyFetcher: PrayerTimesFetcher = async (params) => {
-        const cached = PrayerTimeService.getCachedPrayerTimesFromDisk(
-          params.location,
-          params.date,
-          params.calculationMethod,
-          params.asrJuristic || 'Standard'
-        );
-        if (!cached) {
-          logger.log(`⚠️ [boot/diskOnly] Disk cache miss for ${params.date.toISOString().slice(0, 10)} — skipping day`);
-          NotificationTraceService.log('boot_disk_cache_miss', {
-            date: params.date.toISOString().slice(0, 10),
-          });
-          // Return empty so the caller skips scheduling for this day
-          return { prayerTimes: [], sunrise: new Date(), sunset: new Date(), midnight: null, quality: 'invalid' as const };
-        }
-        // Reconstruct the PrayerTimesList result from cached data
-        logger.log(`✅ [boot/diskOnly] Serving cached prayer times for ${cached.date}`);
-        return PrayerTimeService.getPrayerTimesList(
+        const result = await PrayerTimeService.getPrayerTimesList(
           params.location,
           params.date,
           params.calculationMethod,
           params.adjustments,
-          params.asrJuristic || 'Standard'
+          params.asrJuristic || 'Standard',
+          { diskOnly: true }
         );
+        if (result.quality === 'invalid') {
+          NotificationTraceService.log('boot_disk_cache_miss', {
+            date: params.date.toISOString().slice(0, 10),
+          });
+        }
+        return result;
       };
 
       const fetcher: PrayerTimesFetcher = options?.diskOnly
@@ -1706,10 +1715,11 @@ class NotificationService {
           if (quality === 'hardcoded_defaults' || quality === 'invalid') {
             throw new Error(`Unsafe prayer time quality for notification scheduling: ${quality}`);
           }
-          if (quality === 'calculated_fallback') {
+          if (quality === 'calculated_fallback' || quality === 'stale_cache') {
             NotificationTraceService.log('schedule_using_degraded_prayer_times', {
               reason: options?.reason || 'unspecified',
               date: date.toISOString(),
+              quality,
             });
           }
 

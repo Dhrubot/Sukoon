@@ -2,9 +2,17 @@
 
 // 🛠 BUMP THIS VERSION whenever change sound files or channel settings
 // This forces Android to create a new channel with the fresh config.
+// Once a channel exists, Android locks user-controlled fields (sound, vibration,
+// bypassDnd, lockscreenVisibility) — bumping the ID is the only way to roll new
+// defaults to existing installs.
 // v10: ADHAN channel given alarm-grade audio attributes + bypassDnd so the
 //      short-clip fallback is audible under silent mode / Do Not Disturb.
-export const NOTIFICATION_CHANNEL_VERSION = 10;
+// v11: bypassDnd verified on Galaxy M21 v10 install showed mBypassDnd=false in
+//      dumpsys despite v10 code setting bypassDnd=true — channel had been
+//      created before bypassDnd was added; bumping forces recreation. Also
+//      adds explicit lockscreenVisibility=PUBLIC so notification body shows
+//      on the lock screen.
+export const NOTIFICATION_CHANNEL_VERSION = 11;
 
 export const NOTIFICATION_SCHEDULING_DAYS = 3;   // iOS Tier 1 horizon
 export const NOTIFICATION_LOWER_TIER_DAYS = 2;    // iOS lower-tier horizon
