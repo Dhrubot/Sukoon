@@ -108,18 +108,23 @@ class NotificationLedger {
   /** Record that the user tapped a notification.
    *  If the entry's deliveredAt is still null (because the app was closed when
    *  the notification fired, so the foreground receive listener never ran),
-   *  we backfill it too — a tap implies delivery. */
+   *  we backfill it — a tap proves delivery. We stamp deliveredAt with the
+   *  tap time as a conservative lower bound (the notification existed at
+   *  least at the moment it was tapped). */
   recordTapped(id: string): void {
     const entries = this.getEntries();
     const entry = entries.find(e => e.id === id);
     if (entry) {
       const now = new Date();
       entry.tappedAt = now.toISOString();
-      if (entry.deliveredAt === null && entry.scheduledFor) {
-        // Best-effort: the actual delivery time is unknown but it must have
-        // happened on or after scheduledFor. Use scheduledFor as the floor.
-        entry.deliveredAt = entry.scheduledFor;
-        entry.driftSeconds = 0;
+      if (entry.deliveredAt === null) {
+        entry.deliveredAt = now.toISOString();
+        if (entry.scheduledFor) {
+          entry.driftSeconds = Math.max(
+            0,
+            Math.round((now.getTime() - new Date(entry.scheduledFor).getTime()) / 1000)
+          );
+        }
       }
       this.saveEntries(entries);
     }
@@ -133,6 +138,13 @@ class NotificationLedger {
    * prayer notifications — we infer delivery by checking whether each past-due
    * entry still exists in the system's scheduled list. If it's gone and we're
    * past its scheduledFor, the OS fired it.
+   *
+   * We only infer for entries that were scheduled BEFORE their fire time
+   * (scheduledAt < scheduledFor). If someone installs the app at 11am, today's
+   * Fajr (3:45am) gets recorded with scheduledAt > scheduledFor — expo
+   * either drops these silently or fires them as a same-moment trigger that
+   * the user has no chance to receive in a useful way. Marking such entries
+   * as delivered would inflate the dashboard with non-events.
    *
    * Best-effort: actual delivery time is unknown, so deliveredAt is stamped
    * with scheduledFor and driftSeconds defaults to 0. The foreground receive
@@ -149,6 +161,12 @@ class NotificationLedger {
       if (!entry.scheduledFor) continue;
       if (new Date(entry.scheduledFor).getTime() >= cutoff) continue;
       if (stillScheduledIds.has(entry.id)) continue;
+      // Don't backfill entries that were recorded after their fire time. The
+      // notification was never actually pending in the OS, so its absence from
+      // the pending list says nothing about delivery.
+      if (entry.scheduledAt && new Date(entry.scheduledAt).getTime() >= new Date(entry.scheduledFor).getTime()) {
+        continue;
+      }
       entry.deliveredAt = entry.scheduledFor;
       entry.driftSeconds = 0;
       marked++;
