@@ -105,14 +105,56 @@ class NotificationLedger {
     }
   }
 
-  /** Record that the user tapped a notification. */
+  /** Record that the user tapped a notification.
+   *  If the entry's deliveredAt is still null (because the app was closed when
+   *  the notification fired, so the foreground receive listener never ran),
+   *  we backfill it too — a tap implies delivery. */
   recordTapped(id: string): void {
     const entries = this.getEntries();
     const entry = entries.find(e => e.id === id);
     if (entry) {
-      entry.tappedAt = new Date().toISOString();
+      const now = new Date();
+      entry.tappedAt = now.toISOString();
+      if (entry.deliveredAt === null && entry.scheduledFor) {
+        // Best-effort: the actual delivery time is unknown but it must have
+        // happened on or after scheduledFor. Use scheduledFor as the floor.
+        entry.deliveredAt = entry.scheduledFor;
+        entry.driftSeconds = 0;
+      }
       this.saveEntries(entries);
     }
+  }
+
+  /**
+   * Backfill delivery state for past-due undelivered entries.
+   *
+   * `Notifications.addNotificationReceivedListener` only fires when the app is
+   * in foreground. For backgrounded/closed delivery — the common case for
+   * prayer notifications — we infer delivery by checking whether each past-due
+   * entry still exists in the system's scheduled list. If it's gone and we're
+   * past its scheduledFor, the OS fired it.
+   *
+   * Best-effort: actual delivery time is unknown, so deliveredAt is stamped
+   * with scheduledFor and driftSeconds defaults to 0. The foreground receive
+   * listener still records true delivery time when the app happens to be open.
+   */
+  reconcileDelivery(stillScheduledIds: Set<string>): number {
+    const entries = this.getEntries();
+    // Grace window: don't infer delivery for entries within the last 30s — the
+    // OS broadcast may not have run yet even if scheduledFor passed.
+    const cutoff = Date.now() - 30_000;
+    let marked = 0;
+    for (const entry of entries) {
+      if (entry.deliveredAt !== null) continue;
+      if (!entry.scheduledFor) continue;
+      if (new Date(entry.scheduledFor).getTime() >= cutoff) continue;
+      if (stillScheduledIds.has(entry.id)) continue;
+      entry.deliveredAt = entry.scheduledFor;
+      entry.driftSeconds = 0;
+      marked++;
+    }
+    if (marked > 0) this.saveEntries(entries);
+    return marked;
   }
 
   /** Get health summary of notification delivery. */

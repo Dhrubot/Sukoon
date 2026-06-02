@@ -60,6 +60,12 @@ export const useNotificationRescheduler = () => {
 
   const checkAndReschedule = async () => {
     try {
+      // Always backfill the ledger first — cheap, single bridge call. This
+      // surfaces delivery for past-due notifications that fired while the app
+      // was backgrounded, independently of whether a full reschedule is
+      // needed. Runs on both initial check and AppState-active events.
+      void NotificationService.reconcileLedger();
+
       NotificationTraceService.log('rescheduler_check_started');
       if (!StorageService.isInitialized()) {
         logger.log('⏳ Skipping notification reschedule — storage not initialized');

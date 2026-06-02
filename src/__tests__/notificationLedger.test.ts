@@ -65,4 +65,67 @@ describe('NotificationLedger', () => {
     expect(health.missedNotifications[0].id).toBe('notif-195');
     expect(health.recentEntries[0].id).toBe('notif-204');
   });
+
+  it('reconcileDelivery backfills past-due entries that are no longer pending', () => {
+    const ledger = require('../services/NotificationLedger').default;
+    ledger.clear();
+
+    // Two scheduled in the past, one still pending, one cleared (= fired).
+    ledger.recordScheduled('fajr', 'Fajr', new Date('2026-03-17T04:30:00.000Z'));
+    ledger.recordScheduled('dhuhr', 'Dhuhr', new Date('2026-03-17T04:50:00.000Z'));
+    // System pending list still contains dhuhr — fajr was cleared by the OS.
+    const stillScheduled = new Set(['dhuhr']);
+
+    const marked = ledger.reconcileDelivery(stillScheduled);
+
+    expect(marked).toBe(1);
+    const health = ledger.getHealth();
+    expect(health.totalDelivered).toBe(1);
+    const fajr = health.recentEntries.find((e: { id: string }) => e.id === 'fajr');
+    expect(fajr).toMatchObject({ deliveredAt: '2026-03-17T04:30:00.000Z', driftSeconds: 0 });
+    const dhuhr = health.recentEntries.find((e: { id: string }) => e.id === 'dhuhr');
+    expect(dhuhr?.deliveredAt).toBeNull();
+  });
+
+  it('reconcileDelivery respects the 30s grace window so just-fired alarms are not falsely marked', () => {
+    const ledger = require('../services/NotificationLedger').default;
+    ledger.clear();
+
+    // Scheduled 10s ago — inside the grace window.
+    ledger.recordScheduled('recent', 'Asr', new Date('2026-03-17T04:59:50.000Z'));
+
+    const marked = ledger.reconcileDelivery(new Set());
+
+    expect(marked).toBe(0);
+    expect(ledger.getHealth().totalDelivered).toBe(0);
+  });
+
+  it('reconcileDelivery is idempotent — already-delivered entries are skipped', () => {
+    const ledger = require('../services/NotificationLedger').default;
+    ledger.clear();
+
+    ledger.recordScheduled('isha', 'Isha', new Date('2026-03-17T04:30:00.000Z'));
+    expect(ledger.reconcileDelivery(new Set())).toBe(1);
+    // Second pass should be a no-op.
+    expect(ledger.reconcileDelivery(new Set())).toBe(0);
+  });
+
+  it('recordTapped backfills deliveredAt when a tap arrives before any delivery proof', () => {
+    const ledger = require('../services/NotificationLedger').default;
+    ledger.clear();
+
+    ledger.recordScheduled('maghrib', 'Maghrib', new Date('2026-03-17T04:30:00.000Z'));
+
+    jest.setSystemTime(new Date('2026-03-17T05:02:00.000Z'));
+    ledger.recordTapped('maghrib');
+
+    const health = ledger.getHealth();
+    expect(health.totalDelivered).toBe(1);
+    expect(health.totalTapped).toBe(1);
+    const maghrib = health.recentEntries.find((e: { id: string }) => e.id === 'maghrib');
+    expect(maghrib).toMatchObject({
+      deliveredAt: '2026-03-17T04:30:00.000Z',
+      tappedAt: '2026-03-17T05:02:00.000Z',
+    });
+  });
 });

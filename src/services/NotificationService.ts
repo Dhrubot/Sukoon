@@ -164,6 +164,28 @@ class NotificationService {
     return this.lastScheduleSummary;
   }
 
+  /** Lightweight ledger-only backfill — fetches the scheduled list once and
+   *  marks past-due entries that are no longer pending as delivered. Cheap
+   *  enough to call on every app foreground so the Notification Health
+   *  dashboard reflects real delivery even when no schedule reconcile fires. */
+  async reconcileLedger(): Promise<number> {
+    try {
+      const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+      const stillScheduledIds = new Set(scheduled.map((n) => n.identifier));
+      const backfilled = NotificationLedger.reconcileDelivery(stillScheduledIds);
+      if (backfilled > 0) {
+        NotificationTraceService.log('ledger_delivery_reconciled', {
+          backfilled,
+          source: 'foreground',
+        });
+      }
+      return backfilled;
+    } catch (error) {
+      logger.warn('reconcileLedger failed:', error);
+      return 0;
+    }
+  }
+
   private getSchedulingDays(): number {
     return Platform.OS === 'android'
       ? ANDROID_NOTIFICATION_SCHEDULING_DAYS
@@ -1757,6 +1779,20 @@ class NotificationService {
 
       // Get ALL scheduled notifications once for the entire scheduling cycle
       const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+
+      // Backfill the ledger: notifications scheduled before this cycle that are
+      // no longer in the pending list (and whose scheduledFor is in the past)
+      // must have fired. expo-notifications' addNotificationReceivedListener
+      // doesn't fire when the app is closed/backgrounded, so without this pass
+      // the dashboard would permanently show Delivered=0 for real users whose
+      // prayer notifications fire while their phone is locked.
+      const stillScheduledIds = new Set(scheduled.map((n) => n.identifier));
+      const backfilled = NotificationLedger.reconcileDelivery(stillScheduledIds);
+      if (backfilled > 0) {
+        NotificationTraceService.log('ledger_delivery_reconciled', {
+          backfilled,
+        });
+      }
 
       // Reuse cached list to avoid a second native bridge call
       await this.cleanupPastPrayerNotifications(new Date(), scheduled);
