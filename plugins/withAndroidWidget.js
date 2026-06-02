@@ -82,6 +82,17 @@ const withAndroidWidgetFiles = (config) => {
   ]);
 };
 
+// Widgets are hidden in v1: the Glance providers + Kotlin classes still
+// compile in (so the JS-side WidgetService is safe to keep calling), but
+// android:enabled="false" prevents the OS from registering them as widget
+// providers — they won't appear in the launcher's "Add widget" picker and
+// any existing widget instances stop receiving updates.
+//
+// Re-enable in v1.1 by flipping WIDGETS_ENABLED below. Leave the Java/Kotlin
+// + drawable templates in place either way; only the manifest entry gates
+// surface visibility.
+const WIDGETS_ENABLED = false;
+
 const withAndroidWidgetManifest = (config) => {
   return withAndroidManifest(config, (config) => {
     const app = config.modResults.manifest.application[0];
@@ -102,6 +113,7 @@ const withAndroidWidgetManifest = (config) => {
       const existing = receivers.find((receiver) => receiver?.$?.['android:name'] === name);
       if (existing) {
         existing.$['android:exported'] = 'true';
+        existing.$['android:enabled'] = WIDGETS_ENABLED ? 'true' : 'false';
         existing['intent-filter'] = [
           {
             action: [{ $: { 'android:name': 'android.appwidget.action.APPWIDGET_UPDATE' } }],
@@ -122,6 +134,7 @@ const withAndroidWidgetManifest = (config) => {
         $: {
           'android:name': name,
           'android:exported': 'true',
+          'android:enabled': WIDGETS_ENABLED ? 'true' : 'false',
         },
         'intent-filter': [
           {

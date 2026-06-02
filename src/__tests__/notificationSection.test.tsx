@@ -148,7 +148,7 @@ describe('NotificationSection', () => {
   it('shows the Android locked-screen full adhan toggle', async () => {
     Object.defineProperty(Platform, 'OS', { configurable: true, value: 'android' });
 
-    const { getByText } = render(
+    const { getByText, queryByText } = render(
       <NotificationSection
         userSettings={baseSettings}
         onNotificationPress={jest.fn()}
@@ -161,10 +161,13 @@ describe('NotificationSection', () => {
     expect(
       getByText('Play the complete call to prayer instead of the short clip (plays even when locked or the app is closed)')
     ).toBeTruthy();
-    expect(getByText('Persistent Prayer Countdown')).toBeTruthy();
-    expect(
-      getByText('Keep a prayer-aware countdown in your notifications and on the lock screen.')
-    ).toBeTruthy();
+    // Live Activity / Persistent Prayer Countdown toggle is hidden for v1
+    // launch — re-enable this assertion together with the toggle JSX in v1.1.
+    // expect(getByText('Persistent Prayer Countdown')).toBeTruthy();
+    // expect(
+    //   getByText('Keep a prayer-aware countdown in your notifications and on the lock screen.')
+    // ).toBeTruthy();
+    expect(queryByText('Persistent Prayer Countdown')).toBeNull();
   });
 
   it('hides the Android-only full adhan toggle on iOS', async () => {
@@ -182,10 +185,12 @@ describe('NotificationSection', () => {
     expect(
       queryByText('Short call to prayer on the lock screen. Full adhan continues after you open the app.')
     ).toBeTruthy();
-    expect(queryByText('Live Activity')).toBeTruthy();
-    expect(
-      queryByText('Show a prayer-aware countdown on your lock screen and Dynamic Island.')
-    ).toBeTruthy();
+    // Live Activity toggle hidden for v1 launch — re-enable in v1.1.
+    // expect(queryByText('Live Activity')).toBeTruthy();
+    // expect(
+    //   queryByText('Show a prayer-aware countdown on your lock screen and Dynamic Island.')
+    // ).toBeTruthy();
+    expect(queryByText('Live Activity')).toBeNull();
   });
 
   it('disables full adhan when the main adhan switch is turned off', async () => {
@@ -311,7 +316,11 @@ describe('NotificationSection', () => {
     expect(queryByText('Allow exact alarms')).toBeNull();
   });
 
-  it('starts and ends the platform countdown service when the toggle changes', async () => {
+  // v1.1: re-enable when the Live Activity toggle is restored in
+  // NotificationSection.tsx. The handler logic + LiveActivityService glue is
+  // unchanged; the test is skipped only because the UI surface is hidden for
+  // v1 launch.
+  it.skip('starts and ends the platform countdown service when the toggle changes', async () => {
     Object.defineProperty(Platform, 'OS', { configurable: true, value: 'ios' });
 
     const { UNSAFE_getAllByType } = render(

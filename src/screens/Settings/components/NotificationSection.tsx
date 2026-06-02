@@ -9,7 +9,7 @@ import { useStore } from '../../../store/useStore';
 import NotificationService from '../../../services/NotificationService';
 import type { NotificationBlockedReason } from '../../../services/NotificationService';
 import type { ExactAlarmStatus } from '../../../services/notifications/FullAdhanScheduler';
-import LiveActivityService from '../../../services/LiveActivityService';
+// import LiveActivityService from '../../../services/LiveActivityService'; // v1.1: restore with the Live Activity toggle
 import {
   mergeNotificationSettings,
   normalizeNotificationSettings,
@@ -95,12 +95,14 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
     Platform.OS === 'android'
       ? 'Plays the call to prayer at prayer time, even when your phone is locked. Choose the full-length adhan below.'
       : 'Short call to prayer on the lock screen. Full adhan continues after you open the app.';
-  const liveActivityLabel =
-    Platform.OS === 'android' ? 'Persistent Prayer Countdown' : 'Live Activity';
-  const liveActivitySubtitle =
-    Platform.OS === 'android'
-      ? 'Keep a prayer-aware countdown in your notifications and on the lock screen.'
-      : 'Show a prayer-aware countdown on your lock screen and Dynamic Island.';
+  // Live Activity copy — kept ready for the v1.1 re-enable. See the
+  // commented-out JSX block below.
+  // const liveActivityLabel =
+  //   Platform.OS === 'android' ? 'Persistent Prayer Countdown' : 'Live Activity';
+  // const liveActivitySubtitle =
+  //   Platform.OS === 'android'
+  //     ? 'Keep a prayer-aware countdown in your notifications and on the lock screen.'
+  //     : 'Show a prayer-aware countdown on your lock screen and Dynamic Island.';
 
   const handlePressRow = () => {
     if (permissionStatus === 'granted') {
@@ -224,8 +226,13 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
           />
         </View>
       )}
-      {/* Live Activity / persistent countdown */}
-      {Platform.OS !== 'web' && (
+      {/* Live Activity / persistent countdown — HIDDEN for v1 launch.
+          The underlying LiveActivityService + iOS extension is functional but
+          we never verified it end-to-end on a real device (rendering, refresh
+          cadence, lock-screen interaction). Surfacing the toggle would let
+          users opt into an unfinished feature. Re-enable by uncommenting in
+          a v1.1 follow-up once verification is complete. */}
+      {/* {Platform.OS !== 'web' && (
         <View style={styles.row}>
         <View style={styles.textContainer}>
           <Text style={styles.label}>{liveActivityLabel}</Text>
@@ -252,7 +259,7 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
           thumbColor={theme.colors.switch.thumb}
         />
         </View>
-      )}
+      )} */}
       {/* Tahajjud Reminders */}
       {onToggleTahajjud && (
         <SettingRow
