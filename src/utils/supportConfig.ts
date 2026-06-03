@@ -11,8 +11,8 @@
 
 import Constants from 'expo-constants';
 
-const FALLBACK_SUPPORT_EMAIL = 'support@sukoon.app';
-const FALLBACK_PRIVACY_POLICY_URL = 'https://dhrubot.github.io/Sukoon/privacy';
+const FALLBACK_SUPPORT_EMAIL = 'codifizz@gmail.com';
+const FALLBACK_PRIVACY_POLICY_URL = 'https://dhrubot.github.io/Sukoon/privacy.html';
 
 /**
  * The support email address configured in app.config.js `extra.supportEmail`.

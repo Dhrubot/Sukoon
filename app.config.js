@@ -150,7 +150,7 @@ export default {
         "./assets/sounds/adhan_ios.caf",
         "./assets/sounds/adhan_full.mp3"
       ],
-      supportEmail: "support@sukoon.app",
+      supportEmail: "codifizz@gmail.com",
       privacyPolicyUrl: "https://dhrubot.github.io/Sukoon/privacy.html",
     },
   },

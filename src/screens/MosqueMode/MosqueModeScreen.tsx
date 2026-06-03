@@ -79,7 +79,7 @@ const MosqueModeScreen: React.FC = () => {
               <View style={styles.section}>
                 <Text style={styles.sectionLabel}>{"JUMU'AH SETTINGS"}</Text>
                 <Text style={styles.sectionHelper}>
-                  Seperate settings for silence during khutbah and salah
+                  Separate settings for silence during khutbah and salah
                 </Text>
                 <JummahMosqueConfig />
               </View>

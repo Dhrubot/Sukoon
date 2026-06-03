@@ -180,7 +180,7 @@ We may update this policy as the app and its data practices change. When we do, 
 
 If you have questions about this privacy policy or Sukoon's data practices:
 
-**Email:** support@sukoon.app
+**Email:** codifizz@gmail.com
 
 We aim to respond to privacy questions within 5 business days.
 

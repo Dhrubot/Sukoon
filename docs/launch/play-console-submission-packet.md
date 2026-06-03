@@ -122,7 +122,7 @@ Ramadan
 
 | Field | Value |
 |---|---|
-| Email | `support@sukoon.app` |
+| Email | `codifizz@gmail.com` |
 | Phone | (leave blank) |
 | Website | `https://dhrubot.github.io/Sukoon/privacy.html` |
 
@@ -482,7 +482,7 @@ Run through this list in order. Do not promote until every item is checked.
 - [ ] Feature graphic (1024×500) uploaded
 - [ ] Category set to **Lifestyle**
 - [ ] Tags entered
-- [ ] Contact email `support@sukoon.app` verified as a working inbox (send a test email to yourself)
+- [ ] Contact email `codifizz@gmail.com` verified as a working inbox (send a test email to yourself)
 
 ### Policy forms
 
@@ -503,7 +503,7 @@ Run through this list in order. Do not promote until every item is checked.
 - [ ] Wait for one real prayer notification to fire. Confirm adhan plays on USAGE_ALARM stream
 - [ ] Confirm Qibla compass renders and points in the correct direction
 - [ ] Confirm Settings → Privacy Policy link opens `https://dhrubot.github.io/Sukoon/privacy.html`
-- [ ] Confirm Settings → Contact Support opens an email compose to `support@sukoon.app`
+- [ ] Confirm Settings → Contact Support opens an email compose to `codifizz@gmail.com`
 - [ ] Confirm the app does not crash on the first 10 screens of a fresh install
 - [ ] Check Firebase Crashlytics dashboard — no launch-day crash spikes from internal testers
 
@@ -533,7 +533,7 @@ After pressing "Promote to production" (or after Google completes review and the
 | Play Console — Reviews | Play Console → Store presence → Ratings & reviews | First 1-star reviews often describe real crashes or permission confusion. Read all 1–2 star reviews within the first hour of visibility. |
 | Play Console — Statistics | Play Console → Statistics | Installs, uninstalls, active devices. An uninstall spike in the first hour = critical UX or crash issue. |
 | Firebase Performance | console.firebase.google.com → Performance | App start time: alert if cold start p75 exceeds 3 seconds on a low-end device. |
-| Support inbox | support@sukoon.app | Any email in the first 24h about notification not firing, adhan not playing, app crashing — treat as a P1 bug report. |
+| Support inbox | codifizz@gmail.com | Any email in the first 24h about notification not firing, adhan not playing, app crashing — treat as a P1 bug report. |
 
 ### Monitoring schedule — first 24 hours
 
@@ -561,7 +561,7 @@ Halt immediately (Play Console → Production → Manage release → Halt rollou
 ### Escalation contact
 
 - Developer: Dhrubo Talukder — check the git config for commit email
-- Support inbox: support@sukoon.app (monitor this actively for the first 48h)
+- Support inbox: codifizz@gmail.com (monitor this actively for the first 48h)
 - Firebase console access: ensure at least one other person has Firebase project access as backup in case the primary reviewer is unavailable during the monitoring window
 
 ---

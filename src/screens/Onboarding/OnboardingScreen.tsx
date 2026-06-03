@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -56,6 +56,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
     blockedReason: null,
   });
   const [isRequestingNotifications, setIsRequestingNotifications] = useState(false);
+  const hasShownExactAlarmAlertRef = useRef(false);
   const [asrJuristic, setAsrJuristic] = useState<'Standard' | 'Hanafi'>('Standard');
   const [confirmedCalculationMethod, setConfirmedCalculationMethod] = useState<CalculationMethod | null>(null);
   const [displayName, setDisplayName] = useState('');
@@ -143,6 +144,8 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   // to grant it now — but never block the onboarding flow on the outcome.
   const maybePromptExactAlarm = (readiness: NotificationReadiness) => {
     if (Platform.OS !== 'android' || readiness.exactAlarmStatus !== 'fallback') return;
+    if (hasShownExactAlarmAlertRef.current) return;
+    hasShownExactAlarmAlertRef.current = true;
     Alert.alert(
       'Allow exact alarms',
       'So the adhan plays right on time — even when your phone is locked or in Do Not Disturb — allow “Alarms & reminders” for Sukoon.',
