@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sukoon Privacy Policy</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                   Helvetica, Arial, sans-serif;
+      font-size: 16px;
+      line-height: 1.7;
+      color: #1a1a1a;
+      background: #fafaf8;
+      padding: 0 0 60px;
+    }
+
+    header {
+      background: #1b4332;
+      color: #fff;
+      padding: 28px 24px 20px;
+    }
+    header h1 { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.01em; }
+    header p  { font-size: 0.85rem; opacity: 0.75; margin-top: 4px; }
+
+    main {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 32px 20px 0;
+    }
+
+    h2 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #1b4332;
+      margin: 36px 0 10px;
+      padding-bottom: 4px;
+      border-bottom: 1px solid #d4e6db;
+    }
+    h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #2d6a4f;
+      margin: 22px 0 6px;
+    }
+
+    p  { margin-bottom: 14px; }
+    ul, ol { margin: 0 0 14px 22px; }
+    li { margin-bottom: 5px; }
+
+    strong { font-weight: 600; }
+    em     { font-style: italic; }
+
+    a { color: #2d6a4f; text-decoration: underline; }
+    a:hover { color: #1b4332; }
+
+    hr {
+      border: none;
+      border-top: 1px solid #e0e0d8;
+      margin: 28px 0;
+    }
+
+    .note {
+      background: #f0f7f3;
+      border-left: 3px solid #2d6a4f;
+      border-radius: 0 6px 6px 0;
+      padding: 12px 16px;
+      font-size: 0.9rem;
+      margin-bottom: 14px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+      margin-bottom: 18px;
+      overflow-x: auto;
+      display: block;
+    }
+    th {
+      background: #1b4332;
+      color: #fff;
+      text-align: left;
+      padding: 8px 12px;
+      font-weight: 600;
+    }
+    td {
+      padding: 8px 12px;
+      border-bottom: 1px solid #e8e8e0;
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: #f5f7f3; }
+
+    code {
+      font-family: "SFMono-Regular", Consolas, "Liberation Mono", Menlo, monospace;
+      font-size: 0.85em;
+      background: #eef1ec;
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+
+    footer {
+      max-width: 680px;
+      margin: 48px auto 0;
+      padding: 0 20px;
+      font-size: 0.82rem;
+      color: #666;
+      border-top: 1px solid #e0e0d8;
+      padding-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Sukoon Privacy Policy</h1>
+  <p>Last Updated: May 28, 2026</p>
+</header>
+
+<main>
+
+  <h2>A Privacy-First Approach</h2>
+  <p>Sukoon is designed so your worship data stays primarily on your device and under your control. We do not require an account to use the app. Your spiritual practice — your prayers, reflections, streaks, and Tuba Tree — belongs to you.</p>
+
+  <h2>1. What Data Sukoon Stores and Where</h2>
+
+  <h3>On-Device Encrypted Storage</h3>
+  <p>The following data is stored in encrypted MMKV storage on your device. It is never transmitted to any server:</p>
+  <ul>
+    <li>Prayer records (dates, status, focus scores)</li>
+    <li>Mindfulness sessions and mood entries</li>
+    <li>Written reflections and Tuba Tree journal entries</li>
+    <li>User settings (notification preferences, calculation method, iqamah offsets)</li>
+    <li>Location details (city, country, coordinates, timezone) — used locally for prayer-time calculation</li>
+    <li>Subscription and donation records</li>
+    <li>Onboarding progress</li>
+  </ul>
+
+  <h3>On-Device Unencrypted Storage</h3>
+  <p>The following non-sensitive operational data is stored in unencrypted local storage. It is also never transmitted to any server:</p>
+  <ul>
+    <li>Prayer completion statistics and daily aggregates</li>
+    <li>Dawam (consistency streak) counts</li>
+    <li>Achievement states</li>
+    <li>Notification scheduling metadata</li>
+    <li>App-launch flag and migration markers</li>
+  </ul>
+
+  <h3>Data That Leaves the Device</h3>
+  <p>The only data transmitted externally is:</p>
+  <ol>
+    <li><strong>Prayer time requests:</strong> Your GPS coordinates (or the coordinates of a manually selected city) and your chosen calculation method are sent to either the Sukoon edge API (a Cloudflare Worker proxy) or directly to the Aladhan API (<code>api.aladhan.com</code>) to retrieve your prayer times. The edge API caches prayer-time responses keyed by rounded coordinates; it does not log or store your raw coordinates for any purpose beyond the cache key. After the first successful fetch, prayer times are cached on-device and available without a network connection.</li>
+    <li><strong>Firebase Analytics events:</strong> Anonymous interaction events are sent to Google Firebase Analytics. See the full list in Section 3.</li>
+    <li><strong>Firebase Crashlytics reports:</strong> If the app crashes, a crash report including a stack trace and anonymised device information is sent to Google Firebase Crashlytics.</li>
+    <li><strong>Firebase Performance traces:</strong> App startup and performance timing data is sent to Google Firebase Performance Monitoring.</li>
+  </ol>
+
+  <h2>2. What Sukoon Explicitly Does NOT Collect or Transmit</h2>
+  <p>The following data is <strong>never</strong> sent to Firebase or any other external service. This is enforced in code (<code>src/services/AnalyticsService.ts</code>) by no-op methods for these events:</p>
+  <ul>
+    <li>Whether you prayed a specific prayer (<code>prayer_completed</code>, <code>prayer_missed</code>)</li>
+    <li>Your mindfulness session content, mood ratings, or reflection text</li>
+    <li>Your dawam streak count or milestones</li>
+    <li>Your Tuba Tree state — leaf count, growth, or journal entries</li>
+    <li>Your written reflections</li>
+    <li>Your exact location coordinates in analytics events (coordinates are sent only to the prayer-times API, not to analytics)</li>
+  </ul>
+
+  <h2>3. Firebase Analytics — Full Event List</h2>
+  <p>The following analytics events are collected. No user identifier is attached to these events in the reviewed implementation:</p>
+  <table>
+    <thead>
+      <tr><th>Event</th><th>What it records</th></tr>
+    </thead>
+    <tbody>
+      <tr><td><code>app_open</code></td><td>App was opened</td></tr>
+      <tr><td><code>notification_tapped</code></td><td>A prayer notification was tapped</td></tr>
+      <tr><td><code>premium_card_tapped</code></td><td>The premium upgrade card was tapped</td></tr>
+      <tr><td><code>premium_purchased</code></td><td>A premium plan was purchased (includes plan name)</td></tr>
+      <tr><td><code>ad_watched</code></td><td>An ad was watched (currently no ads are running)</td></tr>
+      <tr><td><code>ad_failed</code></td><td>An ad failed to load (includes reason string)</td></tr>
+      <tr><td><code>donation_made</code></td><td>A donation was made (includes tier and amount)</td></tr>
+      <tr><td><code>qibla_opened</code></td><td>The Qibla Finder screen was opened</td></tr>
+      <tr><td><code>mosque_mode_activated</code></td><td>Mosque Mode was activated</td></tr>
+      <tr><td><code>mosque_mode_deactivated</code></td><td>Mosque Mode was deactivated</td></tr>
+      <tr><td><code>settings_changed</code></td><td>A setting was changed</td></tr>
+      <tr><td><code>onboarding_completed</code></td><td>Onboarding was completed</td></tr>
+    </tbody>
+  </table>
+  <p>Screen view events (<code>screen_name</code>, <code>screen_class</code>) are also logged for each screen transition.</p>
+  <div class="note">
+    <strong>Note on Firebase auto-collection:</strong> Firebase Analytics and Performance SDKs may auto-collect additional device and session data beyond the events listed above (e.g., device model, OS version, app version, session duration, first-open). See <a href="https://support.google.com/firebase/answer/6318039" target="_blank" rel="noopener">Firebase's data collection documentation</a> for the complete list of automatically collected parameters.
+  </div>
+
+  <h2>4. Firebase Crashlytics — What Is Collected</h2>
+  <p>When the app crashes, Firebase Crashlytics automatically collects:</p>
+  <ul>
+    <li>Crash stack trace and thread state</li>
+    <li>Device model and OS version</li>
+    <li>App version and build number</li>
+    <li>Device orientation and memory state at the time of crash</li>
+    <li>Custom log messages written by the app (these describe technical events, not user content)</li>
+  </ul>
+  <p>Crashlytics does not collect: prayer records, reflections, mood data, location coordinates, or any spiritual practice data.</p>
+
+  <h2>5. Location</h2>
+  <p>Location access is used solely for:</p>
+  <ol>
+    <li><strong>Prayer time calculation:</strong> Your coordinates are sent to the prayer-times API to retrieve accurate Fajr, Dhuhr, Asr, Maghrib, and Isha times for your location.</li>
+    <li><strong>Qibla compass:</strong> The direction to the Kaaba is calculated on-device using your coordinates.</li>
+    <li><strong>Mosque Mode timing:</strong> Iqamah offsets are calculated using your stored location.</li>
+  </ol>
+  <p>You may use a manually entered city instead of GPS. If you do, the coordinates of the selected city (not your GPS position) are used for prayer-time requests.</p>
+  <p><strong>Sukoon requests location only while the app is in use.</strong> It does not request background location access. The <code>ACCESS_FINE_LOCATION</code> and <code>ACCESS_COARSE_LOCATION</code> permissions on Android, and <code>NSLocationWhenInUseUsageDescription</code> on iOS, reflect this scope.</p>
+
+  <h2>6. Notifications</h2>
+  <p>Prayer reminders are scheduled locally on your device using iOS and Android notification APIs. Sukoon does not use a remote push-notification backend for routine prayer reminders. Notifications fire from locally scheduled alarms and are not routed through any server.</p>
+  <p>On Android, the full adhan audio is delivered via the native AlarmManager service. On iOS, a short adhan clip is played as a notification sound.</p>
+
+  <h2>7. No Account Required</h2>
+  <p>Sukoon does not require you to create an account, provide an email address, or sign in. The app is fully functional without any registration.</p>
+
+  <h2>8. Data Export</h2>
+  <p>Sukoon provides a manual JSON export of your prayer records and daily statistics (last 90 days). The export is triggered only when you explicitly tap "Export Prayer Data" in Settings.</p>
+  <p><strong>Redaction:</strong> The export currently includes location details. A redaction option (to strip location and display name from the export) is being added as part of our v1.1 update. If you export data before that update, be aware that the file may contain your city name and coordinates.</p>
+  <p>The export file is saved to your device. Sukoon does not upload it anywhere. If you share the file manually (e.g., by email or cloud service), that transmission is outside Sukoon's control.</p>
+
+  <h2>9. Deleting Your Data</h2>
+  <p>All Sukoon data is stored locally on your device. To delete all data:</p>
+  <ol>
+    <li><strong>Uninstall the app.</strong> This removes all MMKV storage files from your device (subject to platform-specific backup behaviour — see Section 10).</li>
+    <li><strong>Reset from within the app.</strong> Settings → App Data → Reset App Data clears all local data without uninstalling.</li>
+  </ol>
+  <p>Sukoon does not maintain any server-side copy of your data, so there is no "account deletion" request process.</p>
+
+  <h2>10. Platform Backup Behaviour</h2>
+  <p><strong>iOS:</strong> By default, iOS iCloud backup does not back up app-specific MMKV storage files. If your device is restored from an iCloud backup, Sukoon will start fresh.</p>
+  <p><strong>Android:</strong> Android Auto Backup is configured to back up only SharedPreferences (excluding the encrypted SecureStore subdirectory). MMKV files — including all prayer records, reflections, mood entries, and Tuba Tree state — are stored in <code>files/mmkv/</code> and are <strong>not</strong> included in Google Drive backups. If your device is restored from an Android backup, your spiritual-practice data is not transferred.</p>
+
+  <h2>11. Children's Privacy</h2>
+  <p>Sukoon is not directed at children under 13 years of age. We do not knowingly collect personal information from children under 13. If you believe a child has provided information through the app, please contact us at the address below.</p>
+
+  <h2>12. Changes to This Policy</h2>
+  <p>We may update this policy as the app and its data practices change. When we do, we will update the "Last Updated" date at the top of this page. For significant changes, we will update the in-app privacy policy screen simultaneously.</p>
+
+  <h2>13. Contact</h2>
+  <p>If you have questions about this privacy policy or Sukoon's data practices:</p>
+  <p><strong>Email:</strong> <a href="mailto:support@sukoon.app">support@sukoon.app</a></p>
+  <p>We aim to respond to privacy questions within 5 business days.</p>
+
+</main>
+
+<footer>
+  &copy; 2026 Sukoon. All rights reserved.
+</footer>
+
+</body>
+</html>
