@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 1024px;
+    height: 500px;
+    overflow: hidden;
+    background: #090d18;
+  }
+</style>
+</head>
+<body>
+<div id="root" style="
+  width: 1024px;
+  height: 500px;
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(ellipse 70% 90% at 72% 50%, #1a2860 0%, #111827 35%, #090d18 70%, #05080f 100%);
+  font-family: Georgia, 'Times New Roman', serif;
+">
+
+  <!-- Deep outer glow behind moon -->
+  <div style="
+    position: absolute;
+    right: 120px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 340px;
+    height: 340px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(201,168,76,0.13) 0%, rgba(201,168,76,0.06) 40%, transparent 70%);
+    pointer-events: none;
+  "></div>
+
+  <!-- Arabic calligraphy سُكُون — large, low-opacity, behind the moon -->
+  <div style="
+    position: absolute;
+    right: 30px;
+    top: 50%;
+    transform: translateY(-55%);
+    font-size: 160px;
+    color: rgba(201, 168, 76, 0.07);
+    font-family: 'Arial Unicode MS', 'Geeza Pro', Arial, sans-serif;
+    direction: rtl;
+    line-height: 1;
+    user-select: none;
+    letter-spacing: -4px;
+  ">سُكُون</div>
+
+  <!-- Star field — right half -->
+  <svg style="position:absolute;top:0;left:0;width:1024px;height:500px;pointer-events:none;" xmlns="http://www.w3.org/2000/svg">
+    <!-- Scattered small stars, concentrated right/top -->
+    <circle cx="580" cy="38" r="1.1" fill="rgba(255,255,255,0.55)"/>
+    <circle cx="640" cy="70" r="0.8" fill="rgba(255,255,255,0.40)"/>
+    <circle cx="700" cy="28" r="1.3" fill="rgba(255,255,255,0.60)"/>
+    <circle cx="760" cy="58" r="0.9" fill="rgba(255,255,255,0.35)"/>
+    <circle cx="820" cy="42" r="1.0" fill="rgba(255,255,255,0.50)"/>
+    <circle cx="870" cy="80" r="0.7" fill="rgba(255,255,255,0.30)"/>
+    <circle cx="920" cy="52" r="1.2" fill="rgba(255,255,255,0.55)"/>
+    <circle cx="960" cy="90" r="0.8" fill="rgba(255,255,255,0.40)"/>
+    <circle cx="990" cy="38" r="1.0" fill="rgba(255,255,255,0.45)"/>
+    <circle cx="610" cy="110" r="0.9" fill="rgba(255,255,255,0.35)"/>
+    <circle cx="675" cy="145" r="1.1" fill="rgba(255,255,255,0.40)"/>
+    <circle cx="740" cy="120" r="0.7" fill="rgba(255,255,255,0.30)"/>
+    <circle cx="800" cy="155" r="1.0" fill="rgba(255,255,255,0.45)"/>
+    <circle cx="850" cy="130" r="0.8" fill="rgba(255,255,255,0.35)"/>
+    <circle cx="910" cy="170" r="0.9" fill="rgba(255,255,255,0.40)"/>
+    <circle cx="955" cy="140" r="1.2" fill="rgba(255,255,255,0.55)"/>
+    <circle cx="595" cy="200" r="0.8" fill="rgba(255,255,255,0.30)"/>
+    <circle cx="660" cy="230" r="1.0" fill="rgba(255,255,255,0.40)"/>
+    <circle cx="720" cy="215" r="0.7" fill="rgba(255,255,255,0.25)"/>
+    <circle cx="785" cy="245" r="1.1" fill="rgba(255,255,255,0.45)"/>
+    <circle cx="840" cy="220" r="0.9" fill="rgba(255,255,255,0.35)"/>
+    <circle cx="895" cy="255" r="0.8" fill="rgba(255,255,255,0.30)"/>
+    <circle cx="945" cy="230" r="1.0" fill="rgba(255,255,255,0.40)"/>
+    <circle cx="985" cy="260" r="0.7" fill="rgba(255,255,255,0.30)"/>
+    <circle cx="570" cy="290" r="0.9" fill="rgba(255,255,255,0.30)"/>
+    <circle cx="630" cy="320" r="0.8" fill="rgba(255,255,255,0.25)"/>
+    <circle cx="690" cy="350" r="1.0" fill="rgba(255,255,255,0.35)"/>
+    <circle cx="750" cy="330" r="0.7" fill="rgba(255,255,255,0.25)"/>
+    <circle cx="810" cy="360" r="0.9" fill="rgba(255,255,255,0.30)"/>
+    <circle cx="870" cy="340" r="0.8" fill="rgba(255,255,255,0.25)"/>
+    <circle cx="930" cy="370" r="1.1" fill="rgba(255,255,255,0.40)"/>
+    <circle cx="970" cy="345" r="0.7" fill="rgba(255,255,255,0.30)"/>
+    <circle cx="600" cy="410" r="0.8" fill="rgba(255,255,255,0.25)"/>
+    <circle cx="665" cy="440" r="0.9" fill="rgba(255,255,255,0.30)"/>
+    <circle cx="730" cy="420" r="0.7" fill="rgba(255,255,255,0.25)"/>
+    <circle cx="795" cy="455" r="1.0" fill="rgba(255,255,255,0.35)"/>
+    <circle cx="855" cy="432" r="0.8" fill="rgba(255,255,255,0.30)"/>
+    <circle cx="915" cy="462" r="0.9" fill="rgba(255,255,255,0.25)"/>
+    <circle cx="960" cy="442" r="0.7" fill="rgba(255,255,255,0.30)"/>
+    <!-- A few left-side stars -->
+    <circle cx="80" cy="55" r="0.8" fill="rgba(255,255,255,0.20)"/>
+    <circle cx="145" cy="80" r="0.7" fill="rgba(255,255,255,0.18)"/>
+    <circle cx="220" cy="42" r="0.9" fill="rgba(255,255,255,0.15)"/>
+    <circle cx="310" cy="68" r="0.7" fill="rgba(255,255,255,0.18)"/>
+    <circle cx="390" cy="44" r="0.8" fill="rgba(255,255,255,0.15)"/>
+    <circle cx="460" cy="75" r="0.7" fill="rgba(255,255,255,0.15)"/>
+    <circle cx="100" cy="440" r="0.8" fill="rgba(255,255,255,0.12)"/>
+    <circle cx="190" cy="460" r="0.7" fill="rgba(255,255,255,0.10)"/>
+    <circle cx="300" cy="448" r="0.9" fill="rgba(255,255,255,0.12)"/>
+  </svg>
+
+  <!-- Crescent Moon SVG — right panel, centered -->
+  <svg
+    style="position:absolute; right: 118px; top: 50%; transform: translateY(-50%);"
+    width="220" height="220"
+    viewBox="0 0 220 220"
+    xmlns="http://www.w3.org/2000/svg"
+  >
+    <defs>
+      <!-- Moon glow filter -->
+      <filter id="moonGlow" x="-40%" y="-40%" width="180%" height="180%">
+        <feGaussianBlur stdDeviation="8" result="blur"/>
+        <feMerge>
+          <feMergeNode in="blur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+      <filter id="softGlow" x="-60%" y="-60%" width="220%" height="220%">
+        <feGaussianBlur stdDeviation="18" result="blur"/>
+        <feMerge>
+          <feMergeNode in="blur"/>
+          <feMergeNode in="SourceGraphic"/>
+        </feMerge>
+      </filter>
+      <!-- Gold gradient for moon fill -->
+      <radialGradient id="moonFill" cx="42%" cy="38%" r="58%">
+        <stop offset="0%" stop-color="#f0ece4"/>
+        <stop offset="55%" stop-color="#e8c97a"/>
+        <stop offset="100%" stop-color="#c9a84c"/>
+      </radialGradient>
+      <!-- Outer halo gradient -->
+      <radialGradient id="haloGrad" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="rgba(201,168,76,0.18)"/>
+        <stop offset="50%" stop-color="rgba(201,168,76,0.07)"/>
+        <stop offset="100%" stop-color="rgba(201,168,76,0)"/>
+      </radialGradient>
+    </defs>
+
+    <!-- Outer diffuse halo -->
+    <ellipse cx="110" cy="110" rx="105" ry="105" fill="url(#haloGrad)" filter="url(#softGlow)"/>
+
+    <!-- Crescent shape: large outer circle minus inner offset circle (clip) -->
+    <!-- Using path: outer arc minus inner arc = crescent -->
+    <!-- Outer circle radius 82, center 110,110. Inner circle radius 68, center 132,108 -->
+    <path
+      d="
+        M 110,28
+        A 82,82 0 1,1 109.9,28
+        Z
+        M 110,28
+        A 82,82 0 0,0 110,192
+        A 68,68 0 0,1 110,28
+        Z
+      "
+      fill="none"
+    />
+
+    <!-- Crescent: clip-path approach -->
+    <defs>
+      <clipPath id="crescentClip">
+        <!-- Outer full circle -->
+        <circle cx="110" cy="110" r="82"/>
+      </clipPath>
+    </defs>
+
+    <!-- Draw full circle, then cover with offset circle same as bg to create crescent -->
+    <g filter="url(#moonGlow)">
+      <!-- Full moon disk -->
+      <circle cx="110" cy="110" r="82" fill="url(#moonFill)"/>
+      <!-- Shadow overlay disk — offset to create crescent effect -->
+      <!-- Background color match: deep midnight -->
+      <circle cx="140" cy="104" r="72" fill="#090d18"/>
+      <!-- Re-add a subtle gradient overlay on shadow to blend edge -->
+      <circle cx="140" cy="104" r="72" fill="url(#shadowBlend)" opacity="0.85"/>
+    </g>
+
+    <defs>
+      <radialGradient id="shadowBlend" cx="30%" cy="50%" r="70%">
+        <stop offset="0%" stop-color="#0d1424" stop-opacity="0.0"/>
+        <stop offset="60%" stop-color="#090d18" stop-opacity="0.5"/>
+        <stop offset="100%" stop-color="#090d18" stop-opacity="1.0"/>
+      </radialGradient>
+    </defs>
+
+    <!-- Tiny star dots near the crescent tips -->
+    <circle cx="68" cy="50" r="2.5" fill="rgba(232,201,122,0.80)"/>
+    <circle cx="52" cy="72" r="1.5" fill="rgba(232,201,122,0.55)"/>
+    <circle cx="72" cy="170" r="2.0" fill="rgba(232,201,122,0.70)"/>
+    <circle cx="55" cy="150" r="1.3" fill="rgba(232,201,122,0.45)"/>
+    <circle cx="42" cy="108" r="1.8" fill="rgba(240,236,228,0.50)"/>
+  </svg>
+
+  <!-- Thin gold decorative line separator (vertical) -->
+  <div style="
+    position: absolute;
+    left: 600px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 1px;
+    height: 260px;
+    background: linear-gradient(to bottom, transparent, rgba(201,168,76,0.35) 30%, rgba(201,168,76,0.35) 70%, transparent);
+  "></div>
+
+  <!-- LEFT PANEL: Text content (safe area starts at x=37) -->
+  <div style="
+    position: absolute;
+    left: 37px;
+    top: 0;
+    width: 560px;
+    height: 500px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-left: 40px;
+    padding-right: 30px;
+  ">
+
+    <!-- Eyebrow: SUKOON wordmark -->
+    <div style="
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 13px;
+      font-weight: 400;
+      letter-spacing: 6px;
+      text-transform: uppercase;
+      color: #c9a84c;
+      margin-bottom: 18px;
+      opacity: 0.92;
+    ">SUKOON</div>
+
+    <!-- Crescent icon inline with wordmark — small decorative -->
+    <div style="margin-bottom: 4px;">
+      <svg width="28" height="14" viewBox="0 0 28 14" xmlns="http://www.w3.org/2000/svg">
+        <path d="M14,1 A10,10 0 1,0 14,13 A7,7 0 0,1 14,1 Z" fill="#c9a84c" opacity="0.80"/>
+      </svg>
+    </div>
+
+    <!-- Main tagline -->
+    <div style="
+      font-family: Georgia, 'Book Antiqua', Palatino, serif;
+      font-size: 54px;
+      font-weight: 400;
+      line-height: 1.12;
+      color: #f0ece4;
+      margin-bottom: 22px;
+      letter-spacing: -0.5px;
+    ">A calm space<br>for your prayers.</div>
+
+    <!-- Subtitle -->
+    <div style="
+      font-family: Georgia, serif;
+      font-size: 20px;
+      font-weight: 400;
+      font-style: italic;
+      line-height: 1.55;
+      color: rgba(240, 236, 228, 0.62);
+      margin-bottom: 36px;
+      max-width: 400px;
+    ">Mindful prayer times, peaceful reminders,<br>and a sanctuary for your spiritual life.</div>
+
+    <!-- Gold accent divider -->
+    <div style="
+      width: 52px;
+      height: 1.5px;
+      background: linear-gradient(to right, #c9a84c, rgba(201,168,76,0.3));
+      margin-bottom: 24px;
+    "></div>
+
+    <!-- App store badge text -->
+    <div style="
+      font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      font-size: 12.5px;
+      font-weight: 400;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: rgba(201, 168, 76, 0.65);
+    ">Available on Google Play</div>
+
+  </div>
+
+  <!-- Bottom subtle vignette -->
+  <div style="
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 80px;
+    background: linear-gradient(to top, rgba(5,8,15,0.60), transparent);
+    pointer-events: none;
+  "></div>
+
+  <!-- Top subtle vignette -->
+  <div style="
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 60px;
+    background: linear-gradient(to bottom, rgba(5,8,15,0.50), transparent);
+    pointer-events: none;
+  "></div>
+
+  <!-- Left edge fade -->
+  <div style="
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    width: 37px;
+    background: linear-gradient(to right, rgba(5,8,15,0.70), transparent);
+    pointer-events: none;
+  "></div>
+
+  <!-- Right edge fade -->
+  <div style="
+    position: absolute;
+    top: 0; right: 0; bottom: 0;
+    width: 37px;
+    background: linear-gradient(to left, rgba(5,8,15,0.70), transparent);
+    pointer-events: none;
+  "></div>
+
+</div>
+</body>
+</html>
