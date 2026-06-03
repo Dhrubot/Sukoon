@@ -8,7 +8,9 @@ import {
   StyleSheet,
   Animated,
   Dimensions,
+  Platform,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import PreAdhanSheet from './PreAdhanSheet';
 import PostPrayerSheet from './PostPrayerSheet';
 import CountdownRing from './CountdownRing';
@@ -22,8 +24,13 @@ import { AppTheme } from '../../theme';
 import { formatHijriDate, formatHijriDateSync } from '../../utils/hijriDate';
 import { useStore } from '../../store/useStore';
 import { isFriday, isRamadan, getRamadanDay } from '../../utils/ramadan';
+import { JummahResourceTopic } from '../../constants/jummahContent';
+import { PrayerSurfaceCountdownMode, PrayerSurfaceRingColorMode } from '../../utils/prayerSurfaceResolver';
+import { withAlpha } from '../../utils/color';
 
 const { height } = Dimensions.get('window');
+const HERO_MIN_HEIGHT = Platform.OS === 'ios' ? height * 0.72 : height * 0.78;
+const HERO_FOCUS_MIN_HEIGHT = Platform.OS === 'ios' ? height * 0.8 : height * 0.86;
 
 interface MosqueModeHeroInfo {
   iqamahTime: Date;
@@ -33,10 +40,15 @@ interface MosqueModeHeroInfo {
 
 interface SanctuaryViewProps {
   prayer: PrayerTime;
+  gradientPrayer?: PrayerTime;
   greeting: string;
   userName?: string;
-  previousPrayerTime?: Date;
   record?: PrayerRecord;
+  ringProgress: number;
+  countdownTargetTime: Date;
+  countdownMode?: PrayerSurfaceCountdownMode;
+  ringAccentPrayer: PrayerTime;
+  ringColorMode: PrayerSurfaceRingColorMode;
   isTimeEntered?: boolean;
   missedPrayer?: PrayerTime;
   onPrepare: () => void;
@@ -47,14 +59,20 @@ interface SanctuaryViewProps {
   isFocusMode?: boolean;
   mosqueModeInfo?: MosqueModeHeroInfo;
   onMosqueModeTap?: () => void;
+  onOpenJummahResource?: (topic: JummahResourceTopic) => void;
 }
 
 const SanctuaryView: React.FC<SanctuaryViewProps> = ({
   prayer,
+  gradientPrayer,
   greeting,
   userName,
-  previousPrayerTime,
   record,
+  ringProgress,
+  countdownTargetTime,
+  countdownMode = 'next_prayer_start',
+  ringAccentPrayer,
+  ringColorMode,
   isTimeEntered = true,
   missedPrayer,
   onPrepare,
@@ -65,9 +83,11 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
   isFocusMode = false,
   mosqueModeInfo,
   onMosqueModeTap,
+  onOpenJummahResource,
 }) => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
+  const insets = useSafeAreaInsets();
   const hijriAdjustment = useStore((state) => state.userSettings?.hijriAdjustment ?? 0);
   const [hijriDateStr, setHijriDateStr] = useState(formatHijriDateSync());
   const pulseAnim = useRef(new Animated.Value(0.6)).current;
@@ -79,8 +99,10 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
     formatHijriDate().then(setHijriDateStr).catch(() => {});
   }, [hijriAdjustment]);
 
+  const heroGradientPrayer = gradientPrayer ?? prayer;
   const isAlreadyPrayed = record?.status === 'prayed';
   const isJummah = prayer.name === 'Dhuhr' && isFriday();
+  const isGradientJummah = heroGradientPrayer.name === 'Dhuhr' && isFriday();
   const [showPreAdhanSheet, setShowPreAdhanSheet] = useState(false);
   const [showPostPrayerSheet, setShowPostPrayerSheet] = useState(false);
 
@@ -147,9 +169,21 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
 
   const getPrayerGradient = (): readonly [string, string, string] => {
     const gradients = theme.colors.prayerGradients as unknown as Record<string, readonly [string, string, string]>;
-    if (isJummah) return gradients.Jumah || gradients.default;
-    return gradients[prayer.name] || gradients.default;
+    if (isGradientJummah) return gradients.Jumah || gradients.default;
+    return gradients[heroGradientPrayer.name] || gradients.default;
   };
+
+  const buttonAccentColor = (() => {
+    if (isGradientJummah) {
+      return theme.colors.goldLight;
+    }
+
+    const accentKey = heroGradientPrayer.name.toLowerCase() as keyof typeof theme.colors.prayer;
+    return theme.colors.prayer[accentKey] ?? theme.colors.goldLight;
+  })();
+
+  const activeButtonBorderColor = withAlpha(buttonAccentColor, 0.34);
+  const mutedButtonBorderColor = withAlpha(buttonAccentColor, 0.18);
 
   const ramadanDay = isRamadan() ? getRamadanDay() : null;
 
@@ -157,12 +191,19 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
     <>
       <LinearGradient
         colors={getPrayerGradient()}
-        style={[styles.container, isFocusMode && { minHeight: height * 0.86 }]}
+        style={[
+          styles.container,
+          {
+            paddingTop: insets.top + theme.spacing['2xl'],
+            minHeight: HERO_MIN_HEIGHT + insets.top,
+          },
+          isFocusMode && { minHeight: HERO_FOCUS_MIN_HEIGHT + insets.top },
+        ]}
         start={{ x: 0.5, y: 0 }}
         end={{ x: 0.5, y: 1 }}
       >
         {/* Animated star field — nighttime prayers only */}
-        <StarField prayerName={prayer.name} />
+        <StarField prayerName={heroGradientPrayer.name} />
 
         {/* Greeting + Hijri date */}
         <View style={styles.greetingContainer}>
@@ -186,7 +227,11 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
         {/* Countdown Ring — the focal point */}
         <CountdownRing
           prayer={prayer}
-          previousPrayerTime={previousPrayerTime}
+          progress={ringProgress}
+          countdownTargetTime={countdownTargetTime}
+          countdownMode={countdownMode}
+          ringAccentPrayer={ringAccentPrayer}
+          ringColorMode={ringColorMode}
           iqamahTime={mosqueModeInfo?.iqamahTime}
           isAlreadyPrayed={isAlreadyPrayed}
         />
@@ -194,15 +239,27 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
         {/* Jumu'ah sunnah reminders */}
         {isJummah && !isAlreadyPrayed && (
           <View style={styles.sunnahRow}>
-            <View style={styles.sunnahChip}>
+            <TouchableOpacity
+              style={styles.sunnahChip}
+              onPress={() => onOpenJummahResource?.('kahf')}
+              activeOpacity={0.75}
+            >
               <Text style={styles.sunnahText}>Al-Kahf</Text>
-            </View>
-            <View style={styles.sunnahChip}>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.sunnahChip}
+              onPress={() => onOpenJummahResource?.('ghusl')}
+              activeOpacity={0.75}
+            >
               <Text style={styles.sunnahText}>Ghusl</Text>
-            </View>
-            <View style={styles.sunnahChip}>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.sunnahChip}
+              onPress={() => onOpenJummahResource?.('salawat')}
+              activeOpacity={0.75}
+            >
               <Text style={styles.sunnahText}>Salawat</Text>
-            </View>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -224,7 +281,9 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
           <TouchableOpacity
             style={[
               styles.prepareButton,
+              { borderColor: activeButtonBorderColor },
               !isCTAActive && styles.mutedButton,
+              !isCTAActive && { borderColor: mutedButtonBorderColor },
             ]}
             onPress={handlePress}
             onLongPress={handleLongPress}
@@ -282,11 +341,12 @@ const SanctuaryView: React.FC<SanctuaryViewProps> = ({
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: {
-      minHeight: height * 0.78,
+      minHeight: HERO_MIN_HEIGHT,
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingTop: theme.spacing['2xl'],
-      paddingBottom: theme.spacing['4xl'] + 72,
+      paddingBottom: Platform.OS === 'ios'
+        ? theme.spacing['3xl'] + 32
+        : theme.spacing['4xl'] + 72,
       paddingHorizontal: theme.spacing['2xl'],
       overflow: 'hidden',
     },

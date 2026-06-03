@@ -28,6 +28,9 @@ describe('NotificationChannels', () => {
       setNotificationChannelAsync,
       setNotificationCategoryAsync,
       AndroidImportance: { MAX: 5, HIGH: 4, DEFAULT: 3, LOW: 2, MIN: 1 },
+      AndroidAudioUsage: { ALARM: 4, NOTIFICATION: 5 },
+      AndroidAudioContentType: { MUSIC: 2, SONIFICATION: 4 },
+      AndroidNotificationVisibility: { UNKNOWN: 0, PUBLIC: 1, PRIVATE: 2, SECRET: 3 },
     }));
     jest.doMock('../utils/logger', () => ({
       __esModule: true,
@@ -53,33 +56,54 @@ describe('NotificationChannels', () => {
         { id: 'prayer-times-adhan-v8' },
         { id: 'prayer-times-default-v2' },
         { id: 'jummah-v9' },
+        { id: 'unrelated-channel' },
       ],
     });
 
     await cleanupOldChannels();
 
-    expect(mocks.deleteNotificationChannelAsync).toHaveBeenCalledTimes(2);
+    expect(mocks.deleteNotificationChannelAsync).toHaveBeenCalledTimes(3);
     expect(mocks.deleteNotificationChannelAsync).toHaveBeenCalledWith('prayer-times-adhan-v8');
     expect(mocks.deleteNotificationChannelAsync).toHaveBeenCalledWith('prayer-times-default-v2');
+    expect(mocks.deleteNotificationChannelAsync).toHaveBeenCalledWith('jummah-v9');
+    expect(mocks.deleteNotificationChannelAsync).not.toHaveBeenCalledWith('unrelated-channel');
   });
 
   it('sets up the expected Android channels including the silent full-adhan channel', async () => {
+    const { CHANNELS } = require('../constants/NotificationConstants');
     const { setupNotificationChannels, mocks } = loadModule({
       platformOS: 'android',
     });
 
     await setupNotificationChannels();
 
-    expect(mocks.setNotificationChannelAsync).toHaveBeenCalledTimes(9);
+    expect(mocks.setNotificationChannelAsync).toHaveBeenCalledTimes(10);
+    // The short-clip fallback channel must be alarm-grade so it sounds under silent/DND.
     expect(mocks.setNotificationChannelAsync).toHaveBeenCalledWith(
-      'prayer-times-adhan-silent-v9',
+      CHANNELS.ADHAN,
+      expect.objectContaining({
+        name: 'Prayer Times (Adhan)',
+        sound: 'adhan_short.ogg',
+        bypassDnd: true,
+        audioAttributes: expect.objectContaining({ usage: 4 }),
+      })
+    );
+    expect(mocks.setNotificationChannelAsync).toHaveBeenCalledWith(
+      CHANNELS.ADHAN_SILENT,
       expect.objectContaining({
         name: 'Prayer Times (Full Adhan)',
         sound: null,
       })
     );
     expect(mocks.setNotificationChannelAsync).toHaveBeenCalledWith(
-      'jummah-v9',
+      CHANNELS.PERSISTENT_URGENT,
+      expect.objectContaining({
+        name: 'Prayer Follow-up (Urgent)',
+        importance: 4,
+      })
+    );
+    expect(mocks.setNotificationChannelAsync).toHaveBeenCalledWith(
+      CHANNELS.JUMMAH,
       expect.objectContaining({
         name: 'Jummah Reminders',
         importance: 3,
@@ -104,7 +128,7 @@ describe('NotificationChannels', () => {
 
     const android = loadModule({ platformOS: 'android', isDevice: true });
     await android.initializeChannelsAndCategories();
-    expect(android.mocks.setNotificationChannelAsync).toHaveBeenCalledTimes(9);
+    expect(android.mocks.setNotificationChannelAsync).toHaveBeenCalledTimes(10);
 
     const simulator = loadModule({ platformOS: 'android', isDevice: false });
     await simulator.initializeChannelsAndCategories();

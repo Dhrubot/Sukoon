@@ -30,6 +30,7 @@ describe('moonSighting utilities', () => {
     jest.doMock('../utils/ramadan', () => ({
       getRawCachedHijriDate: jest.fn(() => options?.raw ?? null),
       getCachedHijriDate: jest.fn(() => options?.adjusted ?? options?.raw ?? null),
+      getCurrentHijriAdjustment: jest.fn(() => 0),
     }));
 
     const module = require('../utils/moonSighting');
@@ -45,6 +46,10 @@ describe('moonSighting utilities', () => {
 
     persisted.deferMoonSighting('eid_fitr', 1447);
     expect(persisted.values.get('moon_sighting_eid_fitr_1447')).toBe('deferred');
+
+    persisted.acknowledgeHijriDate('ramadan', 1447);
+    expect(persisted.values.get('hijri_date_confirmed_ramadan_1447')).toBe('true');
+    expect(persisted.hasAcknowledgedHijriDate('ramadan', 1447)).toBe(true);
 
     const beforeMaghrib = loadModule({ raw });
     jest.setSystemTime(new Date('2026-03-18T17:30:00.000Z'));
@@ -76,13 +81,25 @@ describe('moonSighting utilities', () => {
     expect(repeated.getAutoDeduceEndOfMonthEvent()).toBeNull();
   });
 
-  it('returns nudges and deferred events only in the allowed states', () => {
+  it('returns nudges only for critical periods and keeps moon-state separate', () => {
     const raw = { month: 10, day: 1, year: 1447, monthNameEn: 'Shawwal' };
     const fresh = loadModule({ raw });
     expect(fresh.getHijriNudgeEvent()).toMatchObject({
       type: 'eid_fitr',
       currentDay: 1,
     });
+    fresh.finalizeHijriDateConfirmation(
+      {
+        type: 'eid_fitr',
+        currentDay: 1,
+        currentMonth: 'Shawwal',
+        currentYear: 1447,
+        monthNumber: 10,
+      },
+      -1
+    );
+    expect(fresh.values.get('hijri_date_confirmed_eid_fitr_1447')).toBe('true');
+    expect(fresh.values.get('moon_sighting_eid_fitr_1447')).toBe('deferred');
 
     const deferred = loadModule({
       raw,
@@ -94,10 +111,50 @@ describe('moonSighting utilities', () => {
       noAdjustment: -1,
     });
 
-    const expiredDeferred = loadModule({
-      raw: { month: 9, day: 5, year: 1447, monthNameEn: 'Ramadan' },
-      storage: { moon_sighting_ramadan_1447: 'deferred' },
+    const acknowledged = loadModule({
+      raw,
+      storage: { hijri_date_confirmed_eid_fitr_1447: 'true' },
     });
-    expect(expiredDeferred.getHijriNudgeEvent()).toBeNull();
+    expect(acknowledged.getHijriNudgeEvent()).toBeNull();
+
+    const unrelated = loadModule({
+      raw: { month: 2, day: 10, year: 1447, monthNameEn: 'Safar' },
+    });
+    expect(unrelated.getHijriNudgeEvent()).toBeNull();
+    expect(unrelated.getMoonSightingEvent()).toBeNull();
+  });
+
+  it('supports re-evaluating the Eid prompt after a Ramadan date confirmation', () => {
+    const adjusted = { month: 9, day: 29, year: 1447, monthNameEn: 'Ramadan' };
+    const module = loadModule({ raw: adjusted, adjusted });
+
+    expect(module.getHijriNudgeEvent()).toMatchObject({
+      type: 'ramadan',
+      currentDay: 29,
+    });
+
+    module.finalizeHijriDateConfirmation(
+      {
+        type: 'ramadan',
+        currentDay: 29,
+        currentMonth: 'Ramadan',
+        currentYear: 1447,
+        monthNumber: 9,
+      },
+      0
+    );
+
+    const followUp = loadModule({
+      raw: adjusted,
+      adjusted,
+      storage: { hijri_date_confirmed_ramadan_1447: 'true' },
+    });
+
+    expect(followUp.getHijriNudgeEvent()).toBeNull();
+    expect(followUp.getMoonSightingEvent(new Date('2026-03-18T18:00:00.000Z'))).toMatchObject({
+      type: 'eid_fitr',
+      yesAdjustment: 1,
+      noAdjustment: 0,
+    });
   });
 });

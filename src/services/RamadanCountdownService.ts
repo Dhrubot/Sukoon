@@ -9,6 +9,7 @@ import { getCachedHijriDate, isRamadan } from '../utils/ramadan';
 import StorageService from './StorageService';
 import logger from '../utils/logger';
 import { getLocalDateKey } from '../utils/dateHelpers';
+import { scheduleLocalNotificationAsync } from './notifications/scheduleLocalNotification';
 
 const NOTIFICATION_PREFIX = 'ramadan-countdown';
 const STORAGE_KEY_LAST_SCHEDULED = 'ramadan_countdown_last_scheduled';
@@ -170,12 +171,11 @@ class RamadanCountdownServiceClass {
         ? `${daysAway} days to Ramadan — ${message.body}`
         : message.body;
 
-      await Notifications.scheduleNotificationAsync({
+      await scheduleLocalNotificationAsync({
         content: {
           title: message.title,
           body: bodyWithCount,
           data: { type: 'ramadan-countdown', daysAway },
-          sound: 'default',
         },
         trigger: {
           type: 'date',
@@ -223,12 +223,11 @@ class RamadanCountdownServiceClass {
       const messageIndex = (ramadanDay - 1) % RAMADAN_MESSAGES.length;
       const message = RAMADAN_MESSAGES[messageIndex];
 
-      await Notifications.scheduleNotificationAsync({
+      await scheduleLocalNotificationAsync({
         content: {
           title: `${message.title} (Day ${ramadanDay})`,
           body: message.body,
           data: { type: 'ramadan-daily', ramadanDay },
-          sound: 'default',
         },
         trigger: {
           type: 'date',

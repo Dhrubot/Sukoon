@@ -26,7 +26,12 @@ export const useAppInitialization = () => {
     error: null,
   });
 
-  const { setUserSettings, setLocation, setCurrentDawam, setEngagementDawam } = useStore();
+  // Write-only access — getState() keeps stable references without subscribing
+  // to every store update. The previous useStore() destructure subscribed to
+  // the whole store, so any unrelated state change (e.g. theme toggle from
+  // ThemeProvider) re-rendered this hook mid-render and triggered React's
+  // "setState during render" warning when the chain reached AppInitializer.
+  const { setUserSettings, setLocation, setCurrentDawam, setEngagementDawam } = useStore.getState();
   const { shouldRefreshPrayerTimes, recordRefreshAttempt, recordRefreshSuccess } = usePrayerTimeRefresh();
 
   useEffect(() => {

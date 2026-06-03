@@ -12,6 +12,7 @@ import StorageService from './StorageService';
 import logger from '../utils/logger';
 import { getLocalDateKey } from '../utils/dateHelpers';
 import { PrayerTime } from '../types';
+import { scheduleLocalNotificationAsync } from './notifications/scheduleLocalNotification';
 
 const NOTIFICATION_PREFIX = 'jummah';
 const STORAGE_KEY_LAST_SCHEDULED = 'jummah_last_scheduled';
@@ -80,6 +81,17 @@ const DUA_MESSAGES: { title: string; body: string }[] = [
   },
 ];
 
+const EARLY_DUA_MESSAGES: { title: string; body: string }[] = [
+  {
+    title: 'Hold Your Dua for Friday',
+    body: 'Keep your dua list close today. Many scholars placed the hour of response late on Friday, especially after \'Asr.',
+  },
+  {
+    title: 'Prepare for the Accepted Hour',
+    body: 'Jumu\'ah carries a blessed hour in which dua is answered. Return to your duas after \'Asr with presence and hope.',
+  },
+];
+
 class JummahNotificationServiceClass {
   /**
    * Main entry point: schedule all Friday notifications.
@@ -111,6 +123,7 @@ class JummahNotificationServiceClass {
       await this.cancelExisting();
 
       const dhuhr = todayPrayerTimes.find(p => p.name === 'Dhuhr');
+      const asr = todayPrayerTimes.find(p => p.name === 'Asr');
       const maghrib = todayPrayerTimes.find(p => p.name === 'Maghrib');
       const fajr = todayPrayerTimes.find(p => p.name === 'Fajr');
 
@@ -162,6 +175,18 @@ class JummahNotificationServiceClass {
       }
 
       // 4. Last-hour dua reminder (1 hour before Maghrib)
+      if (asr && maghrib) {
+        const earlyDuaTime = new Date(asr.time.getTime() + 15 * 60 * 1000);
+        if (earlyDuaTime > now && earlyDuaTime < maghrib.time) {
+          await this.scheduleNotification(
+            'dua-window',
+            earlyDuaTime,
+            this.pickRandom(EARLY_DUA_MESSAGES),
+          );
+        }
+      }
+
+      // 5. Last-hour dua reminder (1 hour before Maghrib)
       if (maghrib) {
         const duaTime = new Date(maghrib.time.getTime() - 60 * 60 * 1000);
         if (duaTime > now) {
@@ -196,12 +221,11 @@ class JummahNotificationServiceClass {
 
     const identifier = `${NOTIFICATION_PREFIX}-${type}-${getLocalDateKey()}`;
 
-    await Notifications.scheduleNotificationAsync({
+    await scheduleLocalNotificationAsync({
       content: {
         title: message.title,
         body: message.body,
         data: { type: `jummah-${type}` },
-        sound: 'default',
         categoryIdentifier: NOTIFICATION_CATEGORIES.JUMMAH_REMINDER,
       },
       trigger: {

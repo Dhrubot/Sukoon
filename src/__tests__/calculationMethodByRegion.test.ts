@@ -51,4 +51,23 @@ describe('calculationMethodByRegion', () => {
     expect(result.settings.calculationMethod).toBe('ISNA');
     expect(result.settings.calculationMethodManuallySelected).toBe(true);
   });
+
+  it('reapplies the regional method after automatic mode is restored', () => {
+    const settings = {
+      ...StorageService.getDefaultSettings(),
+      calculationMethod: 'ISNA' as const,
+      calculationMethodManuallySelected: false,
+    };
+
+    const result = applyRegionalCalculationMethod(settings, {
+      latitude: 23.8103,
+      longitude: 90.4125,
+      city: 'Dhaka',
+      country: 'Bangladesh',
+    });
+
+    expect(result.didAutoSelect).toBe(true);
+    expect(result.settings.calculationMethod).toBe('Karachi');
+    expect(result.settings.calculationMethodManuallySelected).toBe(false);
+  });
 });

@@ -8,6 +8,7 @@ import {
   PrayerTimes,
   PrayerTime,
   PrayerName,
+  PrayerTimeQuality,
   Coordinates,
   CalculationMethod,
   AladhanResponse,
@@ -38,6 +39,20 @@ interface CachedPrayerTimesData {
 
 const ALADHAN_API_BASE = "https://api.aladhan.com/v1";
 
+/** MMKV key for the most-recent successfully-fetched prayer times (any date). */
+const LAST_KNOWN_GOOD_KEY = 'last_known_good_prayer_times';
+
+interface LastKnownGoodData {
+  /** YYYY-MM-DD of the captured prayer day */
+  date: string;
+  lat: number;
+  lon: number;
+  method: string;
+  asrJuristic: string;
+  times: PrayerTimes;
+  capturedAt: string; // ISO timestamp
+}
+
 const CALCULATION_METHOD_MAP: Record<CalculationMethod, number> = {
   MWL: 3,
   ISNA: 2,
@@ -67,7 +82,7 @@ export class PrayerTimeService {
   private _lastFetchWasFallback: boolean = false;
   private _usingHardcodedDefaults: boolean = false;
   private _highLatitudeWarning: boolean = false;
-  private _lastProviderSource: 'edge' | 'direct' | 'memory_cache' | 'calculated_fallback' | 'disk_cache' | 'hardcoded_defaults' | null = null;
+  private _lastProviderSource: PrayerTimeQuality | 'memory_cache' | null = null;
 
   get lastFetchWasFallback(): boolean {
     return this._lastFetchWasFallback;
@@ -83,6 +98,11 @@ export class PrayerTimeService {
 
   get lastProviderSource(): string | null {
     return this._lastProviderSource;
+  }
+
+  get lastPrayerTimeQuality(): PrayerTimeQuality {
+    if (this._lastProviderSource === 'memory_cache') return 'provider';
+    return this._lastProviderSource ?? 'invalid';
   }
 
   static getInstance(): PrayerTimeService {
@@ -141,7 +161,8 @@ export class PrayerTimeService {
       return this.calculatePrayerTimes(
         coordinates || { latitude: 0, longitude: 0 },
         date,
-        method
+        method,
+        asrJuristic
       );
     }
 
@@ -170,7 +191,7 @@ export class PrayerTimeService {
           asrJuristic
         );
 
-        const times = apiResult.times;
+        const times = this.normalizeProviderTimes(apiResult.times);
 
         const requiredTimes = ["Fajr", "Dhuhr", "Asr", "Maghrib", "Isha"];
         const missingTimes = requiredTimes.filter(
@@ -178,9 +199,7 @@ export class PrayerTimeService {
         );
 
         if (missingTimes.length > 0) {
-          logger.warn(
-            `Missing prayer times after normalization: ${missingTimes.join(", ")}`
-          );
+          throw new Error(`Missing prayer times after normalization: ${missingTimes.join(", ")}`);
         }
 
         this._lastFetchWasFallback = false;
@@ -214,7 +233,7 @@ export class PrayerTimeService {
         // Return calculated times as fallback
         this._lastFetchWasFallback = true;
         this._lastProviderSource = 'calculated_fallback';
-        return this.calculatePrayerTimes(coordinates, date, method);
+        return this.calculatePrayerTimes(coordinates, date, method, asrJuristic);
       } finally {
         this.inFlightFetches.delete(cacheKey);
       }
@@ -261,6 +280,49 @@ export class PrayerTimeService {
       );
       return this.fetchPrayerTimesFromAladhan(coordinates, date, method, asrJuristic);
     }
+  }
+
+  private parseTimeStringParts(timeStr: string | undefined): { hours: number; minutes: number } | null {
+    if (!timeStr || typeof timeStr !== 'string') return null;
+    const match = timeStr.trim().match(/^(\d{1,2}):(\d{2})(?:\b|[^0-9])/);
+    if (!match) return null;
+
+    const hours = Number(match[1]);
+    const minutes = Number(match[2]);
+    if (!Number.isInteger(hours) || !Number.isInteger(minutes)) return null;
+    if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
+    return { hours, minutes };
+  }
+
+  private normalizeTimeString(timeStr: string | undefined, label: string): string {
+    const parts = this.parseTimeStringParts(timeStr);
+    if (!parts) {
+      throw new Error(`Invalid ${label} prayer time: ${String(timeStr)}`);
+    }
+
+    return `${parts.hours.toString().padStart(2, '0')}:${parts.minutes
+      .toString()
+      .padStart(2, '0')}`;
+  }
+
+  private normalizeProviderTimes(times: PrayerTimes): PrayerTimes {
+    const normalized: PrayerTimes = {
+      Fajr: this.normalizeTimeString(times.Fajr, 'Fajr'),
+      Sunrise: this.normalizeTimeString(times.Sunrise, 'Sunrise'),
+      Dhuhr: this.normalizeTimeString(times.Dhuhr, 'Dhuhr'),
+      Asr: this.normalizeTimeString(times.Asr, 'Asr'),
+      Sunset: this.normalizeTimeString(times.Sunset, 'Sunset'),
+      Maghrib: this.normalizeTimeString(times.Maghrib, 'Maghrib'),
+      Isha: this.normalizeTimeString(times.Isha, 'Isha'),
+      Midnight: this.normalizeTimeString(times.Midnight, 'Midnight'),
+    };
+
+    const fardTimes = [normalized.Fajr, normalized.Dhuhr, normalized.Asr, normalized.Maghrib, normalized.Isha];
+    if (fardTimes.every((time) => time === '00:00')) {
+      throw new Error('Invalid provider prayer times: all fard prayers are midnight');
+    }
+
+    return normalized;
   }
 
   private async fetchPrayerTimesFromAladhan(
@@ -317,31 +379,65 @@ export class PrayerTimeService {
   }
 
   /**
-   * Get prayer times as array with next prayer marked
+   * Get prayer times as array with next prayer marked.
+   * Fallback tier order (normal path):
+   *   1. Edge API
+   *   2. Aladhan API
+   *   3. Exact-date disk cache (via getCachedPrayerTimesFromDisk in the provider)
+   *   4. On-device astronomical calculation
+   *   5. Last-known-good — most-recent prior successful fetch (quality: 'stale_cache')
+   *   6. Hardcoded defaults (quality: 'hardcoded_defaults')
+   * When diskOnly:true, only tiers 3 and 5 are considered (no network, no astro).
    */
   async getPrayerTimesList(
     coordinates: Coordinates,
     date: Date,
     method: CalculationMethod = "MWL",
     adjustments?: Record<PrayerName, number>,
-    asrJuristic: "Standard" | "Hanafi" = "Standard"
-  ): Promise<{ prayerTimes: PrayerTime[]; sunrise: Date; sunset: Date; midnight: Date | null }> {
+    asrJuristic: "Standard" | "Hanafi" = "Standard",
+    options?: { diskOnly?: boolean }
+  ): Promise<{ prayerTimes: PrayerTime[]; sunrise: Date; sunset: Date; midnight: Date | null; quality: PrayerTimeQuality }> {
     // CENTRAL GUARD - Stop invalid calls immediately
     if (!isValidCoordinates(coordinates)) {
       logger.log(
         "🛑 BLOCKED: Invalid coordinates, returning empty prayer times"
       );
-      return { prayerTimes: [], sunrise: new Date(), sunset: new Date(), midnight: null };
+      return { prayerTimes: [], sunrise: new Date(), sunset: new Date(), midnight: null, quality: 'invalid' };
+    }
+
+    // diskOnly path: only read from disk — no network, no astronomical calculation.
+    // Last-known-good IS allowed since it is also disk-only.
+    if (options?.diskOnly) {
+      const exactCached = this.getCachedPrayerTimesFromDisk(coordinates, date, method, asrJuristic);
+      if (exactCached) {
+        this._lastProviderSource = 'disk_cache';
+        return this._buildResultFromTimes(exactCached.times, date, adjustments, 'disk_cache');
+      }
+      const lkg = this.getLastKnownGoodFromDisk();
+      if (lkg) {
+        logger.warn('diskOnly: using last-known-good stale cache');
+        this._lastProviderSource = 'stale_cache';
+        return this._buildResultFromTimes(lkg.times, date, adjustments, 'stale_cache');
+      }
+      return { prayerTimes: [], sunrise: new Date(), sunset: new Date(), midnight: null, quality: 'invalid' };
     }
 
     try {
       const times = await this.fetchPrayerTimes(coordinates, date, method, asrJuristic);
+      const quality = this.lastPrayerTimeQuality;
       const now = new Date();
 
       // Parse sunrise, sunset, and midnight
       const sunrise = this.parseTimeToDate(times.Sunrise, date);
       const sunset = this.parseTimeToDate(times.Sunset, date);
       const midnight = times.Midnight ? this.parseTimeToDate(times.Midnight, date) : null;
+      if (
+        Number.isNaN(sunrise.getTime()) ||
+        Number.isNaN(sunset.getTime()) ||
+        (midnight !== null && Number.isNaN(midnight.getTime()))
+      ) {
+        throw new Error('Invalid sun or midnight time in prayer time payload');
+      }
 
       const prayerNames = FARD_PRAYER_NAMES_LIST as unknown as PrayerName[];
       const prayerTimesList: PrayerTime[] = [];
@@ -350,6 +446,9 @@ export class PrayerTimeService {
       for (const name of prayerNames) {
         const timeStr = times[name];
         let prayerDate = this.parseTimeToDate(timeStr, date);
+        if (Number.isNaN(prayerDate.getTime())) {
+          throw new Error(`Invalid ${name} time in prayer time payload`);
+        }
 
         // Apply adjustments if provided
         if (adjustments && adjustments[name]) {
@@ -391,11 +490,69 @@ export class PrayerTimeService {
         sunrise,
         sunset,
         midnight,
+        quality,
       };
     } catch (error) {
       logger.error("❌ Error in getPrayerTimesList:", error);
-      return { prayerTimes: [], sunrise: new Date(), sunset: new Date(), midnight: null };
+
+      // Tier 5: last-known-good — most-recent successful fetch regardless of date.
+      // Better than hardcoded defaults; times are stale but in the right ballpark.
+      if (!options?.diskOnly) {
+        const lkg = this.getLastKnownGoodFromDisk();
+        if (lkg) {
+          logger.warn('getPrayerTimesList: falling back to last-known-good stale cache from', lkg.date);
+          this._lastProviderSource = 'stale_cache';
+          this._lastFetchWasFallback = true;
+          this._usingHardcodedDefaults = false;
+          return this._buildResultFromTimes(lkg.times, date, adjustments, 'stale_cache');
+        }
+      }
+
+      return { prayerTimes: [], sunrise: new Date(), sunset: new Date(), midnight: null, quality: 'invalid' };
     }
+  }
+
+  /**
+   * Build a getPrayerTimesList result from a PrayerTimes object.
+   * Used by the stale-cache and disk-only paths to avoid duplicating
+   * the prayer-list assembly logic.
+   */
+  private _buildResultFromTimes(
+    times: PrayerTimes,
+    date: Date,
+    adjustments: Record<PrayerName, number> | undefined,
+    quality: PrayerTimeQuality
+  ): { prayerTimes: PrayerTime[]; sunrise: Date; sunset: Date; midnight: Date | null; quality: PrayerTimeQuality } {
+    const sunrise = this.parseTimeToDate(times.Sunrise, date);
+    const sunset = this.parseTimeToDate(times.Sunset, date);
+    const midnight = times.Midnight ? this.parseTimeToDate(times.Midnight, date) : null;
+    const now = new Date();
+
+    const prayerNames = FARD_PRAYER_NAMES_LIST as unknown as PrayerName[];
+    const prayerTimesList: PrayerTime[] = [];
+    let nextPrayerFound = false;
+
+    for (const name of prayerNames) {
+      const timeStr = times[name];
+      let prayerDate = this.parseTimeToDate(timeStr, date);
+      if (Number.isNaN(prayerDate.getTime())) continue;
+
+      if (adjustments && adjustments[name]) {
+        prayerDate = new Date(prayerDate.getTime() + adjustments[name] * 60000);
+      }
+
+      const previousPrayer = prayerTimesList[prayerTimesList.length - 1];
+      if (previousPrayer && prayerDate.getTime() <= previousPrayer.time.getTime()) {
+        prayerDate = addDays(prayerDate, 1);
+      }
+
+      const isNext = !nextPrayerFound && isAfter(prayerDate, now);
+      if (isNext) nextPrayerFound = true;
+
+      prayerTimesList.push({ name, time: prayerDate, timestamp: prayerDate.getTime(), isNext });
+    }
+
+    return { prayerTimes: prayerTimesList, sunrise, sunset, midnight, quality };
   }
 
   /**
@@ -417,15 +574,14 @@ export class PrayerTimeService {
    * Parse time string to Date object
    */
   parseTimeToDate(timeStr: string | undefined, date: Date): Date {
-    // Handle undefined or invalid time strings
-    if (!timeStr) {
-      logger.warn("Received undefined time string in parseTimeToDate");
-      return new Date(date); // Return the date with default time (midnight)
+    const parts = this.parseTimeStringParts(timeStr);
+    if (!parts) {
+      logger.warn("Received invalid time string in parseTimeToDate:", timeStr);
+      return new Date(Number.NaN);
     }
 
-    const [hours, minutes] = timeStr.split(":").map(Number);
     const result = new Date(date);
-    result.setHours(hours, minutes, 0, 0);
+    result.setHours(parts.hours, parts.minutes, 0, 0);
     return result;
   }
 
@@ -594,24 +750,21 @@ export class PrayerTimeService {
     } catch (error) {
       logger.error("Error in fallback prayer time calculation:", error);
 
-      // Try last-known-good cached times from MMKV before using hardcoded defaults
+      // Tier 5: last-known-good from disk (separate key, any prior successful fetch)
       try {
-        const raw = StorageService.getValue('cached_prayer_times');
-        if (raw) {
-          const cached: CachedPrayerTimesData = JSON.parse(raw);
-          if (cached.times) {
-            logger.warn("Using last-known-good cached prayer times as fallback");
-            this._lastFetchWasFallback = true;
-            this._usingHardcodedDefaults = false;
-            this._lastProviderSource = 'disk_cache';
-            return cached.times;
-          }
+        const lkg = this.getLastKnownGoodFromDisk();
+        if (lkg?.times) {
+          logger.warn("calculatePrayerTimes: using last-known-good stale cache from", lkg.date);
+          this._lastFetchWasFallback = true;
+          this._usingHardcodedDefaults = false;
+          this._lastProviderSource = 'stale_cache';
+          return this.normalizeProviderTimes(lkg.times);
         }
-      } catch (cacheError) {
-        logger.warn("Failed to read cached prayer times:", cacheError);
+      } catch (lkgError) {
+        logger.warn("Failed to read last-known-good prayer times:", lkgError);
       }
 
-      // Absolute last resort: hardcoded defaults
+      // Tier 6: absolute last resort — hardcoded defaults
       logger.error("No cached times available — using hardcoded defaults");
       this._usingHardcodedDefaults = true;
       this._lastProviderSource = 'hardcoded_defaults';
@@ -865,10 +1018,11 @@ export class PrayerTimeService {
    */
   getPrayerDisplayName(
     prayer: PrayerName,
-    language: "en" | "ar" = "en"
+    language: "en" | "ar" = "en",
+    referenceDate: Date = new Date()
   ): string {
     // On Fridays, Jumu'ah replaces Dhuhr
-    if (prayer === "Dhuhr" && isFriday()) {
+    if (prayer === "Dhuhr" && isFriday(referenceDate)) {
       return language === "ar" ? "الجمعة" : "Jumu'ah";
     }
 
@@ -935,6 +1089,7 @@ export class PrayerTimeService {
   /**
    * Persist prayer times to MMKV for instant display on next cold boot.
    * Single self-overwriting key — no stale data pileup.
+   * Also updates the last-known-good pointer used as tier-5 fallback.
    */
   private cachePrayerTimesToDisk(
     coordinates: Coordinates,
@@ -958,8 +1113,37 @@ export class PrayerTimeService {
         cachedAt: new Date().toISOString(),
       };
       StorageService.setValue('cached_prayer_times', JSON.stringify(cached));
+
+      // Always overwrite last-known-good with the freshest successful fetch.
+      const lkg: LastKnownGoodData = {
+        date: cached.date,
+        lat: cached.lat,
+        lon: cached.lon,
+        method,
+        asrJuristic,
+        times,
+        capturedAt: cached.cachedAt,
+      };
+      StorageService.setPublicValue(LAST_KNOWN_GOOD_KEY, JSON.stringify(lkg));
     } catch (err) {
       logger.warn('Failed to cache prayer times to disk:', err);
+    }
+  }
+
+  /**
+   * Read the last-known-good prayer times regardless of date.
+   * Used as tier-5 fallback (stale_cache) when everything else fails.
+   * Returns null when nothing has ever been successfully fetched.
+   */
+  getLastKnownGoodFromDisk(): LastKnownGoodData | null {
+    try {
+      const raw = StorageService.getPublicValue(LAST_KNOWN_GOOD_KEY);
+      if (!raw) return null;
+      const parsed: LastKnownGoodData = JSON.parse(raw);
+      if (!parsed.times) return null;
+      return parsed;
+    } catch {
+      return null;
     }
   }
 

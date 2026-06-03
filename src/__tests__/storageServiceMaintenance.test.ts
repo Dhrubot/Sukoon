@@ -93,6 +93,78 @@ describe('StorageService maintenance flows', () => {
     expect(encryptedStorage.getString('user_id')).toBe('private-user-id');
   });
 
+  it('normalizes untouched legacy gentle settings once during initialization', async () => {
+    const { storageService } = loadStorageService();
+    const legacyGentle = {
+      ...storageService.getDefaultSettings(),
+      notifications: {
+        enabled: true,
+        adhanEnabled: true,
+        soundEnabled: true,
+        vibrationEnabled: true,
+        beforePrayer: 10,
+        reminderText: 'Time for {prayer} prayer',
+        postPrayerCheck: false,
+        intensity: 'gentle',
+        liveActivityEnabled: false,
+      },
+      habitBuilder: {
+        enabled: false,
+        persistentReminders: {
+          enabled: false,
+          firstCheckDelay: 20,
+          interval: 15,
+          maxReminders: 1,
+        },
+        gracePeriodWarning: {
+          enabled: false,
+          minutesBeforeNext: 15,
+        },
+        snooze: {
+          allowedIntervals: [5, 10, 15, 30],
+          defaultInterval: 10,
+          maxSnoozesPerPrayer: 5,
+        },
+        quietHours: {
+          enabled: false,
+          start: '22:00',
+          end: '04:00',
+        },
+      },
+    };
+
+    storageService.setUserSettings(legacyGentle);
+    await storageService.initialize();
+
+    const normalized = storageService.getUserSettings();
+    const publicStorage = (storageService as any).publicStorage;
+
+    expect(normalized?.notifications.beforePrayer).toBe(0);
+    expect(normalized?.habitBuilder.enabled).toBe(false);
+    expect(publicStorage.getBoolean('gentle_preset_normalized_v1')).toBe(true);
+  });
+
+  it('preserves custom gentle reminder timings during initialization', async () => {
+    const { storageService } = loadStorageService();
+    const customGentle = {
+      ...storageService.getDefaultSettings(),
+      notifications: {
+        ...storageService.getDefaultSettings().notifications,
+        beforePrayer: 5,
+        intensity: 'gentle',
+      },
+    };
+
+    storageService.setUserSettings(customGentle);
+    await storageService.initialize();
+
+    const normalized = storageService.getUserSettings();
+    const publicStorage = (storageService as any).publicStorage;
+
+    expect(normalized?.notifications.beforePrayer).toBe(5);
+    expect(publicStorage.getBoolean('gentle_preset_normalized_v1')).toBe(true);
+  });
+
   it('updates daily stats and links mindfulness sessions back to prayer records', () => {
     const { storageService } = loadStorageService();
     const date = '2026-03-17';

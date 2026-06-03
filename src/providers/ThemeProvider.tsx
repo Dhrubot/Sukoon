@@ -3,6 +3,7 @@ import React, { createContext, useState, useContext, useEffect, ReactNode } from
 import { StatusBar, Appearance } from 'react-native';
 import { AppTheme, ThemeMode, createTheme } from '../theme';
 import { useStore } from '../store/useStore';
+import WidgetService from '../services/WidgetService';
 
 interface ThemeContextType {
   theme: AppTheme;
@@ -38,6 +39,8 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
       themeMode === 'light' ? 'dark-content' : 'light-content',
       true
     );
+
+    WidgetService.refreshFromStore().catch(() => {});
   }, [themeMode]);
 
   useEffect(() => {

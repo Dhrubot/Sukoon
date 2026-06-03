@@ -6,6 +6,8 @@ const edgeApiEnabled =
   process.env.EXPO_PUBLIC_EDGE_API_ENABLED !== "false";
 const perfValidationEnabled = process.env.EXPO_PUBLIC_PERF_VALIDATION_ENABLED === "true";
 const notificationTraceEnabled = process.env.EXPO_PUBLIC_NOTIFICATION_TRACE_ENABLED === "true";
+const androidReleaseMinifyEnabled = process.env.ANDROID_ENABLE_MINIFY === "true";
+const androidReleaseShrinkResourcesEnabled = process.env.ANDROID_ENABLE_SHRINK_RESOURCES === "true";
 
 export default {
   expo: {
@@ -17,7 +19,7 @@ export default {
     icon: "./assets/icon.png",
     userInterfaceStyle: "automatic",
     splash: {
-      image: "./assets/icon.png",
+      image: "./assets/splash-logo.png",
       resizeMode: "contain",
       backgroundColor: "#00102a",
     },
@@ -32,11 +34,6 @@ export default {
           "Sukoon needs notification permission to remind you of prayer times.",
         UIBackgroundModes: ["audio"],
       },
-      config: {
-        googleMobileAds: {
-          app_id: "ca-app-pub-5474984690525462~1671116769",
-        },
-      },
       jsEngine: "hermes",
       googleServicesFile: "./GoogleService-Info.plist",
     },
@@ -46,8 +43,6 @@ export default {
         foregroundImage: "./assets/icon.png",
         backgroundColor: "#1A1F3A",  // Dark theme background
       },
-      enableProguardInReleaseBuilds: true,
-      enableShrinkResources: true,
       package: "com.talukders.sukoon",
       jsEngine: "hermes",
       permissions: [
@@ -68,11 +63,6 @@ export default {
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.USE_EXACT_ALARM",
       ],
-      config: {
-        googleMobileAds: {
-          app_id: "ca-app-pub-5474984690525462~6816196886",
-        },
-      },
       googleServicesFile: "./google-services.json",
     },
     plugins: [
@@ -93,7 +83,7 @@ export default {
       [
         "expo-splash-screen",
         {
-          image: "./assets/icon.png",
+          image: "./assets/splash-logo.png",
           resizeMode: "contain",
           backgroundColor: "#00102a",
           imageWidth: 180,
@@ -111,7 +101,6 @@ export default {
       ],
       "expo-secure-store",
       "expo-background-task",
-      "expo-iap",
       [
         "expo-notifications",
         {
@@ -126,13 +115,6 @@ export default {
       ],
       "./plugins/withPlatformSounds.js",
       [
-        "react-native-google-mobile-ads",
-        {
-          androidAppId: "ca-app-pub-5474984690525462~6816196886",
-          iosAppId: "ca-app-pub-5474984690525462~1671116769"
-        },
-      ],
-      [
         "expo-build-properties",
         {
           android: {
@@ -140,6 +122,8 @@ export default {
             targetSdkVersion: 36,
             minSdkVersion: 24,
             kotlinVersion: "2.0.21",
+            enableMinifyInReleaseBuilds: androidReleaseMinifyEnabled,
+            enableShrinkResourcesInReleaseBuilds: androidReleaseShrinkResourcesEnabled,
           },
           ios: {
             deploymentTarget: "15.1",
@@ -166,14 +150,8 @@ export default {
         "./assets/sounds/adhan_ios.caf",
         "./assets/sounds/adhan_full.mp3"
       ],
-      "react-native-google-mobile-ads": {
-        androidAppId: "ca-app-pub-5474984690525462~6816196886",
-        iosAppId: "ca-app-pub-5474984690525462~1671116769"
-      }
+      supportEmail: "codifizz@gmail.com",
+      privacyPolicyUrl: "https://dhrubot.github.io/Sukoon/privacy.html",
     },
   },
-  "react-native-google-mobile-ads": {
-    android_app_id: "ca-app-pub-5474984690525462~6816196886",
-    ios_app_id: "ca-app-pub-5474984690525462~1671116769"
-  }
 };

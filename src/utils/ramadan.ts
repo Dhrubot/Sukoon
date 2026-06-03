@@ -60,7 +60,7 @@ export function cacheHijriDate(hijriData: {
 /**
  * Read the user's hijriAdjustment setting (−1, 0, or +1).
  */
-function getHijriAdjustment(): -1 | 0 | 1 {
+export function getCurrentHijriAdjustment(): -1 | 0 | 1 {
   try {
     const raw = StorageService.getValue('user_settings');
     if (!raw) return 0;
@@ -122,7 +122,7 @@ export function getCachedHijriDate(): HijriDate | null {
     // Only trust cache if it was set today
     const today = getLocalDateKey();
     if (parsed.cachedFor && parsed.cachedFor !== today) return null;
-    return applyHijriAdjustment(parsed, getHijriAdjustment());
+    return applyHijriAdjustment(parsed, getCurrentHijriAdjustment());
   } catch {
     return null;
   }
@@ -163,10 +163,10 @@ export function getRamadanDay(): number | null {
 }
 
 /**
- * Check if today is Friday (for Jumah support).
+ * Check whether a given date falls on Friday (for Jumu'ah support).
  */
-export function isFriday(): boolean {
-  return new Date().getDay() === 5;
+export function isFriday(date: Date = new Date()): boolean {
+  return date.getDay() === 5;
 }
 
 // ─── Eid Detection ──────────────────────────────────────────────

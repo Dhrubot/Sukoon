@@ -7,7 +7,13 @@ import { SettingRow } from '../../../components/settings/SettingRow';
 import { UserSettings } from '../../../types';
 import { useStore } from '../../../store/useStore';
 import NotificationService from '../../../services/NotificationService';
-import LiveActivityService from '../../../services/LiveActivityService';
+import type { NotificationBlockedReason } from '../../../services/NotificationService';
+import type { ExactAlarmStatus } from '../../../services/notifications/FullAdhanScheduler';
+// import LiveActivityService from '../../../services/LiveActivityService'; // v1.1: restore with the Live Activity toggle
+import {
+  mergeNotificationSettings,
+  normalizeNotificationSettings,
+} from '../../../services/notifications/notificationSettingsState';
 import { useTheme } from '../../../providers/ThemeProvider';
 import { useThemedStyles } from '../../../hooks/useThemedStyles';
 import { AppTheme } from '../../../theme';
@@ -28,12 +34,26 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const { updateUserSettings } = useStore();
+  const notifications = normalizeNotificationSettings(userSettings.notifications);
   const [permissionStatus, setPermissionStatus] = useState<'granted' | 'denied' | 'undetermined'>('undetermined');
+  const [exactAlarmStatus, setExactAlarmStatus] = useState<ExactAlarmStatus | 'not_applicable'>('not_applicable');
+  const [blockedReason, setBlockedReason] = useState<NotificationBlockedReason>(null);
+
+  const refreshReadiness = async () => {
+    const readiness = await NotificationService.getNotificationReadiness();
+    setPermissionStatus(readiness.permissionStatus);
+    setExactAlarmStatus(readiness.exactAlarmStatus);
+    setBlockedReason(readiness.blockedReason);
+    return readiness;
+  };
 
   useEffect(() => {
     let mounted = true;
-    NotificationService.getPermissionStatus().then((status) => {
-      if (mounted) setPermissionStatus(status);
+    refreshReadiness().then((readiness) => {
+      if (!mounted) return;
+      setPermissionStatus(readiness.permissionStatus);
+      setExactAlarmStatus(readiness.exactAlarmStatus);
+      setBlockedReason(readiness.blockedReason);
     });
     return () => {
       mounted = false;
@@ -48,21 +68,41 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
     Linking.openSettings();
   };
 
+  const openExactAlarmSettings = async () => {
+    const opened = await NotificationService.openAndroidExactAlarmSettings();
+    if (!opened) {
+      openAppSettings();
+    }
+  };
+
   const getNotificationSubtitle = () => {
-    if (permissionStatus !== 'granted') return 'Blocked in system settings';
-    if (!userSettings.notifications.enabled) return 'Disabled';
+    if (blockedReason === 'permission_blocked') return 'Blocked in system settings';
+    if (blockedReason === 'permission_denied' || permissionStatus !== 'granted') return 'Permission required';
+    if (Platform.OS === 'android' && exactAlarmStatus === 'fallback' && notifications.adhanEnabled) {
+      return 'Enabled • adhan may be delayed';
+    }
+    if (blockedReason === 'no_valid_location') return 'Location required';
+    if (!notifications.enabled) return 'Disabled';
     
     let subtitle = 'Enabled';
-    if (userSettings.notifications.beforePrayer > 0) {
-      subtitle += ` • ${userSettings.notifications.beforePrayer} min before`;
+    if (notifications.beforePrayer > 0) {
+      subtitle += ` • ${notifications.beforePrayer} min before`;
     }
     return subtitle;
   };
 
   const adhanSubtitle =
     Platform.OS === 'android'
-      ? 'Short call to prayer at prayer time. Enable full playback below for locked-screen adhan.'
+      ? 'Plays the call to prayer at prayer time, even when your phone is locked. Choose the full-length adhan below.'
       : 'Short call to prayer on the lock screen. Full adhan continues after you open the app.';
+  // Live Activity copy — kept ready for the v1.1 re-enable. See the
+  // commented-out JSX block below.
+  // const liveActivityLabel =
+  //   Platform.OS === 'android' ? 'Persistent Prayer Countdown' : 'Live Activity';
+  // const liveActivitySubtitle =
+  //   Platform.OS === 'android'
+  //     ? 'Keep a prayer-aware countdown in your notifications and on the lock screen.'
+  //     : 'Show a prayer-aware countdown on your lock screen and Dynamic Island.';
 
   const handlePressRow = () => {
     if (permissionStatus === 'granted') {
@@ -72,9 +112,11 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
 
     if (permissionStatus === 'undetermined') {
       void (async () => {
-        const granted = await NotificationService.requestPermissionsFromUser();
-        const nextStatus = granted ? 'granted' : await NotificationService.getPermissionStatus();
-        setPermissionStatus(nextStatus);
+        const readiness = await NotificationService.requestNotificationAccessFromUser();
+        setPermissionStatus(readiness.permissionStatus);
+        setExactAlarmStatus(readiness.exactAlarmStatus);
+        setBlockedReason(readiness.blockedReason);
+        const granted = readiness.permissionStatus === 'granted';
 
         if (granted) {
           onNotificationPress();
@@ -94,47 +136,49 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
     }
 
     Alert.alert(
-      'Notifications Blocked',
-      'Enable notifications in your device settings to receive prayer reminders.',
+      blockedReason === 'exact_alarm_blocked' ? 'Alarms & Reminders Blocked' : 'Notifications Blocked',
+      blockedReason === 'exact_alarm_blocked'
+        ? 'Enable Alarms & reminders in your device settings to improve prayer-time delivery.'
+        : 'Enable notifications in your device settings to receive prayer reminders.',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Open Settings', onPress: openAppSettings },
+        {
+          text: 'Open Settings',
+          onPress: blockedReason === 'exact_alarm_blocked'
+            ? () => { void openExactAlarmSettings(); }
+            : openAppSettings,
+        },
       ]
     );
   };
 
   // Logic for the Adhan toggle
   const toggleAdhan = async (value: boolean) => {
+    const nextNotifications = mergeNotificationSettings(notifications, {
+      adhanEnabled: value,
+    });
+
     // Optimistic UI update via Store
     updateUserSettings({
-      notifications: {
-        ...userSettings.notifications,
-        adhanEnabled: value,
-        // Disable full adhan if adhan is turned off
-        ...(value === false && { fullAdhanEnabled: false }),
-      }
+      notifications: nextNotifications,
     });
 
     // Update the native notification service
     // This forces a reschedule so the next notification uses the correct sound
-    await NotificationService.updateNotificationSettings({
-      adhanEnabled: value,
-      ...(value === false && { fullAdhanEnabled: false }),
-    });
+    await NotificationService.updateNotificationSettings(nextNotifications);
   };
 
   // Logic for the Full Adhan toggle (Android only)
   const toggleFullAdhan = async (value: boolean) => {
-    updateUserSettings({
-      notifications: {
-        ...userSettings.notifications,
-        fullAdhanEnabled: value,
-      }
-    });
-
-    await NotificationService.updateNotificationSettings({
+    const nextNotifications = mergeNotificationSettings(notifications, {
       fullAdhanEnabled: value,
     });
+
+    updateUserSettings({
+      notifications: nextNotifications,
+    });
+
+    await NotificationService.updateNotificationSettings(nextNotifications);
   };
 
   return (
@@ -144,6 +188,14 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
         subtitle={getNotificationSubtitle()}
         onPress={handlePressRow}
       />
+      {Platform.OS === 'android' && permissionStatus === 'granted' && exactAlarmStatus === 'fallback' && notifications.adhanEnabled && (
+        <SettingRow
+          label="Allow exact alarms"
+          subtitle="Reminders still work, but the adhan may be delayed or silenced until you allow Alarms & reminders"
+          value="Needs settings"
+          onPress={() => { void openExactAlarmSettings(); }}
+        />
+      )}
       {/* The Adhan Switch Row */}
       <View style={styles.row}>
         <View style={styles.textContainer}>
@@ -151,43 +203,50 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
           <Text style={styles.subtitle}>{adhanSubtitle}</Text>
         </View>
         <Switch
-          value={userSettings.notifications.adhanEnabled}
+          value={notifications.adhanEnabled}
           onValueChange={toggleAdhan}
-          disabled={!userSettings.notifications.enabled || permissionStatus !== 'granted'}
+          disabled={!notifications.enabled || permissionStatus !== 'granted'}
           trackColor={{ false: theme.colors.switch.trackFalse, true: theme.colors.switch.trackTrue }}
           thumbColor={theme.colors.switch.thumb}
         />
       </View>
       {/* Full Adhan — Android only, visible when adhan is enabled */}
-      {Platform.OS === 'android' && userSettings.notifications.adhanEnabled && (
+      {Platform.OS === 'android' && notifications.adhanEnabled && (
         <View style={styles.row}>
           <View style={styles.textContainer}>
-            <Text style={styles.label}>Full Adhan (Locked Screen)</Text>
-            <Text style={styles.subtitle}>Schedules the complete call to prayer when your phone is locked or the app is closed</Text>
+            <Text style={styles.label}>Full-Length Adhan</Text>
+            <Text style={styles.subtitle}>Play the complete call to prayer instead of the short clip (plays even when locked or the app is closed)</Text>
           </View>
           <Switch
-            value={!!userSettings.notifications.fullAdhanEnabled}
+            value={!!notifications.fullAdhanEnabled}
             onValueChange={toggleFullAdhan}
-            disabled={!userSettings.notifications.enabled || permissionStatus !== 'granted'}
+            disabled={!notifications.enabled || permissionStatus !== 'granted'}
             trackColor={{ false: theme.colors.switch.trackFalse, true: theme.colors.switch.trackTrue }}
             thumbColor={theme.colors.switch.thumb}
           />
         </View>
       )}
-      {/* Live Activity — lock screen prayer countdown */}
-       { __DEV__ && (<View style={styles.row}>
+      {/* Live Activity / persistent countdown — HIDDEN for v1 launch.
+          The underlying LiveActivityService + iOS extension is functional but
+          we never verified it end-to-end on a real device (rendering, refresh
+          cadence, lock-screen interaction). Surfacing the toggle would let
+          users opt into an unfinished feature. Re-enable by uncommenting in
+          a v1.1 follow-up once verification is complete. */}
+      {/* {Platform.OS !== 'web' && (
+        <View style={styles.row}>
         <View style={styles.textContainer}>
-          <Text style={styles.label}>Live Activity</Text>
-          <Text style={styles.subtitle}>Show prayer countdown on your lock screen</Text>
+          <Text style={styles.label}>{liveActivityLabel}</Text>
+          <Text style={styles.subtitle}>{liveActivitySubtitle}</Text>
         </View>
         <Switch
-          value={!!userSettings.notifications.liveActivityEnabled}
+          value={!!notifications.liveActivityEnabled}
           onValueChange={async (value) => {
+            const nextNotifications = {
+              ...notifications,
+              liveActivityEnabled: value,
+            };
             updateUserSettings({
-              notifications: {
-                ...userSettings.notifications,
-                liveActivityEnabled: value,
-              }
+              notifications: nextNotifications,
             });
             if (value) {
               await LiveActivityService.startWithCurrentData();
@@ -195,11 +254,12 @@ export const NotificationSection: React.FC<NotificationSectionProps> = ({
               await LiveActivityService.end();
             }
           }}
-          disabled={!userSettings.notifications.enabled || permissionStatus !== 'granted'}
+          disabled={!notifications.enabled || permissionStatus !== 'granted'}
           trackColor={{ false: theme.colors.switch.trackFalse, true: theme.colors.switch.trackTrue }}
           thumbColor={theme.colors.switch.thumb}
         />
-      </View>)}
+        </View>
+      )} */}
       {/* Tahajjud Reminders */}
       {onToggleTahajjud && (
         <SettingRow
@@ -226,7 +286,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   label: {
     color: theme.colors.text.primary,
     fontFamily: theme.typography.fontFamily.bodyMedium,
-    fontSize: theme.typography.fontSize.md,
+    fontSize: 14,
     marginBottom: theme.spacing.xs,
   },
   row: {
@@ -243,6 +303,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     color: theme.colors.text.secondary,
     fontFamily: theme.typography.fontFamily.body,
     fontSize: 11,
+    lineHeight: 16,
   },
   textContainer: {
     flex: 1,

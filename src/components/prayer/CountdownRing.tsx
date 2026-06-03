@@ -1,47 +1,80 @@
 // src/components/prayer/CountdownRing.tsx
-// Gold SVG progress ring with prayer name, time, and countdown centered inside.
-import React, { useEffect, useState } from 'react';
+// Centralized prayer surface ring with stable text layout and semantic color inputs.
+import React, { useEffect, useMemo, useState } from 'react';
 import { View, Text, StyleSheet, Dimensions } from 'react-native';
-import Svg, { Circle, Defs, LinearGradient as SvgGradient, RadialGradient, Stop } from 'react-native-svg';
+import Svg, { Circle, Defs, LinearGradient as SvgGradient, Path, RadialGradient, Stop } from 'react-native-svg';
 import { useTheme } from '../../providers/ThemeProvider';
 import { AppTheme } from '../../theme';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import PrayerTimeService from '../../services/PrayerTimeService';
 import { PrayerTime } from '../../types';
 import { format } from 'date-fns';
+import { PrayerSurfaceCountdownMode, PrayerSurfaceRingColorMode } from '../../utils/prayerSurfaceResolver';
+import { withAlpha } from '../../utils/color';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const RING_SIZE = Math.min(SCREEN_WIDTH * 0.54, 220);
 const STROKE_WIDTH = 3;
+const GLOW_STROKE_WIDTH = STROKE_WIDTH + 13;
+const SVG_PADDING = Math.ceil(GLOW_STROKE_WIDTH / 2) + 2;
+const SVG_SIZE = RING_SIZE + SVG_PADDING * 2;
 const RADIUS = (RING_SIZE - STROKE_WIDTH * 2) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
 const INNER_INSET = 16;
 const INNER_RADIUS = RING_SIZE / 2 - INNER_INSET;
-// Fallback window when no previous prayer time is available
-const FALLBACK_WINDOW_MINUTES = 60;
 
 interface CountdownRingProps {
   prayer: PrayerTime;
-  previousPrayerTime?: Date;
+  progress: number;
+  countdownTargetTime: Date;
+  countdownMode?: PrayerSurfaceCountdownMode;
+  ringAccentPrayer: PrayerTime;
+  ringColorMode: PrayerSurfaceRingColorMode;
   iqamahTime?: Date;
   isAlreadyPrayed?: boolean;
 }
 
 const CountdownRing: React.FC<CountdownRingProps> = ({
   prayer,
-  previousPrayerTime,
+  progress,
+  countdownTargetTime,
+  countdownMode = 'next_prayer_start',
+  ringAccentPrayer,
+  ringColorMode,
   iqamahTime,
   isAlreadyPrayed = false,
 }) => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
-  const [progress, setProgress] = useState(0);
   const [timeRemaining, setTimeRemaining] = useState('');
+
+  const accentColor = useMemo(() => {
+    if (ringColorMode === 'gold') {
+      return theme.colors.gold;
+    }
+
+    const accentKey = ringAccentPrayer.name.toLowerCase() as keyof typeof theme.colors.prayer;
+    return theme.colors.prayer[accentKey] ?? theme.colors.gold;
+  }, [ringAccentPrayer.name, ringColorMode, theme.colors.gold, theme.colors.prayer]);
+
+  const accentColorLight = useMemo(() => {
+    if (ringColorMode === 'gold') {
+      return theme.colors.goldLight;
+    }
+
+    return withAlpha(accentColor, 0.82);
+  }, [accentColor, ringColorMode, theme.colors.goldLight]);
+
+  const glowStroke = useMemo(() => (
+    ringColorMode === 'gold'
+      ? theme.colors.sanctuary.ring.glowStroke
+      : withAlpha(accentColor, 0.2)
+  ), [accentColor, ringColorMode, theme.colors.sanctuary.ring.glowStroke]);
 
   useEffect(() => {
     const update = () => {
       const now = new Date();
-      const diff = prayer.time.getTime() - now.getTime();
+      const diff = countdownTargetTime.getTime() - now.getTime();
       const minutesLeft = diff / (1000 * 60);
 
       // Format remaining time helper
@@ -52,21 +85,8 @@ const CountdownRing: React.FC<CountdownRingProps> = ({
       };
 
       if (minutesLeft <= 0) {
-        // Prayer time has entered
-        setProgress(1);
         setTimeRemaining('Now');
-      } else if (previousPrayerTime) {
-        // Inter-prayer gap progress: fills from prev prayer → this prayer
-        const totalGap = prayer.time.getTime() - previousPrayerTime.getTime();
-        const elapsed = now.getTime() - previousPrayerTime.getTime();
-        setProgress(Math.max(0, Math.min(1, elapsed / totalGap)));
-        setTimeRemaining(fmt(minutesLeft));
-      } else if (minutesLeft >= FALLBACK_WINDOW_MINUTES) {
-        // No previous prayer — fallback to 60-min window
-        setProgress(0);
-        setTimeRemaining(fmt(minutesLeft));
       } else {
-        setProgress(1 - minutesLeft / FALLBACK_WINDOW_MINUTES);
         setTimeRemaining(fmt(minutesLeft));
       }
     };
@@ -74,26 +94,34 @@ const CountdownRing: React.FC<CountdownRingProps> = ({
     update();
     const interval = setInterval(update, 15000); // every 15s
     return () => clearInterval(interval);
-  }, [prayer, previousPrayerTime]);
+  }, [countdownTargetTime]);
 
   const strokeDashoffset = CIRCUMFERENCE * (1 - progress);
-  const cx = RING_SIZE / 2;
-  const cy = RING_SIZE / 2;
+  const cx = SVG_SIZE / 2;
+  const cy = SVG_SIZE / 2;
   const origin = `${cx}, ${cy}`;
+  const countdownPrefix = countdownMode === 'current_prayer_end' ? 'Ends In' : 'In';
 
   return (
     <View style={styles.container}>
-      <Svg width={RING_SIZE} height={RING_SIZE} style={StyleSheet.absoluteFill}>
+      <Svg width={SVG_SIZE} height={SVG_SIZE} style={StyleSheet.absoluteFill}>
         <Defs>
-          {/* Arc gradient: gold → gold-light */}
-          <SvgGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <Stop offset="0%" stopColor={theme.colors.gold} stopOpacity="1" />
-            <Stop offset="100%" stopColor={theme.colors.goldLight} stopOpacity="1" />
+          {/* Arc gradient follows centralized ring semantics */}
+          <SvgGradient id="ringGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+            <Stop offset="0%" stopColor={accentColor} stopOpacity="1" />
+            <Stop offset="100%" stopColor={accentColorLight} stopOpacity="1" />
           </SvgGradient>
           {/* Radial gradient for inner circle */}
           <RadialGradient id="innerGrad" cx="50%" cy="50%" r="50%">
-            <Stop offset="0%" stopColor={theme.colors.sanctuary.ring.innerGradCenter} />
-            <Stop offset="100%" stopColor={theme.colors.sanctuary.ring.innerGradEdge} />
+            <Stop offset="0%" stopColor={theme.colors.sanctuary.ring.innerGradCenter} stopOpacity="0.18" />
+            <Stop offset="52%" stopColor={theme.colors.sanctuary.ring.innerGradCenter} stopOpacity="0.30" />
+            <Stop offset="82%" stopColor={theme.colors.sanctuary.ring.innerGradEdge} stopOpacity="0.65" />
+            <Stop offset="100%" stopColor={theme.colors.sanctuary.ring.innerGradEdge} stopOpacity="0.88" />
+          </RadialGradient>
+          <RadialGradient id="vignetteRing" cx="50%" cy="50%" r="50%">
+            <Stop offset="70%" stopColor="transparent" stopOpacity="0" />
+            <Stop offset="88%" stopColor={theme.colors.sanctuary.ring.innerGradEdge} stopOpacity="0.28" />
+            <Stop offset="100%" stopColor={theme.colors.sanctuary.ring.innerGradEdge} stopOpacity="0.55" />
           </RadialGradient>
         </Defs>
 
@@ -112,8 +140,8 @@ const CountdownRing: React.FC<CountdownRingProps> = ({
           cx={cx}
           cy={cy}
           r={RADIUS}
-          stroke={theme.colors.sanctuary.ring.glowStroke}
-          strokeWidth={STROKE_WIDTH + 7}
+          stroke={glowStroke}
+          strokeWidth={GLOW_STROKE_WIDTH}
           fill="none"
           strokeLinecap="round"
           strokeDasharray={`${CIRCUMFERENCE}`}
@@ -127,7 +155,7 @@ const CountdownRing: React.FC<CountdownRingProps> = ({
           cx={cx}
           cy={cy}
           r={RADIUS}
-          stroke="url(#goldGrad)"
+          stroke="url(#ringGrad)"
           strokeWidth={STROKE_WIDTH}
           fill="none"
           strokeLinecap="round"
@@ -145,6 +173,14 @@ const CountdownRing: React.FC<CountdownRingProps> = ({
           fill="url(#innerGrad)"
           stroke={theme.colors.sanctuary.ring.innerBorder}
           strokeWidth={1}
+        />
+        <Circle cx={cx} cy={cy} r={INNER_RADIUS} fill="url(#vignetteRing)" />
+        <Path
+          d={`M ${cx - INNER_RADIUS * 0.72} ${cy - INNER_RADIUS * 0.72} A ${INNER_RADIUS} ${INNER_RADIUS} 0 0 1 ${cx + INNER_RADIUS * 0.72} ${cy - INNER_RADIUS * 0.72}`}
+          stroke="rgba(255,255,255,0.09)"
+          strokeWidth={1.5}
+          fill="none"
+          strokeLinecap="round"
         />
       </Svg>
 
@@ -166,7 +202,7 @@ const CountdownRing: React.FC<CountdownRingProps> = ({
         {isAlreadyPrayed ? (
           <Text style={styles.prayedStatus}>Prayed ✓</Text>
         ) : (
-          <Text style={styles.countdown}>in {timeRemaining}</Text>
+          <Text style={styles.countdown}>{countdownPrefix} {timeRemaining}</Text>
         )}
         {iqamahTime && (
           <Text style={styles.iqamah}>
@@ -181,8 +217,8 @@ const CountdownRing: React.FC<CountdownRingProps> = ({
 const createStyles = (theme: AppTheme) =>
   StyleSheet.create({
     container: {
-      width: RING_SIZE,
-      height: RING_SIZE,
+      width: SVG_SIZE,
+      height: SVG_SIZE,
       alignItems: 'center',
       justifyContent: 'center',
     },

@@ -43,7 +43,7 @@ const TASBIH_PRESETS: TasbihPreset[] = [
     defaultTarget: 33,
   },
   {
-    id: 'allahu-akbar',
+    id: 'Allahu-akbar',
     arabic: 'اللَّهُ أَكْبَرُ',
     transliteration: 'Allahu Akbar',
     translation: 'Allah is the Greatest',
@@ -58,9 +58,9 @@ const TASBIH_PRESETS: TasbihPreset[] = [
   },
   {
     id: 'subhanallah-wa-bihamdihi',
-    arabic: 'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ',
-    transliteration: 'SubhanAllahi wa bihamdihi',
-    translation: 'Glory be to Allah and praise Him',
+    arabic: 'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ، سُبْحَانَ اللَّهِ الْعَظِيمِ',
+    transliteration: "SubhaanAllaahi wa bihamdihi, SubhaanAllaahil-'Azeem",
+    translation: 'Glory be to Allah and all praise is due to Him; Glory be to Allah, the Most Magnificent.',
     defaultTarget: 100,
   },
   {

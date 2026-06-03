@@ -79,7 +79,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: theme.spacing.md,
+    paddingVertical: 13,
     gap: theme.spacing.md,
   },
   iconWrap: {
@@ -99,21 +99,22 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     gap: theme.spacing.sm,
   },
   settingLabel: {
-    fontSize: theme.typography.fontSize.md,
+    fontSize: 14,
     fontFamily: theme.typography.fontFamily.bodyMedium,
   },
   settingSubtext: {
     fontSize: 11,
     fontFamily: theme.typography.fontFamily.body,
     marginTop: theme.spacing.xs,
+    lineHeight: 16,
   },
   settingValue: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: 11,
     fontFamily: theme.typography.fontFamily.body,
-    marginRight: theme.spacing.sm,
+    marginRight: theme.spacing.xs,
   },
   chevron: {
-    fontSize: theme.typography.fontSize['3xl'],
+    fontSize: theme.typography.fontSize.xl,
     fontFamily: theme.typography.fontFamily.body,
   },
   dangerText: {

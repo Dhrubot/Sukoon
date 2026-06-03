@@ -1,5 +1,5 @@
 import React from 'react';
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Modal, StyleSheet, Text, View } from 'react-native';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
@@ -90,19 +90,29 @@ export const OnboardingLocationStep: React.FC<OnboardingLocationStepProps> = ({
         </View>
       </View>
 
-      {isLocating ? (
-        <View style={styles.statusCard}>
-          <ActivityIndicator size="small" color={theme.colors.primary.DEFAULT} />
-          <Text style={styles.statusText}>Finding your location...</Text>
-        </View>
-      ) : null}
-
       {locationFailed ? (
         <View style={styles.statusCard}>
           <Text style={styles.statusTitle}>Location needs a little help</Text>
           <Text style={styles.statusText}>{getLocationHelpText(locationFailureReason)}</Text>
         </View>
       ) : null}
+
+      <Modal
+        visible={isLocating}
+        transparent
+        animationType="fade"
+        statusBarTranslucent
+      >
+        <View style={styles.loadingOverlay}>
+          <View style={styles.loadingCard}>
+            <ActivityIndicator size="small" color={theme.colors.primary.DEFAULT} />
+            <Text style={styles.loadingTitle}>Finding your location...</Text>
+            <Text style={styles.loadingText}>
+              This usually takes a few seconds. Keep Sukoon open while we detect your city.
+            </Text>
+          </View>
+        </View>
+      </Modal>
     </OnboardingScaffold>
   );
 };
@@ -173,6 +183,37 @@ const createStyles = (theme: AppTheme) =>
       fontSize: theme.typography.fontSize.sm,
       fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.secondary,
+      lineHeight: 20,
+    },
+    loadingOverlay: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: theme.spacing['2xl'],
+      backgroundColor: 'rgba(8, 12, 24, 0.34)',
+    },
+    loadingCard: {
+      width: '100%',
+      borderRadius: theme.borderRadius.xl,
+      paddingVertical: theme.spacing.xl,
+      paddingHorizontal: theme.spacing.xl,
+      backgroundColor: theme.colors.card.background,
+      borderWidth: 1,
+      borderColor: theme.colors.border.primary,
+      alignItems: 'center',
+      gap: theme.spacing.sm,
+    },
+    loadingTitle: {
+      fontSize: theme.typography.fontSize.base,
+      fontFamily: theme.typography.fontFamily.bodySemibold,
+      color: theme.colors.text.primary,
+      textAlign: 'center',
+    },
+    loadingText: {
+      fontSize: theme.typography.fontSize.sm,
+      fontFamily: theme.typography.fontFamily.body,
+      color: theme.colors.text.secondary,
+      textAlign: 'center',
       lineHeight: 20,
     },
   });

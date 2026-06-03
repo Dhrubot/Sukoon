@@ -31,12 +31,17 @@ const JummahMosqueConfig: React.FC = () => {
   const [showDurationPicker, setShowDurationPicker] = useState(false);
   const [showOffsetPicker, setShowOffsetPicker] = useState(false);
   const [inputMode, setInputMode] = useState<InputMode>('offset');
+  const showSilentControls = mosqueModePlatformUi.showsSilentModeControls;
 
-  const jummah = settings?.jummah ?? {
-    enabled: true,
-    silentDuration: 30,
-    iqamahOffset: 15,
+  // Normalize once: drops any legacy `iqamahOffset` and guarantees an absolute
+  // iqamah time. Jummah iqamah is a fixed wall-clock time (default 1:30 PM).
+  const jummah = {
+    enabled: settings?.jummah?.enabled ?? true,
+    silentDuration: settings?.jummah?.silentDuration ?? 30,
+    iqamahTime: settings?.jummah?.iqamahTime ?? '13:30',
   };
+
+  const dhuhrTime = todayPrayerTimes.find(p => p.name === 'Dhuhr')?.time ?? null;
 
   const handleToggle = (value: boolean) => {
     updateMosqueModeSettings({
@@ -50,40 +55,43 @@ const JummahMosqueConfig: React.FC = () => {
     });
   };
 
-  const handleOffsetChange = (value: number) => {
+  // Offset mode: choose minutes after Dhuhr → store the resulting absolute time
+  // (computed from today's Dhuhr), so the value stays a fixed wall-clock iqamah.
+  const handleOffsetChange = (offsetMin: number) => {
+    if (!dhuhrTime) return;
+    const iqamah = new Date(dhuhrTime.getTime() + offsetMin * 60000);
+    const h = iqamah.getHours().toString().padStart(2, '0');
+    const m = iqamah.getMinutes().toString().padStart(2, '0');
     updateMosqueModeSettings({
-      jummah: { ...jummah, iqamahOffset: value },
+      jummah: { ...jummah, iqamahTime: `${h}:${m}` },
     });
   };
 
-  // Compute exact iqamah time from Dhuhr adhan + offset
-  const getExactJummahTime = (): string => {
-    const dhuhr = todayPrayerTimes.find(p => p.name === 'Dhuhr');
-    if (!dhuhr) return '12:30';
-    const iqamah = new Date(dhuhr.time.getTime() + jummah.iqamahOffset * 60000);
-    const h = iqamah.getHours();
-    const m = iqamah.getMinutes();
-    return `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
+  // Offset derived from the stored absolute time vs today's Dhuhr (for display).
+  const getDerivedOffset = (): number | null => {
+    if (!dhuhrTime) return null;
+    const [hStr, mStr] = jummah.iqamahTime.split(':');
+    const iqamah = new Date(dhuhrTime);
+    iqamah.setHours(parseInt(hStr, 10), parseInt(mStr, 10), 0, 0);
+    return Math.max(1, Math.round((iqamah.getTime() - dhuhrTime.getTime()) / 60000));
   };
 
-  // Convert exact time back to offset from Dhuhr adhan
+  // Exact mode reads/writes the absolute time directly.
+  const getExactJummahTime = (): string => jummah.iqamahTime;
+
   const handleExactTimeChange = (timeStr: string) => {
-    const dhuhr = todayPrayerTimes.find(p => p.name === 'Dhuhr');
-    if (!dhuhr) return;
-    const [hStr, mStr] = timeStr.split(':');
-    const exactDate = new Date(dhuhr.time);
-    exactDate.setHours(parseInt(hStr, 10), parseInt(mStr, 10), 0, 0);
-    const diffMin = Math.max(1, Math.round((exactDate.getTime() - dhuhr.time.getTime()) / 60000));
     updateMosqueModeSettings({
-      jummah: { ...jummah, iqamahOffset: diffMin },
+      jummah: { ...jummah, iqamahTime: timeStr },
     });
   };
+
+  const derivedOffset = getDerivedOffset();
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <Text style={styles.title}>Jumu'ah Settings</Text>
+          {/* <Text style={styles.title}>Jumu'ah Settings</Text> */}
           <Text style={styles.subtitle}>
             {mosqueModePlatformUi.jummahSubtitle}
           </Text>
@@ -151,7 +159,10 @@ const JummahMosqueConfig: React.FC = () => {
           )}
 
           {/* Iqamah Time — Offset / Exact toggle */}
-          <View style={styles.iqamahSection}>
+          <View style={[
+            styles.iqamahSection,
+            !showSilentControls && styles.iqamahSectionNoDivider,
+          ]}>
             <Text style={styles.optionLabel}>Jumu'ah Iqamah</Text>
 
             <View style={styles.segmentControl}>
@@ -195,13 +206,15 @@ const JummahMosqueConfig: React.FC = () => {
                   <Text style={styles.optionHint}>
                     {mosqueModePlatformUi.jummahOffsetHint}
                   </Text>
-                  <Text style={styles.optionValue}>{jummah.iqamahOffset} min</Text>
+                  <Text style={styles.optionValue}>
+                    {derivedOffset != null ? `${derivedOffset} min` : '—'}
+                  </Text>
                 </TouchableOpacity>
 
                 {showOffsetPicker && (
                   <View style={styles.chipGrid}>
                     {OFFSET_OPTIONS.map((min) => {
-                      const isSelected = jummah.iqamahOffset === min;
+                      const isSelected = derivedOffset === min;
                       return (
                         <TouchableOpacity
                           key={min}
@@ -264,16 +277,17 @@ const createStyles = (theme: AppTheme) =>
       marginRight: theme.spacing.md,
     },
     title: {
-      fontSize: theme.typography.fontSize.lg,
-      fontFamily: theme.typography.fontFamily.bodySemibold,
+      fontSize: 17,
+      fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.text.primary,
       marginBottom: theme.spacing.xs,
     },
     subtitle: {
-      fontSize: theme.typography.fontSize.sm,
+      fontSize: 14,
       fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.secondary,
-      lineHeight: 18,
+      lineHeight: 20,
+      maxWidth: '80%',
     },
     options: {
       marginTop: theme.spacing.lg,
@@ -288,18 +302,19 @@ const createStyles = (theme: AppTheme) =>
       paddingVertical: theme.spacing.md - 2,
     },
     optionLabel: {
-      fontSize: theme.typography.fontSize.md,
+      fontSize: 14,
       fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.text.primary,
     },
     optionHint: {
-      fontSize: theme.typography.fontSize.xs,
+      fontSize: 11,
       fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.secondary,
       marginTop: theme.spacing.xxs,
+      lineHeight: 16,
     },
     optionValue: {
-      fontSize: theme.typography.fontSize.md,
+      fontSize: 14,
       fontFamily: theme.typography.fontFamily.bodySemibold,
       color: theme.colors.mosqueMode.jummah.accent,
     },
@@ -323,7 +338,7 @@ const createStyles = (theme: AppTheme) =>
       borderColor: theme.colors.mosqueMode.jummah.chipActiveBg,
     },
     chipText: {
-      fontSize: theme.typography.fontSize.md,
+      fontSize: 14,
       fontFamily: theme.typography.fontFamily.bodyMedium,
       color: theme.colors.mosqueMode.chip.text,
     },
@@ -336,6 +351,11 @@ const createStyles = (theme: AppTheme) =>
       paddingTop: theme.spacing.sm,
       borderTopWidth: 1,
       borderTopColor: theme.colors.mosqueMode.jummah.accentDim,
+    },
+    iqamahSectionNoDivider: {
+      marginTop: 0,
+      paddingTop: 0,
+      borderTopWidth: 0,
     },
     segmentControl: {
       flexDirection: 'row',
@@ -355,7 +375,7 @@ const createStyles = (theme: AppTheme) =>
       backgroundColor: theme.colors.mosqueMode.jummah.segmentActiveBg,
     },
     segmentButtonText: {
-      fontSize: theme.typography.fontSize.sm,
+      fontSize: 14,
       fontFamily: theme.typography.fontFamily.bodySemibold,
       color: theme.colors.mosqueMode.segment.inactiveText,
     },

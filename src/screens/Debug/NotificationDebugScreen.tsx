@@ -13,13 +13,17 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import NotificationService from '../../services/NotificationService';
 import NotificationTraceService from '../../services/NotificationTraceService';
+import MosqueModeService from '../../services/MosqueModeService';
+import RingerControlService from '../../services/RingerControlService';
 import { useStore } from '../../store/useStore';
 import { usePrayerTimes } from '../../providers/PrayerTimesProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
 import { CHANNELS, SOUNDS } from '../../constants/NotificationConstants';
-import { scheduleFullAdhan } from '../../services/notifications/FullAdhanScheduler';
+import { scheduleAdhanAudio } from '../../services/notifications/FullAdhanScheduler';
 import NotificationLedger, { LedgerHealth } from '../../services/NotificationLedger';
+import { scheduleLocalNotificationAsync } from '../../services/notifications/scheduleLocalNotification';
+import { buildNotificationScheduleFingerprintV2 } from '../../utils/notificationScheduleFingerprint';
 
 type NotificationDebugInfo = Awaited<ReturnType<typeof NotificationService.getDebugInfo>>;
 type UpcomingNotification = NotificationDebugInfo['upcomingNotifications'][number];
@@ -50,8 +54,8 @@ export const NotificationDebugScreen = () => {
   }, []);
 
   const checkPermissions = async () => {
-    const { status } = await Notifications.getPermissionsAsync();
-    setPermissionStatus(status);
+    const readiness = await NotificationService.getNotificationReadiness();
+    setPermissionStatus(readiness.permissionStatus);
   };
 
   const loadDebugInfo = async () => {
@@ -81,11 +85,10 @@ export const NotificationDebugScreen = () => {
   // 🧪 Test 2: Schedule notification 10 seconds from now
   const test10SecondNotification = async () => {
     try {
-      await Notifications.scheduleNotificationAsync({
+      await scheduleLocalNotificationAsync({
         content: {
           title: '⏰ 10-Second Test',
           body: 'This notification was scheduled 10 seconds ago',
-          sound: 'default',
         },
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
@@ -103,19 +106,22 @@ export const NotificationDebugScreen = () => {
 
   const test10SecondAdhanNotification = async () => {
     try {
-      await Notifications.scheduleNotificationAsync({
+      await scheduleLocalNotificationAsync({
         content: {
           title: '⏰ Adhan Test',
           body: 'This should play the adhan sound',
-          sound: SOUNDS.ANDROID_SHORT,        // ← 'adhan_short'
-
+          sound: SOUNDS.ANDROID_SHORT,
+          data: {
+            type: 'test',
+            channelId: CHANNELS.ADHAN,
+          },
         },
         trigger: {
           type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
           seconds: 10,
           repeats: false,
           ...(Platform.OS === 'android' && {
-            channelId: CHANNELS.ADHAN,         // ← 'prayer-times-adhan-v6'
+            channelId: CHANNELS.ADHAN,
           }),
         },
       });
@@ -125,6 +131,15 @@ export const NotificationDebugScreen = () => {
     }
   }
 
+  const testProductionLikePrayerNotification = async () => {
+    try {
+      await NotificationService.sendProductionLikePrayerTestNotification('Isha', 10);
+      Alert.alert('Scheduled', 'Production-like prayer notification in 10 seconds — lock your phone now');
+    } catch (error) {
+      Alert.alert('Error', `Failed: ${error}`);
+    }
+  };
+
   // 🧪 Test 2.75: Full Adhan Foreground Service (10-second lock screen test)
   const test10SecondFullAdhan = async () => {
     if (Platform.OS !== 'android') {
@@ -133,7 +148,7 @@ export const NotificationDebugScreen = () => {
     }
     try {
       const triggerTime = new Date(Date.now() + 10_000); // 10 seconds from now
-      await scheduleFullAdhan(triggerTime, 'Fajr', 'Test Adhan');
+      await scheduleAdhanAudio(triggerTime, 'Fajr', 'full', 'Test Adhan');
       Alert.alert(
         'Full Adhan Scheduled',
         'Foreground service will play in 10 seconds — LOCK YOUR PHONE NOW to test lock-screen playback'
@@ -157,15 +172,12 @@ export const NotificationDebugScreen = () => {
   // 🧪 Test 4: Request permissions
   const requestPermissions = async () => {
     try {
-      const { status } = await Notifications.requestPermissionsAsync({
-        ios: {
-          allowAlert: true,
-          allowBadge: true,
-          allowSound: true,
-        },
-      });
-      setPermissionStatus(status);
-      Alert.alert('Permission Status', `Status: ${status}`);
+      const readiness = await NotificationService.requestNotificationAccessFromUser();
+      setPermissionStatus(readiness.permissionStatus);
+      Alert.alert(
+        'Permission Status',
+        `Status: ${readiness.permissionStatus}\nBlocked: ${readiness.blockedReason || 'none'}`
+      );
     } catch (error) {
       Alert.alert('Error', `Failed: ${error}`);
     }
@@ -219,6 +231,82 @@ export const NotificationDebugScreen = () => {
     }
   };
 
+  // 🕌 Mosque Mode Test: 1-minute scheduled silence
+  const testMosqueModeScheduled = async () => {
+    if (Platform.OS !== 'android') {
+      Alert.alert('Android Only', 'Mosque Mode auto-silence is Android-only (iOS is assisted-only).');
+      return;
+    }
+    try {
+      const ok = await MosqueModeService.scheduleTestMosqueMode();
+      Alert.alert(
+        ok ? 'Mosque Mode Scheduled' : 'Schedule Failed',
+        ok
+          ? 'Phone will silence in ~1 minute and restore ~1 minute after. Make sure Mosque Mode is enabled in Settings first.'
+          : 'Could not schedule. Confirm: (1) Mosque Mode toggle is ON in Settings, (2) Do Not Disturb access is granted.'
+      );
+    } catch (error) {
+      Alert.alert('Error', `Failed: ${error}`);
+    }
+  };
+
+  // 🚀 Boot Recovery: simulate the JS-side rearmFromPersistence path without a reboot
+  const forceBootRecovery = async () => {
+    if (Platform.OS !== 'android') {
+      Alert.alert('Android Only', 'Boot recovery applies to the native AlarmManager path (Android only).');
+      return;
+    }
+    try {
+      await MosqueModeService.rearmFromPersistence();
+      Alert.alert(
+        'Boot Recovery Ran',
+        'MosqueModeService.rearmFromPersistence() completed. Check the trace log + ringer mode to verify behaviour.'
+      );
+      loadTraceEvents();
+    } catch (error) {
+      Alert.alert('Error', `Failed: ${error}`);
+    }
+  };
+
+  // 🔔 Manually restore ringer (recovery action exposed to users in the Mosque Mode UI)
+  const manuallyRestoreRinger = async () => {
+    if (Platform.OS !== 'android') {
+      Alert.alert('Android Only', 'Ringer control is Android-only.');
+      return;
+    }
+    try {
+      const ok = await MosqueModeService.manuallyRestoreRinger();
+      const current = await RingerControlService.getRingerMode();
+      Alert.alert(
+        ok ? 'Ringer Restored' : 'No Action Taken',
+        `Current ringer mode: ${current ?? 'unknown'}`
+      );
+    } catch (error) {
+      Alert.alert('Error', `Failed: ${error}`);
+    }
+  };
+
+  // 👁 Run the foreground watchdog (stuck-silent recovery)
+  const runWatchdog = async () => {
+    try {
+      const outcome = await MosqueModeService.runForegroundWatchdog();
+      Alert.alert('Watchdog Result', `Outcome: ${outcome}`);
+      loadTraceEvents();
+    } catch (error) {
+      Alert.alert('Error', `Failed: ${error}`);
+    }
+  };
+
+  // 🔑 Show the current schedule fingerprint (v2)
+  const showFingerprint = () => {
+    if (!userSettings) {
+      Alert.alert('No settings', 'userSettings not loaded yet.');
+      return;
+    }
+    const fp = buildNotificationScheduleFingerprintV2(userSettings, todayPrayerTimes);
+    Alert.alert('Schedule Fingerprint (v2)', fp || '(empty)');
+  };
+
   // 🧪 Test 8: Check Android notification channels
   const checkAndroidChannels = async () => {
     if (Platform.OS !== 'android') {
@@ -230,11 +318,28 @@ export const NotificationDebugScreen = () => {
       const channels = await Notifications.getNotificationChannelsAsync();
       const channelInfo = channels.map(c => `${c.name} (${c.id})`).join('\n');
       Alert.alert('Android Channels', channelInfo || 'No channels found');
-      const adhanChannel = channels.find(c => c.id.includes('adhan'));
-      if (adhanChannel) {
-        console.log('🔊 Adhan channel sound:', adhanChannel.sound);
-        console.log('🔊 Adhan channel full:', JSON.stringify(adhanChannel, null, 2));
-        Alert.alert('Adhan Channel', `Sound: ${adhanChannel.sound}\nID: ${adhanChannel.id}`);
+      const shortAdhanChannel = channels.find(c => c.id === CHANNELS.ADHAN);
+      const fullAdhanChannel = channels.find(c => c.id === CHANNELS.ADHAN_SILENT);
+      if (shortAdhanChannel) {
+        console.log('🔊 Short Adhan channel sound:', shortAdhanChannel.sound);
+        console.log('🔊 Short Adhan channel full:', JSON.stringify(shortAdhanChannel, null, 2));
+      }
+      if (fullAdhanChannel) {
+        console.log('🔊 Full Adhan channel sound:', fullAdhanChannel.sound);
+        console.log('🔊 Full Adhan channel full:', JSON.stringify(fullAdhanChannel, null, 2));
+      }
+      if (shortAdhanChannel || fullAdhanChannel) {
+        Alert.alert(
+          'Adhan Channels',
+          [
+            shortAdhanChannel
+              ? `Short: ${shortAdhanChannel.sound ?? 'null'} (${shortAdhanChannel.id})`
+              : 'Short: missing',
+            fullAdhanChannel
+              ? `Full: ${fullAdhanChannel.sound ?? 'null'} (${fullAdhanChannel.id})`
+              : 'Full: missing',
+          ].join('\n')
+        );
       }
     } catch (error) {
       Alert.alert('Error', `Failed: ${error}`);
@@ -257,6 +362,7 @@ export const NotificationDebugScreen = () => {
         <InfoRow label="Platform" value={Platform.OS} />
         <InfoRow label="Permission Status" value={permissionStatus} />
         <InfoRow label="Scheduled Count" value={scheduledCount.toString()} />
+        <InfoRow label="Exact Alarm Status" value={debugInfo?.androidExactAlarmStatus ?? 'unknown'} />
         <InfoRow label="Trace Enabled" value={NotificationTraceService.isEnabled() ? 'Yes' : 'No'} />
       </View>
 
@@ -274,8 +380,6 @@ export const NotificationDebugScreen = () => {
       {debugInfo && (
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Debug Info</Text>
-          <InfoRow label="Has Prayer Source" value={debugInfo.hasSource ? 'Yes' : 'No'} />
-          <InfoRow label="Has Location" value={debugInfo.sourceHasLocation ? 'Yes' : 'No'} />
           <InfoRow label="Loading" value={debugInfo.sourceLoading ? 'Yes' : 'No'} />
 
           {debugInfo.upcomingNotifications && debugInfo.upcomingNotifications.length > 0 && (
@@ -359,6 +463,12 @@ export const NotificationDebugScreen = () => {
           description="Short adhan via notification channel"
         />
 
+        <TestButton
+          title="2.6 Test Production Prayer"
+          onPress={testProductionLikePrayerNotification}
+          description="Uses the real prayer notification payload shape"
+        />
+
         {Platform.OS === 'android' && (
           <TestButton
             title="2.75 Test Full Adhan (Lock Screen)"
@@ -379,6 +489,16 @@ export const NotificationDebugScreen = () => {
           onPress={requestPermissions}
           description="Re-request notification permissions"
         />
+
+        {Platform.OS === 'android' && (
+          <TestButton
+            title="4.5 Open Exact Alarm Settings"
+            onPress={() => {
+              void NotificationService.openAndroidExactAlarmSettings();
+            }}
+            description="Open Android Alarms & reminders access"
+          />
+        )}
 
         <TestButton
           title="5. Force Reschedule All"
@@ -415,6 +535,63 @@ export const NotificationDebugScreen = () => {
           }}
           description="Reload debug information"
         />
+      </View>
+
+      {/* 🕌 Mosque Mode + Boot Recovery (physical device test shortcuts) */}
+      <View style={styles.section}>
+        <Text style={styles.sectionTitle}>🕌 Mosque Mode & Boot Recovery</Text>
+
+        {Platform.OS === 'android' && (
+          <>
+            <TestButton
+              title="MM1. Test Mosque Mode (1-min)"
+              onPress={testMosqueModeScheduled}
+              description="Silences phone in ~1 min, restores ~1 min after. Requires Mosque Mode ON + DND access."
+            />
+
+            <TestButton
+              title="MM2. Force Boot Recovery (rearm)"
+              onPress={forceBootRecovery}
+              description="Runs MosqueModeService.rearmFromPersistence() — simulates the JS boot path without a reboot."
+            />
+
+            <TestButton
+              title="MM3. Manually Restore Ringer"
+              onPress={manuallyRestoreRinger}
+              description="Restores the previous ringer mode from SharedPrefs. Use if phone is stuck silent."
+            />
+          </>
+        )}
+
+        <TestButton
+          title="MM4. Run Foreground Watchdog"
+          onPress={runWatchdog}
+          description="Runs the stuck-silent recovery probe (safe to invoke anytime)."
+        />
+
+        <TestButton
+          title="MM5. Show Schedule Fingerprint (v2)"
+          onPress={showFingerprint}
+          description="Shows the current notification schedule fingerprint v2."
+        />
+
+        {Platform.OS === 'android' && (
+          <View style={styles.noteBox}>
+            <Text style={styles.noteText}>
+              For Doze + battery-optimization testing, run via adb:{'\n'}
+              {'\n'}
+              # Force Doze (notifications must still fire):{'\n'}
+              adb shell dumpsys deviceidle force-idle{'\n'}
+              adb shell dumpsys deviceidle unforce{'\n'}
+              {'\n'}
+              # Check alarm scheduling:{'\n'}
+              adb shell dumpsys alarm | grep -i sukoon{'\n'}
+              {'\n'}
+              # Reboot test (re-arm from SharedPrefs):{'\n'}
+              adb reboot
+            </Text>
+          </View>
+        )}
       </View>
 
       {/* Notification Health (Ledger) */}

@@ -9,6 +9,8 @@ import { CalculationMethodType, CALCULATION_METHODS, PrayerTime } from '../../..
 import { usePrayerTimes } from '../../../providers/PrayerTimesProvider';
 import logger from '../../../utils/logger';
 import { applyRegionalCalculationMethod } from '../../../utils/calculationMethodByRegion';
+import NotificationService from '../../../services/NotificationService';
+import type { ExportOptions } from '../modals/ExportDataConfirmModal';
 
 interface PreviewPrayerTimes {
   method: string;
@@ -24,6 +26,7 @@ export const useSettingsManager = () => {
   const [showCalculationPicker, setShowCalculationPicker] = useState(false);
   const [showNotificationModal, setShowNotificationModal] = useState(false);
   const [showManualLocationModal, setShowManualLocationModal] = useState(false);
+  const [showExportConfirmModal, setShowExportConfirmModal] = useState(false);
   const [isUpdatingLocation, setIsUpdatingLocation] = useState(false);
   const [isUpdatingMethod, setIsUpdatingMethod] = useState(false);
   const [previewPrayerTimes, setPreviewPrayerTimes] = useState<PreviewPrayerTimes | null>(null);
@@ -100,6 +103,7 @@ export const useSettingsManager = () => {
       setShowCalculationPicker(false);
 
       await refreshPrayerTimes();
+      await NotificationService.reconcileScheduling('settings_change', { force: true });
       
       Alert.alert(
         'Method Updated ✅',
@@ -113,6 +117,38 @@ export const useSettingsManager = () => {
         'Failed to update calculation method. Please try again.',
         [{ text: 'OK' }]
       );
+    } finally {
+      setIsUpdatingMethod(false);
+    }
+  };
+
+  const handleAutomaticCalculationMethod = async () => {
+    if (!userSettings) return;
+
+    setIsUpdatingMethod(true);
+
+    try {
+      const { settings: updatedSettings, calculationMethod } =
+        applyRegionalCalculationMethod(
+          { ...userSettings, calculationMethodManuallySelected: false },
+          userSettings.location
+        );
+
+      setUserSettings(updatedSettings);
+      setShowCalculationPicker(false);
+
+      await refreshPrayerTimes();
+      await NotificationService.reconcileScheduling('settings_change', { force: true });
+
+      const method = calculationMethods.find((item) => item.value === calculationMethod);
+      Alert.alert(
+        'Automatic Method Enabled',
+        `Sukoon will use ${method?.label || calculationMethod} for your region. Prayer times have been updated.`,
+        [{ text: 'OK' }]
+      );
+    } catch (error) {
+      logger.error('Failed to enable automatic calculation method:', error);
+      Alert.alert('Update Failed', 'Failed to enable automatic method. Please try again.');
     } finally {
       setIsUpdatingMethod(false);
     }
@@ -134,7 +170,8 @@ export const useSettingsManager = () => {
         userSettings.location,
         new Date(),
         method.value,
-        userSettings.adjustments
+        userSettings.adjustments,
+        userSettings.asrJuristic
       );
 
       setPreviewPrayerTimes({
@@ -164,9 +201,15 @@ export const useSettingsManager = () => {
     );
   };
 
-  const handleExportData = async () => {
+  /** Opens the export consent sheet. The actual file write happens in handleExportDataWithOptions. */
+  const handleExportData = () => {
+    setShowExportConfirmModal(true);
+  };
+
+  /** Called by the ExportDataConfirmModal with the user's chosen options. */
+  const handleExportDataWithOptions = async (options: ExportOptions) => {
     try {
-      const jsonData = StorageService.exportPrayerData();
+      const jsonData = StorageService.exportPrayerData({ includeLocation: options.includeLocation });
       const fileName = `sukoon-backup-${new Date().toISOString().slice(0, 10)}.json`;
       const filePath = `${FileSystem.documentDirectory}${fileName}`;
       await FileSystem.writeAsStringAsync(filePath, jsonData, { encoding: FileSystem.EncodingType.UTF8 });
@@ -252,23 +295,27 @@ export const useSettingsManager = () => {
     setShowNotificationModal,
     showManualLocationModal,
     setShowManualLocationModal,
+    showExportConfirmModal,
+    setShowExportConfirmModal,
     isUpdatingLocation,
     isUpdatingMethod,
     previewPrayerTimes,
-    
+
     // Enhanced functions
     updateLocation,
     handleCalculationMethodChange,
+    handleAutomaticCalculationMethod,
     previewCalculationMethod,
     testPrayerCalculations,
-    
+
     // Data functions
     handleExportData,
+    handleExportDataWithOptions,
     handleImportData,
     handleResetApp,
     handlePrivacyPolicy,
     showDebugInfo,
-    
+
     // Prayer times data
     todayPrayerTimes,
     nextPrayer,

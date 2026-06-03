@@ -8,6 +8,7 @@ import {
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
+  useWindowDimensions,
 } from 'react-native';
 import DevTreeTester from '../../components/garden/DevTreeTester';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -25,14 +26,29 @@ import WeekTimeline from '../../components/garden/WeekTimeline';
 import ReflectionJournal from '../../components/garden/ReflectionJournal';
 import DawamBadge from '../../components/garden/DawamBadge';
 import LeafDetailSheet from '../../components/garden/LeafDetailSheet';
+import MiniTubaTree from '../../components/garden/MiniTubaTree';
 import { FARD_PRAYERS } from '../../constants/prayerRegistry';
 import { resolveTreePrayerColor } from '../../constants/tubaTree';
+import Svg, { Path } from 'react-native-svg';
+
+const GardenIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M12 22V12M12 12C12 8 9 5 5 3c0 4 2 8 7 9M12 12c0-4 3-7 7-9 0 4-2 8-7 9"
+      stroke={color}
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </Svg>
+);
 
 const ReflectionGardenScreen: React.FC = () => {
   const { theme } = useTheme();
   const styles = useThemedStyles(createStyles);
   const ambientColors = [theme.colors.ambient.top, theme.colors.ambient.bottom] as const;
   const navigation = useNavigation();
+  const { width } = useWindowDimensions();
   const {
     plants,
     weekSummary,
@@ -91,6 +107,7 @@ const ReflectionGardenScreen: React.FC = () => {
     () => recentReflections.filter((reflection) => (reflection.text?.trim().length ?? 0) > 0).length,
     [recentReflections],
   );
+  const emptyTreeSize = Math.min(width * 0.42, 180);
 
   if (isLoading) {
     return (
@@ -115,12 +132,14 @@ const ReflectionGardenScreen: React.FC = () => {
       <SafeAreaView style={styles.container}>
         <LinearGradient colors={ambientColors} style={styles.gradient}>
           <ScrollView contentContainerStyle={styles.emptyContainer}>
-            <Text style={styles.emptyEmoji}>•</Text>
+            <View style={styles.emptyTreeWrap}>
+              <GardenIcon size={emptyTreeSize} color={theme.colors.interactive.active} />
+            </View>
             <Text style={styles.emptyTitle}>
               The Tuba Tree begins{'\n'}with a single return
             </Text>
             <Text style={styles.emptySubtitle}>
-              After your next prayer, you can leave a quiet note here. This space is private witness, not a score.
+              After your next prayer, you can see the first leaf grow.
             </Text>
             <TouchableOpacity
               style={[styles.emptyCta, { borderColor: theme.colors.primary.DEFAULT }]}
@@ -385,9 +404,11 @@ const createStyles = (theme: AppTheme) =>
       paddingHorizontal: theme.spacing['4xl'],
       paddingTop: 80,
     },
-    emptyEmoji: {
-      fontSize: 72,
+    emptyTreeWrap: {
+      alignItems: 'center',
+      justifyContent: 'center',
       marginBottom: theme.spacing['2xl'],
+      minHeight: 140,
     },
     emptyTitle: {
       fontSize: theme.typography.fontSize['3xl'] + 2,

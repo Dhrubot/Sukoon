@@ -14,6 +14,7 @@ const { registerAndroidPackageInMainApplication } = require('./withAndroidPackag
 
 const PKG = 'com.talukders.sukoon';
 const JAVA_PATH_SEGMENTS = ['android', 'app', 'src', 'main', 'java', 'com', 'talukders', 'sukoon'];
+const HEADLESS_BOOT_TASK_NAME = 'BOOT_NOTIFICATION_RESCHEDULE_TASK';
 
 // ─────────────────────────────────────────────
 // JAVA: BootReceiver — triggers WorkManager on BOOT_COMPLETED
@@ -60,8 +61,11 @@ public class BootReceiver extends BroadcastReceiver {
 const WORKER_JAVA = `package ${PKG};
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.util.Log;
+
+import com.facebook.react.HeadlessJsTaskService;
 
 import androidx.annotation.NonNull;
 import androidx.work.Worker;
@@ -87,11 +91,17 @@ public class NotificationRescheduleWorker extends Worker {
     @NonNull
     @Override
     public Result doWork() {
-        Log.i(TAG, "Setting reschedule flag for next app launch");
+        Log.i(TAG, "Setting reschedule flag and starting headless boot reschedule");
         try {
             SharedPreferences prefs = getApplicationContext()
                 .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
             prefs.edit().putBoolean(KEY_NEEDS_RESCHEDULE, true).apply();
+
+            Intent serviceIntent = new Intent(getApplicationContext(), BootNotificationRescheduleTaskService.class);
+            serviceIntent.putExtra("trigger", "boot_completed");
+            HeadlessJsTaskService.acquireWakeLockNow(getApplicationContext());
+            getApplicationContext().startService(serviceIntent);
+
             return Result.success();
         } catch (Exception e) {
             Log.e(TAG, "Failed to set reschedule flag", e);
@@ -118,10 +128,17 @@ import com.facebook.react.bridge.ReactMethod;
 /**
  * NativeModule that lets JS read (and clear) the boot-reschedule flag
  * set by NotificationRescheduleWorker after BOOT_COMPLETED.
+ *
+ * Also provides a cross-process scheduling lock backed by SharedPreferences,
+ * which is safe across Android processes (unlike MMKV which is process-local).
  */
 public class BootPrefsModule extends ReactContextBaseJavaModule {
     private static final String PREFS_NAME = "sukoon_boot_prefs";
     private static final String KEY_NEEDS_RESCHEDULE = "needs_notification_reschedule";
+
+    // Lock stored in a separate SharedPreferences file for cleanliness
+    private static final String LOCK_PREFS_NAME = "sukoon_lock_prefs";
+    private static final String KEY_SCHEDULE_LOCK = "notification_schedule_lock_until_ms";
 
     public BootPrefsModule(ReactApplicationContext context) {
         super(context);
@@ -145,6 +162,97 @@ public class BootPrefsModule extends ReactContextBaseJavaModule {
         } catch (Exception e) {
             promise.reject("BOOT_PREFS_ERROR", e.getMessage(), e);
         }
+    }
+
+    @ReactMethod
+    public void clearBootRescheduleFlag(Promise promise) {
+        try {
+            SharedPreferences prefs = getReactApplicationContext()
+                .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+            prefs.edit().putBoolean(KEY_NEEDS_RESCHEDULE, false).apply();
+            promise.resolve(true);
+        } catch (Exception e) {
+            promise.reject("BOOT_PREFS_ERROR", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Atomically acquire a cross-process scheduling lock.
+     *
+     * Stores the lock expiry timestamp (epoch ms = now + timeoutMs) in
+     * SharedPreferences using commit() for synchronous, cross-process-safe writes.
+     *
+     * @param timeoutMs  Lock duration in milliseconds (passed from JS as Double).
+     * @param promise    Resolves true if newly acquired; false if a non-expired
+     *                   lock is already held by another process/caller.
+     */
+    @ReactMethod
+    public void acquireScheduleLock(double timeoutMs, Promise promise) {
+        try {
+            SharedPreferences prefs = getReactApplicationContext()
+                .getSharedPreferences(LOCK_PREFS_NAME, Context.MODE_PRIVATE);
+            long now = System.currentTimeMillis();
+            long existingExpiry = prefs.getLong(KEY_SCHEDULE_LOCK, 0L);
+            if (existingExpiry > 0 && now < existingExpiry) {
+                // A non-expired lock is held — cannot acquire
+                promise.resolve(false);
+                return;
+            }
+            // Lock is absent or stale — write new expiry with commit() (synchronous)
+            long newExpiry = now + (long) timeoutMs;
+            prefs.edit().putLong(KEY_SCHEDULE_LOCK, newExpiry).commit();
+            promise.resolve(true);
+        } catch (Exception e) {
+            promise.reject("SCHEDULE_LOCK_ERROR", e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Release the cross-process scheduling lock.
+     * Uses commit() to ensure the release is immediately visible to other processes.
+     *
+     * @param promise  Resolves when the lock key has been removed.
+     */
+    @ReactMethod
+    public void releaseScheduleLock(Promise promise) {
+        try {
+            getReactApplicationContext()
+                .getSharedPreferences(LOCK_PREFS_NAME, Context.MODE_PRIVATE)
+                .edit()
+                .remove(KEY_SCHEDULE_LOCK)
+                .commit();
+            promise.resolve(null);
+        } catch (Exception e) {
+            promise.reject("SCHEDULE_LOCK_ERROR", e.getMessage(), e);
+        }
+    }
+}
+`;
+
+const BOOT_HEADLESS_TASK_SERVICE_JAVA = `package ${PKG};
+
+import android.content.Intent;
+import android.os.Bundle;
+
+import androidx.annotation.Nullable;
+
+import com.facebook.react.HeadlessJsTaskService;
+import com.facebook.react.bridge.Arguments;
+import com.facebook.react.jstasks.HeadlessJsTaskConfig;
+
+public class BootNotificationRescheduleTaskService extends HeadlessJsTaskService {
+    @Override
+    protected @Nullable HeadlessJsTaskConfig getTaskConfig(Intent intent) {
+        Bundle extras = intent != null && intent.getExtras() != null
+            ? intent.getExtras()
+            : new Bundle();
+
+        return new HeadlessJsTaskConfig(
+            "${HEADLESS_BOOT_TASK_NAME}",
+            Arguments.fromBundle(extras),
+            60000,
+            true
+        );
     }
 }
 `;
@@ -190,6 +298,7 @@ function withBootReceiverJava(config) {
       fs.writeFileSync(path.join(javaDir, 'NotificationRescheduleWorker.java'), WORKER_JAVA.trim());
       fs.writeFileSync(path.join(javaDir, 'BootPrefsModule.java'), BOOT_PREFS_MODULE_JAVA.trim());
       fs.writeFileSync(path.join(javaDir, 'BootPrefsPackage.java'), BOOT_PREFS_PACKAGE_JAVA.trim());
+      fs.writeFileSync(path.join(javaDir, 'BootNotificationRescheduleTaskService.java'), BOOT_HEADLESS_TASK_SERVICE_JAVA.trim());
 
       return cfg;
     },
@@ -245,6 +354,21 @@ function withBootReceiverManifest(config) {
             action: [{ $: { 'android:name': 'android.intent.action.BOOT_COMPLETED' } }],
           },
         ],
+      });
+    }
+
+    if (!application.service) {
+      application.service = [];
+    }
+    const hasHeadlessService = application.service.some(
+      (service) => service.$?.['android:name'] === '.BootNotificationRescheduleTaskService'
+    );
+    if (!hasHeadlessService) {
+      application.service.push({
+        $: {
+          'android:name': '.BootNotificationRescheduleTaskService',
+          'android:exported': 'false',
+        },
       });
     }
 

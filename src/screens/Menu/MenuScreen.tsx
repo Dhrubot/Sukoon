@@ -265,7 +265,7 @@ const MenuScreen: React.FC = () => {
     {
       icon: ThemeIcon,
       title: 'App Theme',
-      subtitle: `Currently: ${themeMode === 'dark' ? 'Dark' : themeMode === 'light' ? 'Light' : 'Midnight'}`,
+      subtitle: `Currently: ${themeMode === 'dark' ? 'Twilight' : themeMode === 'light' ? 'Dawn' : 'Midnight'}`,
       screen: '',
       iconBg: withAlpha(theme.colors.interactive.active, 0.08),
       onPress: toggleTheme,
@@ -286,7 +286,7 @@ const MenuScreen: React.FC = () => {
         style={styles.gradient}
       >
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Companion Tools</Text>
+          {/* <Text style={styles.headerTitle}>Companion Tools</Text> */}
           {/* <Text style={styles.headerSubtitle}>Secondary devotions and private reflection around prayer</Text> */}
         </View>
 
@@ -413,9 +413,10 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     paddingBottom: 18,
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 17,
     fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
+    marginTop: theme.spacing['2xl'],
   },
   headerSubtitle: {
     fontSize: theme.typography.fontSize.sm,

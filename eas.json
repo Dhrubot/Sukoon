@@ -1,0 +1,58 @@
+{
+  "cli": {
+    "version": ">= 16.28.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal"
+    },
+    "preview": {
+      "env": {
+        "ANDROID_ENABLE_MINIFY": "false",
+        "ANDROID_ENABLE_SHRINK_RESOURCES": "false",
+        "EXPO_PUBLIC_NOTIFICATION_TRACE_ENABLED": "false",
+        "EXPO_PUBLIC_PERF_VALIDATION_ENABLED": "false"
+      },
+      "android": {
+        "buildType": "apk",
+        "buildArtifactPaths": [
+          "android/app/build/outputs/mapping/release/mapping.txt"
+        ]
+      }
+    },
+    "production": {
+      "autoIncrement": true,
+      "env": {
+        "ANDROID_ENABLE_MINIFY": "false",
+        "ANDROID_ENABLE_SHRINK_RESOURCES": "false",
+        "EXPO_PUBLIC_NOTIFICATION_TRACE_ENABLED": "false",
+        "EXPO_PUBLIC_PERF_VALIDATION_ENABLED": "false"
+      },
+      "android": {
+        "buildType": "app-bundle",
+        "buildArtifactPaths": [
+          "android/app/build/outputs/mapping/release/mapping.txt"
+        ]
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "ascApiKeyPath": "./secrets/AuthKey_REPLACE.p8",
+        "ascApiKeyId": "REPLACE_WITH_ASC_API_KEY_ID",
+        "ascApiKeyIssuerId": "REPLACE_WITH_ASC_API_ISSUER_ID",
+        "appleTeamId": "REPLACE_WITH_APPLE_TEAM_ID",
+        "ascAppId": "REPLACE_WITH_APP_STORE_CONNECT_APP_ID"
+      },
+      "android": {
+        "serviceAccountKeyPath": "./secrets/play-store-service-account.json",
+        "track": "internal",
+        "releaseStatus": "draft",
+        "changesNotSentForReview": false
+      }
+    }
+  }
+}

@@ -11,7 +11,6 @@ export type MenuStackParamList = {
   MyJourney: undefined;
   ReflectionGarden: undefined;
   TubaTreeInfo: undefined;
-  Support: undefined;
   Settings: undefined;
   PrivacyPolicy: undefined;
   SetupHealth: undefined;
@@ -74,10 +73,6 @@ export const MenuStackNavigator: React.FC = () => {
         name="TubaTreeInfo"
         getComponent={() => require('../screens/ReflectionGarden/TubaTreeInfoScreen').default}
         options={{ title: 'About the Tree' }}
-      />
-      <Stack.Screen
-        name="Support"
-        getComponent={() => require('../screens/Support/SupportScreen').default}
       />
       <Stack.Screen
         name="Settings"

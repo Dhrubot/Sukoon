@@ -2,6 +2,7 @@
 // Extracted from NotificationService: channel setup, cleanup, and iOS categories
 
 import * as Notifications from 'expo-notifications';
+import { AndroidAudioContentType, AndroidAudioUsage } from 'expo-notifications';
 import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import { CHANNELS, SOUNDS, NOTIFICATION_CHANNEL_VERSION } from '../../constants/NotificationConstants';
@@ -33,8 +34,12 @@ export async function cleanupOldChannels(): Promise<void> {
       deletableIds.add(`prayer-times-adhan-silent-v${v}`);
       deletableIds.add(`prayer-times-default-v${v}`);
       deletableIds.add(`pre-prayer-v${v}`);
+      deletableIds.add(`persistent-urgent-v${v}`);
       deletableIds.add(`mindfulness-v${v}`);
       deletableIds.add(`grace-warning-v${v}`);
+      deletableIds.add(`tahajjud-v${v}`);
+      deletableIds.add(`jummah-v${v}`);
+      deletableIds.add(`ramadan-countdown-v${v}`);
     }
     for (const channel of channels) {
       if (deletableIds.has(channel.id)) {
@@ -50,27 +55,47 @@ export async function cleanupOldChannels(): Promise<void> {
 
 /**
  * Setup notification channels with Adhan support (Android only).
+ *
+ * Note on lockscreenVisibility: Android defaults this to PRIVATE on most stock
+ * builds, but Samsung OneUI leaves the field as -1000 ("not set") which can
+ * collapse the body on the lock screen. Setting PUBLIC explicitly keeps the
+ * prayer name + body visible when the device is locked — which is the point of
+ * the notification.
+ *
+ * Note on bypassDnd: ADHAN bypasses so the call to prayer reaches the user
+ * under silent / Do Not Disturb. ADHAN_SILENT does NOT bypass because the
+ * audible portion is handled by AdhanService (USAGE_ALARM stream) and the
+ * channel itself only renders the visible card.
  */
 export async function setupNotificationChannels(): Promise<void> {
   await Notifications.setNotificationChannelAsync(CHANNELS.DEFAULT, {
     name: 'Prayer Times (Beep)',
     description: 'Standard notifications for prayer times',
     importance: Notifications.AndroidImportance.HIGH,
+    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
     vibrationPattern: [0, 250, 250, 250],
     lightColor: '#1B5E3F',
-    sound: 'default',
     bypassDnd: false,
     showBadge: true,
   });
 
+  // Short-clip fallback channel — used when the native full-Adhan alarm service is
+  // unavailable (e.g. exact-alarm permission not granted). Alarm-grade audio attributes
+  // + bypassDnd make the call to prayer audible under silent mode / Do Not Disturb,
+  // matching the native foreground-service path (which plays via USAGE_ALARM).
   await Notifications.setNotificationChannelAsync(CHANNELS.ADHAN, {
     name: 'Prayer Times (Adhan)',
     description: 'Short call to prayer notification',
     importance: Notifications.AndroidImportance.HIGH,
+    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
     vibrationPattern: [0, 1000, 500, 1000],
     lightColor: '#1B5E3F',
     sound: SOUNDS.ANDROID_SHORT,
-    bypassDnd: false,
+    audioAttributes: {
+      usage: AndroidAudioUsage.ALARM,
+      contentType: AndroidAudioContentType.MUSIC,
+    },
+    bypassDnd: true,
     showBadge: true,
   });
 
@@ -79,6 +104,7 @@ export async function setupNotificationChannels(): Promise<void> {
     name: 'Prayer Times (Full Adhan)',
     description: 'Visual notification while full Adhan plays via foreground service',
     importance: Notifications.AndroidImportance.HIGH,
+    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
     vibrationPattern: [0, 250, 250, 250],
     lightColor: '#1B5E3F',
     sound: null, // No sound — audio comes from AdhanService
@@ -90,15 +116,27 @@ export async function setupNotificationChannels(): Promise<void> {
     name: 'Prayer Preparation',
     description: 'Reminders before prayer time',
     importance: Notifications.AndroidImportance.DEFAULT,
+    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
     vibrationPattern: [0, 100, 100, 100],
     lightColor: '#D4AF37',
-    sound: 'default',
+  });
+
+  await Notifications.setNotificationChannelAsync(CHANNELS.PERSISTENT_URGENT, {
+    name: 'Prayer Follow-up (Urgent)',
+    description: 'Final prayer-window reminders with higher urgency',
+    importance: Notifications.AndroidImportance.HIGH,
+    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+    vibrationPattern: [0, 250, 250, 250],
+    lightColor: '#FF6B6B',
+    bypassDnd: false,
+    showBadge: true,
   });
 
   await Notifications.setNotificationChannelAsync(CHANNELS.MINDFULNESS, {
     name: 'Mindfulness Reminders',
     description: 'Gentle reminders for prayer preparation',
     importance: Notifications.AndroidImportance.LOW,
+    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
     vibrationPattern: [0, 50],
     sound: null,
   });
@@ -107,9 +145,9 @@ export async function setupNotificationChannels(): Promise<void> {
     name: 'Grace Period Warnings',
     description: 'Urgent reminders when prayer time is ending',
     importance: Notifications.AndroidImportance.HIGH,
+    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
     vibrationPattern: [0, 250, 250, 250],
     lightColor: '#FF6B6B',
-    sound: 'default',
     bypassDnd: false,
     showBadge: true,
   });
@@ -118,6 +156,7 @@ export async function setupNotificationChannels(): Promise<void> {
     name: 'Tahajjud Encouragement',
     description: 'Gentle reminders to pray the night prayer',
     importance: Notifications.AndroidImportance.LOW,
+    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
     vibrationPattern: [0, 50],
     lightColor: '#7986CB',
     sound: null,
@@ -127,18 +166,18 @@ export async function setupNotificationChannels(): Promise<void> {
     name: 'Jummah Reminders',
     description: 'Friday Jummah prayer and Sunnah reminders',
     importance: Notifications.AndroidImportance.DEFAULT,
+    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
     vibrationPattern: [0, 100],
     lightColor: '#D4AF37',
-    sound: 'default',
   });
 
   await Notifications.setNotificationChannelAsync(CHANNELS.RAMADAN_COUNTDOWN, {
     name: 'Ramadan Countdown',
     description: 'Daily countdown and encouragement for Ramadan',
     importance: Notifications.AndroidImportance.DEFAULT,
+    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
     vibrationPattern: [0, 100],
     lightColor: '#D4AF37',
-    sound: 'default',
   });
 
   logger.log('✅ Notification channels set up with versioning');

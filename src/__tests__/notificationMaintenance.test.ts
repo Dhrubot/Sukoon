@@ -118,7 +118,7 @@ describe('NotificationService maintenance flows', () => {
       },
     }));
     jest.doMock('../services/notifications/FullAdhanScheduler', () => ({
-      scheduleFullAdhan: jest.fn(async () => {}),
+      scheduleAdhanAudio: jest.fn(async () => {}),
       cancelAllFullAdhans,
       stopFullAdhan,
       getExactAlarmStatus: jest.fn(async () => 'granted'),
@@ -206,13 +206,38 @@ describe('NotificationService maintenance flows', () => {
     expect(cancelAllFullAdhans).toHaveBeenCalledTimes(1);
   });
 
+  it('cancels every Sukoon devotional notification type when reminders are disabled', async () => {
+    const { service, cancelAllFullAdhans, cancelScheduledNotificationAsync } = loadNotificationService({
+      scheduledNotifications: [
+        { identifier: 'prayer-main', content: { data: { type: 'prayer-time' } } },
+        { identifier: 'pre-prayer', content: { data: { type: 'pre-prayer' } } },
+        { identifier: 'tier2', content: { data: { type: 'tier2-reminder' } } },
+        { identifier: 'tier3', content: { data: { type: 'tier3-warning' } } },
+        { identifier: 'snooze', content: { data: { type: 'snoozed' } } },
+        { identifier: 'mindfulness', content: { data: { type: 'mindfulness-reminder' } } },
+        { identifier: 'keepalive', content: { data: { type: 'keepalive' } } },
+        { identifier: 'tahajjud', content: { data: { type: 'tahajjud-reminder' } } },
+        { identifier: 'jummah', content: { data: { type: 'jummah-dua' } } },
+        { identifier: 'ramadan', content: { data: { type: 'ramadan-countdown' } } },
+        { identifier: 'eid', content: { data: { type: 'eid' } } },
+        { identifier: 'mosque', content: { data: { type: 'mosque_mode_prompt' } } },
+        { identifier: 'other', content: { data: { type: 'marketing' } } },
+      ],
+    });
+
+    await service.cancelAllSukoonReminderNotifications();
+
+    expect(cancelScheduledNotificationAsync).toHaveBeenCalledTimes(12);
+    expect(cancelScheduledNotificationAsync).not.toHaveBeenCalledWith('other');
+    expect(cancelAllFullAdhans).toHaveBeenCalledTimes(1);
+  });
+
   it('stops adhan playback and clears scheduled notifications when notifications are disabled', async () => {
     const { service, AdhanPlayer } = loadNotificationService();
-    const cancelSpy = jest.spyOn(service, 'cancelAllPrayerNotifications').mockResolvedValue();
+    const cancelSpy = jest.spyOn(service, 'cancelAllSukoonReminderNotifications').mockResolvedValue();
 
     await service.updateNotificationSettings({
       enabled: false,
-      adhanEnabled: false,
     });
 
     expect(AdhanPlayer.stop).toHaveBeenCalledTimes(1);

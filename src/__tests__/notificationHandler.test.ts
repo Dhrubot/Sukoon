@@ -115,7 +115,7 @@ describe('NotificationService foreground notification handler', () => {
       },
     }));
     jest.doMock('../services/notifications/FullAdhanScheduler', () => ({
-      scheduleFullAdhan: jest.fn(async () => {}),
+      scheduleAdhanAudio: jest.fn(async () => {}),
       cancelAllFullAdhans: jest.fn(async () => {}),
       stopFullAdhan: jest.fn(),
       getExactAlarmStatus: jest.fn(async () => 'granted'),
@@ -152,18 +152,10 @@ describe('NotificationService foreground notification handler', () => {
     return capturedHandler;
   }
 
-  it('suppresses Android foreground prayer-notification sound when runtime adhan playback is enabled', async () => {
+  it('lets the channel decide the sound for Android foreground prayer notifications', async () => {
+    // Audio is owned by the delivery engine (native service or alarm-grade channel),
+    // so the handler no longer mutes prayer-time notifications.
     const handler = setupHandler('android');
-
-    await expect(
-      handler?.handleNotification({
-        request: { content: { data: { type: 'prayer-time' } } },
-      })
-    ).resolves.toMatchObject({ shouldPlaySound: false });
-  });
-
-  it('allows Android foreground notification sound when adhan is disabled', async () => {
-    const handler = setupHandler('android', { adhanEnabled: false });
 
     await expect(
       handler?.handleNotification({
@@ -172,7 +164,17 @@ describe('NotificationService foreground notification handler', () => {
     ).resolves.toMatchObject({ shouldPlaySound: true });
   });
 
-  it('does not suppress iOS prayer-notification sound from the foreground handler', async () => {
+  it('mutes the channel for Android test adhans (previewed in-app via AdhanPlayer)', async () => {
+    const handler = setupHandler('android');
+
+    await expect(
+      handler?.handleNotification({
+        request: { content: { data: { type: 'test' } } },
+      })
+    ).resolves.toMatchObject({ shouldPlaySound: false });
+  });
+
+  it('does not mute iOS prayer-notification sound from the foreground handler', async () => {
     const handler = setupHandler('ios');
 
     await expect(

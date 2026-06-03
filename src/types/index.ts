@@ -20,11 +20,22 @@ export interface PrayerTimes {
   Midnight: string;
 }
 
+export type PrayerTimeQuality =
+  | "provider"
+  | "edge"
+  | "direct"
+  | "calculated_fallback"
+  | "disk_cache"
+  | "stale_cache"
+  | "hardcoded_defaults"
+  | "invalid";
+
 export interface PrayerTimesWithSun {
   prayerTimes: PrayerTime[];
   sunrise: Date;
   sunset: Date;
   midnight: Date | null;
+  quality?: PrayerTimeQuality;
 }
 
 export interface OptionalPrayerTime {
@@ -108,7 +119,7 @@ export interface UserSettings {
     reminderText: string;
     postPrayerCheck: boolean; // DEPRECATED - replaced by habitBuilder
     intensity?: 'gentle' | 'balanced' | 'persistent'; // Controls follow-up reminder frequency
-    liveActivityEnabled?: boolean; // Show prayer countdown on lock screen (iOS Live Activity / Android ongoing notification)
+    liveActivityEnabled?: boolean; // Show the platform-specific prayer countdown surface on iOS lock screen / Dynamic Island or Android notifications
   };
   // Per-prayer notification toggles (individual control)
   prayerNotifications: {
@@ -218,7 +229,7 @@ export interface MosqueModeSettings {
   jummah?: {
     enabled: boolean;        // Enable Jummah silent mode (default: true)
     silentDuration: number;  // Minutes — khutba (~20) + prayer (~10) = 30 default
-    iqamahOffset: number;    // Minutes after Dhuhr adhan on Friday
+    iqamahTime: string;      // Absolute iqamah time on Friday, "HH:mm" 24h (default: "13:30" — 1:30 PM)
   };
 }
 

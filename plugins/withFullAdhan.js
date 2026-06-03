@@ -15,6 +15,7 @@ import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.pm.ServiceInfo;
 import android.content.Context;
 import android.content.Intent;
 import android.media.AudioAttributes;
@@ -33,6 +34,8 @@ public class AdhanService extends Service {
     private static final int NOTIFICATION_ID = 9001;
     public static final String ACTION_STOP = "com.talukders.sukoon.STOP_ADHAN";
     public static final String EXTRA_PRAYER_NAME = "prayer_name";
+    public static final String EXTRA_SOUND_RESOURCE = "sound_resource";
+    private static final String DEFAULT_SOUND_RESOURCE = "adhan_full";
 
     private MediaPlayer mediaPlayer;
     private PowerManager.WakeLock wakeLock;
@@ -49,7 +52,7 @@ public class AdhanService extends Service {
             // Must call startForeground() before stopping if started via startForegroundService()
             try {
                 Notification notification = buildNotification("Prayer");
-                startForeground(NOTIFICATION_ID, notification);
+                startForegroundCompat(notification);
             } catch (Exception e) {
                 Log.w(TAG, "startForeground before stop: " + e.getMessage());
             }
@@ -60,6 +63,14 @@ public class AdhanService extends Service {
         String prayerName = "Prayer";
         if (intent != null && intent.hasExtra(EXTRA_PRAYER_NAME)) {
             prayerName = intent.getStringExtra(EXTRA_PRAYER_NAME);
+        }
+
+        String soundResource = DEFAULT_SOUND_RESOURCE;
+        if (intent != null && intent.hasExtra(EXTRA_SOUND_RESOURCE)) {
+            String requested = intent.getStringExtra(EXTRA_SOUND_RESOURCE);
+            if (requested != null && !requested.isEmpty()) {
+                soundResource = requested;
+            }
         }
 
         // Acquire wake lock to keep CPU active during playback
@@ -74,12 +85,31 @@ public class AdhanService extends Service {
 
         // Build and start foreground notification
         Notification notification = buildNotification(prayerName);
-        startForeground(NOTIFICATION_ID, notification);
+        try {
+            startForegroundCompat(notification);
+        } catch (Exception e) {
+            Log.e(TAG, "Failed to enter foreground mode: " + e.getMessage(), e);
+            stopAdhan();
+            return START_NOT_STICKY;
+        }
 
-        // Play the full adhan
-        playAdhan();
+        // Play the requested adhan clip
+        playAdhan(soundResource);
 
         return START_NOT_STICKY;
+    }
+
+    private void startForegroundCompat(Notification notification) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            startForeground(
+                NOTIFICATION_ID,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK
+            );
+            return;
+        }
+
+        startForeground(NOTIFICATION_ID, notification);
     }
 
     private void createNotificationChannel() {
@@ -138,16 +168,19 @@ public class AdhanService extends Service {
         return builder.build();
     }
 
-    private void playAdhan() {
+    private void playAdhan(String soundResource) {
         try {
             if (mediaPlayer != null) {
                 mediaPlayer.release();
                 mediaPlayer = null;
             }
 
-            int resId = getResources().getIdentifier("adhan_full", "raw", getPackageName());
+            String resourceName = (soundResource != null && !soundResource.isEmpty())
+                ? soundResource
+                : DEFAULT_SOUND_RESOURCE;
+            int resId = getResources().getIdentifier(resourceName, "raw", getPackageName());
             if (resId == 0) {
-                Log.e(TAG, "adhan_full resource not found in res/raw");
+                Log.e(TAG, resourceName + " resource not found in res/raw");
                 stopAdhan();
                 return;
             }
@@ -256,10 +289,14 @@ public class AdhanAlarmReceiver extends BroadcastReceiver {
 
         try {
             String prayerName = intent.getStringExtra(AdhanService.EXTRA_PRAYER_NAME);
-            Log.d(TAG, "Adhan alarm fired for: " + prayerName);
+            String soundResource = intent.getStringExtra(AdhanService.EXTRA_SOUND_RESOURCE);
+            Log.d(TAG, "Adhan alarm fired for: " + prayerName + " (sound=" + soundResource + ")");
 
             Intent serviceIntent = new Intent(context, AdhanService.class);
             serviceIntent.putExtra(AdhanService.EXTRA_PRAYER_NAME, prayerName != null ? prayerName : "Prayer");
+            if (soundResource != null && !soundResource.isEmpty()) {
+                serviceIntent.putExtra(AdhanService.EXTRA_SOUND_RESOURCE, soundResource);
+            }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 context.startForegroundService(serviceIntent);
@@ -280,7 +317,9 @@ import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.net.Uri;
 import android.os.Build;
+import android.provider.Settings;
 import android.util.Log;
 
 import com.facebook.react.bridge.Promise;
@@ -322,14 +361,34 @@ public class AdhanModule extends ReactContextBaseJavaModule {
         }
     }
 
+    @ReactMethod
+    public void openExactAlarmSettings(Promise promise) {
+        try {
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+                promise.resolve(false);
+                return;
+            }
+
+            Context context = getReactApplicationContext();
+            Intent intent = new Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM);
+            intent.setData(Uri.parse("package:" + context.getPackageName()));
+            intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            context.startActivity(intent);
+            promise.resolve(true);
+        } catch (Exception e) {
+            promise.reject("OPEN_EXACT_ALARM_SETTINGS_ERROR", "Failed to open exact alarm settings: " + e.getMessage());
+        }
+    }
+
     /**
-     * Schedule an alarm that will trigger the full Adhan foreground service.
+     * Schedule an alarm that will trigger the Adhan foreground service.
      * @param timeMs    Epoch milliseconds for when to fire
      * @param prayerName Display name of the prayer (e.g., "Fajr")
      * @param requestCode Unique request code for this alarm
+     * @param soundResource res/raw resource name to play (e.g., "adhan_full" or "adhan_short")
      */
     @ReactMethod
-    public void scheduleAdhan(double timeMs, String prayerName, double requestCode, Promise promise) {
+    public void scheduleAdhan(double timeMs, String prayerName, double requestCode, String soundResource, Promise promise) {
         try {
             Context context = getReactApplicationContext();
             AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
@@ -341,6 +400,9 @@ public class AdhanModule extends ReactContextBaseJavaModule {
             Intent intent = new Intent(context, AdhanAlarmReceiver.class);
             intent.setAction("com.talukders.sukoon.FULL_ADHAN_" + (int) requestCode);
             intent.putExtra(AdhanService.EXTRA_PRAYER_NAME, prayerName);
+            if (soundResource != null && !soundResource.isEmpty()) {
+                intent.putExtra(AdhanService.EXTRA_SOUND_RESOURCE, soundResource);
+            }
 
             int flags = PendingIntent.FLAG_UPDATE_CURRENT;
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -585,6 +647,41 @@ const withFullAdhanFiles = (config) => {
   ]);
 };
 
+const withFullAdhanProguard = (config) => {
+  return withDangerousMod(config, [
+    'android',
+    async (config) => {
+      const projectRoot = config.modRequest.projectRoot;
+      const proguardPath = path.join(projectRoot, 'android', 'app', 'proguard-rules.pro');
+      const keepBlock = `
+# Notification and alarm native bridge/classes used by manifest or RN reflection.
+-keep class com.talukders.sukoon.AdhanModule { *; }
+-keep class com.talukders.sukoon.AdhanPackage { *; }
+-keep class com.talukders.sukoon.BootPrefsModule { *; }
+-keep class com.talukders.sukoon.BootPrefsPackage { *; }
+-keep class com.talukders.sukoon.BootNotificationRescheduleTaskService { *; }
+-keep class com.talukders.sukoon.AdhanService { *; }
+-keep class com.talukders.sukoon.AdhanAlarmReceiver { *; }
+-keep class com.talukders.sukoon.BootReceiver { *; }
+-keep class com.talukders.sukoon.NotificationRescheduleWorker { *; }
+`.trim();
+
+      const current = fs.existsSync(proguardPath)
+        ? fs.readFileSync(proguardPath, 'utf-8')
+        : '';
+
+      if (!current.includes('-keep class com.talukders.sukoon.AdhanModule { *; }')) {
+        const next = current.trimEnd()
+          ? `${current.trimEnd()}\n\n${keepBlock}\n`
+          : `${keepBlock}\n`;
+        fs.writeFileSync(proguardPath, next, 'utf-8');
+      }
+
+      return config;
+    },
+  ]);
+};
+
 // ─── Plugin: Register AdhanPackage in MainApplication ──────────────────────
 const withFullAdhanPackage = (config) => {
   return withMainApplication(config, (config) => {
@@ -601,6 +698,7 @@ const withFullAdhanPackage = (config) => {
 module.exports = function withFullAdhan(config) {
   config = withFullAdhanManifest(config);
   config = withFullAdhanFiles(config);
+  config = withFullAdhanProguard(config);
   config = withFullAdhanPackage(config);
   return config;
 };

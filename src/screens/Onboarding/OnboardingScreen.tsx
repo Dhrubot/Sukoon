@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   KeyboardAvoidingView,
   Linking,
   Platform,
@@ -15,7 +16,9 @@ import { useStore } from '../../store/useStore';
 import logger from '../../utils/logger';
 import LocationService from '../../services/LocationService';
 import NotificationService from '../../services/NotificationService';
-import { Location as AppLocation } from '../../types';
+import type { NotificationReadiness } from '../../services/NotificationService';
+import { normalizeNotificationSettings } from '../../services/notifications/notificationSettingsState';
+import { CalculationMethod, Location as AppLocation } from '../../types';
 import { LocationModal } from '../../components/LocationModal';
 import { applyRegionalCalculationMethod } from '../../utils/calculationMethodByRegion';
 import { useTheme } from '../../providers/ThemeProvider';
@@ -25,15 +28,16 @@ import { OnboardingWelcomeStep } from '../../components/onboarding/OnboardingWel
 import { OnboardingLocationStep } from '../../components/onboarding/OnboardingLocationStep';
 import { OnboardingNotificationStep } from '../../components/onboarding/OnboardingNotificationStep';
 import { OnboardingReadyStep } from '../../components/onboarding/OnboardingReadyStep';
+import { OnboardingCalcMethodConfirmStep } from '../../components/onboarding/OnboardingCalcMethodConfirmStep';
 
 interface OnboardingScreenProps {
   onComplete: () => void;
 }
 
-type OnboardingStep = 'welcome' | 'location' | 'notifications' | 'done';
+type OnboardingStep = 'welcome' | 'location' | 'notifications' | 'calc_method' | 'done';
 type LocationFailureReason = 'none' | 'permission_denied' | 'permission_blocked' | 'gps_failed';
 
-const STEP_ORDER: OnboardingStep[] = ['welcome', 'location', 'notifications', 'done'];
+const STEP_ORDER: OnboardingStep[] = ['welcome', 'location', 'notifications', 'calc_method', 'done'];
 const MOSQUE_MODE_TIP_SEEN_KEY = 'mosque_mode_tip_seen';
 
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
@@ -41,7 +45,20 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   const styles = useThemedStyles(createStyles);
   const [currentStep, setCurrentStep] = useState<OnboardingStep>('welcome');
   const [locationData, setLocationData] = useState<AppLocation | null>(null);
-  const [notificationsEnabled, setNotificationsEnabled] = useState(false);
+  const [wantsPrayerReminders, setWantsPrayerReminders] = useState(false);
+  const [notificationReadiness, setNotificationReadiness] = useState<NotificationReadiness>({
+    permissionStatus: 'undetermined' as NotificationReadiness['permissionStatus'],
+    exactAlarmStatus: 'not_applicable',
+    isReady: false,
+    coreNotificationReady: false,
+    exactAlarmReady: true,
+    adhanAudioReady: true,
+    blockedReason: null,
+  });
+  const [isRequestingNotifications, setIsRequestingNotifications] = useState(false);
+  const hasShownExactAlarmAlertRef = useRef(false);
+  const [asrJuristic, setAsrJuristic] = useState<'Standard' | 'Hanafi'>('Standard');
+  const [confirmedCalculationMethod, setConfirmedCalculationMethod] = useState<CalculationMethod | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [isLocating, setIsLocating] = useState(false);
   const [locationFailed, setLocationFailed] = useState(false);
@@ -51,6 +68,32 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   const { setUserSettings } = useStore();
 
   const getProgress = () => (STEP_ORDER.indexOf(currentStep) + 1) / STEP_ORDER.length;
+  const buildOnboardingSettings = () => {
+    const baseSettings = StorageService.getDefaultSettings();
+    return {
+      ...baseSettings,
+      notifications: {
+        ...baseSettings.notifications,
+        enabled: true,
+      },
+      location: locationData ?? baseSettings.location,
+    };
+  };
+
+  useEffect(() => {
+    if (currentStep !== 'notifications') return;
+
+    let cancelled = false;
+    void (async () => {
+      const readiness = await NotificationService.getNotificationReadiness(buildOnboardingSettings());
+      if (cancelled) return;
+      setNotificationReadiness(readiness);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentStep, locationData]);
 
   const requestLocationPermission = async () => {
     setIsLocating(true);
@@ -96,31 +139,78 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
     }
   };
 
+  // After notifications are granted on Android, the native adhan engine still needs
+  // the exact-alarm permission to fire on time (and bypass silent/DND). Nudge the user
+  // to grant it now — but never block the onboarding flow on the outcome.
+  const maybePromptExactAlarm = (readiness: NotificationReadiness) => {
+    if (Platform.OS !== 'android' || readiness.exactAlarmStatus !== 'fallback') return;
+    if (hasShownExactAlarmAlertRef.current) return;
+    hasShownExactAlarmAlertRef.current = true;
+    Alert.alert(
+      'Allow exact alarms',
+      'So the adhan plays right on time — even when your phone is locked or in Do Not Disturb — allow “Alarms & reminders” for Sukoon.',
+      [
+        { text: 'Maybe later', style: 'cancel' },
+        {
+          text: 'Allow',
+          onPress: () => { void NotificationService.openAndroidExactAlarmSettings(); },
+        },
+      ]
+    );
+  };
+
   const requestNotificationPermission = async () => {
+    setIsRequestingNotifications(true);
     try {
-      const granted = await NotificationService.requestPermissionsFromUser();
-      setNotificationsEnabled(granted);
+      await NotificationService.requestNotificationAccessFromUser();
+      const readiness = await NotificationService.getNotificationReadiness(buildOnboardingSettings());
+      setNotificationReadiness(readiness);
+      const granted = readiness.permissionStatus === 'granted';
+      setWantsPrayerReminders(granted);
+      if (granted) {
+        maybePromptExactAlarm(readiness);
+      }
+      if (granted && readiness.coreNotificationReady) {
+        setCurrentStep('calc_method');
+      }
     } catch (error) {
       logger.log('Error requesting notification permissions:', error);
-      setNotificationsEnabled(false);
+      setWantsPrayerReminders(false);
     } finally {
-      setCurrentStep('done');
+      setIsRequestingNotifications(false);
     }
   };
 
   const completeOnboarding = async () => {
     const settings = StorageService.getDefaultSettings();
-    settings.calculationMethodManuallySelected = false;
-    settings.notifications.enabled = notificationsEnabled;
+    settings.notifications = normalizeNotificationSettings({
+      ...settings.notifications,
+      enabled: wantsPrayerReminders,
+      adhanEnabled: wantsPrayerReminders ? settings.notifications.adhanEnabled : false,
+      fullAdhanEnabled: wantsPrayerReminders
+        ? settings.notifications.fullAdhanEnabled
+        : false,
+    });
     settings.name = displayName.trim();
+    settings.asrJuristic = asrJuristic;
 
     if (locationData) {
       settings.location = locationData;
     }
 
-    const { settings: resolvedSettings } = applyRegionalCalculationMethod(settings, locationData);
+    if (confirmedCalculationMethod) {
+      // User explicitly confirmed (or changed) the method in the calc_method step.
+      // Mark as manually selected so future location changes don't auto-override it.
+      settings.calculationMethod = confirmedCalculationMethod;
+      settings.calculationMethodManuallySelected = true;
+    } else {
+      // Fallback: auto-select from region (should not normally reach here).
+      const { settings: resolvedSettings } = applyRegionalCalculationMethod(settings, locationData);
+      settings.calculationMethod = resolvedSettings.calculationMethod;
+      settings.calculationMethodManuallySelected = false;
+    }
 
-    setUserSettings(resolvedSettings);
+    setUserSettings(settings);
     StorageService.setValue(MOSQUE_MODE_TIP_SEEN_KEY, '');
 
     AnalyticsService.logOnboardingCompleted();
@@ -161,7 +251,26 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
             <OnboardingNotificationStep
               progress={getProgress()}
               onEnable={requestNotificationPermission}
-              onSkip={() => setCurrentStep('done')}
+              onSkip={() => {
+                setWantsPrayerReminders(false);
+                setCurrentStep('calc_method');
+              }}
+              onOpenSettings={openAppSettings}
+              permissionStatus={notificationReadiness.permissionStatus}
+              blockedReason={notificationReadiness.blockedReason}
+              isRequesting={isRequestingNotifications}
+            />
+          ) : null}
+
+          {currentStep === 'calc_method' ? (
+            <OnboardingCalcMethodConfirmStep
+              progress={getProgress()}
+              locationData={locationData}
+              asrJuristic={asrJuristic}
+              onConfirm={(method) => {
+                setConfirmedCalculationMethod(method);
+                setCurrentStep('done');
+              }}
             />
           ) : null}
 
@@ -169,8 +278,10 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
             <OnboardingReadyStep
               progress={getProgress()}
               locationData={locationData}
-              notificationsEnabled={notificationsEnabled}
+              notificationsEnabled={wantsPrayerReminders}
+              asrJuristic={asrJuristic}
               displayName={displayName}
+              onAsrJuristicChange={setAsrJuristic}
               onDisplayNameChange={setDisplayName}
               onContinue={completeOnboarding}
             />

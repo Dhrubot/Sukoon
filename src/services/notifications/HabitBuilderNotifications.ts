@@ -9,6 +9,8 @@ import { CHANNELS, IOS_NOTIFICATION_CAP } from '../../constants/NotificationCons
 import { NOTIFICATION_CATEGORIES } from './NotificationChannels';
 import { format } from 'date-fns';
 import logger from '../../utils/logger';
+import { prependNotificationName } from '../../utils/notificationPersonalization';
+import { scheduleLocalNotificationAsync } from './scheduleLocalNotification';
 
 /**
  * Check if current time is within quiet hours.
@@ -105,7 +107,7 @@ export async function scheduleTier2PersistentReminders(
 
     const urgency = i === 1 ? 'first' : i === maxReminders ? 'final' : 'middle';
     const messages = getTier2Messages(urgency);
-    const prayerDisplayName = PrayerTimeService.getPrayerDisplayName(prayer.name);
+    const prayerDisplayName = PrayerTimeService.getPrayerDisplayName(prayer.name, 'en', prayer.time);
     const message = messages[Math.floor(Math.random() * messages.length)]
       .replace('{prayer}', prayerDisplayName);
 
@@ -118,10 +120,10 @@ export async function scheduleTier2PersistentReminders(
       break; // No point continuing if cap is hit
     }
 
-    await Notifications.scheduleNotificationAsync({
+    await scheduleLocalNotificationAsync({
       content: {
         title: `${prayerDisplayName} prayer reminder`,
-        body: message,
+        body: prependNotificationName(message, settings),
         data: {
           prayerId,
           prayer: prayer.name,
@@ -130,14 +132,12 @@ export async function scheduleTier2PersistentReminders(
           scheduledAt: new Date().toISOString(),
         },
         categoryIdentifier: NOTIFICATION_CATEGORIES.POST_PRAYER_CHECK,
-        sound: 'default',
       },
       trigger: {
         type: 'date',
         date: reminderTime,
         ...(Platform.OS === 'android' && {
-          channelId: CHANNELS.DEFAULT,
-          priority: i === maxReminders ? 'high' : 'default',
+          channelId: i === maxReminders ? CHANNELS.PERSISTENT_URGENT : CHANNELS.DEFAULT,
         }),
       } as Notifications.NotificationTriggerInput,
       identifier: tier2Identifier,
@@ -180,10 +180,10 @@ export async function scheduleTier3GracePeriodWarning(
     return;
   }
 
-  const prayerDisplayName = PrayerTimeService.getPrayerDisplayName(prayer.name);
+  const prayerDisplayName = PrayerTimeService.getPrayerDisplayName(prayer.name, 'en', prayer.time);
   const deadlineLabel = deadline && deadline < nextPrayer.time
     ? 'Sunrise'
-    : PrayerTimeService.getPrayerDisplayName(nextPrayer.name);
+    : PrayerTimeService.getPrayerDisplayName(nextPrayer.name, 'en', nextPrayer.time);
 
   const tier3Identifier = `tier3-${prayerId}`;
   if (existingIdentifiers?.has(tier3Identifier)) return;
@@ -194,7 +194,7 @@ export async function scheduleTier3GracePeriodWarning(
     return;
   }
 
-  await Notifications.scheduleNotificationAsync({
+  await scheduleLocalNotificationAsync({
     content: {
       title: `${prayerDisplayName} window ending soon`,
       body: `${deadlineLabel} ${deadline && deadline < nextPrayer.time ? 'is' : 'begins'} in ${minutesBeforeNext} minutes. Return to ${prayerDisplayName} if you can.`,
@@ -206,14 +206,12 @@ export async function scheduleTier3GracePeriodWarning(
         scheduledAt: new Date().toISOString(),
       },
       categoryIdentifier: NOTIFICATION_CATEGORIES.GRACE_PERIOD_WARNING,
-      sound: 'default',
     },
     trigger: {
       type: 'date',
       date: warningTime,
       ...(Platform.OS === 'android' && {
         channelId: CHANNELS.GRACE_WARNING,
-        priority: 'high',
       }),
     } as Notifications.NotificationTriggerInput,
     identifier: tier3Identifier,

@@ -4,7 +4,12 @@ import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { UserSettings } from '../types';
 
 const mockUpdateUserSettings = jest.fn();
-const mockGetPermissionStatus = jest.fn(async () => 'granted');
+const mockGetNotificationReadiness = jest.fn(async () => ({
+  permissionStatus: 'granted',
+  exactAlarmStatus: 'granted',
+  isReady: true,
+  blockedReason: null,
+}));
 const mockUpdateNotificationSettings = jest.fn(async () => {});
 
 jest.mock('../components/settings/SettingSection', () => ({
@@ -64,7 +69,14 @@ jest.mock('../store/useStore', () => ({
 jest.mock('../services/NotificationService', () => ({
   __esModule: true,
   default: {
-    getPermissionStatus: mockGetPermissionStatus,
+    getNotificationReadiness: mockGetNotificationReadiness,
+    requestNotificationAccessFromUser: jest.fn(async () => ({
+      permissionStatus: 'granted',
+      exactAlarmStatus: 'granted',
+      isReady: true,
+      blockedReason: null,
+    })),
+    openAndroidExactAlarmSettings: jest.fn(async () => true),
     updateNotificationSettings: mockUpdateNotificationSettings,
   },
 }));
@@ -78,6 +90,7 @@ jest.mock('../services/LiveActivityService', () => ({
 }));
 
 const { NotificationSection } = require('../screens/Settings/components/NotificationSection');
+const LiveActivityService = require('../services/LiveActivityService').default;
 
 const baseSettings: UserSettings = {
   location: { latitude: 23.8103, longitude: 90.4125, city: 'Dhaka', country: 'Bangladesh' },
@@ -120,7 +133,12 @@ describe('NotificationSection', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     jest.useRealTimers();
-    mockGetPermissionStatus.mockResolvedValue('granted');
+    mockGetNotificationReadiness.mockResolvedValue({
+      permissionStatus: 'granted',
+      exactAlarmStatus: 'granted',
+      isReady: true,
+      blockedReason: null,
+    });
   });
 
   afterEach(() => {
@@ -130,7 +148,7 @@ describe('NotificationSection', () => {
   it('shows the Android locked-screen full adhan toggle', async () => {
     Object.defineProperty(Platform, 'OS', { configurable: true, value: 'android' });
 
-    const { getByText } = render(
+    const { getByText, queryByText } = render(
       <NotificationSection
         userSettings={baseSettings}
         onNotificationPress={jest.fn()}
@@ -138,11 +156,18 @@ describe('NotificationSection', () => {
     );
 
     await waitFor(() => {
-      expect(getByText('Full Adhan (Locked Screen)')).toBeTruthy();
+      expect(getByText('Full-Length Adhan')).toBeTruthy();
     });
     expect(
-      getByText('Schedules the complete call to prayer when your phone is locked or the app is closed')
+      getByText('Play the complete call to prayer instead of the short clip (plays even when locked or the app is closed)')
     ).toBeTruthy();
+    // Live Activity / Persistent Prayer Countdown toggle is hidden for v1
+    // launch — re-enable this assertion together with the toggle JSX in v1.1.
+    // expect(getByText('Persistent Prayer Countdown')).toBeTruthy();
+    // expect(
+    //   getByText('Keep a prayer-aware countdown in your notifications and on the lock screen.')
+    // ).toBeTruthy();
+    expect(queryByText('Persistent Prayer Countdown')).toBeNull();
   });
 
   it('hides the Android-only full adhan toggle on iOS', async () => {
@@ -155,11 +180,17 @@ describe('NotificationSection', () => {
       />
     );
 
-    await waitFor(() => expect(mockGetPermissionStatus).toHaveBeenCalled());
-    expect(queryByText('Full Adhan (Locked Screen)')).toBeNull();
+    await waitFor(() => expect(mockGetNotificationReadiness).toHaveBeenCalled());
+    expect(queryByText('Full-Length Adhan')).toBeNull();
     expect(
       queryByText('Short call to prayer on the lock screen. Full adhan continues after you open the app.')
     ).toBeTruthy();
+    // Live Activity toggle hidden for v1 launch — re-enable in v1.1.
+    // expect(queryByText('Live Activity')).toBeTruthy();
+    // expect(
+    //   queryByText('Show a prayer-aware countdown on your lock screen and Dynamic Island.')
+    // ).toBeTruthy();
+    expect(queryByText('Live Activity')).toBeNull();
   });
 
   it('disables full adhan when the main adhan switch is turned off', async () => {
@@ -190,8 +221,136 @@ describe('NotificationSection', () => {
     });
 
     expect(mockUpdateNotificationSettings).toHaveBeenCalledWith({
+      ...baseSettings.notifications,
       adhanEnabled: false,
       fullAdhanEnabled: false,
+    });
+  });
+
+  it('shows adhan as off when reminders are disabled even if the stored state is inconsistent', async () => {
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'android' });
+
+    const inconsistentSettings: UserSettings = {
+      ...baseSettings,
+      notifications: {
+        ...baseSettings.notifications,
+        enabled: false,
+        adhanEnabled: true,
+        fullAdhanEnabled: true,
+      },
+    };
+
+    const { UNSAFE_getAllByType, queryByText } = render(
+      <NotificationSection
+        userSettings={inconsistentSettings}
+        onNotificationPress={jest.fn()}
+      />
+    );
+
+    await waitFor(() => {
+      expect(UNSAFE_getAllByType(Switch)[0].props.value).toBe(false);
+      expect(UNSAFE_getAllByType(Switch)[0].props.disabled).toBe(true);
+    });
+
+    expect(queryByText('Full-Length Adhan')).toBeNull();
+  });
+
+  it('surfaces the exact-alarm CTA whenever adhan is enabled and exact alarms are unavailable', async () => {
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'android' });
+    mockGetNotificationReadiness.mockResolvedValue({
+      permissionStatus: 'granted',
+      exactAlarmStatus: 'fallback',
+      isReady: true,
+      blockedReason: null,
+    });
+
+    // Adhan on, but full adhan OFF — the CTA must still appear since the native
+    // engine backs the short clip too.
+    const shortOnlySettings: UserSettings = {
+      ...baseSettings,
+      notifications: {
+        ...baseSettings.notifications,
+        adhanEnabled: true,
+        fullAdhanEnabled: false,
+      },
+    };
+
+    const { getByText } = render(
+      <NotificationSection
+        userSettings={shortOnlySettings}
+        onNotificationPress={jest.fn()}
+      />
+    );
+
+    await waitFor(() => {
+      expect(getByText('Allow exact alarms')).toBeTruthy();
+    });
+  });
+
+  it('hides the exact-alarm CTA when adhan is disabled', async () => {
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'android' });
+    mockGetNotificationReadiness.mockResolvedValue({
+      permissionStatus: 'granted',
+      exactAlarmStatus: 'fallback',
+      isReady: true,
+      blockedReason: null,
+    });
+
+    const adhanOffSettings: UserSettings = {
+      ...baseSettings,
+      notifications: {
+        ...baseSettings.notifications,
+        adhanEnabled: false,
+        fullAdhanEnabled: false,
+      },
+    };
+
+    const { queryByText } = render(
+      <NotificationSection
+        userSettings={adhanOffSettings}
+        onNotificationPress={jest.fn()}
+      />
+    );
+
+    await waitFor(() => expect(mockGetNotificationReadiness).toHaveBeenCalled());
+    expect(queryByText('Allow exact alarms')).toBeNull();
+  });
+
+  // v1.1: re-enable when the Live Activity toggle is restored in
+  // NotificationSection.tsx. The handler logic + LiveActivityService glue is
+  // unchanged; the test is skipped only because the UI surface is hidden for
+  // v1 launch.
+  it.skip('starts and ends the platform countdown service when the toggle changes', async () => {
+    Object.defineProperty(Platform, 'OS', { configurable: true, value: 'ios' });
+
+    const { UNSAFE_getAllByType } = render(
+      <NotificationSection
+        userSettings={baseSettings}
+        onNotificationPress={jest.fn()}
+      />
+    );
+
+    await waitFor(() => {
+      expect(UNSAFE_getAllByType(Switch).length).toBeGreaterThanOrEqual(2);
+    });
+
+    const liveActivitySwitch = UNSAFE_getAllByType(Switch)[1];
+    fireEvent(liveActivitySwitch, 'valueChange', true);
+
+    await waitFor(() => {
+      expect(mockUpdateUserSettings).toHaveBeenCalledWith({
+        notifications: {
+          ...baseSettings.notifications,
+          liveActivityEnabled: true,
+        },
+      });
+      expect(LiveActivityService.startWithCurrentData).toHaveBeenCalledTimes(1);
+    });
+
+    fireEvent(liveActivitySwitch, 'valueChange', false);
+
+    await waitFor(() => {
+      expect(LiveActivityService.end).toHaveBeenCalledTimes(1);
     });
   });
 });

@@ -16,6 +16,7 @@ import { MosqueModeStatus } from '../../components/mosque/MosqueModeStatus';
 import { IqamahTimeConfig } from '../../components/mosque/IqamahTimeConfig';
 import { MosqueModeOptions } from '../../components/mosque/MosqueModeOptions';
 import JummahMosqueConfig from '../../components/mosque/JummahMosqueConfig';
+import { OEMBatteryGuidanceCard } from '../../components/mosque/OEMBatteryGuidanceCard';
 import { useMosqueMode } from '../../hooks/useMosqueMode';
 import { mosqueModePlatformUi } from '../../utils/mosqueModePlatform';
 
@@ -62,12 +63,14 @@ const MosqueModeScreen: React.FC = () => {
           <MosqueModeStatus />
 
           <View style={styles.section}>
-            <Text style={styles.sectionLabel}>MODE</Text>
+            <Text style={styles.sectionLabel}>MOSQUE MODE</Text>
             <MosqueModeToggle />
           </View>
 
           {isEnabled && (
             <>
+              <OEMBatteryGuidanceCard />
+
               <View style={styles.section}>
                 <Text style={styles.sectionLabel}>IQAMAH TIMES</Text>
                 <IqamahTimeConfig />
@@ -76,7 +79,7 @@ const MosqueModeScreen: React.FC = () => {
               <View style={styles.section}>
                 <Text style={styles.sectionLabel}>{"JUMU'AH SETTINGS"}</Text>
                 <Text style={styles.sectionHelper}>
-                  Keep Friday separate so khutbah and salah stay inside the same quiet window.
+                  Separate settings for silence during khutbah and salah
                 </Text>
                 <JummahMosqueConfig />
               </View>
@@ -119,20 +122,21 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     paddingBottom: theme.spacing.sm,
   },
   headerTitle: {
-    fontSize: 22,
+    fontSize: 17,
     fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
     marginBottom: theme.spacing.sm,
+    marginTop: theme.spacing['2xl'],
   },
   headerSubtitle: {
-    fontSize: theme.typography.fontSize.base,
+    fontSize: 14,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
-    lineHeight: 22,
+    lineHeight: 20,
   },
   sectionLabel: {
-    fontSize: theme.typography.fontSize.xs,
-    fontFamily: theme.typography.fontFamily.bodySemibold,
+    fontSize: theme.typography.fontSize.xs - 1,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.mosqueMode.sectionLabel,
     letterSpacing: 1.2,
     textTransform: 'uppercase',
@@ -158,21 +162,21 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     gap: theme.spacing.md,
   },
   journeyTitle: {
-    fontSize: theme.typography.fontSize.xl,
-    fontFamily: theme.typography.fontFamily.bodySemibold,
+    fontSize: 17,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.text.primary,
   },
   journeyText: {
-    fontSize: theme.typography.fontSize.base,
+    fontSize: 14,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
-    lineHeight: 22,
+    lineHeight: 20,
   },
   journeySteps: {
     gap: theme.spacing.sm,
   },
   journeyStep: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: 14,
     fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.text.primary,
     lineHeight: 20,
@@ -184,12 +188,12 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     alignItems: 'center',
   },
   footerText: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: 11,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.mosqueMode.footer,
     textAlign: 'center',
     fontStyle: 'italic',
-    lineHeight: 20,
+    lineHeight: 16,
   },
 });
 

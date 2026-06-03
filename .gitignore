@@ -86,9 +86,6 @@ coverage/
 # TypeScript
 *.tsbuildinfo
 
-# EAS Build
-eas.json
-
 # Private keys and certificates
 *.pem
 *.p12
@@ -106,3 +103,7 @@ yarn-error.log*
 
 /android
 /ios
+.claude/
+secrets/
+# iOS dev-signing backup (created by scripts/devSignIos.mjs)
+ios/Sukoon/Sukoon.entitlements.prod-backup

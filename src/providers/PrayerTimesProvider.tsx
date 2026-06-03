@@ -5,7 +5,7 @@ import { useAppStateChange } from '../hooks/useAppStateChange';
 import { useStore } from '../store/useStore';
 import { useShallow } from 'zustand/react/shallow';
 import PrayerTimeService from '../services/PrayerTimeService';
-import { PrayerTime, PrayerName, PrayerTimes } from '../types';
+import { PrayerTime, PrayerName, PrayerTimeQuality, PrayerTimes } from '../types';
 import { isValidCoordinates } from '../utils/locationValidation';
 import logger from '../utils/logger';
 import WidgetService from '../services/WidgetService';
@@ -25,6 +25,10 @@ interface PrayerTimesContextType {
   isOffline: boolean;
   usingHardcodedDefaults: boolean;
   highLatitudeWarning: boolean;
+  /** Quality of the most-recent prayer time fetch. 'stale_cache' means the times
+   *  are from a prior day's successful fetch — better than hardcoded defaults but
+   *  not accurate for today. UI surfaces should show a soft offline banner. */
+  prayerTimeQuality: PrayerTimeQuality | null;
   refreshPrayerTimes: () => Promise<void>;
 }
 
@@ -38,6 +42,7 @@ const PrayerTimesContext = createContext<PrayerTimesContextType>({
   isOffline: false,
   usingHardcodedDefaults: false,
   highLatitudeWarning: false,
+  prayerTimeQuality: null,
   refreshPrayerTimes: async () => {},
 });
 
@@ -55,6 +60,8 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
     setNextPrayer, 
     todayPrayerTimes, 
     nextPrayer,
+    tomorrowFajr,
+    setTomorrowFajr,
     setTodaySunrise,
     setTodaySunset,
     setTodayMidnight,
@@ -65,16 +72,18 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
     setNextPrayer: s.setNextPrayer,
     todayPrayerTimes: s.todayPrayerTimes,
     nextPrayer: s.nextPrayer,
+    tomorrowFajr: s.tomorrowFajr,
+    setTomorrowFajr: s.setTomorrowFajr,
     setTodaySunrise: s.setTodaySunrise,
     setTodaySunset: s.setTodaySunset,
     setTodayMidnight: s.setTodayMidnight,
   })));
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [tomorrowFajr, setTomorrowFajr] = useState<PrayerTime | null>(null);
   const [isOffline, setIsOffline] = useState(false);
   const [usingHardcodedDefaults, setUsingHardcodedDefaults] = useState(false);
   const [highLatitudeWarning, setHighLatitudeWarning] = useState(false);
+  const [prayerTimeQuality, setPrayerTimeQuality] = useState<PrayerTimeQuality | null>(null);
   const { recordRefreshAttempt, recordRefreshSuccess } = usePrayerTimeRefresh();
   const lastAnnouncedPrayerStateRef = useRef<string | null>(null);
 
@@ -289,6 +298,7 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
       setIsOffline(todayFetchWasFallback);
       setUsingHardcodedDefaults(usedHardcodedDefaults);
       setHighLatitudeWarning(hasHighLatitudeWarning);
+      setPrayerTimeQuality(todayResult.quality ?? null);
       if (!todayFetchWasFallback) {
         recordRefreshSuccess(
           freshLocation,
@@ -301,19 +311,25 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
       lastLoadedLocationRef.current = `${freshLocation.latitude.toFixed(3)},${freshLocation.longitude.toFixed(3)}`;
       logger.log('✅ Prayer times loaded successfully');
 
-      // Push data to iOS widget
+      // Push snapshot to widgets
       const todayStr = getLocalDateKey();
       const todayRecords = StorageService.getDayPrayerRecords(todayStr);
-      const dawam = StorageService.getCurrentDawam();
       WidgetService.updateWidgetData(
         todayResult.prayerTimes,
         todayRecords,
         nextPrayer,
-        dawam
+        tomorrowFajrPrayer,
+        todayResult.sunrise,
       );
 
       // Update Live Activity (iOS lock screen / Android ongoing notification)
-      LiveActivityService.update(todayResult.prayerTimes, todayRecords, nextPrayer);
+      LiveActivityService.update(
+        todayResult.prayerTimes,
+        todayRecords,
+        nextPrayer,
+        tomorrowFajrPrayer,
+        todayResult.sunrise,
+      );
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load prayer times';
       logger.error('❌ Error loading prayer times:', err);
@@ -378,7 +394,14 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
     // Update Live Activity on every tick (progress bar + phase transitions)
     const todayStr = getLocalDateKey();
     const todayRecords = StorageService.getDayPrayerRecords(todayStr);
-    LiveActivityService.update(todayPrayerTimes, todayRecords, updated ?? nextPrayer);
+    WidgetService.refreshFromStore().catch(() => {});
+    LiveActivityService.update(
+      todayPrayerTimes,
+      todayRecords,
+      updated ?? nextPrayer,
+      tomorrowFajr,
+      sunrise,
+    );
   };
 
   // Keep the ref pointing to the latest runRecalc closure
@@ -463,6 +486,7 @@ export const PrayerTimesProvider: React.FC<PrayerTimesProviderProps> = ({ childr
     isOffline,
     usingHardcodedDefaults,
     highLatitudeWarning,
+    prayerTimeQuality,
     refreshPrayerTimes,
   };
 

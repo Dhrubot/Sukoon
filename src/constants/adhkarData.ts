@@ -16,7 +16,7 @@ export const MORNING_ADHKAR: DhikrItem[] = [
     transliteration:
       "Allahu laa ilaaha illaa Huwal-Hayyul-Qayyoom. Laa ta'khuzuhoo sinatun wa laa nawm. Lahoo maa fis-samaawaati wa maa fil-ard. Man zal-lazee yashfa'u 'indahoo illaa bi-iznih. Ya'lamu maa bayna aydeehim wa maa khalfahum. Wa laa yuheetoona bi shay'im-min 'ilmihee illaa bimaa shaa'. Wasi'a kursiyyuhus-samaawaati wal-ard. Wa laa ya'ooduhoo hifzuhumaa. Wa Huwal-'Aliyyul-'Azeem.",
     translation:
-      'Allah! There is no deity except Him, the Ever-Living, the Sustainer of existence. Neither drowsiness overtakes Him nor sleep. To Him belongs whatever is in the heavens and whatever is on the earth.',
+      'Allah! There is no deity except Him, the Ever-Living, the Sustainer of existence. Neither drowsiness overtakes Him nor sleep. To Him belongs whatever is in the heavens and whatever is on the earth. Who is it that can intercede with Him except by His permission? He knows what is before them and what will be after them, and they encompass not a thing of His knowledge except for what He wills. His Kursi extends over the heavens and the earth, and their preservation tires Him not. And He is the Most High, the Most Great. (Quran 2:255)',
     count: 1,
     reference: 'Quran 2:255',
     type: 'recite',
@@ -101,7 +101,7 @@ export const MORNING_ADHKAR: DhikrItem[] = [
       "Allaahumma innee asbahtu ush-hiduka, wa ush-hidu hamalata 'arshika, wa malaa'ikataka, wa jamee'a khalqika, annaka Ant-Allaahu laa ilaaha illaa Anta wahdaka laa shareeka laka, wa anna Muhammadan 'abduka wa Rasooluka.",
     translation:
       'O Allah, verily I have reached the morning and call on You, the bearers of Your Throne, Your angels, and all of Your creation to witness that You are Allah, none has the right to be worshipped except You alone, without partner, and that Muhammad is Your servant and messenger.',
-    count: 4,
+    count: 1,
     reference: 'Abu Dawud 4/317',
     type: 'tap',
   },
@@ -113,7 +113,7 @@ export const MORNING_ADHKAR: DhikrItem[] = [
       "Allaahumma 'aafinee fee badanee, Allaahumma 'aafinee fee sam'ee, Allaahumma 'aafinee fee basaree, laa ilaaha illaa Anta.",
     translation:
       'O Allah, grant my body health. O Allah, grant my hearing health. O Allah, grant my sight health. None has the right to be worshipped except You.',
-    count: 3,
+    count: 1,
     reference: 'Abu Dawud 4/324',
     type: 'tap',
   },
@@ -125,7 +125,7 @@ export const MORNING_ADHKAR: DhikrItem[] = [
       "Allaahumma innee a'oodhu bika minal-kufri, wal-faqri, wa a'oodhu bika min 'adhaabil-qabri, laa ilaaha illaa Anta.",
     translation:
       'O Allah, I seek refuge in You from disbelief, and poverty, and I seek refuge in You from the punishment of the grave. None has the right to be worshipped except You.',
-    count: 3,
+    count: 1,
     reference: 'Abu Dawud 4/324',
     type: 'tap',
   },
@@ -167,10 +167,9 @@ export const MORNING_ADHKAR: DhikrItem[] = [
   },
   {
     id: 'morning-subhanallah-wa-bihamdihi',
-    arabic: 'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ',
-    transliteration: 'SubhaanAllaahi wa bihamdihi.',
-    translation:
-      'Glory be to Allah and praise Him.',
+    arabic: 'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ، سُبْحَانَ اللَّهِ الْعَظِيمِ',
+    transliteration: "SubhaanAllaahi wa bihamdihi, SubhaanAllaahil-'Azeem",
+    translation: 'Glory be to Allah and all praise is due to Him; Glory be to Allah, the Most Magnificent.',
     count: 100,
     reference: 'Sahih Muslim 4/2071',
     type: 'tap',
@@ -199,7 +198,7 @@ export const EVENING_ADHKAR: DhikrItem[] = [
     transliteration:
       "Allahu laa ilaaha illaa Huwal-Hayyul-Qayyoom. Laa ta'khuzuhoo sinatun wa laa nawm. Lahoo maa fis-samaawaati wa maa fil-ard. Man zal-lazee yashfa'u 'indahoo illaa bi-iznih. Ya'lamu maa bayna aydeehim wa maa khalfahum. Wa laa yuheetoona bi shay'im-min 'ilmihee illaa bimaa shaa'. Wasi'a kursiyyuhus-samaawaati wal-ard. Wa laa ya'ooduhoo hifzuhumaa. Wa Huwal-'Aliyyul-'Azeem.",
     translation:
-      'Allah! There is no deity except Him, the Ever-Living, the Sustainer of existence. Neither drowsiness overtakes Him nor sleep. To Him belongs whatever is in the heavens and whatever is on the earth.',
+      'Allah! There is no deity except Him, the Ever-Living, the Sustainer of existence. Neither drowsiness overtakes Him nor sleep. To Him belongs whatever is in the heavens and whatever is on the earth. Who is it that can intercede with Him except by His permission? He knows what is before them and what will be after them, and they encompass not a thing of His knowledge except for what He wills. His Kursi extends over the heavens and the earth, and their preservation tires Him not. And He is the Most High, the Most Great. (Quran 2:255)',
     count: 1,
     reference: 'Quran 2:255',
     type: 'recite',
@@ -349,11 +348,10 @@ export const EVENING_ADHKAR: DhikrItem[] = [
     type: 'tap',
   },
   {
-    id: 'evening-subhanallah-wa-bihamdihi',
-    arabic: 'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ',
-    transliteration: 'SubhaanAllaahi wa bihamdihi.',
-    translation:
-      'Glory be to Allah and praise Him.',
+    id: 'evening-subhanAllah-wa-bihamdihi',
+    arabic: 'سُبْحَانَ اللَّهِ وَبِحَمْدِهِ، سُبْحَانَ اللَّهِ الْعَظِيمِ',
+    transliteration: "SubhaanAllaahi wa bihamdihi, SubhaanAllaahil-'Azeem",
+    translation: 'Glory be to Allah and all praise is due to Him; Glory be to Allah, the Most Magnificent.',
     count: 100,
     reference: 'Sahih Muslim 4/2071',
     type: 'tap',

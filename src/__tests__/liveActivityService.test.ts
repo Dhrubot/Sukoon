@@ -39,6 +39,8 @@ describe('LiveActivityService', () => {
       ],
       todayPrayerRecords: [],
       nextPrayer: { name: 'Dhuhr', time: new Date('2026-03-18T12:30:00.000Z'), isNext: true },
+      tomorrowFajr: { name: 'Fajr', time: new Date('2026-03-19T05:00:00.000Z'), isNext: false },
+      todaySunrise: new Date('2026-03-18T06:10:00.000Z'),
     };
 
     jest.doMock('react-native', () => ({
@@ -57,6 +59,17 @@ describe('LiveActivityService', () => {
           },
         })),
       },
+    }));
+    jest.doMock('../utils/ramadan', () => ({
+      getCachedHijriDate: jest.fn(() => ({
+        day: 18,
+        monthNameEn: 'Shawwal',
+        monthNameAr: 'شوال',
+        year: 1447,
+      })),
+    }));
+    jest.doMock('../utils/hijriDate', () => ({
+      formatHijriDateSync: jest.fn(() => '18 Shawwal 1447'),
     }));
     jest.doMock('../store/useStore', () => ({
       useStore: {
@@ -85,13 +98,46 @@ describe('LiveActivityService', () => {
 
     await service.update(prayerTimes, [], prayerTimes[1]);
     expect(bridges.iosBridge?.startLiveActivity).toHaveBeenCalledTimes(1);
+    const startPayload = JSON.parse(bridges.iosBridge?.startLiveActivity.mock.calls[0][0]);
+    expect(startPayload).toMatchObject({
+      prayerName: 'Dhuhr',
+      prayerArabicName: 'الظهر',
+      activePrayerName: 'Dhuhr',
+      heroGradientPrayerName: 'Dhuhr',
+      ringAccentPrayerName: 'Dhuhr',
+      ringColorMode: 'gold',
+      hijriShortLabel: '18 Shawwal 1447',
+      countdownTargetISO: '2026-03-18T12:30:00.000Z',
+      countdownTargetPrayerName: 'Dhuhr',
+      phase: 'pre_adhan',
+      countdownMode: 'next_prayer_start',
+    });
+    expect(startPayload.progress).toBeGreaterThan(0.66);
+    expect(startPayload.progress).toBeLessThan(0.67);
 
+    const activeWindowPrayers = [
+      { name: 'Fajr', time: new Date('2026-03-18T05:00:00.000Z'), isNext: false },
+      { name: 'Dhuhr', time: new Date('2026-03-18T09:30:00.000Z'), isNext: true },
+      { name: 'Asr', time: new Date('2026-03-18T15:45:00.000Z'), isNext: false },
+    ];
     await service.update(
-      prayerTimes,
+      activeWindowPrayers,
       [{ prayer: 'Dhuhr', status: 'prayed', date: '2026-03-18' }],
-      prayerTimes[1]
+      activeWindowPrayers[1]
     );
     expect(bridges.iosBridge?.updateLiveActivity).toHaveBeenCalledTimes(1);
+    const updatePayload = JSON.parse(bridges.iosBridge?.updateLiveActivity.mock.calls[0][0]);
+    expect(updatePayload).toMatchObject({
+      prayerName: 'Asr',
+      activePrayerName: 'Dhuhr',
+      heroGradientPrayerName: 'Dhuhr',
+      ringAccentPrayerName: 'Asr',
+      ringColorMode: 'prayer',
+      countdownTargetISO: '2026-03-18T15:45:00.000Z',
+      countdownTargetPrayerName: 'Asr',
+      phase: 'prayed',
+      countdownMode: 'next_prayer_start',
+    });
   });
 
   it('ends the live activity when disabled or when no payload can be built', async () => {
@@ -128,5 +174,133 @@ describe('LiveActivityService', () => {
 
     await service.update(prayerTimes, [], prayerTimes[1]);
     expect(bridges.androidBridge?.startLiveActivity).toHaveBeenCalledTimes(1);
+    const payload = JSON.parse(bridges.androidBridge?.startLiveActivity.mock.calls[0][0]);
+    expect(payload).toMatchObject({
+      prayerArabicName: 'الظهر',
+      activePrayerName: 'Dhuhr',
+      heroGradientPrayerName: 'Dhuhr',
+      ringAccentPrayerName: 'Dhuhr',
+      ringColorMode: 'gold',
+      hijriShortLabel: '18 Shawwal 1447',
+      countdownTargetPrayerName: 'Dhuhr',
+    });
+  });
+
+  it('uses the active prayer focus during fiqh windows when the prayer is not logged', async () => {
+    const { service, bridges } = loadService({ platformOS: 'ios', liveActivityEnabled: true });
+    const prayerTimes = [
+      { name: 'Fajr', time: new Date('2026-03-18T05:00:00.000Z'), isNext: false },
+      { name: 'Dhuhr', time: new Date('2026-03-18T09:30:00.000Z'), isNext: true },
+      { name: 'Asr', time: new Date('2026-03-18T15:45:00.000Z'), isNext: false },
+    ];
+    const activePrayer = prayerTimes[1];
+
+    await service.update(prayerTimes, [], activePrayer, prayerTimes[2]);
+
+    const payload = JSON.parse(bridges.iosBridge?.startLiveActivity.mock.calls[0][0]);
+    expect(payload).toMatchObject({
+      prayerName: 'Dhuhr',
+      activePrayerName: 'Dhuhr',
+      heroGradientPrayerName: 'Dhuhr',
+      ringAccentPrayerName: 'Dhuhr',
+      ringColorMode: 'prayer',
+      countdownTargetPrayerName: 'Asr',
+      countdownTargetISO: '2026-03-18T15:45:00.000Z',
+      phase: 'fiqh_window',
+      countdownMode: 'current_prayer_end',
+    });
+    expect(payload.progress).toBeGreaterThan(0);
+    expect(payload.progress).toBeLessThan(1);
+  });
+
+  it('keeps the active prayer display during the last 15 minutes when it is still unprayed', async () => {
+    const { service, bridges } = loadService({ platformOS: 'ios', liveActivityEnabled: true });
+    const prayerTimes = [
+      { name: 'Fajr', time: new Date('2026-03-18T05:00:00.000Z'), isNext: false },
+      { name: 'Dhuhr', time: new Date('2026-03-18T09:30:00.000Z'), isNext: true },
+      { name: 'Asr', time: new Date('2026-03-18T10:12:00.000Z'), isNext: false },
+    ];
+
+    await service.update(prayerTimes, [], prayerTimes[1], prayerTimes[2]);
+
+    const payload = JSON.parse(bridges.iosBridge?.startLiveActivity.mock.calls[0][0]);
+    expect(payload).toMatchObject({
+      prayerName: 'Dhuhr',
+      activePrayerName: 'Dhuhr',
+      heroGradientPrayerName: 'Dhuhr',
+      ringAccentPrayerName: 'Dhuhr',
+      ringColorMode: 'prayer',
+      countdownTargetPrayerName: 'Asr',
+      countdownTargetISO: '2026-03-18T10:12:00.000Z',
+      phase: 'fiqh_window',
+      countdownMode: 'current_prayer_end',
+    });
+    expect(payload.progress).toBeGreaterThan(0.71);
+    expect(payload.progress).toBeLessThan(0.72);
+  });
+
+  it('uses tomorrow Fajr when starting from current store data overnight', async () => {
+    const { service, bridges } = loadService({
+      platformOS: 'ios',
+      liveActivityEnabled: true,
+      storeState: {
+        todayPrayerTimes: [
+          { name: 'Fajr', time: new Date('2026-03-18T05:00:00.000Z'), isNext: false },
+          { name: 'Dhuhr', time: new Date('2026-03-18T12:30:00.000Z'), isNext: false },
+          { name: 'Asr', time: new Date('2026-03-18T15:45:00.000Z'), isNext: false },
+          { name: 'Maghrib', time: new Date('2026-03-18T18:00:00.000Z'), isNext: false },
+          { name: 'Isha', time: new Date('2026-03-18T19:30:00.000Z'), isNext: true },
+        ],
+        nextPrayer: { name: 'Isha', time: new Date('2026-03-18T19:30:00.000Z'), isNext: true },
+        tomorrowFajr: { name: 'Fajr', time: new Date('2026-03-19T05:05:00.000Z'), isNext: false },
+      },
+    });
+
+    jest.setSystemTime(new Date('2026-03-18T23:00:00.000Z'));
+    await service.startWithCurrentData();
+
+    const payload = JSON.parse(bridges.iosBridge?.startLiveActivity.mock.calls[0][0]);
+    expect(payload).toMatchObject({
+      prayerName: 'Isha',
+      activePrayerName: 'Isha',
+      heroGradientPrayerName: 'Isha',
+      ringAccentPrayerName: 'Isha',
+      ringColorMode: 'prayer',
+      countdownTargetPrayerName: 'Fajr',
+      countdownTargetISO: '2026-03-19T05:05:00.000Z',
+      phase: 'fiqh_window',
+      countdownMode: 'current_prayer_end',
+    });
+  });
+
+  it('uses sunrise as the Fajr countdown target until Fajr is logged', async () => {
+    const { service, bridges } = loadService({ platformOS: 'ios', liveActivityEnabled: true });
+    const prayerTimes = [
+      { name: 'Fajr', time: new Date('2026-03-18T05:00:00.000Z'), isNext: true },
+      { name: 'Dhuhr', time: new Date('2026-03-18T12:02:00.000Z'), isNext: false },
+      { name: 'Asr', time: new Date('2026-03-18T15:45:00.000Z'), isNext: false },
+    ];
+    jest.setSystemTime(new Date('2026-03-18T05:27:00.000Z'));
+
+    await service.update(
+      prayerTimes,
+      [],
+      prayerTimes[0],
+      { name: 'Fajr', time: new Date('2026-03-19T05:00:00.000Z'), isNext: false },
+      new Date('2026-03-18T06:10:00.000Z'),
+    );
+
+    const payload = JSON.parse(bridges.iosBridge?.startLiveActivity.mock.calls[0][0]);
+    expect(payload).toMatchObject({
+      prayerName: 'Fajr',
+      activePrayerName: 'Fajr',
+      heroGradientPrayerName: 'Fajr',
+      ringAccentPrayerName: 'Fajr',
+      ringColorMode: 'prayer',
+      countdownTargetPrayerName: 'Sunrise',
+      countdownTargetISO: '2026-03-18T06:10:00.000Z',
+      phase: 'fiqh_window',
+      countdownMode: 'current_prayer_end',
+    });
   });
 });

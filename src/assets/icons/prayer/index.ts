@@ -5,3 +5,4 @@ export { default as AsrSvg } from './AsrSvg';
 export { default as MaghribSvg } from './MaghribSvg';
 export { default as IshaSvg } from './IshaSvg';
 export { default as SunsetSvg } from './SunsetSvg';
+export { default as StillnessLeafSvg } from './StillnessLeafSvg';

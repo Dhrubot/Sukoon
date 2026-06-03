@@ -6,7 +6,7 @@
  */
 const { withDangerousMod } = require('@expo/config-plugins');
 const { basename, resolve } = require('path');
-const { existsSync, unlinkSync } = require('fs');
+const { existsSync, mkdirSync, unlinkSync, writeFileSync } = require('fs');
 
 const ANDROID_EXTENSIONS = ['.ogg', '.mp3', '.wav'];
 
@@ -17,6 +17,8 @@ function withPlatformSounds(config) {
     (cfg) => {
       const sounds = cfg.extra?.notificationSounds || [];
       const rawPath = resolve(cfg.modRequest.projectRoot, 'android/app/src/main/res/raw');
+      mkdirSync(rawPath, { recursive: true });
+      const keptSounds = [];
 
       // Remove any .caf files that expo-notifications may have already copied
       for (const soundPath of sounds) {
@@ -27,8 +29,17 @@ function withPlatformSounds(config) {
           if (existsSync(dest)) {
             unlinkSync(dest);
           }
+          continue;
         }
+        keptSounds.push(filename.replace(/\.[^.]+$/, ''));
       }
+
+      const keepTargets = [
+        ...keptSounds.map((name) => `@raw/${name}`),
+        '@drawable/notification_icon',
+      ];
+      const keepXml = `<?xml version="1.0" encoding="utf-8"?>\n<resources xmlns:tools="http://schemas.android.com/tools"\n  tools:keep="${keepTargets.join(',')}" />\n`;
+      writeFileSync(resolve(rawPath, 'sukoon_keep.xml'), keepXml, 'utf-8');
       return cfg;
     },
   ]);

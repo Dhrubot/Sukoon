@@ -1,14 +1,97 @@
 // src/services/MosqueModeService.ts
-import { Platform } from 'react-native';
+import { Platform, NativeModules } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import { IOS_NOTIFICATION_CAP } from '../constants/NotificationConstants';
 import { format, addMinutes } from 'date-fns';
+import { isFriday } from '../utils/ramadan';
 import StorageService from './StorageService';
 import RingerControlService from './RingerControlService';
 import type { RingerMode } from './RingerControlService';
 import type { MosqueModeSettings, PrayerName, PrayerTime } from '../types';
 import logger from '../utils/logger';
 import { mosqueModePlatformUi } from '../utils/mosqueModePlatform';
+import { scheduleLocalNotificationAsync } from './notifications/scheduleLocalNotification';
+
+// ---------------------------------------------------------------------------
+// MosqueModePrefsModule — thin wrapper around the native SharedPreferences
+// module for cross-process mosque-mode state persistence (Phase 2).
+// All methods are no-ops on iOS or when the native module is unavailable.
+//
+// The module reference is resolved lazily (inside each function) so that
+// jest.doMock('react-native', ...) can inject a mock before the module is
+// loaded; a module-level const would capture the unset value at import time.
+// ---------------------------------------------------------------------------
+interface MosqueModePrefsModuleNative {
+  mosquePrefsSet(key: string, value: string): Promise<void>;
+  mosquePrefsGet(key: string): Promise<string | null>;
+  mosquePrefsClear(key: string): Promise<void>;
+}
+
+function _getPrefsModule(): MosqueModePrefsModuleNative | null {
+  if (Platform.OS !== 'android') return null;
+  // NativeModules is read lazily so jest.doMock can replace react-native first.
+  return (NativeModules.RingerModeModule as MosqueModePrefsModuleNative) ?? null;
+}
+
+// SP key names — mirroring the Java constants in RingerModeModule
+const SP_KEYS = {
+  STATE:              'mosque_state',
+  PRAYER:             'mosque_prayer',
+  IQAMAH_MS:         'mosque_iqamah_ms',
+  RESTORE_MS:        'mosque_restore_ms',
+  RESTORE_MODE:       'mosque_restore_mode',
+  MANAGED_BY_SUKOON: 'mosque_managed_by_sukoon',
+} as const;
+
+async function spSet(key: string, value: string): Promise<void> {
+  try {
+    await _getPrefsModule()?.mosquePrefsSet(key, value);
+  } catch (err) {
+    logger.warn('[MosqueModeService] spSet failed:', err);
+  }
+}
+
+async function spGet(key: string): Promise<string | null> {
+  try {
+    return await _getPrefsModule()?.mosquePrefsGet(key) ?? null;
+  } catch (err) {
+    logger.warn('[MosqueModeService] spGet failed:', err);
+    return null;
+  }
+}
+
+async function spClear(key: string): Promise<void> {
+  try {
+    await _getPrefsModule()?.mosquePrefsClear(key);
+  } catch (err) {
+    logger.warn('[MosqueModeService] spClear failed:', err);
+  }
+}
+
+/** Write all primary mosque-mode state keys to SharedPreferences atomically. */
+async function spWriteActiveState(
+  prayer: PrayerName,
+  iqamahTime: Date,
+  restoreTime: Date,
+  managedBySukoon: boolean,
+  restoreMode: RingerMode,
+): Promise<void> {
+  await Promise.all([
+    spSet(SP_KEYS.STATE,              'armed'),
+    spSet(SP_KEYS.PRAYER,             prayer),
+    spSet(SP_KEYS.IQAMAH_MS,         String(iqamahTime.getTime())),
+    spSet(SP_KEYS.RESTORE_MS,        String(restoreTime.getTime())),
+    spSet(SP_KEYS.RESTORE_MODE,       restoreMode),
+    spSet(SP_KEYS.MANAGED_BY_SUKOON, managedBySukoon ? '1' : '0'),
+  ]);
+}
+
+/** Clear all primary mosque-mode state keys from SharedPreferences. */
+async function spClearActiveState(): Promise<void> {
+  await Promise.all(
+    Object.values(SP_KEYS).map((k) => spClear(k))
+  );
+}
 
 // Storage keys for mosque mode state
 const STORAGE_KEYS = {
@@ -22,6 +105,14 @@ interface MosqueModeNotificationData {
   mode?: RingerMode;
   previousMode?: RingerMode;
   prayer?: PrayerName;
+}
+
+interface MosqueModeActiveState {
+  prayer: PrayerName;
+  iqamahTime: Date;
+  restoreTime: Date;
+  scheduledAt: Date;
+  managedBySukoon: boolean;
 }
 
 class MosqueModeService {
@@ -50,6 +141,192 @@ class MosqueModeService {
     return Math.abs(hash || 1);
   }
 
+  private getIqamahDateStr(iqamahTime: Date): string {
+    return format(iqamahTime, 'yyyy-MM-dd');
+  }
+
+  private getReminderTime(iqamahTime: Date, now: Date): Date | null {
+    const leadMinutes = (iqamahTime.getTime() - now.getTime()) / (1000 * 60);
+    if (leadMinutes <= 0) {
+      return null;
+    }
+
+    if (leadMinutes > 5) {
+      return addMinutes(iqamahTime, -5);
+    }
+
+    return addMinutes(now, 1);
+  }
+
+  private async cancelNotificationIdentifiers(identifiers: string[]): Promise<void> {
+    for (const id of identifiers) {
+      try {
+        await Notifications.cancelScheduledNotificationAsync(id);
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  private getMosqueNotificationIdentifiers(prayer: PrayerName, dateStr: string): string[] {
+    return [
+      `mosque-prompt-${prayer}-${dateStr}`,
+      `mosque-reminder-${prayer}-${dateStr}`,
+      `mosque-enable-${prayer}-${dateStr}`,
+      `mosque-restore-${prayer}-${dateStr}`,
+      `mosque-iqamah-${prayer}-${dateStr}`,
+    ];
+  }
+
+  private async cancelLegacyNotifications(prayer: PrayerName, iqamahTime: Date): Promise<void> {
+    await this.cancelNotificationIdentifiers(
+      this.getMosqueNotificationIdentifiers(prayer, this.getIqamahDateStr(iqamahTime))
+    );
+  }
+
+  private persistActiveState(
+    prayer: PrayerName,
+    iqamahTime: Date,
+    restoreTime: Date,
+    managedBySukoon: boolean,
+    restoreMode: RingerMode = 'NORMAL',
+  ): void {
+    StorageService.setValue(
+      STORAGE_KEYS.ACTIVE_MOSQUE_MODE,
+      JSON.stringify({
+        prayer,
+        iqamahTime: iqamahTime.toISOString(),
+        restoreTime: restoreTime.toISOString(),
+        scheduledAt: new Date().toISOString(),
+        managedBySukoon,
+      })
+    );
+    // Phase 2: Mirror to SharedPreferences for cross-process / boot-receiver use.
+    void spWriteActiveState(prayer, iqamahTime, restoreTime, managedBySukoon, restoreMode);
+  }
+
+  private async schedulePreIqamahNotification(
+    prayer: PrayerTime,
+    iqamahTime: Date,
+    mode: 'auto' | 'prompt',
+  ): Promise<void> {
+    const now = new Date();
+    const reminderTime = this.getReminderTime(iqamahTime, now);
+    if (!reminderTime || reminderTime <= now) {
+      return;
+    }
+
+    if (await this.isIosBudgetExhausted()) {
+      logger.log(`🕌🚫 iOS cap reached, skipping mosque mode ${mode} notification`);
+      return;
+    }
+
+    const dateStr = this.getIqamahDateStr(iqamahTime);
+    const identifier = mode === 'prompt'
+      ? `mosque-prompt-${prayer.name}-${dateStr}`
+      : `mosque-reminder-${prayer.name}-${dateStr}`;
+    const minsUntilIqamah = Math.max(
+      1,
+      Math.round((iqamahTime.getTime() - reminderTime.getTime()) / (1000 * 60)),
+    );
+
+    await scheduleLocalNotificationAsync({
+      content: {
+        title: `${prayer.name} Iqamah in ${minsUntilIqamah} min`,
+        body: mode === 'prompt'
+          ? mosqueModePlatformUi.promptNotificationBody
+          : mosqueModePlatformUi.autoReminderBody,
+        data: {
+          type: mode === 'prompt' ? 'mosque_mode_prompt' : 'mosque_mode_reminder',
+          prayer: prayer.name,
+          iqamahTime: iqamahTime.toISOString(),
+        },
+      },
+      trigger: {
+        type: 'date',
+        date: reminderTime,
+      } as Notifications.NotificationTriggerInput,
+      identifier,
+    });
+
+    logger.log(
+      `🕌 ${mode === 'prompt' ? 'Prompt' : 'Reminder'} scheduled for ${prayer.name} at ${format(
+        reminderTime,
+        'h:mm a'
+      )}`
+    );
+  }
+
+  /**
+   * iOS: Schedule a Time-Sensitive pre-iqamah notification so it penetrates Focus modes.
+   * Phase 1 — used when the user manually confirms heading to mosque on iOS.
+   * interruptionLevel: 'timeSensitive' requires the
+   * com.apple.developer.usernotifications.time-sensitive entitlement (set YES in app.config.js).
+   */
+  private async scheduleIOSSilentModeNotifications(
+    prayer: PrayerTime,
+    iqamahTime: Date,
+  ): Promise<void> {
+    if (Platform.OS !== 'ios') return;
+
+    if (await this.isIosBudgetExhausted()) {
+      logger.log('🕌🚫 iOS cap reached, skipping mosque mode iOS notifications');
+      return;
+    }
+
+    const now = new Date();
+    const dateStr = this.getIqamahDateStr(iqamahTime);
+
+    // Notification 1: 5 minutes before iqamah — Time-Sensitive so it pierces Focus modes.
+    const reminderTime = this.getReminderTime(iqamahTime, now);
+    if (reminderTime && reminderTime > now) {
+      const minsUntilIqamah = Math.max(
+        1,
+        Math.round((iqamahTime.getTime() - reminderTime.getTime()) / (1000 * 60)),
+      );
+      await scheduleLocalNotificationAsync({
+        identifier: `mosque-reminder-${prayer.name}-${dateStr}`,
+        content: {
+          title: `${prayer.name} Iqamah in ${minsUntilIqamah} min`,
+          body: mosqueModePlatformUi.iosPreIqamahBody,
+          interruptionLevel: 'timeSensitive',
+          data: {
+            type: 'mosque_mode_reminder',
+            prayer: prayer.name,
+            iqamahTime: iqamahTime.toISOString(),
+          },
+        },
+        trigger: {
+          type: 'date',
+          date: reminderTime,
+        } as Notifications.NotificationTriggerInput,
+      });
+      logger.log(`🕌 iOS Time-Sensitive reminder scheduled for ${prayer.name} at ${format(reminderTime, 'h:mm a')}`);
+    }
+
+    // Notification 2: At iqamah time — final call.
+    if (iqamahTime > now) {
+      await scheduleLocalNotificationAsync({
+        identifier: `mosque-iqamah-${prayer.name}-${dateStr}`,
+        content: {
+          title: `${prayer.name} Iqamah beginning now`,
+          body: mosqueModePlatformUi.iosIqamahBody,
+          interruptionLevel: 'timeSensitive',
+          data: {
+            type: 'mosque_mode_iqamah',
+            prayer: prayer.name,
+            iqamahTime: iqamahTime.toISOString(),
+          },
+        },
+        trigger: {
+          type: 'date',
+          date: iqamahTime,
+        } as Notifications.NotificationTriggerInput,
+      });
+      logger.log(`🕌 iOS iqamah notification scheduled for ${prayer.name} at ${format(iqamahTime, 'h:mm a')}`);
+    }
+  }
+
   /**
    * Check if mosque mode is enabled for a specific prayer
    */
@@ -71,6 +348,16 @@ class MosqueModeService {
     const settings = StorageService.getUserSettings();
     if (!settings?.mosqueMode?.enabled) {
       return null;
+    }
+
+    // On Fridays, Dhuhr is Jumu'ah — use the dedicated absolute iqamah time
+    // (a fixed wall-clock time set by the user, default 1:30 PM) instead of an offset.
+    const jummah = settings.mosqueMode.jummah;
+    if (prayer.name === 'Dhuhr' && isFriday(prayer.time) && jummah?.enabled && jummah.iqamahTime) {
+      const [hStr, mStr] = jummah.iqamahTime.split(':');
+      const iqamah = new Date(prayer.time);
+      iqamah.setHours(parseInt(hStr, 10), parseInt(mStr, 10), 0, 0);
+      return iqamah;
     }
 
     const offset = settings.mosqueMode.iqamahOffsets[prayer.name];
@@ -107,24 +394,28 @@ class MosqueModeService {
 
       // Calculate when to restore ringer
       const restoreTime = addMinutes(iqamahTime, settings.mosqueMode.silentDuration);
+      let managedBySukoon = false;
+      let restoreMode: RingerMode = 'NORMAL';
 
       // Platform-specific implementation
       if (Platform.OS === 'android') {
-        await this.scheduleAndroidSilentMode(prayer, iqamahTime, restoreTime, settings.mosqueMode);
+        await this.cancelLegacyNotifications(prayer.name, iqamahTime);
+        const result = await this.scheduleAndroidSilentModeWithMode(
+          prayer,
+          iqamahTime,
+          restoreTime,
+          settings.mosqueMode
+        );
+        managedBySukoon = result.managed;
+        restoreMode = result.restoreMode;
       } else if (Platform.OS === 'ios') {
-        await this.scheduleIOSReminder(prayer, iqamahTime);
+        await this.cancelLegacyNotifications(prayer.name, iqamahTime);
+        await this.scheduleIOSSilentModeNotifications(prayer, iqamahTime);
       }
 
-      // Mark this prayer as having mosque mode active
-      StorageService.setValue(
-        STORAGE_KEYS.ACTIVE_MOSQUE_MODE,
-        JSON.stringify({
-          prayer: prayer.name,
-          iqamahTime: iqamahTime.toISOString(),
-          restoreTime: restoreTime.toISOString(),
-          scheduledAt: new Date().toISOString(),
-        })
-      );
+      // Manual confirmations still keep mosque mode state for in-app status,
+      // even when iOS can only remind and Android may leave an already-quiet phone untouched.
+      this.persistActiveState(prayer.name, iqamahTime, restoreTime, managedBySukoon, restoreMode);
 
       logger.log(
         `🕌 Mosque mode scheduled for ${prayer.name} at ${format(iqamahTime, 'h:mm a')}`
@@ -163,7 +454,7 @@ class MosqueModeService {
         requestCodeBase
       );
 
-      await Notifications.scheduleNotificationAsync({
+      await scheduleLocalNotificationAsync({
         content: {
           title: 'Mosque Mode Test',
           body: scheduled ? 'Test scheduled for 1 minute from now.' : 'Could not schedule. Please grant Do Not Disturb access.',
@@ -185,18 +476,20 @@ class MosqueModeService {
   }
 
   /**
-   * Android: Schedule notifications that trigger silent mode
+   * Android: Schedule silent mode and return structured result including restoreMode.
+   * Used by scheduleSilentMode so restoreMode can be persisted to SharedPreferences.
    */
-  private async scheduleAndroidSilentMode(
+  private async scheduleAndroidSilentModeWithMode(
     prayer: PrayerTime,
     iqamahTime: Date,
     restoreTime: Date,
     settings: MosqueModeSettings
-  ): Promise<void> {
-    // Save current ringer mode so we can restore it later
+  ): Promise<{ managed: boolean; restoreMode: RingerMode }> {
     const currentMode = await RingerControlService.getRingerMode();
-    if (currentMode) {
-      StorageService.setValue(STORAGE_KEYS.PREVIOUS_RINGER_MODE, currentMode);
+    const alreadyQuiet = currentMode === 'SILENT' || currentMode === 'VIBRATE';
+    if (alreadyQuiet) {
+      logger.log(`🕌 Android: ${prayer.name} already quiet before iqamah — skipping auto-silence`);
+      return { managed: false, restoreMode: (currentMode ?? 'NORMAL') as RingerMode };
     }
 
     const targetMode: RingerMode = settings.useVibrateInsteadOfSilent ? 'VIBRATE' : 'SILENT';
@@ -205,6 +498,10 @@ class MosqueModeService {
 
     const enableAtMs = iqamahTime.getTime();
     const restoreAtMs = settings.autoRestore ? restoreTime.getTime() : 0;
+
+    if (currentMode) {
+      StorageService.setValue(STORAGE_KEYS.PREVIOUS_RINGER_MODE, currentMode);
+    }
 
     const scheduled = await RingerControlService.scheduleMosqueMode(
       enableAtMs,
@@ -216,68 +513,7 @@ class MosqueModeService {
 
     if (!scheduled) {
       logger.warn('⚠️ Mosque mode could not be scheduled (missing DND access?)');
-    }
-
-    const enableId = `mosque-enable-${prayer.name}-${format(iqamahTime, 'yyyy-MM-dd')}`;
-
-    try {
-      await Notifications.cancelScheduledNotificationAsync(enableId);
-    } catch {
-      // ignore
-    }
-
-    if (await this.isIosBudgetExhausted()) {
-      logger.log('🕌🚫 iOS cap reached, skipping mosque mode enable notification');
-      return;
-    }
-
-    await Notifications.scheduleNotificationAsync({
-      content: {
-        title: `${prayer.name} Iqamah`,
-        body: `Mosque Mode ${scheduled ? 'enabled' : 'could not auto-enable'} (${targetMode.toLowerCase()})`,
-        data: {
-          type: 'mosque_mode_enable',
-          prayer: prayer.name,
-          mode: targetMode,
-          iqamahTime: iqamahTime.toISOString(),
-          requestCodeBase,
-        },
-        sound: undefined,
-      },
-      trigger: {
-        type: 'date',
-        date: iqamahTime,
-      } as Notifications.NotificationTriggerInput,
-      identifier: enableId,
-    });
-
-    if (settings.autoRestore) {
-      const restoreId = `mosque-restore-${prayer.name}-${format(iqamahTime, 'yyyy-MM-dd')}`;
-
-      try {
-        await Notifications.cancelScheduledNotificationAsync(restoreId);
-      } catch {
-        // ignore
-      }
-
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: 'Ringer Restored',
-          body: 'Mosque Mode ended',
-          data: {
-            type: 'mosque_mode_restore',
-            prayer: prayer.name,
-            previousMode: currentMode || 'NORMAL',
-            requestCodeBase,
-          },
-          sound: undefined,
-        },
-        trigger: {
-          type: 'date',
-          date: restoreTime,
-        } as Notifications.NotificationTriggerInput,
-        identifier: restoreId,
-      });
+      return { managed: false, restoreMode };
     }
 
     logger.log(
@@ -286,70 +522,31 @@ class MosqueModeService {
         'h:mm a'
       )}`
     );
+
+    return { managed: true, restoreMode };
   }
 
   /**
-   * iOS: Schedule reminder notifications (can't directly control silent mode)
-   * Sends a reminder 2 minutes before iqamah so the user can manually enable DND.
+   * @deprecated Use scheduleAndroidSilentModeWithMode. Kept for scheduleUpcomingMosqueModes.
+   */
+  private async scheduleAndroidSilentMode(
+    prayer: PrayerTime,
+    iqamahTime: Date,
+    restoreTime: Date,
+    settings: MosqueModeSettings
+  ): Promise<boolean> {
+    const result = await this.scheduleAndroidSilentModeWithMode(prayer, iqamahTime, restoreTime, settings);
+    return result.managed;
+  }
+
+  /**
+   * iOS: Schedule reminder notifications (can't directly control silent mode).
+   * Used by scheduleUpcomingMosqueModes (auto mode). Sends a Time-Sensitive
+   * pre-iqamah notification so it penetrates Focus modes.
    */
   private async scheduleIOSReminder(prayer: PrayerTime, iqamahTime: Date): Promise<void> {
-    const now = new Date();
-
-    // Schedule a reminder 2 minutes before iqamah
-    const reminderTime = addMinutes(iqamahTime, -2);
-    if (reminderTime > now) {
-      if (await this.isIosBudgetExhausted()) {
-        logger.log('🕌🚫 iOS cap reached, skipping mosque mode reminder');
-        return;
-      }
-
-      const reminderId = `mosque-reminder-${prayer.name}-${format(iqamahTime, 'yyyy-MM-dd')}`;
-      try { await Notifications.cancelScheduledNotificationAsync(reminderId); } catch { /* ignore */ }
-
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: `${prayer.name} Iqamah in 2 minutes`,
-          body: mosqueModePlatformUi.iosReminderBody,
-          data: {
-            type: 'mosque_mode_reminder',
-            prayer: prayer.name,
-            iqamahTime: iqamahTime.toISOString(),
-          },
-          sound: 'default',
-        },
-        trigger: {
-          type: 'date',
-          date: reminderTime,
-        } as Notifications.NotificationTriggerInput,
-        identifier: reminderId,
-      });
-
-      logger.log(`📱 iOS: Reminder scheduled for ${format(reminderTime, 'h:mm a')}`);
-    }
-
-    // Also schedule a notification at iqamah time as a last-chance reminder
-    const iqamahId = `mosque-iqamah-${prayer.name}-${format(iqamahTime, 'yyyy-MM-dd')}`;
-    if (iqamahTime > now) {
-      try { await Notifications.cancelScheduledNotificationAsync(iqamahId); } catch { /* ignore */ }
-
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: `${prayer.name} Iqamah Now`,
-          body: mosqueModePlatformUi.iosIqamahBody,
-          data: {
-            type: 'mosque_mode_iqamah',
-            prayer: prayer.name,
-            iqamahTime: iqamahTime.toISOString(),
-          },
-          sound: undefined, // Silent notification
-        },
-        trigger: {
-          type: 'date',
-          date: iqamahTime,
-        } as Notifications.NotificationTriggerInput,
-        identifier: iqamahId,
-      });
-    }
+    await this.cancelLegacyNotifications(prayer.name, iqamahTime);
+    await this.scheduleIOSSilentModeNotifications(prayer, iqamahTime);
   }
 
   /**
@@ -362,19 +559,26 @@ class MosqueModeService {
       if (type === 'mosque_mode_enable') {
         // Android: Best-effort fallback if alarms didn't run
         if (Platform.OS === 'android') {
-          await RingerControlService.setRingerMode(mode || 'SILENT');
-          logger.log(`🔇 ${mode} mode enabled for ${prayer} iqamah`);
+          const activeState = this.getActiveMosqueMode();
+          if (activeState?.managedBySukoon !== false) {
+            await RingerControlService.setRingerMode(mode || 'SILENT');
+            logger.log(`🔇 ${mode} mode enabled for ${prayer} iqamah`);
+          }
         }
       } else if (type === 'mosque_mode_restore') {
         // Android: Restore previous ringer mode
         if (Platform.OS === 'android') {
-          const modeToRestore = previousMode || 'NORMAL';
-          await RingerControlService.setRingerMode(modeToRestore);
-          logger.log(`🔊 Ringer restored to ${modeToRestore}`);
+          const activeState = this.getActiveMosqueMode();
+          if (activeState?.managedBySukoon !== false) {
+            const modeToRestore = previousMode || 'NORMAL';
+            await RingerControlService.setRingerMode(modeToRestore);
+            logger.log(`🔊 Ringer restored to ${modeToRestore}`);
+          }
         }
 
-        // Clear active mosque mode
+        // Clear active mosque mode (MMKV + SharedPreferences)
         StorageService.setValue(STORAGE_KEYS.ACTIVE_MOSQUE_MODE, '');
+        void spClearActiveState();
       }
       // iOS mosque_mode_reminder / mosque_mode_iqamah — no programmatic action,
       // the notification itself is the reminder for the user to silence their phone.
@@ -394,16 +598,7 @@ class MosqueModeService {
       await RingerControlService.cancelMosqueMode(requestCodeBase);
 
       // Cancel all related notifications
-      const identifiers = [
-        `mosque-enable-${prayer}-${dateStr}`,
-        `mosque-restore-${prayer}-${dateStr}`,
-        `mosque-reminder-${prayer}-${dateStr}`,
-        `mosque-iqamah-${prayer}-${dateStr}`,
-      ];
-
-      for (const id of identifiers) {
-        await Notifications.cancelScheduledNotificationAsync(id);
-      }
+      await this.cancelNotificationIdentifiers(this.getMosqueNotificationIdentifiers(prayer, dateStr));
 
       // Clear active state if it matches
       const activeState = StorageService.getValue(STORAGE_KEYS.ACTIVE_MOSQUE_MODE);
@@ -430,52 +625,14 @@ class MosqueModeService {
     if (!settings.mosqueMode.promptBeforeEnable) return; // Only for confirm mode
 
     const now = new Date();
-    const dateStr = format(now, 'yyyy-MM-dd');
 
     for (const prayer of prayers) {
       if (!this.isEnabledForPrayer(prayer.name)) continue;
       const iqamahTime = this.getIqamahTime(prayer);
       if (!iqamahTime) continue;
       if (iqamahTime <= now) continue; // Iqamah already passed
-
-      // Schedule notification 5 min before iqamah (or 1 min if <5 min away)
-      const leadMinutes = (iqamahTime.getTime() - now.getTime()) / (1000 * 60);
-      const promptTime = leadMinutes > 5
-        ? addMinutes(iqamahTime, -5)
-        : addMinutes(now, 1);
-
-      // Don't schedule if prompt time is in the past
-      if (promptTime <= now) continue;
-
-      if (await this.isIosBudgetExhausted()) {
-        logger.log('🕌🚫 iOS cap reached, skipping mosque mode prompts');
-        return;
-      }
-
-      const promptId = `mosque-prompt-${prayer.name}-${dateStr}`;
-      try { await Notifications.cancelScheduledNotificationAsync(promptId); } catch { /* ignore */ }
-
-      const minsUntilIqamah = Math.round((iqamahTime.getTime() - promptTime.getTime()) / (1000 * 60));
-
-      await Notifications.scheduleNotificationAsync({
-        content: {
-          title: `${prayer.name} Iqamah in ${minsUntilIqamah} min`,
-          body: mosqueModePlatformUi.promptNotificationBody,
-          data: {
-            type: 'mosque_mode_prompt',
-            prayer: prayer.name,
-            iqamahTime: iqamahTime.toISOString(),
-          },
-          sound: 'default',
-        },
-        trigger: {
-          type: 'date',
-          date: promptTime,
-        } as Notifications.NotificationTriggerInput,
-        identifier: promptId,
-      });
-
-      logger.log(`🕌 Mosque prompt scheduled for ${prayer.name} at ${format(promptTime, 'h:mm a')}`);
+      await this.cancelLegacyNotifications(prayer.name, iqamahTime);
+      await this.schedulePreIqamahNotification(prayer, iqamahTime, 'prompt');
     }
   }
 
@@ -492,6 +649,8 @@ class MosqueModeService {
       if (iqamahTime <= now) continue;
 
       if (Platform.OS === 'android') {
+        await this.cancelLegacyNotifications(prayer.name, iqamahTime);
+        await this.schedulePreIqamahNotification(prayer, iqamahTime, 'auto');
         const restoreTime = addMinutes(iqamahTime, settings.mosqueMode.silentDuration);
         await this.scheduleAndroidSilentMode(prayer, iqamahTime, restoreTime, settings.mosqueMode);
       } else if (Platform.OS === 'ios') {
@@ -503,12 +662,7 @@ class MosqueModeService {
   /**
    * Get current active mosque mode state
    */
-  getActiveMosqueMode(): {
-    prayer: PrayerName;
-    iqamahTime: Date;
-    restoreTime: Date;
-    scheduledAt: Date;
-  } | null {
+  getActiveMosqueMode(): MosqueModeActiveState | null {
     try {
       const state = StorageService.getValue(STORAGE_KEYS.ACTIVE_MOSQUE_MODE);
       if (!state) return null;
@@ -519,6 +673,7 @@ class MosqueModeService {
         iqamahTime: new Date(parsed.iqamahTime),
         restoreTime: new Date(parsed.restoreTime),
         scheduledAt: new Date(parsed.scheduledAt),
+        managedBySukoon: parsed.managedBySukoon !== false,
       };
     } catch (error) {
       return null;
@@ -546,17 +701,172 @@ class MosqueModeService {
         return false;
       }
 
+      const activeState = this.getActiveMosqueMode();
+      if (activeState && !activeState.managedBySukoon) {
+        StorageService.setValue(STORAGE_KEYS.ACTIVE_MOSQUE_MODE, '');
+        void spClearActiveState();
+        logger.log('🔕 Mosque mode ended without changing the current ringer state');
+        return true;
+      }
+
       const previousMode = (StorageService.getValue(STORAGE_KEYS.PREVIOUS_RINGER_MODE) || 'NORMAL') as RingerMode;
       await RingerControlService.setRingerMode(previousMode);
 
-      // Clear active state
+      // Clear active state from both MMKV and SharedPreferences
       StorageService.setValue(STORAGE_KEYS.ACTIVE_MOSQUE_MODE, '');
+      void spClearActiveState();
 
       logger.log(`🔊 Ringer manually restored to ${previousMode}`);
       return true;
     } catch (error) {
       logger.error('❌ Failed to manually restore ringer:', error);
       return false;
+    }
+  }
+
+  /**
+   * Clear the active mosque-mode state from both MMKV and SharedPreferences.
+   * Called by the watchdog after auto-restore, and by the boot receiver reconciliation.
+   */
+  clearActiveState(): void {
+    StorageService.setValue(STORAGE_KEYS.ACTIVE_MOSQUE_MODE, '');
+    void spClearActiveState();
+    logger.log('[MosqueModeService] Active state cleared');
+  }
+
+  /**
+   * Phase 1 — JS foreground watchdog (Android-only).
+   *
+   * Called on every app-foreground transition and on the 60-second tick.
+   * If the AlarmManager restore alarm was killed and the phone is still silent
+   * past restoreTime, this method auto-restores the ringer and clears the state.
+   *
+   * Also sets a one-shot setTimeout inside an active window as a redundant
+   * in-process safety net (called from useMosqueModeWatchdog).
+   *
+   * Returns a string describing what action was taken (for logging/testing).
+   */
+  async runForegroundWatchdog(): Promise<'none' | 'restored' | 'no_restore_needed'> {
+    // Watchdog is Android-only — iOS cannot change ringer programmatically.
+    if (Platform.OS !== 'android') return 'none';
+
+    const activeState = this.getActiveMosqueMode();
+    if (!activeState) return 'none';
+
+    // Only act when Sukoon was actually managing the ringer.
+    if (!activeState.managedBySukoon) {
+      // If state is stale (past restoreTime), clean up anyway.
+      const now = Date.now();
+      if (now >= activeState.restoreTime.getTime()) {
+        this.clearActiveState();
+        logger.log('[MosqueModeWatchdog] Stale non-managed state cleared after restoreTime');
+      }
+      return 'none';
+    }
+
+    const now = Date.now();
+    const restoreMs = activeState.restoreTime.getTime();
+
+    // Past restoreTime — check if phone is still quiet (alarm may have been killed).
+    if (now >= restoreMs) {
+      const currentMode = await RingerControlService.getRingerMode();
+      if (currentMode === 'SILENT' || currentMode === 'VIBRATE') {
+        // Restore alarm was missed. Auto-restore now.
+        logger.log(`[MosqueModeWatchdog] Restore alarm missed — auto-restoring ringer (was ${currentMode})`);
+        await this.manuallyRestoreRinger();
+        return 'restored';
+      }
+      // Ringer is already NORMAL — alarm fired, state just wasn't cleared (edge case).
+      logger.log('[MosqueModeWatchdog] Past restoreTime, ringer already normal — clearing stale state');
+      this.clearActiveState();
+      return 'no_restore_needed';
+    }
+
+    return 'none';
+  }
+
+  /**
+   * Phase 2 — Boot reconciliation.
+   *
+   * Called from the JS boot task (notificationBootRescheduleTask) after
+   * reconcileScheduling completes. Reads SharedPreferences to check if
+   * there was an active mosque mode at boot time and re-arms the
+   * AlarmManager restore alarm (or immediately restores the ringer if
+   * the window has already passed).
+   */
+  async rearmFromPersistence(): Promise<void> {
+    if (Platform.OS !== 'android') return;
+
+    try {
+      const stateVal    = await spGet(SP_KEYS.STATE);
+      if (!stateVal || stateVal === 'idle') return;
+
+      const iqamahMsStr  = await spGet(SP_KEYS.IQAMAH_MS);
+      const restoreMsStr = await spGet(SP_KEYS.RESTORE_MS);
+      const prayerName   = (await spGet(SP_KEYS.PRAYER)) as PrayerName | null;
+      const restoreMode  = ((await spGet(SP_KEYS.RESTORE_MODE)) || 'NORMAL') as RingerMode;
+      const managedStr   = await spGet(SP_KEYS.MANAGED_BY_SUKOON);
+      const managedBySukoon = managedStr === '1';
+
+      if (!iqamahMsStr || !restoreMsStr || !prayerName) {
+        logger.warn('[MosqueModeService] rearmFromPersistence: incomplete SP state, clearing');
+        await spClearActiveState();
+        return;
+      }
+
+      const iqamahMs  = parseInt(iqamahMsStr,  10);
+      const restoreMs = parseInt(restoreMsStr, 10);
+      const now       = Date.now();
+
+      if (now >= restoreMs) {
+        // Window has passed during reboot. Restore ringer immediately if we managed it.
+        logger.log('[MosqueModeService] Boot: restore window passed — applying restore immediately');
+        if (managedBySukoon) {
+          const canModify = await RingerControlService.canModify();
+          if (canModify) {
+            await RingerControlService.setRingerMode(restoreMode);
+            logger.log(`[MosqueModeService] Boot: ringer restored to ${restoreMode}`);
+          }
+        }
+        this.clearActiveState();
+        return;
+      }
+
+      if (now >= iqamahMs && now < restoreMs && managedBySukoon) {
+        // We're in the active silence window after boot — re-arm only RESTORE alarm.
+        // Also verify ringer is actually silent (boot may have reset it).
+        const currentMode = await RingerControlService.getRingerMode();
+        if (currentMode !== 'SILENT' && currentMode !== 'VIBRATE') {
+          const canModify = await RingerControlService.canModify();
+          if (canModify) {
+            await RingerControlService.setRingerMode('SILENT');
+            logger.log('[MosqueModeService] Boot: re-applied SILENT after boot during active window');
+          }
+        }
+        logger.log('[MosqueModeService] Boot: in active window — RESTORE alarm re-arm handled by native boot receiver');
+        return;
+      }
+
+      if (now < iqamahMs) {
+        // Before iqamah — re-arm both alarms via native module.
+        logger.log(`[MosqueModeService] Boot: iqamah in future — AlarmManager re-arm handled by native boot receiver for ${prayerName}`);
+        // The RingerModeBootReceiver in the native plugin handles actual alarm re-arm.
+        // JS side just needs to ensure MMKV state is reconciled.
+        const existingMmkv = this.getActiveMosqueMode();
+        if (!existingMmkv) {
+          // MMKV was lost (process cleared) — restore from SP so UI is correct.
+          this.persistActiveState(
+            prayerName,
+            new Date(iqamahMs),
+            new Date(restoreMs),
+            managedBySukoon,
+            restoreMode,
+          );
+          logger.log('[MosqueModeService] Boot: MMKV state reconciled from SharedPreferences');
+        }
+      }
+    } catch (error) {
+      logger.error('[MosqueModeService] rearmFromPersistence error:', error);
     }
   }
 }

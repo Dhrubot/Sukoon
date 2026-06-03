@@ -1,5 +1,5 @@
 // src/services/NotificationLedger.ts
-// Dev-only notification delivery confirmation ledger.
+// Notification delivery confirmation ledger.
 // Tracks: scheduled → delivered → tapped/dismissed for every notification.
 // Persisted in unencrypted MMKV (non-PII data). Capped at 200 entries.
 // Surface via NotificationDebugScreen's "Notification Health" section.
@@ -76,7 +76,6 @@ class NotificationLedger {
 
   /** Record that a notification was scheduled. */
   recordScheduled(id: string, label: string, scheduledFor: Date): void {
-    if (!__DEV__) return;
     const entries = this.getEntries();
     entries.push({
       id,
@@ -92,7 +91,6 @@ class NotificationLedger {
 
   /** Record that a notification was delivered to the device. */
   recordDelivered(id: string): void {
-    if (!__DEV__) return;
     const entries = this.getEntries();
     const entry = entries.find(e => e.id === id);
     if (entry) {
@@ -107,15 +105,74 @@ class NotificationLedger {
     }
   }
 
-  /** Record that the user tapped a notification. */
+  /** Record that the user tapped a notification.
+   *  If the entry's deliveredAt is still null (because the app was closed when
+   *  the notification fired, so the foreground receive listener never ran),
+   *  we backfill it — a tap proves delivery. We stamp deliveredAt with the
+   *  tap time as a conservative lower bound (the notification existed at
+   *  least at the moment it was tapped). */
   recordTapped(id: string): void {
-    if (!__DEV__) return;
     const entries = this.getEntries();
     const entry = entries.find(e => e.id === id);
     if (entry) {
-      entry.tappedAt = new Date().toISOString();
+      const now = new Date();
+      entry.tappedAt = now.toISOString();
+      if (entry.deliveredAt === null) {
+        entry.deliveredAt = now.toISOString();
+        if (entry.scheduledFor) {
+          entry.driftSeconds = Math.max(
+            0,
+            Math.round((now.getTime() - new Date(entry.scheduledFor).getTime()) / 1000)
+          );
+        }
+      }
       this.saveEntries(entries);
     }
+  }
+
+  /**
+   * Backfill delivery state for past-due undelivered entries.
+   *
+   * `Notifications.addNotificationReceivedListener` only fires when the app is
+   * in foreground. For backgrounded/closed delivery — the common case for
+   * prayer notifications — we infer delivery by checking whether each past-due
+   * entry still exists in the system's scheduled list. If it's gone and we're
+   * past its scheduledFor, the OS fired it.
+   *
+   * We only infer for entries that were scheduled BEFORE their fire time
+   * (scheduledAt < scheduledFor). If someone installs the app at 11am, today's
+   * Fajr (3:45am) gets recorded with scheduledAt > scheduledFor — expo
+   * either drops these silently or fires them as a same-moment trigger that
+   * the user has no chance to receive in a useful way. Marking such entries
+   * as delivered would inflate the dashboard with non-events.
+   *
+   * Best-effort: actual delivery time is unknown, so deliveredAt is stamped
+   * with scheduledFor and driftSeconds defaults to 0. The foreground receive
+   * listener still records true delivery time when the app happens to be open.
+   */
+  reconcileDelivery(stillScheduledIds: Set<string>): number {
+    const entries = this.getEntries();
+    // Grace window: don't infer delivery for entries within the last 30s — the
+    // OS broadcast may not have run yet even if scheduledFor passed.
+    const cutoff = Date.now() - 30_000;
+    let marked = 0;
+    for (const entry of entries) {
+      if (entry.deliveredAt !== null) continue;
+      if (!entry.scheduledFor) continue;
+      if (new Date(entry.scheduledFor).getTime() >= cutoff) continue;
+      if (stillScheduledIds.has(entry.id)) continue;
+      // Don't backfill entries that were recorded after their fire time. The
+      // notification was never actually pending in the OS, so its absence from
+      // the pending list says nothing about delivery.
+      if (entry.scheduledAt && new Date(entry.scheduledAt).getTime() >= new Date(entry.scheduledFor).getTime()) {
+        continue;
+      }
+      entry.deliveredAt = entry.scheduledFor;
+      entry.driftSeconds = 0;
+      marked++;
+    }
+    if (marked > 0) this.saveEntries(entries);
+    return marked;
   }
 
   /** Get health summary of notification delivery. */

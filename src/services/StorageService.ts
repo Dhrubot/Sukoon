@@ -20,8 +20,11 @@ import AnalyticsService from './AnalyticsService';
 import { getLocalDateKey } from '../utils/dateHelpers';
 import logger from '../utils/logger';
 import { ONE_DAY_MS } from '../constants/time';
+import { applyIntensityPreset } from '../utils/notificationPresets';
 
 type FamilyData = Record<string, unknown>;
+
+const GENTLE_PRESET_NORMALIZED_FLAG = 'gentle_preset_normalized_v1';
 
 class StorageService {
   // Encrypted storage for PII: user_settings, user_id, subscription,
@@ -62,6 +65,8 @@ class StorageService {
       }
       this._pendingWrites = [];
     }
+
+    this.normalizeGentlePresetIfNeeded();
 
     // Diagnostic: check if we can actually read existing data
     const keyCount = this.storage.getAllKeys().length;
@@ -209,8 +214,110 @@ class StorageService {
     this.setUserSettings(updated as unknown as UserSettings);
   }
 
+  private buildLegacyGentleHabitBuilderProfile(): HabitBuilderSettings {
+    return {
+      enabled: false,
+      persistentReminders: {
+        enabled: false,
+        firstCheckDelay: 20,
+        interval: 15,
+        maxReminders: 1,
+      },
+      gracePeriodWarning: {
+        enabled: false,
+        minutesBeforeNext: 15,
+      },
+      snooze: {
+        allowedIntervals: [5, 10, 15, 30],
+        defaultInterval: 10,
+        maxSnoozesPerPrayer: 5,
+      },
+      quietHours: {
+        enabled: false,
+        start: '22:00',
+        end: '04:00',
+      },
+    };
+  }
+
+  private usesLegacyUntouchedGentlePreset(settings: UserSettings): boolean {
+    const notifications = settings.notifications;
+    const habitBuilder = settings.habitBuilder;
+    const legacyHabitBuilder = this.buildLegacyGentleHabitBuilderProfile();
+
+    return (
+      (notifications.intensity ?? 'gentle') === 'gentle' &&
+      notifications.beforePrayer === 10 &&
+      notifications.postPrayerCheck === false &&
+      habitBuilder.enabled === legacyHabitBuilder.enabled &&
+      habitBuilder.persistentReminders.enabled === legacyHabitBuilder.persistentReminders.enabled &&
+      habitBuilder.persistentReminders.firstCheckDelay === legacyHabitBuilder.persistentReminders.firstCheckDelay &&
+      habitBuilder.persistentReminders.interval === legacyHabitBuilder.persistentReminders.interval &&
+      habitBuilder.persistentReminders.maxReminders === legacyHabitBuilder.persistentReminders.maxReminders &&
+      habitBuilder.gracePeriodWarning.enabled === legacyHabitBuilder.gracePeriodWarning.enabled &&
+      habitBuilder.gracePeriodWarning.minutesBeforeNext === legacyHabitBuilder.gracePeriodWarning.minutesBeforeNext &&
+      JSON.stringify(habitBuilder.snooze.allowedIntervals) === JSON.stringify(legacyHabitBuilder.snooze.allowedIntervals) &&
+      habitBuilder.snooze.defaultInterval === legacyHabitBuilder.snooze.defaultInterval &&
+      habitBuilder.snooze.maxSnoozesPerPrayer === legacyHabitBuilder.snooze.maxSnoozesPerPrayer &&
+      habitBuilder.quietHours.enabled === legacyHabitBuilder.quietHours.enabled &&
+      habitBuilder.quietHours.start === legacyHabitBuilder.quietHours.start &&
+      habitBuilder.quietHours.end === legacyHabitBuilder.quietHours.end
+    );
+  }
+
+  private normalizeGentlePresetIfNeeded(): void {
+    if (this.publicStorage.getBoolean(GENTLE_PRESET_NORMALIZED_FLAG)) {
+      return;
+    }
+
+    const data = this.storage.getString('user_settings');
+    if (!data) {
+      this.publicStorage.set(GENTLE_PRESET_NORMALIZED_FLAG, true);
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(data) as UserSettings;
+      if (this.usesLegacyUntouchedGentlePreset(parsed)) {
+        const preset = applyIntensityPreset(
+          parsed.notifications,
+          parsed.habitBuilder,
+          'gentle'
+        );
+        const normalized = {
+          ...parsed,
+          notifications: preset.notifications,
+          habitBuilder: preset.habitBuilder,
+        };
+        this.setUserSettings(normalized);
+      }
+    } catch (error) {
+      logger.warn('⚠️ Failed to normalize gentle preset settings:', error);
+    } finally {
+      this.publicStorage.set(GENTLE_PRESET_NORMALIZED_FLAG, true);
+    }
+  }
+
   // Default settings for new users
   getDefaultSettings(): UserSettings {
+    const defaultNotifications: UserSettings['notifications'] = {
+      enabled: true,
+      adhanEnabled: true,
+      soundEnabled: true,
+      vibrationEnabled: true,
+      beforePrayer: 10,
+      reminderText: "Time for {prayer} prayer",
+      postPrayerCheck: false,
+      liveActivityEnabled: false,
+      intensity: 'gentle',
+    };
+    const defaultHabitBuilder = this.getDefaultHabitBuilderSettings();
+    const gentlePreset = applyIntensityPreset(
+      defaultNotifications,
+      defaultHabitBuilder,
+      'gentle'
+    );
+
     return {
       location: {
         latitude: 0,
@@ -228,17 +335,7 @@ class StorageService {
         Maghrib: 0,
         Isha: 0,
       },
-      notifications: {
-        enabled: true,
-        adhanEnabled: true,
-        soundEnabled: true,
-        vibrationEnabled: true,
-        beforePrayer: 10,
-        reminderText: "Time for {prayer} prayer",
-        postPrayerCheck: true, // Legacy fallback path for balanced reminder style
-        liveActivityEnabled: false,
-        intensity: 'balanced',
-      },
+      notifications: gentlePreset.notifications,
       prayerNotifications: {
         Fajr: true,
         Dhuhr: true,
@@ -246,7 +343,7 @@ class StorageService {
         Maghrib: true,
         Isha: true,
       },
-      habitBuilder: this.getDefaultHabitBuilderSettings(),
+      habitBuilder: gentlePreset.habitBuilder,
       mosqueMode: this.getDefaultMosqueModeSettings(),
       theme: "auto",
     };
@@ -255,7 +352,7 @@ class StorageService {
   // Default Prayer Habit Builder settings
   private getDefaultHabitBuilderSettings(): HabitBuilderSettings {
     return {
-      enabled: true, // Balanced support by default
+      enabled: true,
       persistentReminders: {
         enabled: true,
         firstCheckDelay: 20,
@@ -297,7 +394,7 @@ class StorageService {
       jummah: {
         enabled: true,         // Enable Jummah silent mode by default
         silentDuration: 30,    // 30 minutes (khutba ~20 + prayer ~10)
-        iqamahOffset: 15,      // 15 minutes after Dhuhr adhan on Friday
+        iqamahTime: '13:30',   // 1:30 PM — common Jummah iqamah; user can override
       },
     };
   }
@@ -561,11 +658,41 @@ class StorageService {
     return stats;
   }
 
-  // Export prayer data as JSON
-  exportPrayerData(): string {
-    const exportData = {
+  // Export prayer data as JSON.
+  // By default, precise location (lat/lng/city) and display name are redacted.
+  // Pass includeLocation: true to include them (personal backup on trusted devices).
+  exportPrayerData(options: { includeLocation?: boolean } = {}): string {
+    const { includeLocation = false } = options;
+    const rawSettings = this.getUserSettings();
+
+    // Build a sanitized copy of userSettings
+    let exportedSettings: typeof rawSettings | null = null;
+    if (rawSettings) {
+      const { name, location, ...rest } = rawSettings;
+      exportedSettings = {
+        ...rest,
+        name: includeLocation ? name : undefined,
+        location: includeLocation
+          ? location
+          : {
+              // Keep country for regional method matching; redact everything else
+              latitude: 0,
+              longitude: 0,
+              city: undefined,
+              country: location.country,
+              timezone: location.timezone,
+            },
+      };
+    }
+
+    const exportData: Record<string, unknown> = {
       exportDate: new Date().toISOString(),
-      userSettings: this.getUserSettings(),
+      userSettings: exportedSettings,
+      // Embed a redaction marker so importPrayerData knows which fields to skip
+      redacted: {
+        location: !includeLocation,
+        name: !includeLocation,
+      },
       currentDawam: this.getCurrentDawam(),
       longestDawam: this.getLongestDawam(),
       prayers: [] as { date: string; records: PrayerRecord[] }[],
@@ -584,7 +711,7 @@ class StorageService {
       // Get prayer records
       const dayRecords = this.getDayPrayerRecords(dateStr);
       if (dayRecords.length > 0) {
-        exportData.prayers.push({
+        (exportData.prayers as { date: string; records: PrayerRecord[] }[]).push({
           date: dateStr,
           records: dayRecords,
         });
@@ -593,7 +720,7 @@ class StorageService {
       // Get daily stats
       const dayStats = this.getDailyStats(dateStr);
       if (dayStats) {
-        exportData.dailyStats.push(dayStats);
+        (exportData.dailyStats as DailyStats[]).push(dayStats);
       }
 
       currentDate.setDate(currentDate.getDate() + 1);
@@ -602,7 +729,10 @@ class StorageService {
     return JSON.stringify(exportData, null, 2);
   }
 
-  // Import prayer data from a JSON string (produced by exportPrayerData)
+  // Import prayer data from a JSON string (produced by exportPrayerData).
+  // Merges records without overwriting existing 'prayed' entries.
+  // Respects the 'redacted' marker — when location or name are redacted the
+  // current device values are kept and NOT overwritten.
   importPrayerData(jsonString: string): { imported: number; skipped: number } {
     const data = JSON.parse(jsonString);
 
@@ -648,6 +778,28 @@ class StorageService {
     }
     if (typeof data.longestDawam === 'number' && data.longestDawam > this.getLongestDawam()) {
       this.publicStorage.set('longest_dawam', data.longestDawam);
+    }
+
+    // Merge non-PII userSettings fields from the export.
+    // If location or name are redacted, keep the device's current values.
+    if (data.userSettings && typeof data.userSettings === 'object') {
+      const redacted: { location?: boolean; name?: boolean } = data.redacted ?? {};
+      const current = this.getUserSettings();
+      if (current) {
+        const incoming = data.userSettings as Partial<UserSettings>;
+        const mergedSettings: UserSettings = {
+          ...current,
+          // Merge safe non-PII settings fields
+          calculationMethod: incoming.calculationMethod ?? current.calculationMethod,
+          calculationMethodManuallySelected:
+            incoming.calculationMethodManuallySelected ?? current.calculationMethodManuallySelected,
+          asrJuristic: incoming.asrJuristic ?? current.asrJuristic,
+          // Keep current location/name when redacted
+          location: redacted.location ? current.location : (incoming.location ?? current.location),
+          name: redacted.name ? current.name : (incoming.name ?? current.name),
+        };
+        this.setUserSettings(mergedSettings);
+      }
     }
 
     return { imported, skipped };
@@ -1051,6 +1203,17 @@ class StorageService {
 
   deletePublicValue(key: string): void {
     this.publicStorage.remove(key);
+  }
+
+  /** Read a string value from the unencrypted public store. */
+  getPublicValue(key: string): string | null {
+    const value = this.publicStorage.getString(key);
+    return value === undefined ? null : value;
+  }
+
+  /** Write a string value to the unencrypted public store. */
+  setPublicValue(key: string, value: string): void {
+    this.publicStorage.set(key, value);
   }
 
   getPremiumFeatures(): PremiumFeatures {

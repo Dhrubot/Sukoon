@@ -111,7 +111,7 @@ describe('NotificationService initialization', () => {
       },
     }));
     jest.doMock('../services/notifications/FullAdhanScheduler', () => ({
-      scheduleFullAdhan: jest.fn(async () => {}),
+      scheduleAdhanAudio: jest.fn(async () => {}),
       cancelAllFullAdhans: jest.fn(async () => {}),
       stopFullAdhan: jest.fn(),
       getExactAlarmStatus: jest.fn(async () => 'granted'),
@@ -233,7 +233,7 @@ describe('NotificationService initialization', () => {
       },
     }));
     jest.doMock('../services/notifications/FullAdhanScheduler', () => ({
-      scheduleFullAdhan: jest.fn(async () => {}),
+      scheduleAdhanAudio: jest.fn(async () => {}),
       cancelAllFullAdhans: jest.fn(async () => {}),
       stopFullAdhan: jest.fn(),
       getExactAlarmStatus: jest.fn(async () => 'granted'),
@@ -349,7 +349,7 @@ describe('NotificationService initialization', () => {
       },
     }));
     jest.doMock('../services/notifications/FullAdhanScheduler', () => ({
-      scheduleFullAdhan: jest.fn(async () => {}),
+      scheduleAdhanAudio: jest.fn(async () => {}),
       cancelAllFullAdhans: jest.fn(async () => {}),
       stopFullAdhan: jest.fn(),
       getExactAlarmStatus: jest.fn(async () => 'granted'),

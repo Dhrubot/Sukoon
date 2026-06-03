@@ -6,12 +6,17 @@ export const mosqueModePlatformUi = {
   allowsDeviceSilencing: isMosqueModeAutoSilenceSupported,
   showsSilentModeControls: isMosqueModeAutoSilenceSupported,
   showsRestoreWindow: isMosqueModeAutoSilenceSupported,
+  /**
+   * Header subtitle shown on MosqueModeScreen.
+   * Android: leads with the automatic-silence guarantee.
+   * iOS: leads with the iOS limitation so the user is never misled.
+   */
   headerSubtitle: isMosqueModeAutoSilenceSupported
-    ? 'Guard the quiet of the masjid by entering a dedicated prayer mode before iqamah.'
-    : 'Get a calm reminder before iqamah so you can silence your phone yourself before prayer begins.',
+    ? 'Automatic — Sukoon silences your phone at iqamah and restores it after prayer.'
+    : 'Reminder — Sukoon sends a strong reminder before iqamah so you can silence your phone.',
   footerText: isMosqueModeAutoSilenceSupported
     ? 'Sukoon handles the quiet around iqamah so the masjid stays calm and your attention stays on salah.'
-    : 'Sukoon cannot change iPhone sound settings for you. It will remind you at the right time so you can silence your phone yourself.',
+    : 'iPhone does not allow apps to control the ringer. Sukoon will remind you at the right time so you can silence your phone yourself.',
   optionsSectionLabel: isMosqueModeAutoSilenceSupported ? 'SILENT MODE OPTIONS' : 'REMINDER OPTIONS',
   toggleDescription: isMosqueModeAutoSilenceSupported
     ? 'Automatically protect masjid quiet at iqamah time'
@@ -36,11 +41,11 @@ export const mosqueModePlatformUi = {
     ? 'Set the exact iqamah time for each prayer'
     : 'Set the exact prayer start time so Sukoon can remind you at the right moment',
   iqamahHelpText: isMosqueModeAutoSilenceSupported
-    ? 'These times tell the app when your mosque actually starts the prayer.\n\nFor example:\n• If Fajr adhan is 5:10 AM\n• And your mosque starts at 5:20 AM\n• Set the offset to 10 minutes\n\nYour phone will go silent at 5:20 AM when iqamah starts.'
-    : 'These times tell Sukoon when your mosque actually starts the prayer.\n\nFor example:\n• If Fajr adhan is 5:10 AM\n• And your mosque starts at 5:20 AM\n• Set the offset to 10 minutes\n\nSukoon will remind you before iqamah so you can silence your phone yourself.',
+    ? "These times tell the app when your mosque actually starts the prayer.\n\nFor example:\n• If Fajr adhan is 5:10 AM\n• And your mosque starts congregation (Salat al-Jama'ah) at 5:20 AM\n• Set the offset to 10 minutes\n\nYour phone will go silent at 5:20 AM when iqamah starts."
+    : "These times tell Sukoon when your mosque actually starts the prayer.\n\nFor example:\n• If Fajr adhan is 5:10 AM\n• And your mosque starts congregation (Salat al-Jama'ah) at 5:20 AM\n• Set the offset to 10 minutes\n\nSukoon will remind you before iqamah so you can silence your phone yourself.",
   jummahSubtitle: isMosqueModeAutoSilenceSupported
     ? "Khutba + prayer — longer silent mode for Fridays"
-    : "Friday reminder timing before khutbah and prayer",
+    : "Friday mosque mode reminder before khutbah and prayer",
   jummahDurationLabel: isMosqueModeAutoSilenceSupported ? 'Silent Duration' : 'Reminder Timing',
   jummahDurationHint: isMosqueModeAutoSilenceSupported
     ? 'Includes khutba (~20 min) + prayer (~10 min)'
@@ -68,6 +73,21 @@ export const mosqueModePlatformUi = {
   promptNotificationBody: isMosqueModeAutoSilenceSupported
     ? 'Heading to the masjid? Tap to begin Mosque Mode.'
     : 'Heading to the mosque? Tap to set a reminder before iqamah.',
-  iosReminderBody: 'Silence your phone for prayer. Sukoon cannot enable Do Not Disturb for you.',
+  autoReminderBody: isMosqueModeAutoSilenceSupported
+    ? 'Mosque Mode will turn on at iqamah. Sukoon will quiet your phone automatically.'
+    : 'Iqamah starts soon. Silence your phone before prayer begins.',
+  iosReminderBody: 'Iqamah starts soon. Silence your phone before prayer begins.',
   iosIqamahBody: 'Iqamah is starting now. Please silence your phone for prayer.',
+  /**
+   * iOS Time-Sensitive pre-iqamah notification body (5 min before).
+   * Instructs user exactly how to silence — actionable and specific.
+   */
+  iosPreIqamahBody: 'Time to silence your phone. Swipe down to Control Center and tap the bell icon.',
+  /**
+   * Platform disclosure label shown in settings to prevent Android/iOS symmetry confusion.
+   * Android: explains automatic silence. iOS: explains reminder-only mode.
+   */
+  platformDisclosureLabel: isMosqueModeAutoSilenceSupported
+    ? 'Android: automatic silence at iqamah'
+    : 'iPhone: reminder to silence manually',
 };

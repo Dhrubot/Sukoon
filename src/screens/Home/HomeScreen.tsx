@@ -41,6 +41,7 @@ import RamadanTimesCard from "../../components/prayer/RamadanTimesCard";
 import OptionalPrayersSection from "../../components/prayer/OptionalPrayersSection";
 import QuickLogSheet from "../../components/prayer/QuickLogSheet";
 import CatchUpSheet from "../../components/prayer/CatchUpSheet";
+import JummahSunnahSheet from "../../components/prayer/JummahSunnahSheet";
 import HijriNudgeSheet from "../../components/HijriNudgeSheet";
 import AutoDeduceSheet from "../../components/AutoDeduceSheet";
 import { LocationModal } from "../../components/LocationModal";
@@ -62,8 +63,8 @@ import { getLocalDateKey } from "../../utils/dateHelpers";
 import MoonSightingPrompt from "../../components/MoonSightingPrompt";
 import { withAlpha } from "../../utils/color";
 import { mosqueModePlatformUi } from "../../utils/mosqueModePlatform";
-
-import { HERO_ADVANCE_MINUTES } from "../../constants/NotificationConstants";
+import { resolvePrayerSurfaceState } from "../../utils/prayerSurfaceResolver";
+import { JummahResourceTopic } from "../../constants/jummahContent";
 const MOSQUE_MODE_TIP_SEEN_KEY = 'mosque_mode_tip_seen';
 
 type HomeScreenNavigationProp = CompositeNavigationProp<
@@ -97,14 +98,12 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
     setTodayPrayerRecords,
     todaySunrise,
     todaySunset,
-    todayMidnight,
   } = useStore(useShallow((state) => ({
     userSettings: state.userSettings,
     todayPrayerRecords: state.todayPrayerRecords,
     setTodayPrayerRecords: state.setTodayPrayerRecords,
     todaySunrise: state.todaySunrise,
     todaySunset: state.todaySunset,
-    todayMidnight: state.todayMidnight,
   })));
 
   // Mosque mode state for focus mode + pill badge
@@ -129,9 +128,11 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
   const catchUpSheetShownRef = useRef(false);
   const [showCatchUpSheet, setShowCatchUpSheet] = useState(false);
   const [showHijriNudgeSheet, setShowHijriNudgeSheet] = useState(false);
+  const dismissedHijriNudgeKeyRef = useRef<string | null>(null);
   const [showHomeLocationModal, setShowHomeLocationModal] = useState(false);
   const [isSettingHomeLocation, setIsSettingHomeLocation] = useState(false);
   const [showMosqueModeTip, setShowMosqueModeTip] = useState(false);
+  const [jummahSheetTopic, setJummahSheetTopic] = useState<JummahResourceTopic | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
   const pendingRevealScrollRef = useRef(false);
 
@@ -201,6 +202,14 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
       isMakeUp: isPrayerInMakeUpState(prayer, nextPrayerInList),
     });
   }, [isPrayerInMakeUpState]);
+
+  const openJummahSheet = useCallback((topic: JummahResourceTopic) => {
+    setJummahSheetTopic(topic);
+  }, []);
+
+  const closeJummahSheet = useCallback(() => {
+    setJummahSheetTopic(null);
+  }, []);
 
   const handleUseCurrentLocation = useCallback(async () => {
     setIsSettingHomeLocation(true);
@@ -313,21 +322,21 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
   // Load records on mount
   useEffect(() => {
     loadTodayRecords();
-    checkNotificationPermission();
+    void checkNotificationPermission();
   }, []);
 
   // Notification permission denied banner
-  const [notificationsDenied, setNotificationsDenied] = useState(false);
-  const checkNotificationPermission = useCallback(() => {
-    const denied = StorageService.getValue('notification_permission_denied') === 'true';
-    setNotificationsDenied(denied);
+  const [notificationBlockedReason, setNotificationBlockedReason] = useState<string | null>(null);
+  const checkNotificationPermission = useCallback(async () => {
+    const readiness = await NotificationService.getNotificationReadiness();
+    setNotificationBlockedReason(readiness.blockedReason);
   }, []);
 
   // Reload on foreground via shared AppState listener
   useAppStateChange((nextState) => {
     if (nextState === 'active') {
       loadTodayRecords();
-      checkNotificationPermission();
+      void checkNotificationPermission();
     }
   });
 
@@ -335,6 +344,20 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
   // Re-checks every minute (via currentTime) to catch the Maghrib crossover
   useEffect(() => {
     if (todayPrayerTimes.length === 0) return;
+
+    const nudge = getHijriNudgeEvent();
+    if (nudge) {
+      const nudgeKey = `${nudge.type}-${nudge.currentYear}-${nudge.currentDay}`;
+      setHijriNudge(nudge);
+      setMoonSightingEvent(null);
+      setAutoDeduceEvent(null);
+      if (!showHijriNudgeSheet && dismissedHijriNudgeKeyRef.current !== nudgeKey) {
+        setShowHijriNudgeSheet(true);
+      }
+      return;
+    }
+
+    setHijriNudge(null);
 
     // Auto-deduce end-of-month (Ramadan 30 → Eid, etc.)
     if (!autoDeduceEvent) {
@@ -367,17 +390,7 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
       }
     }
 
-    // Check for hijri nudge sheet (days 1-3 of critical months)
-    if (!moonSightingEvent) {
-      const nudge = getHijriNudgeEvent();
-      setHijriNudge(nudge);
-      if (nudge && !showHijriNudgeSheet) {
-        setShowHijriNudgeSheet(true);
-      }
-    } else {
-      setHijriNudge(null);
-    }
-  }, [todayPrayerTimes, currentTime]);
+  }, [todayPrayerTimes, currentTime, showHijriNudgeSheet, userSettings?.hijriAdjustment]);
 
   const loadTodayRecords = useCallback(() => {
     const today = format(new Date(), "yyyy-MM-dd");
@@ -437,77 +450,24 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
     return firstName.charAt(0).toUpperCase() + firstName.slice(1);
   }, [userSettings?.name]);
 
-  const heroPrayer = useMemo(() => {
-    if (!nextPrayer) return tomorrowFajr ? { ...tomorrowFajr, isNext: true } : null;
+  const heroSurface = useMemo(() => (
+    resolvePrayerSurfaceState(
+      todayPrayerTimes,
+      todayPrayerRecords,
+      nextPrayer,
+      tomorrowFajr,
+      currentTime,
+      todaySunrise,
+    )
+  ), [currentTime, nextPrayer, todayPrayerRecords, todayPrayerTimes, tomorrowFajr, todaySunrise]);
 
-    // After Islamic midnight and Isha is the current prayer → transition hero to Fajr
-    const now = new Date();
-    if (
-      nextPrayer.name === 'Isha' &&
-      todayMidnight &&
-      now >= todayMidnight &&
-      tomorrowFajr
-    ) {
-      return { ...tomorrowFajr, isNext: true };
-    }
-
-    const isCurrentPrayed = todayPrayerRecords.some(
-      r => r.prayer === nextPrayer.name && r.status === 'prayed'
-    );
-
-    // Determine base hero prayer from fiqh-window logic
-    let base: PrayerTime | null = null;
-
-    if (!isCurrentPrayed) {
-      base = nextPrayer;
-    } else {
-      // Walk forward to find the next unprayed prayer
-      const currentIdx = todayPrayerTimes.findIndex(p => p.name === nextPrayer.name);
-      for (let i = currentIdx + 1; i < todayPrayerTimes.length; i++) {
-        const p = todayPrayerTimes[i];
-        const prayed = todayPrayerRecords.some(
-          r => r.prayer === p.name && r.status === 'prayed'
-        );
-        if (!prayed) {
-          base = { ...p, isNext: true };
-          break;
-        }
-      }
-    }
-
-    // All remaining prayers prayed → show tomorrow's Fajr
-    if (!base) return tomorrowFajr ? { ...tomorrowFajr, isNext: true } : null;
-
-    // Early advance: if the next chronological prayer is ≤15 min away, show it instead.
-    // This makes the hero ring transition before the fiqh window officially ends,
-    // aligning with focus mode activation timing.
-    const baseIdx = todayPrayerTimes.findIndex(p => p.name === base!.name);
-    const nextChronoPrayer = baseIdx >= 0 && baseIdx < todayPrayerTimes.length - 1
-      ? todayPrayerTimes[baseIdx + 1]
-      : tomorrowFajr;
-
-    if (nextChronoPrayer) {
-      const msUntilNext = nextChronoPrayer.time.getTime() - now.getTime();
-      const minutesUntilNext = msUntilNext / (1000 * 60);
-      if (minutesUntilNext <= HERO_ADVANCE_MINUTES && minutesUntilNext > 0) {
-        return { ...nextChronoPrayer, isNext: true };
-      }
-    }
-
-    return base;
-  }, [nextPrayer, todayPrayerTimes, todayPrayerRecords, tomorrowFajr, todayMidnight, currentTime]);
+  const heroPrayer = heroSurface?.displayPrayer ?? null;
+  const activeHeroPrayerName = heroSurface?.activePrayer.name ?? null;
+  const heroGradientPrayer = heroSurface?.heroGradientPrayer ?? heroPrayer;
 
   // Stable identity key — only changes when the hero prayer actually transitions.
   // Downstream memos use this instead of heroPrayer (which rebuilds every 60s tick).
   const heroPrayerName = heroPrayer?.name ?? null;
-
-  // Previous prayer time for inter-prayer ring progress
-  const previousPrayerTime = useMemo(() => {
-    if (!heroPrayer) return undefined;
-    const heroIdx = todayPrayerTimes.findIndex(p => p.name === heroPrayer.name);
-    if (heroIdx > 0) return todayPrayerTimes[heroIdx - 1].time;
-    return undefined;
-  }, [heroPrayerName, todayPrayerTimes]);
 
   // Unified mosque mode info for the hero pill — scoped to heroPrayer
   const mosqueModeHeroInfo = useMemo(() => {
@@ -590,13 +550,14 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
     const startIdx = heroIdx <= 0 ? todayPrayerTimes.length - 1 : heroIdx - 1;
     for (let i = startIdx; i >= 0; i--) {
       const p = todayPrayerTimes[i];
+      if (p.name === activeHeroPrayerName) continue;
       const prayed = todayPrayerRecords.some(
         r => r.prayer === p.name && r.status === 'prayed'
       );
       if (!prayed) return p;
     }
     return undefined;
-  }, [heroPrayerName, todayPrayerTimes, todayPrayerRecords, isHeroPrayerTimeEntered]);
+  }, [activeHeroPrayerName, heroPrayerName, todayPrayerTimes, todayPrayerRecords, isHeroPrayerTimeEntered]);
 
   // All missed prayers today (past time, no record, next prayer started)
   const missedPrayersToday = useMemo(() => {
@@ -809,7 +770,7 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
 
   // 🎯 MAIN UI: SanctuaryView hero + secondary content below
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: theme.colors.background.primary }]} edges={['left', 'right']}>
       <ScrollView
         ref={scrollViewRef}
         style={styles.scrollView}
@@ -822,10 +783,15 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
         {heroPrayer && (
           <SanctuaryView
             prayer={heroPrayer}
+            gradientPrayer={heroGradientPrayer ?? undefined}
             greeting={getGreeting()}
             userName={heroUserName}
-            previousPrayerTime={previousPrayerTime}
             record={heroPrayerRecord}
+            ringProgress={heroSurface?.progress ?? 0}
+            countdownTargetTime={heroSurface?.countdownTarget.time ?? heroPrayer.time}
+            countdownMode={heroSurface?.countdownMode ?? 'next_prayer_start'}
+            ringAccentPrayer={heroSurface?.ringAccentPrayer ?? heroPrayer}
+            ringColorMode={heroSurface?.ringColorMode ?? 'gold'}
             isTimeEntered={isHeroPrayerTimeEntered}
             missedPrayer={missedPreviousPrayer}
             onPrepare={() => handleQuickLogTrigger(heroPrayer)}
@@ -836,6 +802,7 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
             isFocusMode={isHeroImmersive}
             mosqueModeInfo={mosqueModeHeroInfo ?? undefined}
             onMosqueModeTap={() => navigation.navigate('MosqueMode' as never)}
+            onOpenJummahResource={openJummahSheet}
           />
         )}
 
@@ -904,14 +871,24 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
           )}
 
           {/* Notification Permission Denied Banner */}
-          {notificationsDenied && userSettings?.notifications?.enabled && (
+          {notificationBlockedReason &&
+            notificationBlockedReason !== 'no_valid_location' &&
+            userSettings?.notifications?.enabled && (
             <TouchableOpacity
               style={styles.permissionBanner}
-              onPress={() => Linking.openSettings()}
+              onPress={() => {
+                if (notificationBlockedReason === 'exact_alarm_blocked') {
+                  void NotificationService.openAndroidExactAlarmSettings();
+                  return;
+                }
+                Linking.openSettings();
+              }}
               activeOpacity={0.7}
             >
               <Text style={styles.permissionBannerText}>
-                Prayer reminders are off — tap to re-enable
+                {notificationBlockedReason === 'exact_alarm_blocked'
+                  ? 'Prayer reminders may be delayed — tap to enable Alarms & reminders'
+                  : 'Prayer reminders are off — tap to re-enable'}
               </Text>
             </TouchableOpacity>
           )}
@@ -991,6 +968,12 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
         )}
       </ScrollView>
 
+      <JummahSunnahSheet
+        visible={jummahSheetTopic !== null}
+        topic={jummahSheetTopic}
+        onDismiss={closeJummahSheet}
+      />
+
       {/* 4c: Mosque mode activation overlay */}
       <MosqueModeOverlay />
 
@@ -1024,7 +1007,12 @@ const HomeScreen = ({ navigation }: { navigation: HomeScreenNavigationProp }) =>
         <HijriNudgeSheet
           visible
           nudge={hijriNudge}
-          onDismissed={() => {
+          onDismissed={(reason) => {
+            if (reason === 'dismissed' && hijriNudge) {
+              dismissedHijriNudgeKeyRef.current = `${hijriNudge.type}-${hijriNudge.currentYear}-${hijriNudge.currentDay}`;
+            } else {
+              dismissedHijriNudgeKeyRef.current = null;
+            }
             setShowHijriNudgeSheet(false);
             setHijriNudge(null);
           }}
@@ -1076,7 +1064,7 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     alignItems: 'center',
     paddingTop: 0,
     paddingBottom: theme.spacing.md,
-    marginTop: -12,
+    marginTop: -4,
     backgroundColor: 'transparent',
   },
   focusRevealText: {

@@ -13,261 +13,8 @@ const fs = require('fs');
 const { registerAndroidPackageInMainApplication } = require('./withAndroidPackageRegistration');
 
 const WIDGET_NAME = 'SukoonWidget';
-
-// ═══════════════════════════════════════════════════════════════════
-// iOS: LIVE ACTIVITY SWIFT CODE (added to widget extension)
-// ═══════════════════════════════════════════════════════════════════
-
-const LIVE_ACTIVITY_SWIFT = `import ActivityKit
-import WidgetKit
-import SwiftUI
-
-// MARK: - Activity Attributes
-
-struct SukoonPrayerAttributes: ActivityAttributes {
-    public struct ContentState: Codable, Hashable {
-        var prayerName: String
-        var countdownTargetISO: String
-        var phase: String              // "pre_adhan" | "fiqh_window" | "prayed"
-        var progress: Double           // 0.0–1.0
-        var prayerStatuses: [String]   // 5 statuses: "prayed"|"current"|"upcoming"|"missed"
-    }
-
-    var prayerNames: [String]
-}
-
-// MARK: - Helpers
-
-private struct LADateHelper {
-    static let isoFrac: ISO8601DateFormatter = {
-        let f = ISO8601DateFormatter()
-        f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        return f
-    }()
-    static let iso: ISO8601DateFormatter = {
-        let f = ISO8601DateFormatter()
-        f.formatOptions = [.withInternetDateTime]
-        return f
-    }()
-    static let timeFmt: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "h:mm a"
-        return f
-    }()
-    static func parse(_ s: String) -> Date? {
-        if s.isEmpty { return nil }
-        return isoFrac.date(from: s) ?? iso.date(from: s)
-    }
-}
-
-private struct LAColors {
-    static let sage = Color(red: 0.176, green: 0.545, blue: 0.435)
-    static let gold = Color(red: 0.831, green: 0.686, blue: 0.216)
-    static let missedRed = Color(red: 0.562, green: 0.160, blue: 0.160)
-    static let teal = Color(red: 0.176, green: 0.831, blue: 0.749)
-}
-
-// MARK: - Prayer Status Dot
-
-private struct PrayerDot: View {
-    let status: String
-    var body: some View {
-        Group {
-            if status == "prayed" {
-                Circle().fill(LAColors.sage).frame(width: 8, height: 8)
-            } else if status == "current" {
-                Circle().fill(LAColors.gold).frame(width: 8, height: 8)
-            } else if status == "missed" {
-                Circle().stroke(LAColors.missedRed, lineWidth: 1.5).frame(width: 8, height: 8)
-            } else {
-                Circle().fill(Color.gray.opacity(0.3)).frame(width: 8, height: 8)
-            }
-        }
-    }
-}
-
-// MARK: - Progress Bar
-
-private struct PrayerProgressBar: View {
-    let progress: Double
-    var height: CGFloat = 4
-
-    var body: some View {
-        GeometryReader { geo in
-            ZStack(alignment: .leading) {
-                RoundedRectangle(cornerRadius: height / 2)
-                    .fill(Color.white.opacity(0.15))
-                    .frame(height: height)
-                RoundedRectangle(cornerRadius: height / 2)
-                    .fill(LAColors.teal)
-                    .frame(width: geo.size.width * min(max(CGFloat(progress), 0), 1), height: height)
-            }
-        }
-        .frame(height: height)
-    }
-}
-
-// MARK: - Live Activity Widget
-
-@available(iOS 16.2, *)
-struct SukoonLiveActivity: Widget {
-    var body: some WidgetConfiguration {
-        ActivityConfiguration(for: SukoonPrayerAttributes.self) { context in
-            // Lock Screen / Banner view
-            lockScreenView(context: context)
-        } dynamicIsland: { context in
-            DynamicIsland {
-                // Expanded regions
-                DynamicIslandExpandedRegion(.leading) {
-                    Text(context.state.prayerName)
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundColor(.white)
-                }
-                DynamicIslandExpandedRegion(.trailing) {
-                    if let target = LADateHelper.parse(context.state.countdownTargetISO), target > Date() {
-                        Text(target, style: .timer)
-                            .font(.system(size: 14, weight: .medium, design: .monospaced))
-                            .foregroundColor(LAColors.teal)
-                            .multilineTextAlignment(.trailing)
-                    } else {
-                        Text("Now")
-                            .font(.system(size: 14, weight: .semibold))
-                            .foregroundColor(LAColors.gold)
-                    }
-                }
-                DynamicIslandExpandedRegion(.center) {
-                    VStack(spacing: 8) {
-                        PrayerProgressBar(progress: context.state.progress)
-
-                        HStack(spacing: 6) {
-                            ForEach(Array(context.state.prayerStatuses.enumerated()), id: \\.offset) { _, status in
-                                PrayerDot(status: status)
-                            }
-                        }
-                    }
-                    .padding(.top, 4)
-                }
-                DynamicIslandExpandedRegion(.bottom) {
-                    if context.state.phase == "fiqh_window" {
-                        HStack(spacing: 12) {
-                            Link(destination: URL(string: "sukoon://prepare?prayer=\\(context.state.prayerName)")!) {
-                                Text("Prepare")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 6)
-                                    .background(LAColors.sage)
-                                    .clipShape(Capsule())
-                            }
-                            Link(destination: URL(string: "sukoon://prayed?prayer=\\(context.state.prayerName)")!) {
-                                Text("Prayed")
-                                    .font(.system(size: 13, weight: .semibold))
-                                    .foregroundColor(.white)
-                                    .padding(.horizontal, 16)
-                                    .padding(.vertical, 6)
-                                    .background(LAColors.teal)
-                                    .clipShape(Capsule())
-                            }
-                        }
-                        .padding(.top, 4)
-                    }
-                }
-            } compactLeading: {
-                Text(context.state.prayerName)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundColor(.white)
-            } compactTrailing: {
-                if let target = LADateHelper.parse(context.state.countdownTargetISO), target > Date() {
-                    Text(target, style: .timer)
-                        .font(.system(size: 13, weight: .medium, design: .monospaced))
-                        .foregroundColor(LAColors.teal)
-                } else {
-                    Text("Now")
-                        .font(.system(size: 13, weight: .semibold))
-                        .foregroundColor(LAColors.gold)
-                }
-            } minimal: {
-                Image(systemName: "moon.stars.fill")
-                    .font(.system(size: 12))
-                    .foregroundColor(LAColors.teal)
-            }
-        }
-    }
-
-    @ViewBuilder
-    private func lockScreenView(context: ActivityViewContext<SukoonPrayerAttributes>) -> some View {
-        VStack(spacing: 8) {
-            // Top row: prayer name + countdown
-            HStack {
-                HStack(spacing: 6) {
-                    Image(systemName: "moon.stars.fill")
-                        .font(.system(size: 14))
-                        .foregroundColor(LAColors.gold)
-                    Text(context.state.prayerName)
-                        .font(.system(size: 17, weight: .semibold))
-                        .foregroundColor(.white)
-                }
-
-                Spacer()
-
-                if let target = LADateHelper.parse(context.state.countdownTargetISO), target > Date() {
-                    HStack(spacing: 4) {
-                        Text(target, style: .timer)
-                            .font(.system(size: 15, weight: .medium, design: .monospaced))
-                            .foregroundColor(LAColors.teal)
-                        Text(context.state.phase == "fiqh_window" ? "to pray" : "")
-                            .font(.system(size: 12))
-                            .foregroundColor(Color.white.opacity(0.6))
-                    }
-                } else {
-                    Text("Time to Pray")
-                        .font(.system(size: 14, weight: .semibold))
-                        .foregroundColor(LAColors.gold)
-                }
-            }
-
-            // Progress bar
-            PrayerProgressBar(progress: context.state.progress)
-
-            // Bottom row: prayer dots + action buttons
-            HStack {
-                HStack(spacing: 6) {
-                    ForEach(Array(context.state.prayerStatuses.enumerated()), id: \\.offset) { _, status in
-                        PrayerDot(status: status)
-                    }
-                }
-
-                Spacer()
-
-                if context.state.phase == "fiqh_window" {
-                    HStack(spacing: 8) {
-                        Link(destination: URL(string: "sukoon://prepare?prayer=\\(context.state.prayerName)")!) {
-                            Text("Prepare")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 4)
-                                .background(LAColors.sage)
-                                .clipShape(Capsule())
-                        }
-                        Link(destination: URL(string: "sukoon://prayed?prayer=\\(context.state.prayerName)")!) {
-                            Text("Prayed")
-                                .font(.system(size: 11, weight: .semibold))
-                                .foregroundColor(.white)
-                                .padding(.horizontal, 10)
-                                .padding(.vertical, 4)
-                                .background(LAColors.teal)
-                                .clipShape(Capsule())
-                        }
-                    }
-                }
-            }
-        }
-        .padding(16)
-        .background(Color.black.opacity(0.85))
-    }
-}
-`;
+const templatePath = (...parts) => path.join(__dirname, 'templates', ...parts);
+const readTemplate = (...parts) => fs.readFileSync(templatePath(...parts), 'utf-8');
 
 // ═══════════════════════════════════════════════════════════════════
 // iOS: RN BRIDGE (added to MAIN app target)
@@ -723,26 +470,14 @@ const withLiveActivityFiles = (config) => {
 
       fs.writeFileSync(
         path.join(widgetPath, 'SukoonLiveActivity.swift'),
-        LIVE_ACTIVITY_SWIFT,
+        readTemplate('ios', 'widget', 'SukoonLiveActivity.swift'),
         'utf-8'
       );
       console.log('✅ Created SukoonLiveActivity.swift in widget extension');
 
       // Update SukoonWidgetBundle.swift to include Live Activity
       const bundlePath = path.join(widgetPath, 'SukoonWidgetBundle.swift');
-      const updatedBundle = `import WidgetKit
-import SwiftUI
-
-@main
-struct SukoonWidgetBundle: WidgetBundle {
-    var body: some Widget {
-        SukoonWidget()
-        if #available(iOS 16.2, *) {
-            SukoonLiveActivity()
-        }
-    }
-}
-`;
+      const updatedBundle = readTemplate('ios', 'widget', 'SukoonWidgetBundle.swift');
       fs.writeFileSync(bundlePath, updatedBundle, 'utf-8');
       console.log('✅ Updated SukoonWidgetBundle.swift with Live Activity');
 
@@ -754,14 +489,14 @@ struct SukoonWidgetBundle: WidgetBundle {
 
       fs.writeFileSync(
         path.join(mainAppPath, 'SukoonLiveActivityBridge.swift'),
-        BRIDGE_SWIFT,
+        readTemplate('ios', 'app', 'SukoonLiveActivityBridge.swift'),
         'utf-8'
       );
       console.log('✅ Created SukoonLiveActivityBridge.swift');
 
       fs.writeFileSync(
         path.join(mainAppPath, 'SukoonLiveActivityBridge.m'),
-        BRIDGE_OBJC,
+        readTemplate('ios', 'app', 'SukoonLiveActivityBridge.m'),
         'utf-8'
       );
       console.log('✅ Created SukoonLiveActivityBridge.m');
@@ -924,7 +659,7 @@ const withLiveActivityXcodeConfig = (config) => {
         }
       }
     } else {
-      console.warn('⚠️ Widget target not found — Live Activity will not be compiled');
+      console.log('ℹ️ Widget target not found yet — withWidget will attach Live Activity sources after the widget target is created');
     }
 
     // --- Add bridge files to main app target ---

@@ -4,10 +4,32 @@ import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const rootDir = path.resolve(__dirname, '..');
-const inputPath = path.join(rootDir, 'data', 'cities.v1.json');
 const outputDir = path.join(rootDir, 'dist');
 const outputPath = path.join(outputDir, 'city-index.kv.json');
-const CITY_INDEX_VERSION = 'v1';
+const DEFAULT_CITY_INDEX_VERSION = 'v2';
+const MAX_SHARD_ENTRIES = Number(process.env.CITY_INDEX_MAX_SHARD_ENTRIES ?? '120');
+const MAX_SHARD_BYTES = Number(process.env.CITY_INDEX_MAX_SHARD_BYTES ?? '50000');
+
+function parseArgs(argv) {
+  const parsed = {};
+
+  for (const arg of argv) {
+    if (!arg.startsWith('--')) continue;
+
+    const [rawKey, rawValue] = arg.slice(2).split('=');
+    if (!rawKey) continue;
+    parsed[rawKey] = rawValue ?? 'true';
+  }
+
+  return parsed;
+}
+
+const args = parseArgs(process.argv.slice(2));
+const CITY_INDEX_VERSION = args.version || process.env.CITY_INDEX_VERSION || DEFAULT_CITY_INDEX_VERSION;
+const inputPath = args.input
+  ? path.resolve(rootDir, args.input)
+  : path.join(rootDir, 'data', `cities.${CITY_INDEX_VERSION}.json`);
+const resolvedOutputPath = args.output ? path.resolve(rootDir, args.output) : outputPath;
 
 function normalizeText(value) {
   return String(value ?? '')
@@ -106,23 +128,52 @@ function buildKvRecords(entries) {
     },
   ];
 
-  for (const [key, shardEntries] of shards.entries()) {
-    const deduped = [...new Map(
-      shardEntries.map((entry) => [
-        `${entry.name}:${entry.countryCode}:${entry.admin1 || ''}`,
-        entry,
-      ])
-    ).values()].sort(sortShardEntries);
+  const shardStats = [...shards.entries()]
+    .map(([key, shardEntries]) => {
+      const deduped = [...new Map(
+        shardEntries.map((entry) => [
+          `${entry.name}:${entry.countryCode}:${entry.admin1 || ''}`,
+          entry,
+        ])
+      ).values()].sort(sortShardEntries);
 
+      return {
+        key,
+        entries: deduped,
+        entryCount: deduped.length,
+        byteLength: JSON.stringify(deduped).length,
+      };
+    })
+    .sort((left, right) => {
+      if (right.entryCount !== left.entryCount) {
+        return right.entryCount - left.entryCount;
+      }
+
+      return right.byteLength - left.byteLength;
+    });
+
+  const largestShard = shardStats[0] ?? null;
+  if (
+    largestShard &&
+    (largestShard.entryCount > MAX_SHARD_ENTRIES || largestShard.byteLength > MAX_SHARD_BYTES)
+  ) {
+    throw new Error(
+      `Shard guard failed for ${largestShard.key}: ${largestShard.entryCount} entries, ${largestShard.byteLength} bytes ` +
+      `(limits ${MAX_SHARD_ENTRIES} entries / ${MAX_SHARD_BYTES} bytes).`
+    );
+  }
+
+  for (const shard of shardStats) {
     records.push({
-      key,
-      value: JSON.stringify(deduped),
+      key: shard.key,
+      value: JSON.stringify(shard.entries),
     });
   }
 
   return {
     records,
     countryCounts,
+    largestShard,
   };
 }
 
@@ -144,14 +195,19 @@ async function main() {
     normalizedAliases: (entry.aliases ?? []).map((alias) => normalizeText(alias)),
   }));
 
-  const { records, countryCounts } = buildKvRecords(entries);
+  const { records, countryCounts, largestShard } = buildKvRecords(entries);
 
   await fs.mkdir(outputDir, { recursive: true });
-  await fs.writeFile(outputPath, JSON.stringify(records, null, 2));
+  await fs.writeFile(resolvedOutputPath, JSON.stringify(records, null, 2));
 
   console.log(
-    `Generated ${entries.length} city entries, ${Object.keys(countryCounts).length} countries, and ${records.length - 1} shard keys.`
+    `Generated ${entries.length} city entries, ${Object.keys(countryCounts).length} countries, and ${records.length - 1} shard keys for ${CITY_INDEX_VERSION}.`
   );
+  if (largestShard) {
+    console.log(
+      `Largest shard ${largestShard.key}: ${largestShard.entryCount} entries, ${largestShard.byteLength} bytes.`
+    );
+  }
 }
 
 main().catch((error) => {

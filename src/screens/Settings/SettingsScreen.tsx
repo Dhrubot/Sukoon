@@ -1,5 +1,5 @@
 // src/screens/Settings/SettingsScreen.tsx (ENHANCED)
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -27,14 +27,21 @@ import { PrayerSettingsSection } from './components/PrayerSettingsSection';
 // Mosque Mode now has its own dedicated screen via MenuStack
 
 // Modal Components
-import { CalculationMethodModal, NotificationModal, HijriAdjustmentModal } from './modals';
+import { CalculationMethodModal, NotificationModal, HijriAdjustmentModal, ExportDataConfirmModal } from './modals';
 
 // Services
 import NotificationService from '../../services/NotificationService';
+import JummahNotificationService from '../../services/JummahNotificationService';
 import { getCachedHijriDate } from '../../utils/ramadan';
 import { NotificationDebugScreen } from '../Debug/NotificationDebugScreen';
+import { resolveCalculationMethodForCountry } from '../../utils/calculationMethodByRegion';
 
 type SettingsModalKey = 'calculation' | 'hijri' | 'notification' | 'location' | null;
+// Manual JSON export/import is the v1 backup story (no cloud sync).
+// NOTE: the JSON currently includes unredacted location coordinates + display name —
+// blocker #8 (export-data redaction) must ship before users export in volume.
+const SHOW_APP_DATA_SECTION = true;
+const SHOW_SUPPORT_SUKOON = false;
 
 interface SettingsScreenProps {
   navigation: {
@@ -77,15 +84,30 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
     updateLocation,
     handleResetApp,
     handleExportData,
+    handleExportDataWithOptions,
     handleImportData,
     handlePrivacyPolicy,
 
+    // Export consent modal state
+    showExportConfirmModal,
+    setShowExportConfirmModal,
+
     // 🎯 NEW: Enhanced actions
     previewCalculationMethod,
+    handleAutomaticCalculationMethod,
     testPrayerCalculations,
     showDebugInfo,
     refreshPrayerTimes,
   } = useSettingsManager();
+
+  const regionalMethod = useMemo(
+    () => resolveCalculationMethodForCountry(userSettings?.location?.country),
+    [userSettings?.location?.country]
+  );
+  const regionalMethodLabel = useMemo(
+    () => calculationMethods.find((method) => method.value === regionalMethod)?.label || regionalMethod,
+    [calculationMethods, regionalMethod]
+  );
 
   if (!userSettings) {
     return (
@@ -151,12 +173,19 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   };
 
   // Jumu'ah toggle handler
-  const handleToggleJummah = () => {
+  const handleToggleJummah = async () => {
     const isEnabled = userSettings.jummahReminders?.enabled !== false;
-    setUserSettings({
+    const updated = {
       ...userSettings,
       jummahReminders: { enabled: !isEnabled },
-    });
+    };
+    setUserSettings(updated);
+
+    if (isEnabled) {
+      await JummahNotificationService.cancelExisting();
+    } else {
+      await JummahNotificationService.scheduleJummahNotifications(todayPrayerTimes);
+    }
   };
 
   return (
@@ -168,7 +197,7 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         >
           <View style={styles.header}>
             <Text style={styles.eyebrow}>Settings</Text>
-            <Text style={styles.title}>Prayer Preferences</Text>
+            {/* <Text style={styles.title}>Prayer Preferences</Text> */}
             <Text style={styles.subtitle}>Reminders, calculations, location, and quiet adjustments</Text>
           </View>
 
@@ -228,18 +257,19 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
           onClose={closeAllModals}
         />
 
-        {/* 5. App Data */}
-        <AppDataSection
-          onExportData={handleExportData}
-          onImportData={handleImportData}
-          onResetApp={handleResetApp}
-        />
+        {SHOW_APP_DATA_SECTION && (
+          <AppDataSection
+            onExportData={handleExportData}
+            onImportData={handleImportData}
+            onResetApp={handleResetApp}
+          />
+        )}
 
         {/* 7. About */}
         <AboutSection
           onPrivacyPolicy={() => handlePrivacyPolicy(navigation)}
-          onSupport={() => navigation.navigate('Support')}
           onShowDebugInfo={__DEV__ ? showDebugInfo : undefined}
+          showSupport={SHOW_SUPPORT_SUKOON}
         />
 
           {/* Dev only debugger screen */}
@@ -284,6 +314,11 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         calculationMethods={calculationMethods}
         selectedMethod={userSettings.calculationMethod}
         onMethodSelect={handleCalculationMethodChange}
+        regionalMethod={regionalMethod}
+        regionalMethodLabel={regionalMethodLabel}
+        regionalCountry={userSettings.location?.country}
+        isAutomaticSelected={!userSettings.calculationMethodManuallySelected}
+        onAutomaticSelect={handleAutomaticCalculationMethod}
 
         // Enhanced props
         previewPrayerTimes={previewPrayerTimes}
@@ -307,6 +342,13 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
         onClose={closeAllModals}
         userSettings={userSettings}
         onUpdateSettings={setUserSettings}
+      />
+
+      {/* Export data consent sheet */}
+      <ExportDataConfirmModal
+        visible={showExportConfirmModal}
+        onClose={() => setShowExportConfirmModal(false)}
+        onConfirm={handleExportDataWithOptions}
       />
     </SafeAreaView>
   );
@@ -347,23 +389,24 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     paddingBottom: theme.spacing.lg,
   },
   eyebrow: {
-    fontSize: theme.typography.fontSize.xs,
-    fontFamily: theme.typography.fontFamily.bodySemibold,
+    fontSize: theme.typography.fontSize.xs - 1,
+    fontFamily: theme.typography.fontFamily.bodyMedium,
     color: theme.colors.text.muted,
-    letterSpacing: 1.4,
-    marginBottom: theme.spacing.sm,
+    letterSpacing: 1.8,
+    marginBottom: 8,
     textTransform: 'uppercase',
   },
   title: {
-    fontSize: theme.typography.fontSize.md,
+    fontSize: 22,
     fontFamily: theme.typography.fontFamily.bodySemibold,
     color: theme.colors.text.primary,
   },
   subtitle: {
-    fontSize: theme.typography.fontSize.sm,
+    fontSize: 14,
     fontFamily: theme.typography.fontFamily.body,
     color: theme.colors.text.secondary,
     marginTop: theme.spacing.xs,
+    lineHeight: 20,
   },
 
   // 🎯 NEW: Status section styles
