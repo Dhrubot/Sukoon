@@ -26,9 +26,18 @@ export { default as MeaningsService } from './services/MeaningsService';
 // ─── Constants ────────────────────────────────────────────────────────
 export { MEANINGS_CONSTANTS } from './constants';
 
+// ─── Components ───────────────────────────────────────────────────────
+export { MeaningCard, WordByWord } from './components';
+export type { MeaningCardProps, MeaningCardVariant, WordByWordProps } from './components';
+
+// ─── Hooks ────────────────────────────────────────────────────────────
+export { useMeaningsPreference, useDailyMeaning } from './hooks';
+export type { UseMeaningsPreferenceResult } from './hooks';
+
+// ─── Screens ──────────────────────────────────────────────────────────
+export { MeaningsScreen, MeaningDetailScreen } from './screens';
+
 // ─── Wired in later phases ────────────────────────────────────────────
-// Phase 3 (screens):
-//   export { MeaningsScreen, MeaningDetailScreen } from './screens';
-// Phase 4 (hooks + components):
-//   export { useMeaningsPreference, useDailyMeaning, useMeaningPromptEligibility } from './hooks';
-//   export { MeaningCard, MeaningInvitePrompt, WordByWord } from './components';
+// Phase 4 (preference + 5-day invite):
+//   export { MeaningInvitePrompt } from './components';
+//   export { useMeaningPromptEligibility } from './hooks';
