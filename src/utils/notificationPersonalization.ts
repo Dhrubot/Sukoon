@@ -28,10 +28,25 @@ export function getNotificationPersonalizationName(
   return normalizedName;
 }
 
+function simpleHash(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (h * 31 + s.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h);
+}
+
 export function prependNotificationName(
   message: string,
-  settings?: Pick<UserSettings, 'name'> | null
+  settings?: Pick<UserSettings, 'name'> | null,
+  seed?: string,
 ): string {
   const name = getNotificationPersonalizationName(settings);
-  return name ? `${name}, ${message}` : message;
+  if (!name) {
+    return message;
+  }
+  if (seed === undefined) {
+    return `${name}, ${message}`;
+  }
+  return simpleHash(seed) % 2 === 0 ? `${name}, ${message}` : message;
 }

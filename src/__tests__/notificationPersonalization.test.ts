@@ -81,17 +81,18 @@ describe('notification personalization', () => {
   it('personalizes Tier 2 reminder bodies when a name exists', async () => {
     jest.spyOn(Math, 'random').mockReturnValue(0);
 
-    const prayerTime = new Date(2026, 2, 17, 12, 0, 0);
+    // prayerId 'Fajr-2026-03-18' hashes to 942228912 (even) → name IS prepended
+    const prayerTime = new Date(2026, 2, 18, 12, 0, 0);
     const prayer: PrayerTime = {
       name: 'Fajr',
       time: prayerTime,
       timestamp: prayerTime.getTime(),
     };
-    const deadline = new Date(2026, 2, 17, 13, 0, 0);
+    const deadline = new Date(2026, 2, 18, 13, 0, 0);
 
     await scheduleTier2PersistentReminders(
       prayer,
-      'Fajr-2026-03-17',
+      'Fajr-2026-03-18',
       { ...baseSettings, name: 'Amina' },
       new Set(),
       deadline
@@ -132,5 +133,29 @@ describe('notification personalization', () => {
         }),
       })
     );
+  });
+
+  it('prependNotificationName with seed is stable — same seed always yields same result', () => {
+    const seed = 'Fajr-2026-06-05';
+    const result1 = prependNotificationName('hello', { name: 'Amina' }, seed);
+    const result2 = prependNotificationName('hello', { name: 'Amina' }, seed);
+    expect(result1).toBe(result2);
+    // Fajr-2026-06-05 hashes to 942139573 (odd) → no name prefix
+    expect(result1).toBe('hello');
+  });
+
+  it('prependNotificationName with seed varies across different seeds', () => {
+    // 'Fajr-2026-06-05' → hash 942139573 (odd) → no name
+    const oddResult = prependNotificationName('hello', { name: 'Amina' }, 'Fajr-2026-06-05');
+    // 'Asr-2026-06-05'  → hash 1555763246 (even) → name prepended
+    const evenResult = prependNotificationName('hello', { name: 'Amina' }, 'Asr-2026-06-05');
+    expect(oddResult).toBe('hello');
+    expect(evenResult).toBe('Amina, hello');
+    expect(oddResult).not.toBe(evenResult);
+  });
+
+  it('prependNotificationName with seed and no name always returns message unchanged', () => {
+    expect(prependNotificationName('hello', null, 'any-seed')).toBe('hello');
+    expect(prependNotificationName('hello', undefined, 'Fajr-2026-06-05')).toBe('hello');
   });
 });

@@ -18,7 +18,7 @@ import LocationService from '../../services/LocationService';
 import NotificationService from '../../services/NotificationService';
 import type { NotificationReadiness } from '../../services/NotificationService';
 import { normalizeNotificationSettings } from '../../services/notifications/notificationSettingsState';
-import { CalculationMethod, Location as AppLocation } from '../../types';
+import { Location as AppLocation } from '../../types';
 import { LocationModal } from '../../components/LocationModal';
 import { applyRegionalCalculationMethod } from '../../utils/calculationMethodByRegion';
 import { useTheme } from '../../providers/ThemeProvider';
@@ -28,16 +28,15 @@ import { OnboardingWelcomeStep } from '../../components/onboarding/OnboardingWel
 import { OnboardingLocationStep } from '../../components/onboarding/OnboardingLocationStep';
 import { OnboardingNotificationStep } from '../../components/onboarding/OnboardingNotificationStep';
 import { OnboardingReadyStep } from '../../components/onboarding/OnboardingReadyStep';
-import { OnboardingCalcMethodConfirmStep } from '../../components/onboarding/OnboardingCalcMethodConfirmStep';
 
 interface OnboardingScreenProps {
   onComplete: () => void;
 }
 
-type OnboardingStep = 'welcome' | 'location' | 'notifications' | 'calc_method' | 'done';
+type OnboardingStep = 'welcome' | 'location' | 'notifications' | 'done';
 type LocationFailureReason = 'none' | 'permission_denied' | 'permission_blocked' | 'gps_failed';
 
-const STEP_ORDER: OnboardingStep[] = ['welcome', 'location', 'notifications', 'calc_method', 'done'];
+const STEP_ORDER: OnboardingStep[] = ['welcome', 'location', 'notifications', 'done'];
 const MOSQUE_MODE_TIP_SEEN_KEY = 'mosque_mode_tip_seen';
 
 const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
@@ -58,7 +57,6 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
   const [isRequestingNotifications, setIsRequestingNotifications] = useState(false);
   const hasShownExactAlarmAlertRef = useRef(false);
   const [asrJuristic, setAsrJuristic] = useState<'Standard' | 'Hanafi'>('Standard');
-  const [confirmedCalculationMethod, setConfirmedCalculationMethod] = useState<CalculationMethod | null>(null);
   const [displayName, setDisplayName] = useState('');
   const [isLocating, setIsLocating] = useState(false);
   const [locationFailed, setLocationFailed] = useState(false);
@@ -171,7 +169,7 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
         maybePromptExactAlarm(readiness);
       }
       if (granted && readiness.coreNotificationReady) {
-        setCurrentStep('calc_method');
+        setCurrentStep('done');
       }
     } catch (error) {
       logger.log('Error requesting notification permissions:', error);
@@ -198,17 +196,10 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
       settings.location = locationData;
     }
 
-    if (confirmedCalculationMethod) {
-      // User explicitly confirmed (or changed) the method in the calc_method step.
-      // Mark as manually selected so future location changes don't auto-override it.
-      settings.calculationMethod = confirmedCalculationMethod;
-      settings.calculationMethodManuallySelected = true;
-    } else {
-      // Fallback: auto-select from region (should not normally reach here).
-      const { settings: resolvedSettings } = applyRegionalCalculationMethod(settings, locationData);
-      settings.calculationMethod = resolvedSettings.calculationMethod;
-      settings.calculationMethodManuallySelected = false;
-    }
+    // Auto-select calculation method by region; user can change it later in Settings.
+    const { settings: resolvedSettings } = applyRegionalCalculationMethod(settings, locationData);
+    settings.calculationMethod = resolvedSettings.calculationMethod;
+    settings.calculationMethodManuallySelected = false;
 
     setUserSettings(settings);
     StorageService.setValue(MOSQUE_MODE_TIP_SEEN_KEY, '');
@@ -253,24 +244,12 @@ const OnboardingScreen: React.FC<OnboardingScreenProps> = ({ onComplete }) => {
               onEnable={requestNotificationPermission}
               onSkip={() => {
                 setWantsPrayerReminders(false);
-                setCurrentStep('calc_method');
+                setCurrentStep('done');
               }}
               onOpenSettings={openAppSettings}
               permissionStatus={notificationReadiness.permissionStatus}
               blockedReason={notificationReadiness.blockedReason}
               isRequesting={isRequestingNotifications}
-            />
-          ) : null}
-
-          {currentStep === 'calc_method' ? (
-            <OnboardingCalcMethodConfirmStep
-              progress={getProgress()}
-              locationData={locationData}
-              asrJuristic={asrJuristic}
-              onConfirm={(method) => {
-                setConfirmedCalculationMethod(method);
-                setCurrentStep('done');
-              }}
             />
           ) : null}
 

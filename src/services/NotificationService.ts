@@ -1388,7 +1388,7 @@ class NotificationService {
 
     return {
       title: `${prayerName} Prayer Soon`,
-      body: prependNotificationName(messages[idx], settings),
+      body: prependNotificationName(messages[idx], settings, `${prayerName}-pre-${dateKey}`),
       subtitle: 'Tap to begin mindfulness exercise',
     };
   }
@@ -1443,7 +1443,7 @@ class NotificationService {
 
     return {
       title: `${displayName} Prayer Time`,
-      body: prependNotificationName(messages[idx], settings),
+      body: prependNotificationName(messages[idx], settings, `${prayerKey}-${dateKey}`),
     };
   }
 

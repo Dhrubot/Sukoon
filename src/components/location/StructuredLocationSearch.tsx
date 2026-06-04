@@ -98,6 +98,10 @@ export const StructuredLocationSearch: React.FC<StructuredLocationSearchProps> =
           editable={!disabled && !!selectedCountry}
         />
 
+        {!selectedCountry && (
+          <Text style={styles.cityInputHelper}>Choose a country first.</Text>
+        )}
+
         {selectedSearchResult && (
           <View style={styles.selectionPill}>
             <Text style={styles.selectionTitle}>
@@ -193,6 +197,13 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   },
   inputDisabled: {
     opacity: 0.55,
+  },
+  cityInputHelper: {
+    fontSize: theme.typography.fontSize.xs,
+    fontFamily: theme.typography.fontFamily.body,
+    color: theme.colors.text.muted,
+    fontStyle: 'italic',
+    marginTop: theme.spacing.xs,
   },
   resultsCard: {
     marginTop: theme.spacing.sm,

@@ -123,7 +123,7 @@ export async function scheduleTier2PersistentReminders(
     await scheduleLocalNotificationAsync({
       content: {
         title: `${prayerDisplayName} prayer reminder`,
-        body: prependNotificationName(message, settings),
+        body: prependNotificationName(message, settings, prayerId),
         data: {
           prayerId,
           prayer: prayer.name,
