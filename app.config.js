@@ -62,6 +62,9 @@ export default {
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.SYSTEM_ALERT_WINDOW",
         "android.permission.USE_EXACT_ALARM",
+        // Pulled in transitively by expo-sensors (pedometer APIs we don't use).
+        // Sukoon has no Health features — strip to avoid Play Console Health policy review.
+        "android.permission.ACTIVITY_RECOGNITION",
       ],
       googleServicesFile: "./google-services.json",
     },
