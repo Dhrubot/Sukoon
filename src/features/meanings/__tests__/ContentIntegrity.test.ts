@@ -224,11 +224,37 @@ describe('Fatihah word-by-word', () => {
   });
 });
 
-// ─── Audio (Phase 6 deferred state) ──────────────────────────────────────────
+// ─── Audio bundling ──────────────────────────────────────────────────────────
 
-describe('Audio — Phase 6 deferred state', () => {
-  it('every audioAsset is currently null (assets not bundled until Phase 6)', () => {
-    ALL_MEANINGS.forEach((m) => {
+// Items with bundled Alafasy recitation audio (Phase 7).
+// Hadith-derived recitations remain null until standalone clips are sourced.
+const ITEMS_WITH_AUDIO = [
+  'fatihah',
+  'surah-al-asr',
+  'surah-al-humazah',
+  'surah-al-fil',
+  'surah-quraysh',
+  'surah-al-maun',
+  'surah-al-kawthar',
+  'surah-al-kafirun',
+  'surah-al-ikhlas',
+  'surah-al-falaq',
+  'surah-an-nas',
+];
+
+describe('Audio bundling', () => {
+  it('every Quranic item has a bundled audio asset (numeric Metro asset id)', () => {
+    ITEMS_WITH_AUDIO.forEach((id) => {
+      const m = ALL_MEANINGS.find((x) => x.id === id);
+      expect(m).toBeDefined();
+      expect(typeof m?.audioAsset).toBe('number');
+    });
+  });
+
+  it('non-Quranic (hadith-derived) recitations still have audioAsset === null', () => {
+    const hadithItems = ALL_MEANINGS.filter((m) => !ITEMS_WITH_AUDIO.includes(m.id));
+    expect(hadithItems.length).toBeGreaterThan(0);
+    hadithItems.forEach((m) => {
       expect(m.audioAsset).toBeNull();
     });
   });

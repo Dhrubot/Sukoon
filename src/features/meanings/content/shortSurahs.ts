@@ -7,6 +7,16 @@
 // English: Saheeh International (2010). Reflections original.
 
 import type { Meaning } from './schema';
+import surahAlAsr from '../assets/audio/surah-al-asr.m4a';
+import surahAlHumazah from '../assets/audio/surah-al-humazah.m4a';
+import surahAlFil from '../assets/audio/surah-al-fil.m4a';
+import surahQuraysh from '../assets/audio/surah-quraysh.m4a';
+import surahAlMaun from '../assets/audio/surah-al-maun.m4a';
+import surahAlKawthar from '../assets/audio/surah-al-kawthar.m4a';
+import surahAlKafirun from '../assets/audio/surah-al-kafirun.m4a';
+import surahAlIkhlas from '../assets/audio/surah-al-ikhlas.m4a';
+import surahAlFalaq from '../assets/audio/surah-al-falaq.m4a';
+import surahAnNas from '../assets/audio/surah-an-nas.m4a';
 
 const SAHEEH = 'Saheeh International, 2010';
 
@@ -23,7 +33,7 @@ export const SHORT_SURAHS: Meaning[] = [
       'إِلَّا الَّذِينَ آمَنُوا وَعَمِلُوا الصَّالِحَاتِ وَتَوَاصَوْا بِالْحَقِّ وَتَوَاصَوْا بِالصَّبْرِ',
     transliteration:
       "Wa l-ʿaṣr. Inna l-insāna la-fī khusr. Illā lladhīna āmanū wa ʿamilū ṣ-ṣāliḥāti wa tawāṣaw bi-l-ḥaqqi wa tawāṣaw bi-ṣ-ṣabr.",
-    audioAsset: null,
+    audioAsset: surahAlAsr,
     translations: {
       en: {
         translation:
@@ -53,7 +63,7 @@ export const SHORT_SURAHS: Meaning[] = [
       'فِي عَمَدٍ مُّمَدَّدَةٍ',
     transliteration:
       "Waylun li-kulli humazatin lumazah. Alladhī jamaʿa mālan wa ʿaddadah. Yaḥsabu anna mālahu akhladah. Kallā la-yunbadhanna fī l-Ḥuṭamah. Wa mā adrāka ma l-Ḥuṭamah. Nāru llāhi l-mūqadah. Allatī taṭṭaliʿu ʿalā l-afʾidah. Innahā ʿalayhim muʾṣadah. Fī ʿamadin mumaddadah.",
-    audioAsset: null,
+    audioAsset: surahAlHumazah,
     translations: {
       en: {
         translation:
@@ -79,7 +89,7 @@ export const SHORT_SURAHS: Meaning[] = [
       'فَجَعَلَهُمْ كَعَصْفٍ مَّأْكُولٍ',
     transliteration:
       "Alam tara kayfa faʿala rabbuka bi-aṣḥābi l-fīl. Alam yajʿal kaydahum fī taḍlīl. Wa arsala ʿalayhim ṭayran abābīl. Tarmīhim bi-ḥijāratin min sijjīl. Fa-jaʿalahum ka-ʿaṣfin maʾkūl.",
-    audioAsset: null,
+    audioAsset: surahAlFil,
     translations: {
       en: {
         translation:
@@ -104,7 +114,7 @@ export const SHORT_SURAHS: Meaning[] = [
       'الَّذِي أَطْعَمَهُم مِّن جُوعٍ وَآمَنَهُم مِّنْ خَوْفٍ',
     transliteration:
       "Li-īlāfi Quraysh. Īlāfihim riḥlata sh-shitāʾi wa ṣ-ṣayf. Fa-l-yaʿbudū rabba hādha l-bayt. Alladhī aṭʿamahum min jūʿin wa āmanahum min khawf.",
-    audioAsset: null,
+    audioAsset: surahQuraysh,
     translations: {
       en: {
         translation:
@@ -132,7 +142,7 @@ export const SHORT_SURAHS: Meaning[] = [
       'وَيَمْنَعُونَ الْمَاعُونَ',
     transliteration:
       "A-raʾayta lladhī yukadhdhibu bi-d-dīn. Fa-dhālika lladhī yaduʿʿu l-yatīm. Wa lā yaḥuḍḍu ʿalā ṭaʿāmi l-miskīn. Fa-waylun li-l-muṣallīn. Alladhīna hum ʿan ṣalātihim sāhūn. Alladhīna hum yurāʾūn. Wa yamnaʿūna l-māʿūn.",
-    audioAsset: null,
+    audioAsset: surahAlMaun,
     translations: {
       en: {
         translation:
@@ -156,7 +166,7 @@ export const SHORT_SURAHS: Meaning[] = [
       'إِنَّ شَانِئَكَ هُوَ الْأَبْتَرُ',
     transliteration:
       "Innā aʿṭaynāka l-kawthar. Fa-ṣalli li-rabbika wa-nḥar. Inna shāniʾaka huwa l-abtar.",
-    audioAsset: null,
+    audioAsset: surahAlKawthar,
     translations: {
       en: {
         translation:
@@ -183,7 +193,7 @@ export const SHORT_SURAHS: Meaning[] = [
       'لَكُمْ دِينُكُمْ وَلِيَ دِينِ',
     transliteration:
       "Qul yā ayyuha l-kāfirūn. Lā aʿbudu mā taʿbudūn. Wa lā antum ʿābidūna mā aʿbud. Wa lā anā ʿābidun mā ʿabadtum. Wa lā antum ʿābidūna mā aʿbud. Lakum dīnukum wa liya dīn.",
-    audioAsset: null,
+    audioAsset: surahAlKafirun,
     translations: {
       en: {
         translation:
@@ -208,7 +218,7 @@ export const SHORT_SURAHS: Meaning[] = [
       'وَلَمْ يَكُن لَّهُ كُفُوًا أَحَدٌ',
     transliteration:
       "Qul huwa llāhu aḥad. Allāhu ṣ-ṣamad. Lam yalid wa lam yūlad. Wa lam yakun lahu kufuwan aḥad.",
-    audioAsset: null,
+    audioAsset: surahAlIkhlas,
     translations: {
       en: {
         translation:
@@ -234,7 +244,7 @@ export const SHORT_SURAHS: Meaning[] = [
       'وَمِن شَرِّ حَاسِدٍ إِذَا حَسَدَ',
     transliteration:
       "Qul aʿūdhu bi-rabbi l-falaq. Min sharri mā khalaq. Wa min sharri ghāsiqin idhā waqab. Wa min sharri n-naffāthāti fī l-ʿuqad. Wa min sharri ḥāsidin idhā ḥasad.",
-    audioAsset: null,
+    audioAsset: surahAlFalaq,
     translations: {
       en: {
         translation:
@@ -261,7 +271,7 @@ export const SHORT_SURAHS: Meaning[] = [
       'مِنَ الْجِنَّةِ وَالنَّاسِ',
     transliteration:
       "Qul aʿūdhu bi-rabbi n-nās. Maliki n-nās. Ilāhi n-nās. Min sharri l-waswāsi l-khannās. Alladhī yuwaswisu fī ṣudūri n-nās. Mina l-jinnati wa n-nās.",
-    audioAsset: null,
+    audioAsset: surahAnNas,
     translations: {
       en: {
         translation:

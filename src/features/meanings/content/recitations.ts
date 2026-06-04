@@ -10,6 +10,7 @@
 // Reflections are original — invitation tone, never grading.
 
 import type { Meaning } from './schema';
+import fatihahAudio from '../assets/audio/fatihah.m4a';
 
 export const PRAYER_RECITATIONS: Meaning[] = [
   // ─── 1. Opening dua (du'a al-istiftah) ───────────────────────────────
@@ -85,7 +86,7 @@ export const PRAYER_RECITATIONS: Meaning[] = [
       "Iyyāka naʿbudu wa iyyāka nastaʿīn.\n" +
       "Ihdinā ṣ-ṣirāṭa l-mustaqīm.\n" +
       'Ṣirāṭa lladhīna anʿamta ʿalayhim, ghayri l-maghḍūbi ʿalayhim wa lā ḍ-ḍāllīn.',
-    audioAsset: null,
+    audioAsset: fatihahAudio,
     translations: {
       en: {
         translation:
