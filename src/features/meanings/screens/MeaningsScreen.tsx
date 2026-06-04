@@ -10,6 +10,7 @@ import {
   FlatList,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TextInput,
   TouchableOpacity,
@@ -23,6 +24,7 @@ import { useThemedStyles } from '../../../hooks/useThemedStyles';
 import { AppTheme } from '../../../theme';
 import type { MenuStackParamList } from '../../../navigation/MenuStackNavigator';
 import { MeaningCard } from '../components';
+import { useMeaningsPreference } from '../hooks';
 import MeaningsService from '../services/MeaningsService';
 import type { Meaning, PrayerPosition } from '../content/schema';
 
@@ -45,6 +47,15 @@ const MeaningsScreen: React.FC = () => {
   const navigation = useNavigation<NavProp>();
   const [filter, setFilter] = useState<PositionFilter>('all');
   const [query, setQuery] = useState('');
+  const { preference, setPreference } = useMeaningsPreference();
+
+  // Daily-card surfacing toggle. ON → 'opted_in' (Garden shows daily card);
+  // OFF → 'knows_meanings' (terminal: never re-prompt, no daily card).
+  // The browse screen remains accessible regardless of this preference.
+  const dailySurfaceOn = preference === 'opted_in';
+  const handleToggle = (next: boolean) => {
+    setPreference(next ? 'opted_in' : 'knows_meanings', 'settings');
+  };
 
   // Record screen-open for implicit opt-in. Browse screen always counts as
   // 'menu' since it's only reachable through MenuStack today.
@@ -77,6 +88,17 @@ const MeaningsScreen: React.FC = () => {
         <Text style={styles.intro}>
           The words you say in every prayer — what they mean, line by line.
         </Text>
+        <View style={styles.toggleRow}>
+          <View style={styles.toggleTextWrap}>
+            <Text style={styles.toggleLabel}>Daily reflection in Garden</Text>
+            <Text style={styles.toggleHelper}>
+              {dailySurfaceOn
+                ? 'A meaning appears each day in your Tuba Tree.'
+                : 'You can browse anytime, but no daily card will appear.'}
+            </Text>
+          </View>
+          <Switch value={dailySurfaceOn} onValueChange={handleToggle} />
+        </View>
       </View>
 
       <View style={styles.searchWrap}>
@@ -147,6 +169,31 @@ const createStyles = (theme: AppTheme) =>
       fontFamily: theme.typography.fontFamily.body,
       color: theme.colors.text.secondary,
       lineHeight: 22,
+    },
+    toggleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginTop: theme.spacing.md,
+      paddingVertical: theme.spacing.sm,
+      paddingHorizontal: theme.spacing.md,
+      backgroundColor: theme.colors.meanings.cardBg,
+      borderRadius: theme.borderRadius.md,
+      borderWidth: 1,
+      borderColor: theme.colors.meanings.cardBorder,
+    },
+    toggleTextWrap: { flex: 1, marginRight: theme.spacing.md },
+    toggleLabel: {
+      fontSize: theme.typography.fontSize.sm,
+      fontFamily: theme.typography.fontFamily.bodySemibold,
+      color: theme.colors.text.primary,
+      marginBottom: 2,
+    },
+    toggleHelper: {
+      fontSize: theme.typography.fontSize.xs,
+      fontFamily: theme.typography.fontFamily.body,
+      color: theme.colors.text.muted,
+      lineHeight: 16,
     },
     searchWrap: {
       paddingHorizontal: theme.spacing.xl,
