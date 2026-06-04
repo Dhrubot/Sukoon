@@ -15,7 +15,7 @@ export type MenuStackParamList = {
   PrivacyPolicy: undefined;
   SetupHealth: undefined;
   Meanings: undefined;
-  MeaningDetail: { id: string };
+  MeaningDetail: { id: string; source?: 'garden' | 'menu' | 'direct' };
 };
 
 const Stack = createStackNavigator<MenuStackParamList>();

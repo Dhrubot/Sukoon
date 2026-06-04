@@ -138,6 +138,23 @@ const SettingsIcon: React.FC<{ color: string; size: number }> = ({ color, size }
   </Svg>
 );
 
+// Meanings / open-book icon — for the prayer-meanings library
+const MeaningsIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M3 5h7a2 2 0 012 2v13M21 5h-7a2 2 0 00-2 2v13"
+      stroke={color}
+      strokeWidth={1.8}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+    <Line x1="5" y1="9" x2="9" y2="9" stroke={color} strokeWidth={1.2} strokeLinecap="round" />
+    <Line x1="5" y1="12" x2="9" y2="12" stroke={color} strokeWidth={1.2} strokeLinecap="round" />
+    <Line x1="15" y1="9" x2="19" y2="9" stroke={color} strokeWidth={1.2} strokeLinecap="round" />
+    <Line x1="15" y1="12" x2="19" y2="12" stroke={color} strokeWidth={1.2} strokeLinecap="round" />
+  </Svg>
+);
+
 // Chevron right icon
 const ChevronIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -184,6 +201,13 @@ const quickAccessItems: QuickAccessItem[] = [
     title: 'Tasbih',
     subtitle: 'Post-prayer dhikr',
     screen: 'Tasbih',
+    colorKey: 'teal',
+  },
+  {
+    icon: MeaningsIcon,
+    title: 'Meanings',
+    subtitle: 'What you say in prayer',
+    screen: 'Meanings',
     colorKey: 'teal',
   },
   {

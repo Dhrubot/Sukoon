@@ -17,7 +17,7 @@ import { useThemedStyles } from '../../../hooks/useThemedStyles';
 import { AppTheme } from '../../../theme';
 import type { MenuStackParamList } from '../../../navigation/MenuStackNavigator';
 import MeaningsService from '../services/MeaningsService';
-import { WordByWord } from '../components';
+import { WordByWord, MeaningAudioButton } from '../components';
 import { MEANINGS_CONSTANTS } from '../constants';
 
 const POSITION_LABELS: Record<string, string> = {
@@ -41,6 +41,7 @@ const MeaningDetailScreen: React.FC = () => {
   const route = useRoute<RouteProps>();
   const { id } = route.params;
 
+  const source = route.params.source ?? 'direct';
   const meaning = useMemo(() => MeaningsService.getById(id), [id]);
   const t = meaning?.translations[MEANINGS_CONSTANTS.DEFAULT_LANGUAGE]
     ?? meaning?.translations.en;
@@ -52,10 +53,11 @@ const MeaningDetailScreen: React.FC = () => {
     }
   }, [meaning, navigation]);
 
-  // Record screen-open for implicit opt-in (Phase 4 implements behavior).
+  // Record screen-open with the originating surface so analytics can
+  // attribute engagement to Garden / Menu / direct.
   useEffect(() => {
-    MeaningsService.recordScreenOpen();
-  }, []);
+    MeaningsService.recordScreenOpen(source);
+  }, [source]);
 
   if (!meaning || !t) {
     return (
@@ -92,7 +94,7 @@ const MeaningDetailScreen: React.FC = () => {
           </View>
         ) : null}
 
-        {/* TODO Phase 6: <MeaningAudioButton meaningId={meaning.id} /> */}
+        <MeaningAudioButton meaningId={meaning.id} />
 
         {/* Translation */}
         <View style={styles.section}>

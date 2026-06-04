@@ -12,7 +12,9 @@ type AnalyticsEvent =
   | 'mosque_mode_activated'
   | 'mosque_mode_deactivated'
   | 'settings_changed'
-  | 'onboarding_completed';
+  | 'onboarding_completed'
+  | 'meanings_prompt_answered'
+  | 'meanings_screen_opened';
 
 interface AnalyticsParams {
   [key: string]: string | number | boolean | undefined;
@@ -101,6 +103,14 @@ class AnalyticsService {
 
   async logOnboardingCompleted(): Promise<void> {
     await this.logEvent('onboarding_completed');
+  }
+
+  async logMeaningsPromptAnswered(choice: 'yes' | 'later' | 'know'): Promise<void> {
+    await this.logEvent('meanings_prompt_answered', { choice });
+  }
+
+  async logMeaningsScreenOpened(source: 'garden' | 'menu' | 'direct'): Promise<void> {
+    await this.logEvent('meanings_screen_opened', { source });
   }
 }
 

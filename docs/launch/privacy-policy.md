@@ -86,6 +86,8 @@ The following analytics events are collected. No user identifier is attached to 
 | `mosque_mode_deactivated` | Mosque Mode was deactivated |
 | `settings_changed` | A setting was changed |
 | `onboarding_completed` | Onboarding was completed |
+| `meanings_prompt_answered` | A response was given to the daily-reflection invite prompt (choice only — no content logged) |
+| `meanings_screen_opened` | The Meanings (prayer reflections) screen was opened (source only — no content logged) |
 
 Screen view events (`screen_name`, `screen_class`) are also logged for each screen transition.
 

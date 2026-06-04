@@ -1,7 +1,9 @@
-// useMeaningsPreference — reads/writes the meanings preference state.
+// useMeaningsPreference — reactive preference state.
 //
-// In Phase 3 this is a thin wrapper around MeaningsService.getPreference()
-// which currently returns a stubbed 'unset'. Phase 4 wires real persistence.
+// Subscribes to MeaningsService notifications so any UI consuming this
+// hook re-renders when preference changes from anywhere (the 5-day prompt,
+// the daily-card "⋯" menu, Settings, the implicit opt-in on first screen
+// open). One subscription per component instance, cleaned up on unmount.
 
 import { useCallback, useEffect, useState } from 'react';
 import MeaningsService from '../services/MeaningsService';
@@ -17,16 +19,18 @@ export const useMeaningsPreference = (): UseMeaningsPreferenceResult => {
     MeaningsService.getPreference(),
   );
 
-  // Re-sync on mount in case another surface updated preference while this
-  // hook was unmounted. Phase 4 will replace this with a proper subscription.
   useEffect(() => {
+    const unsubscribe = MeaningsService.subscribe(() => {
+      setLocal(MeaningsService.getPreference());
+    });
+    // Re-read on mount in case service state changed between render and effect.
     setLocal(MeaningsService.getPreference());
+    return unsubscribe;
   }, []);
 
   const setPreference = useCallback(
     (pref: MeaningsPreference, source: PreferenceChangeSource) => {
       MeaningsService.setPreference(pref, source);
-      setLocal(pref);
     },
     [],
   );

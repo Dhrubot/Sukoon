@@ -27,8 +27,8 @@ export { default as MeaningsService } from './services/MeaningsService';
 export { MEANINGS_CONSTANTS } from './constants';
 
 // ─── Components ───────────────────────────────────────────────────────
-export { MeaningCard, WordByWord } from './components';
-export type { MeaningCardProps, MeaningCardVariant, WordByWordProps } from './components';
+export { MeaningCard, WordByWord, MeaningInvitePrompt, MeaningAudioButton } from './components';
+export type { MeaningCardProps, MeaningCardVariant, WordByWordProps, MeaningInvitePromptProps, MeaningAudioButtonProps } from './components';
 
 // ─── Hooks ────────────────────────────────────────────────────────────
 export { useMeaningsPreference, useDailyMeaning } from './hooks';

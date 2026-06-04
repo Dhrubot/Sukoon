@@ -46,9 +46,10 @@ const MeaningsScreen: React.FC = () => {
   const [filter, setFilter] = useState<PositionFilter>('all');
   const [query, setQuery] = useState('');
 
-  // Record screen-open for implicit opt-in (no-op in Phase 3, real in Phase 4).
+  // Record screen-open for implicit opt-in. Browse screen always counts as
+  // 'menu' since it's only reachable through MenuStack today.
   React.useEffect(() => {
-    MeaningsService.recordScreenOpen();
+    MeaningsService.recordScreenOpen('menu');
   }, []);
 
   const all = useMemo(() => MeaningsService.getAll(), []);
