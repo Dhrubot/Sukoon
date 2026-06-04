@@ -25,6 +25,9 @@ interface NominatimResponse {
     county?: string;
     state?: string;
     country?: string;
+    // ISO 3166-1 alpha-2, lowercased by Nominatim. We uppercase before
+    // storing so the field is stable regardless of source path.
+    country_code?: string;
     postcode?: string;
   };
 }
@@ -177,25 +180,27 @@ class GeocodingService {
       }
 
       const result = data[0];
-      
+
       // Extract city and country from address
-      const city = result.address.city || 
-                  result.address.town || 
-                  result.address.village || 
-                  result.address.municipality || 
+      const city = result.address.city ||
+                  result.address.town ||
+                  result.address.village ||
+                  result.address.municipality ||
                   result.address.suburb ||
                   '';
-                  
+
       const country = result.address.country || '';
-      
+      const resolvedCountryCode = result.address.country_code?.toUpperCase() || undefined;
+
       // Create location object
       const location: Location = {
         latitude: parseFloat(result.lat),
         longitude: parseFloat(result.lon),
         city,
-        country
+        country,
+        countryCode: resolvedCountryCode,
       };
-      
+
       // Cache the result
       this.cachedLocations.set(cacheKey, location);
       this.lastSource = 'direct';
@@ -268,21 +273,23 @@ class GeocodingService {
       }
 
       // Extract city and country from address
-      const city = result.address.city || 
-                  result.address.town || 
-                  result.address.village || 
-                  result.address.municipality || 
+      const city = result.address.city ||
+                  result.address.town ||
+                  result.address.village ||
+                  result.address.municipality ||
                   result.address.suburb ||
                   '';
-                  
+
       const country = result.address.country || '';
-      
+      const countryCode = result.address.country_code?.toUpperCase() || undefined;
+
       // Create location object
       const location: Location = {
         latitude,
         longitude,
         city,
-        country
+        country,
+        countryCode,
       };
       
       // Cache the result

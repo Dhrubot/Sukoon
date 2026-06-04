@@ -47,6 +47,9 @@ interface NominatimAddress {
   suburb?: string;
   state?: string;
   country?: string;
+  // ISO 3166-1 alpha-2 code, lowercased (e.g. "bd"). Stable across locales —
+  // unlike `country` which Nominatim returns in the local language by default.
+  country_code?: string;
 }
 
 interface NominatimResponse {
@@ -273,7 +276,10 @@ async function handleReverseGeocode(url: URL, env: Env): Promise<Response> {
   const longitude = requireLongitude(url.searchParams.get('lng'));
   const rounded = roundCoordinates(latitude, longitude, 3);
   const ttl = readTtl(env.GEOCODE_CACHE_TTL_SECONDS, 604800);
-  const cacheKey = `reverse:${rounded.latitude}:${rounded.longitude}`;
+  // v2: bumped to invalidate cached entries that pre-date the
+  // Accept-Language: en header and country_code field below — those older
+  // entries returned country names in the queried region's local language.
+  const cacheKey = `reverse:v2:${rounded.latitude}:${rounded.longitude}`;
 
   return serveCachedJson(cacheKey, ttl, env, async () => {
     const upstreamBase = env.NOMINATIM_API_BASE ?? 'https://nominatim.openstreetmap.org';
@@ -284,6 +290,10 @@ async function handleReverseGeocode(url: URL, env: Env): Promise<Response> {
     const upstream = await fetch(upstreamUrl, {
       headers: {
         Accept: 'application/json',
+        // Force English country/city names. Without this header Nominatim
+        // returns names in the queried region's local language (e.g.
+        // "বাংলাদেশ" for Dhaka), which breaks downstream region matching.
+        'Accept-Language': 'en',
         'User-Agent': 'SukoonEdge/1.0 (+https://sukoon.app)',
       },
       cf: {
@@ -307,6 +317,9 @@ async function handleReverseGeocode(url: URL, env: Env): Promise<Response> {
         longitude: rounded.longitude,
         city: extractCity(payload.address),
         country: payload.address?.country ?? 'Unknown',
+        // Uppercased for consistency with ISO 3166-1 alpha-2 convention
+        // (Nominatim returns lowercased; downstream callers expect upper).
+        countryCode: payload.address?.country_code?.toUpperCase(),
       },
     };
   }, {

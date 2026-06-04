@@ -245,14 +245,19 @@ class LocationService {
           longitude: coordinates.longitude,
           city: place.city || place.subregion || place.region || 'Unknown',
           country: place.country || 'Unknown',
+          // Expo returns ISO 3166-1 alpha-2 (e.g. "BD") — already uppercased.
+          // Keeps the new region-based calc-method resolution working even
+          // when the edge API path failed.
+          countryCode: place.isoCountryCode ?? undefined,
           timezone: place.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone,
         };
-        
+
         logger.log('✅ Expo reverse geocoding successful:', {
           city: location.city,
-          country: location.country
+          country: location.country,
+          countryCode: location.countryCode,
         });
-        
+
         return location;
       }
     } catch (error) {

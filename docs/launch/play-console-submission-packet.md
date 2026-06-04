@@ -1,9 +1,13 @@
 # Sukoon — Google Play Console Submission Packet
-# versionCode 55 · package com.talukders.sukoon
+# versionCode 57 · package com.talukders.sukoon
 
-**Prepared:** 2026-06-03  
-**Branch:** `feature/notification-prayer-times-hardening`  
+**Prepared:** 2026-06-03 · **Refreshed:** 2026-06-05 for build 57
+**Branch:** `main`
 **Use:** Keep this open in a browser tab. Every field below maps 1-to-1 to a Play Console screen. Copy-paste where you see a code block; follow the click instructions otherwise.
+
+**What changed since 2026-06-03:**
+- Build 56 was uploaded and flagged by Play for the ACTIVITY_RECOGNITION Health policy. Build 57 strips that permission (`app.config.js` blockedPermissions, commit `6d8d882`). The Data Safety answers below DO NOT change — the permission was a transitive pull from `expo-sensors` we never used. Pedometer/step-count was never a feature.
+- Qibla feature polish (commit `fd09356`) — UX improvements only. No data-collection delta.
 
 ---
 
@@ -254,7 +258,7 @@ For each data type listed below, follow the click path exactly.
 | Name | Not collected | No account required; onboarding has no name field |
 | Email address | Not collected | No account required |
 | Phone number | Not collected | No account required |
-| Payment info | Not collected at launch | No IAP active at versionCode 55; tick this when IAP ships |
+| Payment info | Not collected at launch | No IAP active at versionCode 57; tick this when IAP ships |
 | Health info | Not collected | Prayer records stay on-device only; excluded from Firebase |
 | Fitness info | Not collected | Same |
 | Messages / emails | Not collected | App has no comms features |
@@ -369,7 +373,7 @@ Navigate: Play Console → your app → **Store presence → Store settings** (o
 
 **Select: This app does NOT contain ads → Save.**
 
-Advertising SDK code exists in the codebase but no ad surface is active in versionCode 55. No ad is shown to users. This declaration is accurate for this release.
+Advertising SDK code exists in the codebase but no ad surface is active in versionCode 57. No ad is shown to users. This declaration is accurate for this release.
 
 ---
 
@@ -470,10 +474,10 @@ Run through this list in order. Do not promote until every item is checked.
 
 ### Bundle and build
 
-- [ ] AAB for versionCode 55 uploaded to internal testing track via `eas submit --platform android --latest`
+- [ ] AAB for versionCode 57 uploaded to internal testing track via `eas submit --platform android --latest`
 - [ ] Build appears in Play Console → **Testing → Internal testing** with status "Active"
 - [ ] Native symbols / mapping file uploaded. In Play Console: **Android vitals → Deobfuscation files** — upload the `mapping.txt` from the EAS build artifacts (download from expo.dev build page)
-- [ ] versionCode 55 confirmed in Play Console (Play Console rejects duplicate versionCodes)
+- [ ] versionCode 57 confirmed in Play Console (Play Console rejects duplicate versionCodes)
 
 ### Store listing
 
@@ -509,7 +513,7 @@ Run through this list in order. Do not promote until every item is checked.
 
 ### Galaxy M21 blocking bugs (from `qa-findings-galaxy-m21.md`)
 
-Before promoting to production, confirm these fixes are in versionCode 55:
+Before promoting to production, confirm these fixes are in versionCode 57:
 
 - [ ] **Fix 1.1 (DND bypass):** `adb shell dumpsys notification | grep prayer-times-adhan` shows `mBypassDnd=true` on adhan channels (v11 or later). Short adhan plays under DND.
 - [ ] **Fix 1.2 (boot reschedule):** After `adb reboot`, `dumpsys alarm | grep -c com.talukders.sukoon` shows ≥180 alarms (not 9). No "Unsafe prayer time quality" errors in logcat.

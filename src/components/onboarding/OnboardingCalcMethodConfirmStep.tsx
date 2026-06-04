@@ -44,7 +44,10 @@ export const OnboardingCalcMethodConfirmStep: React.FC<OnboardingCalcMethodConfi
 }) => {
   const styles = useThemedStyles(createStyles);
 
-  const autoMethod = resolveCalculationMethodForCountry(locationData?.country);
+  const autoMethod = resolveCalculationMethodForCountry(
+    locationData?.country,
+    locationData?.countryCode,
+  );
   const [selectedMethod, setSelectedMethod] = useState<CalculationMethod>(autoMethod);
   const [previewTimes, setPreviewTimes] = useState<PrayerTime[] | null>(null);
   const [isLoadingPreview, setIsLoadingPreview] = useState(false);

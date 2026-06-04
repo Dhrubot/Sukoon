@@ -101,8 +101,11 @@ const SettingsScreen: React.FC<SettingsScreenProps> = ({ navigation }) => {
   } = useSettingsManager();
 
   const regionalMethod = useMemo(
-    () => resolveCalculationMethodForCountry(userSettings?.location?.country),
-    [userSettings?.location?.country]
+    () => resolveCalculationMethodForCountry(
+      userSettings?.location?.country,
+      userSettings?.location?.countryCode,
+    ),
+    [userSettings?.location?.country, userSettings?.location?.countryCode]
   );
   const regionalMethodLabel = useMemo(
     () => calculationMethods.find((method) => method.value === regionalMethod)?.label || regionalMethod,

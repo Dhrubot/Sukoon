@@ -21,6 +21,13 @@ import logger from '../utils/logger';
 import { SCHEDULING_DEBOUNCE_MS } from '../constants/time';
 import StorageService from '../services/StorageService';
 import { buildNotificationScheduleFingerprint } from '../utils/notificationScheduleFingerprint';
+import {
+  needsCalculationMethodMigration,
+  migrateUserSettingsForLocale,
+} from '../utils/calculationMethodByRegion';
+
+/** Persisted flag — set once the locale-dependent calc-method migration runs. */
+const CALC_METHOD_ISO_MIGRATION_FLAG = 'calc-method-iso-migration-v1';
 
 /** If the rescheduler ran within this window, skip the settings-change schedule. */
 const COLD_START_GUARD_MS = 30_000;
@@ -60,6 +67,43 @@ export const useServiceInitialization = () => {
             }
           } catch (error) {
             logger.warn('⚠️ Failed to register background notification rescheduler:', error);
+          }
+
+          // One-shot migration for users whose location.country was saved in a
+          // non-English script by the pre-v57 edge path. Re-geocode the saved
+          // coordinates so we pick up the new countryCode field, then re-apply
+          // regional method resolution. Best-effort — sets the flag regardless
+          // of network outcome so we don't keep retrying.
+          try {
+            const migrationApplied = StorageService.getValue(CALC_METHOD_ISO_MIGRATION_FLAG);
+            const currentSettings = useStore.getState().userSettings;
+            if (
+              !migrationApplied &&
+              currentSettings &&
+              needsCalculationMethodMigration(currentSettings.location)
+            ) {
+              logger.log('🔄 Calc method migration: re-resolving region for legacy locale-script country');
+              const fresh = await LocationService.reverseGeocodeCoordinates({
+                latitude: currentSettings.location.latitude,
+                longitude: currentSettings.location.longitude,
+              });
+              if (fresh) {
+                const migrated = migrateUserSettingsForLocale(currentSettings, fresh);
+                if (migrated) {
+                  useStore.getState().setUserSettings(migrated);
+                  logger.log('✅ Calc method migration applied', {
+                    previous: currentSettings.calculationMethod,
+                    next: migrated.calculationMethod,
+                    countryCode: fresh.countryCode,
+                  });
+                }
+              }
+            }
+            // Always stamp the flag — even on failure — so we don't retry every
+            // boot. The check is cheap to re-run if the user uninstalls/reinstalls.
+            StorageService.setValue(CALC_METHOD_ISO_MIGRATION_FLAG, '1');
+          } catch (error) {
+            logger.warn('⚠️ Calc method migration skipped due to error:', error);
           }
 
           void AnalyticsService.logEvent('app_open');

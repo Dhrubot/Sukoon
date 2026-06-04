@@ -41,6 +41,7 @@ interface EdgeLocationResult {
   longitude: number;
   city?: string;
   country?: string;
+  countryCode?: string;
   timezone?: string;
   admin1?: string;
 }
@@ -201,6 +202,7 @@ export async function reverseGeocodeFromEdge(coordinates: Coordinates): Promise<
     longitude: location.longitude,
     city: location.city,
     country: location.country,
+    countryCode: location.countryCode,
     timezone: location.timezone,
   };
 }
