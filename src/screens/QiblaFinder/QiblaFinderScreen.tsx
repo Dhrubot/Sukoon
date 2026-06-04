@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import * as Location from 'expo-location';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Magnetometer } from 'expo-sensors';
+import Svg, { Path } from 'react-native-svg';
 import { useTheme } from '../../providers/ThemeProvider';
 import { useThemedStyles } from '../../hooks/useThemedStyles';
 import { AppTheme } from '../../theme';
@@ -66,6 +67,26 @@ const calculateQiblaDirection = (lat: number, lng: number): number => {
   return bearing;
 };
 
+// SVG arc path from startAngle to endAngle (degrees, 0° = up/north, clockwise).
+// Used to draw the "acceptable Qibla range" sector on the compass rose.
+const describeArc = (
+  cx: number,
+  cy: number,
+  r: number,
+  startAngle: number,
+  endAngle: number,
+): string => {
+  const startRad = ((startAngle - 90) * Math.PI) / 180;
+  const endRad = ((endAngle - 90) * Math.PI) / 180;
+  const startX = cx + r * Math.cos(startRad);
+  const startY = cy + r * Math.sin(startRad);
+  const endX = cx + r * Math.cos(endRad);
+  const endY = cy + r * Math.sin(endRad);
+  const sweep = endAngle - startAngle;
+  const largeArc = Math.abs(sweep) > 180 ? 1 : 0;
+  return `M ${startX} ${startY} A ${r} ${r} 0 ${largeArc} 1 ${endX} ${endY}`;
+};
+
 const calculateDistanceToKaaba = (lat: number, lng: number): number => {
   const R = 6371; // Earth's radius in km
   const dLat = ((KAABA_LAT - lat) * Math.PI) / 180;
@@ -93,9 +114,16 @@ const CONFIG = {
   UPDATE_INTERVAL_MOVING: 60, // ms when rotating
   UI_UPDATE_INTERVAL: 120, // ms for React state updates
   
-  // Alignment (hysteresis: enter at ENTER, exit at EXIT to prevent flicker)
-  ALIGNMENT_ENTER: 3, // degrees — snap into aligned
-  ALIGNMENT_EXIT: 6,  // degrees — must move this far to un-align
+  // Alignment (hysteresis: enter at ENTER, exit at EXIT to prevent flicker).
+  // Widened from 3°/6° to match (a) real phone-compass accuracy (~±5–10°) and
+  // (b) classical fiqh tolerance for jihat al-qibla when far from the Kaaba.
+  // EXIT matches ACCEPTABLE_RANGE_HALF so the user is "aligned" iff their heading
+  // sits inside the visible green arc.
+  ALIGNMENT_ENTER: 8,  // degrees — snap into aligned
+  ALIGNMENT_EXIT: 15,  // degrees — must move this far to un-align
+  // Half-width of the visible "facing Qibla is fine" sector drawn on the compass.
+  // ±15° matches the EXIT threshold above; total visible arc = 30°.
+  ACCEPTABLE_RANGE_HALF: 15,
   
   // Calibration
   ACCURACY_GOOD: 10, // degrees
@@ -157,6 +185,14 @@ const QiblaFinderScreen: React.FC = () => {
   const prevHeadingForCompassRef = useRef<number | null>(null);
   // Sensor ref for magnetometer (interference detection only)
   const magSubscription = useRef<ReturnType<typeof Magnetometer.addListener> | null>(null);
+  // Flipped by stopHeading; checked after each await in startHeading to defeat the
+  // classic "navigate away before async sensor setup resolves" subscription leak.
+  const cancelledRef = useRef<boolean>(false);
+  // Prevents two startHeading() invocations from racing past the null-check on
+  // headingSubscription during rapid focus toggles.
+  const isStartingRef = useRef<boolean>(false);
+  // Guards qibla_opened analytics to fire once per mount, not on every re-focus.
+  const analyticsLoggedRef = useRef<boolean>(false);
 
   const openAppSettings = () => {
     if (Platform.OS === 'ios') {
@@ -167,6 +203,7 @@ const QiblaFinderScreen: React.FC = () => {
   };
 
   const stopHeading = useCallback(() => {
+    cancelledRef.current = true;
     if (headingSubscription.current) {
       headingSubscription.current.remove();
       headingSubscription.current = null;
@@ -197,6 +234,13 @@ const QiblaFinderScreen: React.FC = () => {
       if (prevHeadingForCompassRef.current != null) {
         const headingDelta = shortestAngleDelta(prevHeadingForCompassRef.current, heading);
         compassTargetRef.current -= headingDelta;
+        // Strip whole rotations to keep float precision bounded. Visually a no-op
+        // (rotation by N*360° looks identical) but resets the spring's working range.
+        if (Math.abs(compassTargetRef.current) > 3600) {
+          const wraps = Math.trunc(compassTargetRef.current / 360);
+          compassTargetRef.current -= wraps * 360;
+          compassRotateAnim.setValue(compassTargetRef.current);
+        }
       } else {
         compassTargetRef.current = -heading;
       }
@@ -326,40 +370,59 @@ const QiblaFinderScreen: React.FC = () => {
   );
 
   // Start heading — use OS-level watchHeadingAsync for accurate trueHeading,
-  // optionally subscribe to Magnetometer for interference detection only
+  // optionally subscribe to Magnetometer for interference detection only.
+  // Cancellation-aware: after every await we check cancelledRef and tear down
+  // anything we just installed, so leaving the screen mid-setup doesn't leak.
   const startHeading = useCallback(async () => {
+    if (headingSubscription.current || isStartingRef.current) return;
+    isStartingRef.current = true;
+    cancelledRef.current = false;
     try {
-      if (headingSubscription.current) return;
-
       // Primary: OS heading via expo-location (trueHeading with sensor fusion)
       const { status } = await Location.requestForegroundPermissionsAsync();
+      if (cancelledRef.current) return;
       if (status !== 'granted') {
         setError('Location permission is required to find Qibla direction');
         return;
       }
 
-      headingSubscription.current = await Location.watchHeadingAsync((newHeading) => {
-        const rawHeading = newHeading.trueHeading >= 0 ? newHeading.trueHeading : newHeading.magHeading;
+      const headingSub = await Location.watchHeadingAsync((newHeading) => {
+        const usingMagFallback = newHeading.trueHeading < 0;
+        const rawHeading = usingMagFallback ? newHeading.magHeading : newHeading.trueHeading;
         const accuracy = newHeading.accuracy;
 
-        if (accuracy !== undefined && accuracy >= 0) {
-          const newStatus: 'good' | 'fair' | 'poor' =
+        // When trueHeading is unavailable, magHeading is uncorrected for magnetic
+        // declination — can be off by 10–15° in high-declination regions. Mark
+        // calibration as "poor" so the user sees the figure-8 banner.
+        let newStatus: 'good' | 'fair' | 'poor';
+        if (usingMagFallback) {
+          newStatus = 'poor';
+        } else if (accuracy !== undefined && accuracy >= 0) {
+          newStatus =
             accuracy <= CONFIG.ACCURACY_GOOD ? 'good' :
             accuracy <= CONFIG.ACCURACY_FAIR ? 'fair' : 'poor';
-          if (newStatus !== calibrationStatusRef.current) {
-            calibrationStatusRef.current = newStatus;
-            setCalibrationStatus(newStatus);
-          }
+        } else {
+          newStatus = calibrationStatusRef.current;
+        }
+        if (newStatus !== calibrationStatusRef.current) {
+          calibrationStatusRef.current = newStatus;
+          setCalibrationStatus(newStatus);
         }
 
         processHeading(rawHeading);
       });
+      if (cancelledRef.current) {
+        headingSub.remove();
+        return;
+      }
+      headingSubscription.current = headingSub;
 
       // Auxiliary: Magnetometer for interference detection only (no heading computation)
       const magAvailable = await Magnetometer.isAvailableAsync();
+      if (cancelledRef.current) return;
       if (magAvailable) {
         Magnetometer.setUpdateInterval(CONFIG.UPDATE_INTERVAL_STABLE);
-        magSubscription.current = Magnetometer.addListener((data) => {
+        const magSub = Magnetometer.addListener((data) => {
           const bTotal = Math.sqrt(data.x * data.x + data.y * data.y + data.z * data.z);
           let newInterference: InterferenceLevel = 'none';
           if (bTotal > CONFIG.INTERFERENCE_HIGH) {
@@ -372,12 +435,20 @@ const QiblaFinderScreen: React.FC = () => {
             setInterference(newInterference);
           }
         });
+        if (cancelledRef.current) {
+          magSub.remove();
+          return;
+        }
+        magSubscription.current = magSub;
       }
 
       setIsLoading(false);
     } catch {
+      if (cancelledRef.current) return;
       setError('Unable to get location or compass data. Please check settings.');
       setIsLoading(false);
+    } finally {
+      isStartingRef.current = false;
     }
   }, [processHeading]);
 
@@ -412,12 +483,13 @@ const QiblaFinderScreen: React.FC = () => {
     }
   }, []);
 
+  // Unmount cleanup only. resolveLocation runs from the focus effect below to
+  // avoid two concurrent geocoding calls on mount.
   useEffect(() => {
-    resolveLocation();
     return () => {
       stopHeading();
     };
-  }, [resolveLocation, stopHeading]);
+  }, [stopHeading]);
 
   // Update Qibla direction and distance when location is found
   useEffect(() => {
@@ -435,7 +507,10 @@ const QiblaFinderScreen: React.FC = () => {
       stopHeading();
       return;
     }
-    AnalyticsService.logEvent('qibla_opened');
+    if (!analyticsLoggedRef.current) {
+      AnalyticsService.logEvent('qibla_opened');
+      analyticsLoggedRef.current = true;
+    }
     // Reset sensor refs on re-focus to prevent stale catch-up animation
     smoothedHeadingRef.current = null;
     lastUpdateMsRef.current = 0;
@@ -455,7 +530,11 @@ const QiblaFinderScreen: React.FC = () => {
 
   const turnText = useMemo(() => {
     const abs = Math.abs(directionOffset);
-    if (abs <= CONFIG.ALIGNMENT_EXIT) return 'Aligned with Qibla';
+    // Inside the visible arc — counts as facing Qibla. Show a tighter "exact"
+    // label near dead-centre to reward precision without faking it elsewhere.
+    if (abs <= CONFIG.ALIGNMENT_EXIT) {
+      return abs <= CONFIG.ALIGNMENT_ENTER ? 'Facing Qibla' : "You're facing Qibla";
+    }
     const dir = directionOffset > 0 ? 'Turn right' : 'Turn left';
     return `${dir} • ${Math.round(abs)}°`;
   }, [directionOffset]);
@@ -501,21 +580,6 @@ const QiblaFinderScreen: React.FC = () => {
     }
     return null;
   }, [calibrationStatus, interference, theme.colors.qibla]);
-
-  // Verify on Map — open native maps app with Kaaba destination
-  const openMapVerification = useCallback(() => {
-    if (!location) return;
-    const { latitude, longitude } = location;
-    const url = Platform.select({
-      ios: `maps://app?saddr=${latitude},${longitude}&daddr=${KAABA_LAT},${KAABA_LNG}`,
-      android: `geo:0,0?q=${KAABA_LAT},${KAABA_LNG}(Kaaba)`,
-      default: `https://www.google.com/maps/dir/${latitude},${longitude}/${KAABA_LAT},${KAABA_LNG}`,
-    });
-    Linking.openURL(url).catch(() => {
-      // Fallback to Google Maps web
-      Linking.openURL(`https://www.google.com/maps/dir/${latitude},${longitude}/${KAABA_LAT},${KAABA_LNG}`);
-    });
-  }, [location]);
 
   // Generate degree tick marks — every 10° with three visual tiers
   const degreeMarks = useMemo(() => {
@@ -597,11 +661,6 @@ const QiblaFinderScreen: React.FC = () => {
               🕋 {distanceText}
             </Text>
           )}
-          <TouchableOpacity onPress={openMapVerification} activeOpacity={0.7}>
-            <Text style={[styles.verifyLink, { color: theme.colors.qibla.verifyLink }]}>
-              Verify on Map
-            </Text>
-          </TouchableOpacity>
         </View>
       </View>
 
@@ -700,16 +759,46 @@ const QiblaFinderScreen: React.FC = () => {
               <Text style={[styles.intercardinal, styles.intercardinalSW, { color: theme.colors.qibla.cardinalMuted }]}>SW</Text>
               <Text style={[styles.intercardinal, styles.intercardinalNW, { color: theme.colors.qibla.cardinalMuted }]}>NW</Text>
 
-              {/* Qibla bearing marker — green dot at exact Qibla angle on compass ring */}
-              {qiblaDirection > 0 && (
+              {/* Acceptable Qibla range — translucent arc on the inner ring spanning
+                  ±ACCEPTABLE_RANGE_HALF around exact Qibla. Anywhere inside this arc
+                  is a valid facing direction (jihat al-qibla). */}
+              {location !== null && (
+                <Svg
+                  width={COMPASS_SIZE}
+                  height={COMPASS_SIZE}
+                  style={styles.acceptableRangeSvg}
+                  pointerEvents="none"
+                >
+                  <Path
+                    d={describeArc(
+                      COMPASS_SIZE / 2,
+                      COMPASS_SIZE / 2,
+                      COMPASS_SIZE / 2 - 12,
+                      qiblaDirection - CONFIG.ACCEPTABLE_RANGE_HALF,
+                      qiblaDirection + CONFIG.ACCEPTABLE_RANGE_HALF,
+                    )}
+                    stroke={
+                      isAligned
+                        ? theme.colors.qibla.acceptableRangeBright
+                        : theme.colors.qibla.acceptableRange
+                    }
+                    strokeWidth={10}
+                    strokeLinecap="round"
+                    fill="none"
+                  />
+                </Svg>
+              )}
+
+              {/* Qibla bearing marker — dot at the exact bearing, sitting on the arc */}
+              {location !== null && (
                 <View
                   style={[
                     styles.qiblaMarker,
                     {
                       backgroundColor: theme.colors.qibla.compassRingAligned,
                       transform: [
-                        { translateX: Math.sin((qiblaDirection * Math.PI) / 180) * (COMPASS_SIZE / 2 - 8) },
-                        { translateY: -Math.cos((qiblaDirection * Math.PI) / 180) * (COMPASS_SIZE / 2 - 8) },
+                        { translateX: Math.sin((qiblaDirection * Math.PI) / 180) * (COMPASS_SIZE / 2 - 12) },
+                        { translateY: -Math.cos((qiblaDirection * Math.PI) / 180) * (COMPASS_SIZE / 2 - 12) },
                       ],
                     },
                   ]}
@@ -863,11 +952,6 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
     fontFamily: theme.typography.fontFamily.bodyMedium,
     marginTop: 4,
   },
-  verifyLink: {
-    fontSize: 13,
-    fontFamily: theme.typography.fontFamily.bodySemibold,
-    marginTop: 4,
-  },
   centeredContent: {
     flex: 1,
     justifyContent: 'center',
@@ -960,6 +1044,11 @@ const createStyles = (theme: AppTheme) => StyleSheet.create({
   tickMark: {
     position: 'absolute',
     borderRadius: 1,
+  },
+  acceptableRangeSvg: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
   },
   qiblaMarker: {
     position: 'absolute',

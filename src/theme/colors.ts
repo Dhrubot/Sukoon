@@ -398,6 +398,8 @@ export const darkTheme = {
     compassBg: palette.navy700,
     compassRing: palette.navy500,
     compassRingAligned: palette.gold400,
+    acceptableRange: 'rgba(212, 175, 55, 0.30)',
+    acceptableRangeBright: 'rgba(212, 175, 55, 0.55)',
     needleBeam: palette.green500,
     needleBeamAligned: palette.gold400,
     needleTip: palette.green400,
@@ -415,7 +417,6 @@ export const darkTheme = {
     cardinalMuted: palette.slate500,
     tickCardinal: palette.slate400,
     tickMinor: palette.navy500,
-    verifyLink: palette.green400,
   },
 
   // SanctuaryView — text/overlays on prayer gradient backgrounds
@@ -733,6 +734,8 @@ export const lightTheme = {
     compassBg: lightPalette.card,
     compassRing: lightPalette.borderBright,
     compassRingAligned: lightPalette.gold,
+    acceptableRange: 'rgba(176, 137, 26, 0.22)',
+    acceptableRangeBright: 'rgba(176, 137, 26, 0.45)',
     needleBeam: lightPalette.teal,
     needleBeamAligned: lightPalette.gold,
     needleTip: lightPalette.tealLight,
@@ -750,7 +753,6 @@ export const lightTheme = {
     cardinalMuted: lightPalette.textSub,
     tickCardinal: lightPalette.textMuted,
     tickMinor: lightPalette.borderBright,
-    verifyLink: lightPalette.teal,
   },
 
   // SanctuaryView — hero is DARK even in light mode (white text on dark gradient)
@@ -1102,6 +1104,8 @@ export const midnightTheme = {
     compassBg: midnightPalette.card,
     compassRing: midnightPalette.borderBright,
     compassRingAligned: midnightPalette.gold,
+    acceptableRange: 'rgba(212, 175, 55, 0.28)',
+    acceptableRangeBright: 'rgba(212, 175, 55, 0.55)',
     needleBeam: midnightPalette.gold,
     needleBeamAligned: midnightPalette.goldLight,
     needleTip: midnightPalette.goldLight,
@@ -1119,7 +1123,6 @@ export const midnightTheme = {
     cardinalMuted: midnightPalette.textSub,
     tickCardinal: midnightPalette.textMuted,
     tickMinor: midnightPalette.borderBright,
-    verifyLink: midnightPalette.goldLight,
   },
 
   sanctuary: {
