@@ -8,6 +8,18 @@
 **What changed since 2026-06-03:**
 - Build 56 was uploaded and flagged by Play for the ACTIVITY_RECOGNITION Health policy. Build 57 strips that permission (`app.config.js` blockedPermissions, commit `6d8d882`). The Data Safety answers below DO NOT change — the permission was a transitive pull from `expo-sensors` we never used. Pedometer/step-count was never a feature.
 - Qibla feature polish (commit `fd09356`) — UX improvements only. No data-collection delta.
+- Calc-method-by-region fix (commit `f62500f`) — for non-English Nominatim responses; ISO country code primary + name fallback + one-shot migration. Includes Cloudflare worker re-deploy.
+- Build 57 pre-launch sweep (commit `1a2ac98`) — lean onboarding (5→4 steps), notification name variation, city-search country-first hint.
+
+**⚠ CRITICAL — launch path changed:**
+This developer account is **Personal, created in 2024**, so the
+Nov 2023 Google Play testing policy applies. **Build 57 must upload
+to a CLOSED testing track (not Internal), then run a 14-day soak with
+≥ 12 continuously-opted-in testers before applying for production access.**
+The packet's §12 below has been updated to reference the full workflow
+in `docs/launch/closed-testing-playbook.md`, which covers tester
+recruitment, opt-in setup, and the production-access application
+questionnaire with pre-written answers.
 
 ---
 
@@ -470,14 +482,21 @@ immediately after playback ends.
 
 ## 12. Pre-Launch Checklist Before Pressing "Promote to Production"
 
+> **Personal-account closed-testing requirement applies.** See
+> `docs/launch/closed-testing-playbook.md` for the full workflow: closed
+> track setup, tester recruitment messages, 14-day soak tracking, and
+> production-access questionnaire pre-answers. The checklist below
+> assumes that playbook is being followed in parallel.
+
 Run through this list in order. Do not promote until every item is checked.
 
 ### Bundle and build
 
-- [ ] AAB for versionCode 57 uploaded to internal testing track via `eas submit --platform android --latest`
-- [ ] Build appears in Play Console → **Testing → Internal testing** with status "Active"
+- [ ] AAB for versionCode 57 uploaded to **closed testing track** (NOT Internal — see closed-testing playbook §1) via `eas submit --platform android --latest --track <closed-track-id>`
+- [ ] Build appears in Play Console → **Testing → Closed testing** with status "Active"
 - [ ] Native symbols / mapping file uploaded. In Play Console: **Android vitals → Deobfuscation files** — upload the `mapping.txt` from the EAS build artifacts (download from expo.dev build page)
 - [ ] versionCode 57 confirmed in Play Console (Play Console rejects duplicate versionCodes)
+- [ ] **Cloudflare edge worker re-deployed** (`cd edge-api && npm run deploy`) — required for the calc-method-by-region fix. Without this, the country_code field won't be returned and the cache will still serve locale-poisoned entries. Already deployed for build 57.
 
 ### Store listing
 
@@ -500,16 +519,21 @@ Run through this list in order. Do not promote until every item is checked.
 - [ ] Ads: App does NOT contain ads — saved
 - [ ] App access: All functionality available without sign-in — saved, with tester notes pasted
 
-### Internal soak (mandatory before promoting)
+### Closed soak (mandatory — 14 days minimum, ≥ 12 testers)
 
-- [ ] Install the internal-track AAB on a real Android device via Play Store (not sideload)
-- [ ] Walk the onboarding: location grant → notification grant → exact-alarm grant → calculation method confirm
+> See `docs/launch/closed-testing-playbook.md` for tester recruitment
+> and tracking workflow.
+
+- [ ] ≥ 12 testers opted in continuously for **14 consecutive days** (Play Console → Closed testing → Testers shows current enrolled count)
+- [ ] Install the closed-track AAB on a real Android device via Play Store (not sideload)
+- [ ] Walk the onboarding: location grant → notification grant → exact-alarm grant — **calc method is now auto-selected (no confirm step in build 57)**
 - [ ] Wait for one real prayer notification to fire. Confirm adhan plays on USAGE_ALARM stream
 - [ ] Confirm Qibla compass renders and points in the correct direction
 - [ ] Confirm Settings → Privacy Policy link opens `https://dhrubot.github.io/Sukoon/privacy.html`
 - [ ] Confirm Settings → Contact Support opens an email compose to `codifizz@gmail.com`
 - [ ] Confirm the app does not crash on the first 10 screens of a fresh install
-- [ ] Check Firebase Crashlytics dashboard — no launch-day crash spikes from internal testers
+- [ ] Check Firebase Crashlytics dashboard — no crash spikes from real testers during the 14-day soak
+- [ ] **For Dhrubo's personal install in Dhaka:** confirm the one-shot calc-method migration ran on next-boot after installing build 57 — Settings → Prayer should show "Karachi" method, not "MWL"
 
 ### Galaxy M21 blocking bugs (from `qa-findings-galaxy-m21.md`)
 
@@ -519,7 +543,13 @@ Before promoting to production, confirm these fixes are in versionCode 57:
 - [ ] **Fix 1.2 (boot reschedule):** After `adb reboot`, `dumpsys alarm | grep -c com.talukders.sukoon` shows ≥180 alarms (not 9). No "Unsafe prayer time quality" errors in logcat.
 - [ ] **Fix 2.1 (lock screen):** `dumpsys notification` shows `mLockscreenVisibility=1` (PUBLIC) on prayer channels, not -1000.
 
-If any of the above three are not fixed, **do not promote**. File a new internal build and restart the soak.
+If any of the above three are not fixed, **do not promote**. File a new closed-track build and restart the soak.
+
+### Production access application (required after 14-day soak)
+
+- [ ] At Day 14, confirm ≥ 12 testers still enrolled in closed track
+- [ ] In Play Console → Dashboard → "Apply for production access", submit the 4-question form using pre-written answers in `closed-testing-playbook.md` §4. Customize tester count and dates to match reality.
+- [ ] Wait 2–7 business days for Google's review. Production track unlocks once approved.
 
 ---
 
