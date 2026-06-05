@@ -14,6 +14,8 @@ export type MenuStackParamList = {
   Settings: undefined;
   PrivacyPolicy: undefined;
   SetupHealth: undefined;
+  Meanings: undefined;
+  MeaningDetail: { id: string; source?: 'garden' | 'menu' | 'direct' };
 };
 
 const Stack = createStackNavigator<MenuStackParamList>();
@@ -87,6 +89,16 @@ export const MenuStackNavigator: React.FC = () => {
         name="SetupHealth"
         getComponent={() => require('../screens/SetupHealth/SetupHealthScreen').default}
         options={{ title: 'Setup & Health' }}
+      />
+      <Stack.Screen
+        name="Meanings"
+        getComponent={() => require('../features/meanings').MeaningsScreen}
+        options={{ title: 'In the Prayer' }}
+      />
+      <Stack.Screen
+        name="MeaningDetail"
+        getComponent={() => require('../features/meanings').MeaningDetailScreen}
+        options={{ title: '' }}
       />
     </Stack.Navigator>
   );

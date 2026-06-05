@@ -30,6 +30,12 @@ import MiniTubaTree from '../../components/garden/MiniTubaTree';
 import { FARD_PRAYERS } from '../../constants/prayerRegistry';
 import { resolveTreePrayerColor } from '../../constants/tubaTree';
 import Svg, { Path } from 'react-native-svg';
+import {
+  MeaningCard,
+  MeaningInvitePrompt,
+  useDailyMeaning,
+  useMeaningsPreference,
+} from '../../features/meanings';
 
 const GardenIcon: React.FC<{ color: string; size: number }> = ({ color, size }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
@@ -59,6 +65,11 @@ const ReflectionGardenScreen: React.FC = () => {
 
   // DEV-ONLY: Tree stage tester
   const [devMode, setDevMode] = useState(false);
+
+  // Meanings feature integration — daily card shows only when the user has
+  // opted in; the invite prompt self-gates and renders nothing otherwise.
+  const { preference: meaningsPreference } = useMeaningsPreference();
+  const dailyMeaning = useDailyMeaning();
 
   // ── Leaf detail state ───────────────────────────────────────────
   const [selectedLeaf, setSelectedLeaf] = useState<LeafDetailData | null>(null);
@@ -242,6 +253,26 @@ const ReflectionGardenScreen: React.FC = () => {
             </Text>
           </View>
         </View>
+
+        {/* Meanings — daily reflection card (when opted in) + invite prompt
+            (self-gating; renders only when eligible). Decoupled module —
+            this screen knows nothing about preference timing or rotation. */}
+        {meaningsPreference === 'opted_in' && dailyMeaning ? (
+          <MeaningCard
+            meaning={dailyMeaning}
+            variant="daily"
+            onPress={() =>
+              navigation.navigate('MainTabs', {
+                screen: 'Menu',
+                params: {
+                  screen: 'MeaningDetail',
+                  params: { id: dailyMeaning.id, source: 'garden' },
+                },
+              })
+            }
+          />
+        ) : null}
+        <MeaningInvitePrompt />
 
         {/* Week timeline */}
         <WeekTimeline weekSummary={weekSummary} />
