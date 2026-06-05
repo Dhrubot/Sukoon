@@ -6,10 +6,16 @@
   "build": {
     "development": {
       "developmentClient": true,
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_EDGE_API_BASE_URL": "https://sukoon-edge-api.dhrubok-ny.workers.dev",
+        "EXPO_PUBLIC_EDGE_API_ENABLED": "true"
+      }
     },
     "preview": {
       "env": {
+        "EXPO_PUBLIC_EDGE_API_BASE_URL": "https://sukoon-edge-api.dhrubok-ny.workers.dev",
+        "EXPO_PUBLIC_EDGE_API_ENABLED": "true",
         "ANDROID_ENABLE_MINIFY": "false",
         "ANDROID_ENABLE_SHRINK_RESOURCES": "false",
         "EXPO_PUBLIC_NOTIFICATION_TRACE_ENABLED": "false",
@@ -25,6 +31,8 @@
     "production": {
       "autoIncrement": true,
       "env": {
+        "EXPO_PUBLIC_EDGE_API_BASE_URL": "https://sukoon-edge-api.dhrubok-ny.workers.dev",
+        "EXPO_PUBLIC_EDGE_API_ENABLED": "true",
         "ANDROID_ENABLE_MINIFY": "false",
         "ANDROID_ENABLE_SHRINK_RESOURCES": "false",
         "EXPO_PUBLIC_NOTIFICATION_TRACE_ENABLED": "false",

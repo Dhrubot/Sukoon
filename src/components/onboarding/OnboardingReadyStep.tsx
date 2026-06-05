@@ -41,7 +41,10 @@ export const OnboardingReadyStep: React.FC<OnboardingReadyStepProps> = ({
   onContinue,
 }) => {
   const styles = useThemedStyles(createStyles);
-  const regionalMethod = resolveCalculationMethodForCountry(locationData?.country);
+  const regionalMethod = resolveCalculationMethodForCountry(
+    locationData?.country,
+    locationData?.countryCode,
+  );
   const methodLabel =
     CALCULATION_METHODS.find((method) => method.value === regionalMethod)?.label || regionalMethod;
   const methodSummary = locationData?.country

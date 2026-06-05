@@ -18,6 +18,11 @@ import { useStore } from '../../store/useStore';
 import Svg, { Path, Circle, Line, Polyline } from 'react-native-svg';
 import DailyVerse, { DailyVerseRef } from '../../components/common/DailyVerse';
 import { withAlpha } from '../../utils/color';
+import Constants from 'expo-constants';
+
+// Read app version from app.config.js so the displayed value tracks the
+// real package version automatically — never let this drift behind a literal.
+const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 
 // ═══════════════════════════════════════════════════════════════
 // Outline SVG Icon Components
@@ -409,7 +414,7 @@ const MenuScreen: React.FC = () => {
 
         {/* ── Footer ── */}
         <View style={styles.appInfo}>
-          <Text style={styles.appVersion}>Sukoon v1.0.0</Text>
+          <Text style={styles.appVersion}>Sukoon v{APP_VERSION}</Text>
           <Text style={styles.blessing}>May Allah accept our efforts</Text>
         </View>
         </ScrollView>
